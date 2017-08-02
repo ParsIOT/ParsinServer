@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 	"github.com/boltdb/bolt"
 )
 
@@ -38,6 +37,7 @@ type Svm struct {
 }
 
 func dumpFingerprintsSVM(group string) error {
+	//gets the fingerprints data from db and make them in the format of LIBSVM.
 	macs := make(map[string]int)
 	locations := make(map[string]int)
 	macsFromID := make(map[string]string)
@@ -58,13 +58,17 @@ func dumpFingerprintsSVM(group string) error {
 			v2 := loadFingerprint(v)
 			for _, fingerprint := range v2.WifiFingerprint {
 				if _, ok := macs[fingerprint.Mac]; !ok {
+					//macs: every mac as key and the value is a unique id.
 					macs[fingerprint.Mac] = macI
+					//reverse map of macs
 					macsFromID[strconv.Itoa(macI)] = fingerprint.Mac
 					macI++
 				}
 			}
 			if _, ok := locations[v2.Location]; !ok {
+				//locations: every location as key and the value is a unique id.
 				locations[v2.Location] = locationI
+				//locationsFromID: reverse map of locations
 				locationsFromID[strconv.Itoa(locationI)] = v2.Location
 				locationI++
 			}
@@ -79,6 +83,9 @@ func dumpFingerprintsSVM(group string) error {
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			v2 := loadFingerprint(v)
 			svmData = svmData + makeSVMLine(v2, macs, locations)
+			//svmData: loc mac1:rss1 mac2:rss2 ...
+			//	1 1:-52 2:-76 3:-78 4:-88 5:-80
+			//	2 1:-53 2:-69 3:-76 4:-88 5:-80
 		}
 		return nil
 	})
@@ -91,7 +98,7 @@ func dumpFingerprintsSVM(group string) error {
 		if err != nil {
 			return fmt.Errorf("create bucket: %s", err)
 		}
-		err = bucket.Put([]byte("svmData"), []byte(svmData))
+		err = bucket.Put([]byte("svmData"), []byte(svmData)) //why svmData is not marshal?
 		if err != nil {
 			return fmt.Errorf("could add to bucket: %s", err)
 		}
@@ -160,12 +167,13 @@ func calculateSVM(group string) error {
 		if len(lines[list[i]]) == 0 {
 			continue
 		}
+		// divide training and testing set
 		if i < len(list)/2 {
 			learningSet = learningSet + lines[list[i]] + "\n"
 			fullSet = fullSet + lines[list[i]] + "\n"
 		} else {
-			fullSet = fullSet + lines[list[i]] + "\n"
 			testingSet = testingSet + lines[list[i]] + "\n"
+			fullSet = fullSet + lines[list[i]] + "\n"
 		}
 	}
 
@@ -174,6 +182,7 @@ func calculateSVM(group string) error {
 	tempFileTest := RandStringBytesMaskImprSrc(16) + ".testing"
 	tempFileOut := RandStringBytesMaskImprSrc(16) + ".out"
 	d1 := []byte(learningSet)
+	//todo: WTF \/ replace random string with epoch time
 	err = ioutil.WriteFile(tempFileTrain, d1, 0644)
 	if err != nil {
 		panic(err)
@@ -380,6 +389,7 @@ func makeSVMLine(v2 Fingerprint, macs map[string]int, locations map[string]int) 
 	// }
 
 	return svmData
+
 }
 
 // cp ~/Documents/find/svm ./

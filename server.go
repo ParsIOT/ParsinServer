@@ -17,7 +17,6 @@ import (
 	"os/exec"
 	"path"
 	"strings"
-
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -104,13 +103,13 @@ Options:`)
 		RuntimeArgs.Mqtt = true
 		setupMqtt()
 	} else {
-                if len(RuntimeArgs.MqttServer) > 0 {
-                        RuntimeArgs.Mqtt = true
-                        RuntimeArgs.MqttExisting = true
-                        setupMqtt()
-                } else {
-		        RuntimeArgs.Mqtt = false
-                }
+		if len(RuntimeArgs.MqttServer) > 0 {
+			RuntimeArgs.Mqtt = true
+			RuntimeArgs.MqttExisting = true
+			setupMqtt()
+		} else {
+			RuntimeArgs.Mqtt = false
+		}
 	}
 
 	// Check whether random forests are used

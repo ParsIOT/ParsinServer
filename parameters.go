@@ -41,13 +41,13 @@ type ResultsParameters struct {
 
 // FullParameters is the full parameter set for a given group
 type FullParameters struct {
-	NetworkMacs    map[string]map[string]bool // map of networks and then the associated macs in each
-	NetworkLocs    map[string]map[string]bool // map of the networks, and then the associated locations in each
-	MacVariability map[string]float32         // variability of macs
-	MacCount       map[string]int             // number of each mac
-	MacCountByLoc  map[string]map[string]int  // number of each mac, by location
-	UniqueLocs     []string
-	UniqueMacs     []string
+	NetworkMacs    map[string]map[string]bool   // map of networks and then the associated macs in each
+	NetworkLocs    map[string]map[string]bool   // map of the networks, and then the associated locations in each
+	MacVariability map[string]float32           // variability of macs
+	MacCount       map[string]int               // number of fingerprints of a AP in all data, regardless of the location; e.g. 10 of AP1, 12 of AP2, ...
+	MacCountByLoc  map[string]map[string]int    // number of fingerprints of a AP in a location; e.g. in location A, 10 of AP1, 12 of AP2, ...
+	UniqueLocs     []string                     // a list of all unique locations e.g. {P1,P2,P3}
+	UniqueMacs     []string                     // a list of all unique APs
 	Priors         map[string]PriorParameters   // generate priors for each network
 	Results        map[string]ResultsParameters // generate priors for each network
 	Loaded         bool                         // flag to determine if parameters have been loaded

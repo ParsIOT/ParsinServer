@@ -55,9 +55,9 @@ func worker(id int, jobs <-chan jobA, results chan<- resultA) {
 			}
 		}
 		results <- resultA{locationGuess: locationGuess,
-			locationTrue: j.locationTrue,
-			mixin:        j.mixin,
-			n:            j.n}
+			locationTrue:             j.locationTrue,
+			mixin:                    j.mixin,
+			n:                        j.n}
 	}
 }
 
@@ -98,15 +98,20 @@ func optimizePriorsThreaded(group string) error {
 		ps.Results[n] = results
 	}
 
-	// loop through these parameters
-	mixins := []float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9}
+	// loop through these parameters`
+	mixins := []float64{}
+	for i := 0; i < 1000; i ++ {
+		mixins = append(mixins, float64(i)/1000)
+	}
+	fmt.Println(mixins)
+	//mixins := []float64{0.1, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9}
 	mixinOverride, _ := getMixinOverride(group)
 	if mixinOverride >= 0 && mixinOverride <= 1 {
 		mixins = []float64{mixinOverride}
 	}
 
 	// Choose cutoff
-	cutoffs := []float64{0.005, 0.05, 0.1}
+	cutoffs := []float64{0.001, 0.005, 0.05, 0.1}
 	cutoffOverride, _ := getCutoffOverride(group)
 	if cutoffOverride >= 0 && cutoffOverride <= 1 {
 		cutoffs = []float64{cutoffOverride}
@@ -167,17 +172,17 @@ func optimizePriorsThreaded(group string) error {
 					finalResults[n][mixin].Guess[loc] = make(map[string]int)
 				}
 				// Loop through each fingerprint
-				for id := range PBayes1[n] {
+				for id := range PBayes1[n] { //id = FG timestamps = fingerprint ordering members
 					locs := []string{}
 					bayes1 := []float64{}
 					bayes2 := []float64{}
-					for key := range PBayes1[n][id] {
+					for key := range PBayes1[n][id] { //key = locations
 						locs = append(locs, key)
 						bayes1 = append(bayes1, PBayes1[n][id][key])
 						bayes2 = append(bayes2, PBayes2[n][id][key])
 					}
 					trueLoc := fingerprintsInMemory[id].Location
-					chanJobs <- jobA{n: n,
+					chanJobs <- jobA{n:   n,
 						mixin:        mixin,
 						locs:         locs,
 						locationTrue: trueLoc,
@@ -194,9 +199,11 @@ func optimizePriorsThreaded(group string) error {
 			if t.locationGuess == t.locationTrue {
 				finalResults[t.n][t.mixin].CorrectLocations[t.locationTrue]++
 			}
+			//init
 			if _, ok := finalResults[t.n][t.mixin].Guess[t.locationTrue]; !ok {
 				finalResults[t.n][t.mixin].Guess[t.locationTrue] = make(map[string]int)
 			}
+			//init
 			if _, ok := finalResults[t.n][t.mixin].Guess[t.locationTrue][t.locationGuess]; !ok {
 				finalResults[t.n][t.mixin].Guess[t.locationTrue][t.locationGuess] = 0
 			}
@@ -222,11 +229,12 @@ func optimizePriorsThreaded(group string) error {
 					bestMixin[n] = mixin
 					bestCutoff[n] = cutoff
 				}
+
 			}
 		}
 
 	}
-
+	fmt.Println("best Mixin :", bestMixin)
 	// Load new priors and calculate new cross Validation
 	for n := range ps.Priors {
 		ps.Priors[n].Special["MixIn"] = bestMixin[n]

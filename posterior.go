@@ -6,7 +6,10 @@
 
 package main
 
-import "math"
+import (
+	"math"
+	"fmt"
+)
 
 // calculatePosterior takes a Fingerprint and a Parameter set and returns the noramlized Bayes probabilities of possible locations
 func calculatePosterior(res Fingerprint, ps FullParameters) (string, map[string]float64) {
@@ -54,7 +57,8 @@ func calculatePosterior(res Fingerprint, ps FullParameters) (string, map[string]
 			} else {
 				nweight = float64(ps.Priors[n].Special["NMacFreqMin"])
 			}
-			PBayes1[loc] += math.Log(weight*PA) - math.Log(weight*PA+PnA*nweight)
+			temp := math.Log(weight*PA) - math.Log(weight*PA+PnA*nweight)
+			PBayes1[loc] += temp
 
 			if float64(ps.MacVariability[mac]) >= ps.Priors[n].Special["VarabilityCutoff"] && W[mac] > MinRssi {
 				ind := int(W[mac] - MinRssi)
@@ -75,7 +79,7 @@ func calculatePosterior(res Fingerprint, ps FullParameters) (string, map[string]
 	PBayesMix := make(map[string]float64)
 	bestLocation := ""
 	maxVal := float64(-100)
-	for key := range PBayes1 {
+	for key := range PBayes1 { //key = loc
 		PBayesMix[key] = ps.Priors[n].Special["MixIn"]*PBayes1[key] + (1-ps.Priors[n].Special["MixIn"])*PBayes2[key]
 		if PBayesMix[key] > maxVal {
 			maxVal = PBayesMix[key]
@@ -106,8 +110,8 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 
 	PBayes1 := make(map[string]float64)
 	PBayes2 := make(map[string]float64)
-	PA := 1.0 / float64(len(ps.NetworkLocs[n]))
-	PnA := (float64(len(ps.NetworkLocs[n])) - 1.0) / float64(len(ps.NetworkLocs[n]))
+	PA := 1.0 / float64(len(ps.NetworkLocs[n]))                                      //the real prior !
+	PnA := (float64(len(ps.NetworkLocs[n])) - 1.0) / float64(len(ps.NetworkLocs[n])) // 1.0 - PA
 	for loc := range ps.NetworkLocs[n] {
 		PBayes1[loc] = float64(0)
 		PBayes2[loc] = float64(0)
@@ -124,15 +128,16 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 			} else {
 				nweight = float64(ps.Priors[n].Special["NMacFreqMin"])
 			}
-			PBayes1[loc] += math.Log(weight*PA) - math.Log(weight*PA+PnA*nweight)
+			fmt.Println("bayes", (weight*PA)/(weight*PA+PnA*nweight))
+			PBayes1[loc] += math.Log(weight*PA) - math.Log(weight*PA+PnA*nweight) //TODO : what is it ?!
 
-			if float64(ps.MacVariability[mac]) >= cutoff && W[mac] > MinRssi {
+			if float64(ps.MacVariability[mac]) >= cutoff && W[mac] > MinRssi { //TODO: why calculating the mac variability of a mac not a location?
 				ind := int(W[mac] - MinRssi)
 				if len(ps.Priors[n].P[loc][mac]) > 0 {
 					PBA := float64(ps.Priors[n].P[loc][mac][ind])
 					PBnA := float64(ps.Priors[n].NP[loc][mac][ind])
 					if PBA > 0 {
-						PBayes2[loc] += (math.Log(PBA*PA) - math.Log(PBA*PA+PBnA*PnA))
+						PBayes2[loc] += (math.Log(PBA*PA) - math.Log(PBA*PA+PBnA*PnA)) //todo: what is this?
 					} else {
 						PBayes2[loc] += -1
 					}
@@ -140,7 +145,7 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 			}
 		}
 	}
-	PBayes1 = normalizeBayes(PBayes1)
+	PBayes1 = normalizeBayes(PBayes1) //todo : what is the phase of him?!!!
 	PBayes2 = normalizeBayes(PBayes2)
 	return PBayes1, PBayes2
 }

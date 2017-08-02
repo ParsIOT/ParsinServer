@@ -2,7 +2,7 @@
 // Use of this source code is governed by a AGPL
 // license that can be found in the LICENSE file.
 
-// priors.go contains variables for calcualting priors.
+// priors.go contains variables for calculating priors.
 
 package main
 
@@ -12,6 +12,7 @@ import (
 	"path"
 
 	"github.com/boltdb/bolt"
+	"fmt"
 )
 
 // PdfType dictates the width of gaussian smoothing
@@ -36,6 +37,7 @@ var RssiRange []float32
 var FoldCrossValidation float64
 
 func init() {
+	//todo:what is PdfType
 	PdfType = []float32{.1995, .1760, .1210, .0648, .027, 0.005}
 	Absentee = 1e-6
 	MinRssi = -110
@@ -220,6 +222,7 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 		}
 	}
 
+	//create gaussian distribution on every mac
 	it := float64(-1)
 	for _, v1 := range fingerprintsOrdering {
 		v2 := fingerprintsInMemory[v1]
@@ -333,25 +336,29 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 			for mac := range ps.MacCountByLoc[loc] {
 				if ps.MacCountByLoc[loc][mac] > maxCount {
 					maxCount = ps.MacCountByLoc[loc][mac]
+
 				}
 			}
+			fmt.Println("MAX COUNT:", maxCount)
 			for mac := range ps.MacCountByLoc[loc] {
 				ps.Priors[n].MacFreq[loc][mac] = float32(ps.MacCountByLoc[loc][mac]) / float32(maxCount)
+				fmt.Println("mac freq:", ps.Priors[n].MacFreq[loc][mac])
 				if float64(ps.Priors[n].MacFreq[loc][mac]) < ps.Priors[n].Special["MacFreqMin"] {
+
 					ps.Priors[n].Special["MacFreqMin"] = float64(ps.Priors[n].MacFreq[loc][mac])
 				}
 			}
 		}
 	}
 
-	// Deteremine negative mac frequencies and normalize
+	// Determine negative mac frequencies and normalize
 	for n := range ps.Priors {
 		for loc1 := range ps.Priors[n].MacFreq {
 			sum := float32(0)
 			for loc2 := range ps.Priors[n].MacFreq {
 				if loc2 != loc1 {
-					for mac := range ps.Priors[n].MacFreq[loc2] {
-						ps.Priors[n].NMacFreq[loc1][mac] += ps.Priors[n].MacFreq[loc2][mac]
+					for mac1 := range ps.Priors[n].MacFreq[loc2] {
+						ps.Priors[n].NMacFreq[loc1][mac1] += ps.Priors[n].MacFreq[loc2][mac1]
 						sum++
 					}
 				}
