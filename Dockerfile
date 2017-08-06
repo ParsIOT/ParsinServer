@@ -30,8 +30,8 @@ RUN apt-get install -y mosquitto-clients mosquitto
 
 # Install FIND
 WORKDIR "/root"
-RUN go get github.com/schollz/find
-RUN git clone https://github.com/schollz/find.git
+RUN go get gitlab.com/hadiazaddel/findServer
+RUN git clone https://gitlab.com/hadiazaddel/findServer.git
 WORKDIR "/root/find"
 RUN go build
 RUN echo "\ninclude_dir /root/find/mosquitto" >> /etc/mosquitto/mosquitto.conf
