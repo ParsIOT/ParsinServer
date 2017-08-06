@@ -162,6 +162,7 @@ func learnFingerprintPOST(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 	var jsonFingerprint Fingerprint
 	if c.BindJSON(&jsonFingerprint) == nil {
+		Info.Println(jsonFingerprint)
 		message, success := learnFingerprint(jsonFingerprint)
 		Debug.Println(message)
 		if !success {
