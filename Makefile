@@ -12,7 +12,7 @@ LDFLAGS=-ldflags "-X main.VersionNum=${VERSION} -X main.Build=${BUILD} -X main.B
 .DEFAULT_GOAL: $(BINARY)
 
 $(BINARY): $(SOURCES)
-	go get -u -v github.com/schollz/find
+	go get -u -v gitlab.com/hadiazaddel/findServer
 	go build ${LDFLAGS} -o ${BINARY} ${SOURCES}
 
 .PHONY: install

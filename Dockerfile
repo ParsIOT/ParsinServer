@@ -6,8 +6,15 @@ FROM ubuntu:16.04
 RUN apt-get update
 RUN apt-get -y upgrade
 RUN apt-get install -y golang git wget curl vim
-RUN mkdir /usr/local/work
-ENV GOPATH /usr/local/work
+#RUN apt-get install -y git wget curl vim
+# RUN mkdir /usr/local/work
+# ENV GOPATH /usr/local/work
+WORKDIR "/tmp"
+RUN wget "https://storage.googleapis.com/golang/go1.8.3.linux-amd64.tar.gz"
+RUN tar -xvf go1.8.3.linux-amd64.tar.gz -C /usr/local/
+RUN chown -R root:root /usr/local/go/
+ENV GOPATH /root/project
+ENV GOROOT /usr/local/go
 
 # Add Python stuff
 RUN apt-get install -y python3 python3-dev python3-pip
@@ -26,13 +33,23 @@ RUN cp svm-train /usr/local/bin/
 RUN rm -rf *
 
 # Install mosquitto
+RUN apt-get update && apt-get install -y apt-transport-https
+RUN apt-get update
 RUN apt-get install -y mosquitto-clients mosquitto
 
 # Install FIND
-WORKDIR "/root"
-RUN go get gitlab.com/hadiazaddel/findServer
-RUN git clone https://gitlab.com/hadiazaddel/findServer.git
-WORKDIR "/root/find"
+# WORKDIR "/root"
+# RUN go get git@gitlab.com:hadiazaddel/findServer.git
+# RUN git clone git@gitlab.com:hadiazaddel/findServer.git
+# WORKDIR "/root/findServer"
+WORKDIR "/root/project/"
+ADD . /root/project/
+#RUN ls -Rlh
+#RUN echo $GOPATH
+#RUN echo $GOROOT
+#RUN which go
+WORKDIR "/root/project/src/findServer"
+RUN go get ./...
 RUN go build
 RUN echo "\ninclude_dir /root/find/mosquitto" >> /etc/mosquitto/mosquitto.conf
 
@@ -40,12 +57,12 @@ RUN echo "\ninclude_dir /root/find/mosquitto" >> /etc/mosquitto/mosquitto.conf
 # ENTRYPOINT git pull && go build && mosquitto -c /root/find/mosquitto/conf -d && ./find -mqtt localhost:1883 -mqttadmin admin -mqttadminpass 123 -mosquitto `pgrep mosquitto` -data /data > log & bash
 
 # Setup supervisor
-RUN apt-get update 
+RUN apt-get update
 RUN apt-get install -y supervisor
 
 # Add supervisor
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
+#COPY /root/project/src/findServer/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+ADD ./src/findServer/supervisord.conf /etc/supervisor/conf.d/
 # Add Tini
 ENV TINI_VERSION v0.13.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
