@@ -347,7 +347,7 @@ func calculate(c *gin.Context) {
 		}
 		group = strings.ToLower(group)
 		optimizePriorsThreaded(group)
-		if RuntimeArgs.Svm = true; RuntimeArgs.Svm {
+		if RuntimeArgs.Svm {
 			dumpFingerprintsSVM(group)
 			err := calculateSVM(group)
 			if err != nil {

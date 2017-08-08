@@ -162,7 +162,6 @@ func learnFingerprintPOST(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 	var jsonFingerprint Fingerprint
 	if c.BindJSON(&jsonFingerprint) == nil {
-		Info.Println(jsonFingerprint)
 		message, success := learnFingerprint(jsonFingerprint)
 		Debug.Println(message)
 		if !success {
@@ -224,17 +223,16 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 		}
 	}
 	locationGuess1, bayes := calculatePosterior(jsonFingerprint, *NewFullParameters())
-	//percentGuess1 := float64(0)
+	percentGuess1 := float64(0)
 	total := float64(0)
-	for _, locBayes := range bayes { // why ?! we can use bayes[locationGuess1]
+	for _, locBayes := range bayes {
 		total += math.Exp(locBayes)
-
-		//if locBayes > percentGuess1 {
-		//	percentGuess1 = locBayes
-		//}
+		if locBayes > percentGuess1 {
+			percentGuess1 = locBayes
+		}
 	}
-	percentGuess1 := math.Exp(bayes[locationGuess1]) / total * 100.0
-	fmt.Println("percentGuess1:", percentGuess1)
+	percentGuess1 = math.Exp(bayes[locationGuess1]) / total * 100.0
+
 	jsonFingerprint.Location = locationGuess1
 
 	// Insert full fingerprint
@@ -248,7 +246,6 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 		locationGuess2, svmData2 := classify(jsonFingerprint)
 		percentGuess2 := int(100 * math.Exp(svmData2[locationGuess2]))
 		if percentGuess2 > 100 {
-			//todo: wtf? \/ \/ why is could be more than 100
 			percentGuess2 = percentGuess2 / 10
 		}
 		//message = "NB: " + locationGuess1 + " (" + strconv.Itoa(int(percentGuess1)) + "%)" + ", SVM: " + locationGuess2 + " (" + strconv.Itoa(int(percentGuess2)) + "%)"
