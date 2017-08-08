@@ -140,6 +140,7 @@ func trackFingerprintPOST(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 	var jsonFingerprint Fingerprint
+	Info.Println(jsonFingerprint)
 	if c.BindJSON(&jsonFingerprint) == nil {
 		message, success, locationGuess, bayes, svm, rf := trackFingerprint(jsonFingerprint)
 		if success {
@@ -176,6 +177,7 @@ func learnFingerprintPOST(c *gin.Context) {
 
 func learnFingerprint(jsonFingerprint Fingerprint) (string, bool) {
 	cleanFingerprint(&jsonFingerprint)
+	Info.Println(jsonFingerprint)
 	if len(jsonFingerprint.Group) == 0 {
 		return "Need to define your group name in request, see API", false
 	}
