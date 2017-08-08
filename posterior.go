@@ -8,7 +8,6 @@ package main
 
 import (
 	"math"
-	"fmt"
 )
 
 // calculatePosterior takes a Fingerprint and a Parameter set and returns the noramlized Bayes probabilities of possible locations
@@ -128,7 +127,7 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 			} else {
 				nweight = float64(ps.Priors[n].Special["NMacFreqMin"])
 			}
-			fmt.Println("bayes", (weight*PA)/(weight*PA+PnA*nweight))
+			//fmt.Println("bayes", (weight*PA)/(weight*PA+PnA*nweight))
 			PBayes1[loc] += math.Log(weight*PA) - math.Log(weight*PA+PnA*nweight) //TODO : what is it ?!
 
 			if float64(ps.MacVariability[mac]) >= cutoff && W[mac] > MinRssi { //TODO: why calculating the mac variability of a mac not a location?

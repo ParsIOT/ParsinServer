@@ -12,7 +12,6 @@ import (
 	"path"
 
 	"github.com/boltdb/bolt"
-	"fmt"
 )
 
 // PdfType dictates the width of gaussian smoothing
@@ -339,10 +338,10 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 
 				}
 			}
-			fmt.Println("MAX COUNT:", maxCount)
+			//fmt.Println("MAX COUNT:", maxCount)
 			for mac := range ps.MacCountByLoc[loc] {
 				ps.Priors[n].MacFreq[loc][mac] = float32(ps.MacCountByLoc[loc][mac]) / float32(maxCount)
-				fmt.Println("mac freq:", ps.Priors[n].MacFreq[loc][mac])
+				//fmt.Println("mac freq:", ps.Priors[n].MacFreq[loc][mac])
 				if float64(ps.Priors[n].MacFreq[loc][mac]) < ps.Priors[n].Special["MacFreqMin"] {
 
 					ps.Priors[n].Special["MacFreqMin"] = float64(ps.Priors[n].MacFreq[loc][mac])

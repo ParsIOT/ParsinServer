@@ -36,21 +36,26 @@ type Svm struct {
 	Location map[string]string
 }
 
+//gets the fingerprints data from db and make them in the format of LIBSVM.
 func dumpFingerprintsSVM(group string) error {
-	//gets the fingerprints data from db and make them in the format of LIBSVM.
+	//macs: every mac as key and the value is a unique id.
 	macs := make(map[string]int)
+	//locations: every location as key and the value is a unique id.
 	locations := make(map[string]int)
+	//macsFromID: reverse map of macs
 	macsFromID := make(map[string]string)
+	//locationsFromID: reverse map of locations
 	locationsFromID := make(map[string]string)
 	macI := 1
 	locationI := 1
 
+	//opening the database
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0755, nil)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-
+	//loop through fingerprints bucket and fill the macs, macsFromID, locations, locationsFromID dictionaries
 	db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("fingerprints"))
 		c := b.Cursor()
@@ -58,24 +63,24 @@ func dumpFingerprintsSVM(group string) error {
 			v2 := loadFingerprint(v)
 			for _, fingerprint := range v2.WifiFingerprint {
 				if _, ok := macs[fingerprint.Mac]; !ok {
-					//macs: every mac as key and the value is a unique id.
+
 					macs[fingerprint.Mac] = macI
-					//reverse map of macs
+
 					macsFromID[strconv.Itoa(macI)] = fingerprint.Mac
 					macI++
 				}
 			}
 			if _, ok := locations[v2.Location]; !ok {
-				//locations: every location as key and the value is a unique id.
+
 				locations[v2.Location] = locationI
-				//locationsFromID: reverse map of locations
+
 				locationsFromID[strconv.Itoa(locationI)] = v2.Location
 				locationI++
 			}
 		}
 		return nil
 	})
-
+	//loop through fingerprints bucket and make the svmData string
 	svmData := ""
 	err = db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("fingerprints"))
@@ -83,16 +88,18 @@ func dumpFingerprintsSVM(group string) error {
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			v2 := loadFingerprint(v)
 			svmData = svmData + makeSVMLine(v2, macs, locations)
-			//svmData: loc mac1:rss1 mac2:rss2 ...
-			//	1 1:-52 2:-76 3:-78 4:-88 5:-80
-			//	2 1:-53 2:-69 3:-76 4:-88 5:-80
+			/*
+			svmData: 	loc mac1:rss1 mac2:rss2 ...
+						1 	1	:-52 	2 :-76 	3:-78 4:-88 5:-80
+						2 	1	:-53 	2 :-69 	3:-76 4:-88 5:-80
+			*/
 		}
 		return nil
 	})
 	if err != nil {
 		panic(err)
 	}
-
+	//open the database and save the previously generated variables to database
 	err = db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte("resources"))
 		if err != nil {
@@ -133,13 +140,16 @@ func dumpFingerprintsSVM(group string) error {
 	return err
 }
 
+//uses the LIBSVM to generate svm model and test for accuracy
 func calculateSVM(group string) error {
 	defer timeTrack(time.Now(), "TIMEING")
+	//opening the database
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0755, nil)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
+
 	svmData := ""
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
@@ -147,6 +157,7 @@ func calculateSVM(group string) error {
 		if b == nil {
 			return fmt.Errorf("Resources dont exist")
 		}
+		//get svmData from db
 		v := b.Get([]byte("svmData"))
 		svmData = string(v)
 		return err
@@ -159,15 +170,18 @@ func calculateSVM(group string) error {
 	}
 
 	lines := strings.Split(svmData, "\n")
+	//rand.Perm(n) returns a random slice of length n; e.g. rand.Perm(5) = {1,3,2,0,4}
 	list := rand.Perm(len(lines))
 	learningSet := ""
 	testingSet := ""
 	fullSet := ""
+
+	//split svmData to training and testing data set
+	//todo: use libsvm subset.py tool instead
 	for i := range list {
 		if len(lines[list[i]]) == 0 {
 			continue
 		}
-		// divide training and testing set
 		if i < len(list)/2 {
 			learningSet = learningSet + lines[list[i]] + "\n"
 			fullSet = fullSet + lines[list[i]] + "\n"
@@ -182,7 +196,7 @@ func calculateSVM(group string) error {
 	tempFileTest := RandStringBytesMaskImprSrc(16) + ".testing"
 	tempFileOut := RandStringBytesMaskImprSrc(16) + ".out"
 	d1 := []byte(learningSet)
-	//todo: WTF \/ replace random string with epoch time
+	//todo: replace random string with epoch time
 	err = ioutil.WriteFile(tempFileTrain, d1, 0644)
 	if err != nil {
 		panic(err)
@@ -235,7 +249,7 @@ func calculateSVM(group string) error {
 	// if err != nil {
 	// 	panic(err)
 	// }
-
+	//todo: test some other libsvm options here to find the best model for svm. the results could be checked with the console outCmd variable log
 	cmd := "svm-train"
 	args := "-s 0 -t 0 -b 1 " + tempFileFull + " data/" + group + ".model"
 	Debug.Println(cmd, args)
@@ -259,9 +273,9 @@ func calculateSVM(group string) error {
 	}
 	Debug.Printf("%s SVM: %s", group, strings.TrimSpace(string(outCmd)))
 
-	// os.Remove(tempFileTrain + ".scaled")
-	// os.Remove(tempFileTest + ".scaled")
-	// os.Remove(tempFileFull + ".scaled")
+	//os.Remove(tempFileTrain + ".scaled")
+	//os.Remove(tempFileTest + ".scaled")
+	//os.Remove(tempFileFull + ".scaled")
 	os.Remove(tempFileTrain)
 	os.Remove(tempFileTrain + ".model")
 	os.Remove(tempFileTest)
@@ -270,6 +284,8 @@ func calculateSVM(group string) error {
 	return nil
 }
 
+
+//uses the LIBSVM to predict and classify the incoming fingerprint
 func classify(jsonFingerprint Fingerprint) (string, map[string]float64) {
 	if _, err := os.Stat(path.Join(RuntimeArgs.SourcePath, strings.ToLower(jsonFingerprint.Group)+".model")); os.IsNotExist(err) {
 		return "", make(map[string]float64)
@@ -289,6 +305,7 @@ func classify(jsonFingerprint Fingerprint) (string, map[string]float64) {
 		if b == nil {
 			return fmt.Errorf("Resources dont exist")
 		}
+		//gets some data from db
 		v := b.Get([]byte("locations"))
 		json.Unmarshal(v, &locations)
 		v = b.Get([]byte("locationsFromID"))
@@ -349,6 +366,7 @@ func classify(jsonFingerprint Fingerprint) (string, map[string]float64) {
 			continue
 		}
 		Pval, _ := strconv.ParseFloat(probabilities[i], 64)
+		//if the best probability is more than the current probability, then change best location.
 		if Pval > bestP {
 			bestLocation = locationsFromID[labels[i]]
 			bestP = Pval
