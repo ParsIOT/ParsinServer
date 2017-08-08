@@ -248,6 +248,7 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 		locationGuess2, svmData2 := classify(jsonFingerprint)
 		percentGuess2 := int(100 * math.Exp(svmData2[locationGuess2]))
 		if percentGuess2 > 100 {
+			//todo: wtf? \/ \/ why is could be more than 100
 			percentGuess2 = percentGuess2 / 10
 		}
 		//message = "NB: " + locationGuess1 + " (" + strconv.Itoa(int(percentGuess1)) + "%)" + ", SVM: " + locationGuess2 + " (" + strconv.Itoa(int(percentGuess2)) + "%)"

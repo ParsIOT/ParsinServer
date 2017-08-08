@@ -84,3 +84,5 @@ data/*
 
 # Temp files
 *~
+
+.idea

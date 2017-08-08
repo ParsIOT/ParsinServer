@@ -167,11 +167,11 @@ func optimizePriorsThreaded(group string) error {
 					finalResults[n][mixin].Guess[loc] = make(map[string]int)
 				}
 				// Loop through each fingerprint
-				for id := range PBayes1[n] {
+				for id := range PBayes1[n] { //id = FG timestamps = fingerprint ordering members
 					locs := []string{}
 					bayes1 := []float64{}
 					bayes2 := []float64{}
-					for key := range PBayes1[n][id] {
+					for key := range PBayes1[n][id] { //key = locations
 						locs = append(locs, key)
 						bayes1 = append(bayes1, PBayes1[n][id][key])
 						bayes2 = append(bayes2, PBayes2[n][id][key])
@@ -194,9 +194,11 @@ func optimizePriorsThreaded(group string) error {
 			if t.locationGuess == t.locationTrue {
 				finalResults[t.n][t.mixin].CorrectLocations[t.locationTrue]++
 			}
+			//init
 			if _, ok := finalResults[t.n][t.mixin].Guess[t.locationTrue]; !ok {
 				finalResults[t.n][t.mixin].Guess[t.locationTrue] = make(map[string]int)
 			}
+			//init
 			if _, ok := finalResults[t.n][t.mixin].Guess[t.locationTrue][t.locationGuess]; !ok {
 				finalResults[t.n][t.mixin].Guess[t.locationTrue][t.locationGuess] = 0
 			}
