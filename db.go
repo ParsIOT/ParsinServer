@@ -18,6 +18,7 @@ import (
 	"github.com/boltdb/bolt"
 )
 
+// checks is the database file exist or not.
 func groupExists(group string) bool {
 	if _, err := os.Stat(path.Join(RuntimeArgs.SourcePath, strings.ToLower(group)+".db")); os.IsNotExist(err) {
 		return false
@@ -25,6 +26,7 @@ func groupExists(group string) bool {
 	return true
 }
 
+// renames the network.
 func renameNetwork(group string, oldName string, newName string) {
 	Debug.Println("Opening parameters")
 	ps, _ := openParameters(group)
@@ -48,6 +50,8 @@ func renameNetwork(group string, oldName string, newName string) {
 	savePersistentParameters(group, persistentPs)
 }
 
+// if the users of group are cached, returns them.
+// otherwise, read them from database, cache them and return them.
 func getUsers(group string) []string {
 	val, ok := getUserCache(group)
 	if ok {
@@ -81,6 +85,7 @@ func getUsers(group string) []string {
 	return uniqueUsers
 }
 
+// returns MACs from fingerprints bucket
 func getUniqueMacs(group string) []string {
 	defer timeTrack(time.Now(), "getUniqueMacs")
 	uniqueMacs := []string{}
@@ -108,6 +113,7 @@ func getUniqueMacs(group string) []string {
 	return uniqueMacs
 }
 
+// returns all locations in a fingerprints bucket
 func getUniqueLocations(group string) (uniqueLocs []string) {
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	if err != nil {
@@ -129,6 +135,7 @@ func getUniqueLocations(group string) (uniqueLocs []string) {
 	return uniqueLocs
 }
 
+// returns count of each MAC in a fingerprints bucket
 func getMacCount(group string) (macCount map[string]int) {
 	macCount = make(map[string]int)
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
@@ -154,6 +161,7 @@ func getMacCount(group string) (macCount map[string]int) {
 	return
 }
 
+// returns count of each MAC in a location
 func getMacCountByLoc(group string) (macCountByLoc map[string]map[string]int) {
 	macCountByLoc = make(map[string]map[string]int)
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
