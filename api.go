@@ -28,6 +28,7 @@ func init() {
 	startTime = time.Now()
 }
 
+//returns uptime, starttime, number of cpu cores
 func getStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"uptime": time.Since(startTime).Seconds(), "registered": startTime.String(), "status": "standard", "num_cores": runtime.NumCPU(), "success": true})
 }
@@ -41,6 +42,15 @@ type UserPositionJSON struct {
 	Rf       map[string]float64 `json:"rf"`
 }
 
+// Gets location list:
+// Example:
+// {"locations":{
+//		"p1":{"accuracy":76,"count":13},
+//		"p2":{"accuracy":33,"count":12}
+// },
+// "message":"Found 2 unique locations in group arman4",
+// "success":true}
+// GET parameters: group
 func getLocationList(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -74,6 +84,24 @@ func getLocationList(c *gin.Context) {
 		"success":   true})
 }
 
+// An api that call getLastFingerprint()
+// Example:
+//sent as /track
+//{
+//	"group": "test_1",
+//	"username": "hadi",
+//	"location": "-10,-46",
+//	"timestamp": 1502544850139171556,
+//	"wifi-fingerprint": [
+//	{
+//		"mac": "FA:CF:CB:5D:0E:B0",
+//		"rssi": -82
+//	},{
+//		"mac": "F0:AB:CE:31:10:B0",
+//		"rssi": -83
+//	}]
+//}
+// GET parameters: group, user
 func apiGetLastFingerprint(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -98,6 +126,8 @@ func apiGetLastFingerprint(c *gin.Context) {
 	}
 }
 
+// Returns the last location a user and the last fingerprint that was sent
+//TODO: fingerprints-learn bucket isn't set but is used here! Returning the last learn fingerprint must be defined
 func getLastFingerprint(group string, user string) string {
 	group = strings.ToLower(group)
 	user = strings.ToLower(user)
@@ -160,6 +190,7 @@ func getLastFingerprint(group string, user string) string {
 	return sentAs + string(bJson)
 }
 
+//Returns n of the last location estimations that were stored in fingerprints-track bucket in db
 func getHistoricalUserPositions(group string, user string, n int) []UserPositionJSON {
 	group = strings.ToLower(group)
 	user = strings.ToLower(user)
@@ -218,6 +249,7 @@ func getHistoricalUserPositions(group string, user string, n int) []UserPosition
 	return userJSONs
 }
 
+//Returns svm, rf, baysian estimations of the track fingerprints that belong to a group
 func getCurrentPositionOfAllUsers(group string) map[string]UserPositionJSON {
 	group = strings.ToLower(group)
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
@@ -276,6 +308,7 @@ func getCurrentPositionOfAllUsers(group string) map[string]UserPositionJSON {
 	return userPositions
 }
 
+// Is like getHistoricalUserPositions but only returns the last location estimation
 func getCurrentPositionOfUser(group string, user string) UserPositionJSON {
 	group = strings.ToLower(group)
 	user = strings.ToLower(user)
@@ -332,6 +365,8 @@ func getCurrentPositionOfUser(group string, user string) UserPositionJSON {
 	return userJSON
 }
 
+// calls optimizePriorsThreaded(),calculateSVM() and rfLearn()
+// GET parameters: group
 func calculate(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -365,6 +400,7 @@ func calculate(c *gin.Context) {
 	}
 }
 
+//deprecated version of getUserLocations
 func userLocations(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -394,6 +430,9 @@ func userLocations(c *gin.Context) {
 	}
 }
 
+// An api that calls getHistoricalUserPositions() & getCurrentPositionOfUser()
+// Returns location of a user, user list or users of a group
+// GET parameters: group, user, users, n
 func getUserLocations(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -443,6 +482,8 @@ func getUserLocations(c *gin.Context) {
 	}
 }
 
+// copies a DB
+// GET parameters: from, to
 func migrateDatabase(c *gin.Context) {
 	fromDB := strings.ToLower(c.DefaultQuery("from", "noneasdf"))
 	toDB := strings.ToLower(c.DefaultQuery("to", "noneasdf"))
@@ -503,6 +544,8 @@ func migrateDatabase(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Successfully migrated " + fromDB + " to " + toDB})
 }
 
+// Deletes a db
+// GET parameters: group
 func deleteDatabase(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -520,6 +563,8 @@ func deleteDatabase(c *gin.Context) {
 	}
 }
 
+// Calls setMixinOverride() and then calls optimizePriorsThreaded()
+// GET parameters: group, mixin
 func putMixinOverride(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -548,6 +593,8 @@ func putMixinOverride(c *gin.Context) {
 	}
 }
 
+// Calls setCutoffOverride() and then calls optimizePriorsThreaded()
+// GET parameters: group, cutoff
 func putCutoffOverride(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -578,6 +625,9 @@ func putCutoffOverride(c *gin.Context) {
 	}
 }
 
+// Calls renameNetwork() and then calls optimizePriors()
+// ToDo: replace optimizePriors() with optimizePriorsThreaded()
+// GET parameters: group, oldname, newname
 func editNetworkName(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -599,6 +649,8 @@ func editNetworkName(c *gin.Context) {
 	}
 }
 
+// Changes a location name in db(fingerprints and fingerprints-track buckets)
+// GET parameters: group, location (the old name), newname
 func editName(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -687,6 +739,8 @@ func editName(c *gin.Context) {
 	}
 }
 
+// Same to editName() but edits username instead of the location name
+// GET paramets: group, user(the old username), newname
 func editUserName(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -778,6 +832,8 @@ func editUserName(c *gin.Context) {
 	}
 }
 
+// Deletes the fingerprints associated to the location and then calls optimizePriorsThreaded()
+// GET parameters: group, location
 func deleteLocation(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -820,6 +876,8 @@ func deleteLocation(c *gin.Context) {
 	}
 }
 
+// Is like deleteLocation(), deletes a list of locations instead.
+// GET parameters: group, names
 func deleteLocations(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -863,6 +921,8 @@ func deleteLocations(c *gin.Context) {
 	}
 }
 
+// Deletes a user from fingerprint-track(not fingerprints) then calls resetCache()
+// GET parameters: group, user
 func deleteUser(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -908,11 +968,13 @@ func deleteUser(c *gin.Context) {
 	}
 }
 
+// deprecated
 type whereAmIJson struct {
 	Group string `json:"group"`
 	User  string `json:"user"`
 }
 
+// deprecated
 func whereAmI(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
