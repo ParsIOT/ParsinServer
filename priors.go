@@ -36,10 +36,10 @@ var RssiRange []float32
 var FoldCrossValidation float64
 
 func init() {
-	//todo:what is PdfType
+	//todo:what is PdfType and how to find the values
 	PdfType = []float32{.1995, .1760, .1210, .0648, .027, 0.005}
 	Absentee = 1e-6
-	MinRssi = -110
+	MinRssi = -85 //default:-110,ble=-80,wifi=-75
 	MaxRssi = 5
 	RssiPartitions = MaxRssi - MinRssi + 1
 	RssiRange = make([]float32, RssiPartitions)
@@ -54,6 +54,7 @@ func optimizePriors(group string) {
 	// generate the fingerprintsInMemory
 	fingerprintsInMemory := make(map[string]Fingerprint)
 	var fingerprintsOrdering []string
+	//opening the db
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -137,7 +138,7 @@ func regenerateEverything(group string) {
 
 	var ps = *NewFullParameters()
 	ps, _ = openParameters(group)
-	getParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	getParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)//openParameters is only called here.
 	calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
 	var results = *NewResultsParameters()
 	for n := range ps.Priors {
@@ -195,7 +196,8 @@ func crossValidation(group string, n string, ps *FullParameters, fingerprintsInM
 	return average
 }
 
-// calculatePriors generates the prior data for Naive-Bayes classification. Now deprecated, use calculatePriorsThreaded instead.
+// calculatePriors generates the ps.Prior(P,NP,MacFreq,NMacFreq) data and ps.MacVariability for Naive-Bayes classification. Now deprecated, use calculatePriorsThreaded instead.
+//todo: write calculatePriorsThreaded function
 func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[string]Fingerprint, fingerprintsOrdering []string) {
 	// defer timeTrack(time.Now(), "calculatePriors")
 	ps.Priors = make(map[string]PriorParameters)
@@ -221,7 +223,7 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 		}
 	}
 
-	//create gaussian distribution on every mac
+	//create gaussian distribution for every mac in every location
 	it := float64(-1)
 	for _, v1 := range fingerprintsOrdering {
 		v2 := fingerprintsInMemory[v1]
@@ -232,11 +234,13 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 				macs = append(macs, router.Mac)
 			}
 
+			// todo: ps is set in the getParameters function (getParameters is called before calculatePriors), so calling the hasNetwork function returns true
 			networkName, inNetwork := hasNetwork(ps.NetworkMacs, macs)
 			if inNetwork {
 				for _, router := range v2.WifiFingerprint {
 					if router.Rssi > MinRssi {
 						ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi] += PdfType[0]
+						//make the real probability of the rssi distribution
 						for i, val := range PdfType {
 							if i > 0 {
 								ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi-i] += val
@@ -244,6 +248,7 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 							}
 						}
 					} else {
+						//todo: replace with Warning.Println("RSSI is lower than minRssi, rssi = " + router.Rssi)
 						Warning.Println(router.Rssi)
 					}
 				}
@@ -252,6 +257,7 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 		}
 	}
 
+
 	// Calculate the nP
 	for n := range ps.Priors {
 		for locN := range ps.NetworkLocs[n] {
@@ -259,6 +265,7 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 				if loc != locN {
 					for mac := range ps.NetworkMacs[n] {
 						for i := range ps.Priors[n].P[locN][mac] {
+							//i is rssi
 							if ps.Priors[n].P[loc][mac][i] > 0 {
 								ps.Priors[n].NP[locN][mac][i] += ps.Priors[n].P[loc][mac][i]
 							}
@@ -270,33 +277,38 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 	}
 
 	// Add in absentee, normalize P and nP and determine MacVariability
+
 	for n := range ps.Priors {
 		macAverages := make(map[string][]float32)
 
 		for loc := range ps.NetworkLocs[n] {
 			for mac := range ps.NetworkMacs[n] {
-				for i := range ps.Priors[n].P[loc][mac] {
+				for i := range ps.Priors[n].P[loc][mac] {//i is rssi
+					//why using Absentee instead of 0
 					ps.Priors[n].P[loc][mac][i] += Absentee
 					ps.Priors[n].NP[loc][mac][i] += Absentee
 				}
-				total := float32(0)
+				total := float32(0)//total = sum of probabilities(P) of all rssi for a specific mac and location
 				for _, val := range ps.Priors[n].P[loc][mac] {
 					total += val
 				}
 				averageMac := float32(0)
 				for i, val := range ps.Priors[n].P[loc][mac] {
-					if val > float32(0) {
-						ps.Priors[n].P[loc][mac][i] = val / total
-						averageMac += RssiRange[i] * ps.Priors[n].P[loc][mac][i]
+					if val > float32(0) {//val is always => Absentee >0 --> it is required in normalization
+						ps.Priors[n].P[loc][mac][i] = val / total //normalizing P
+						averageMac += RssiRange[i] * ps.Priors[n].P[loc][mac][i]  // RssiRange[i] equals to rssi.
+						//todo: average mac is not valid if the probability distribution (P) is not a standard gaussian function,e.g. has two peaks
 					}
 				}
+				//why checking is required?
 				if averageMac < float32(0) {
 					if _, ok := macAverages[mac]; !ok {
 						macAverages[mac] = []float32{}
 					}
-					macAverages[mac] = append(macAverages[mac], averageMac)
+					macAverages[mac] = append(macAverages[mac], averageMac) // averageMac of each mac in every locations
 				}
 
+				//normalizing NP
 				total = float32(0)
 				for i := range ps.Priors[n].NP[loc][mac] {
 					total += ps.Priors[n].NP[loc][mac][i]
@@ -311,6 +323,7 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 
 		// Determine MacVariability
 		for mac := range macAverages {
+			//todo: why 2?
 			if len(macAverages[mac]) <= 2 {
 				ps.MacVariability[mac] = float32(1)
 			} else {
@@ -321,12 +334,14 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 					}
 				}
 				for i, val := range macAverages[mac] {
-					macAverages[mac][i] = maxVal / val
+					//todo: why not using the actual values of macAvarages instead of the normalized values?
+					macAverages[mac][i] = maxVal / val // normalization(because val is < 0, we use maxVal/val instead of val /maxVal)
 				}
-				ps.MacVariability[mac] = standardDeviation(macAverages[mac])
+				ps.MacVariability[mac] = standardDeviation(macAverages[mac])//refer to line 300 todo
 			}
 		}
 	}
+
 
 	// Determine mac frequencies and normalize
 	for n := range ps.Priors {
@@ -334,12 +349,14 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 			maxCount := 0
 			for mac := range ps.MacCountByLoc[loc] {
 				if ps.MacCountByLoc[loc][mac] > maxCount {
-					maxCount = ps.MacCountByLoc[loc][mac]
+					maxCount = ps.MacCountByLoc[loc][mac]//maxCount:repeat number of the most seen mac in a location
 
 				}
 			}
 			//fmt.Println("MAX COUNT:", maxCount)
 			for mac := range ps.MacCountByLoc[loc] {
+				//if a mac is not seen in a location, the macFreq of that mac equals to 0 (ps.MacCountByLoc[loc][mac]).
+				//todo: Does the above mentioned 0 value make some error in the bayesian function?
 				ps.Priors[n].MacFreq[loc][mac] = float32(ps.MacCountByLoc[loc][mac]) / float32(maxCount)
 				//fmt.Println("mac freq:", ps.Priors[n].MacFreq[loc][mac])
 				if float64(ps.Priors[n].MacFreq[loc][mac]) < ps.Priors[n].Special["MacFreqMin"] {
@@ -361,7 +378,9 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 					}
 				}
 			}
+			// sum = i(i-1); i = ps.NetworkLocs[n]
 			// Normalize
+			//todo: it seems that sum is not calculated correctly. It should be equals to "number of locations-1"
 			if sum > 0 {
 				for mac := range ps.Priors[n].MacFreq[loc1] {
 					ps.Priors[n].NMacFreq[loc1][mac] = ps.Priors[n].NMacFreq[loc1][mac] / sum
@@ -372,9 +391,10 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 			}
 		}
 	}
-
+	//todo: the default values for MixIn and Cutoff should be set as initial values not hardcoded values
 	for n := range ps.Priors {
 		ps.Priors[n].Special["MixIn"] = 0.5
+		//todo: spell check for Varability!
 		ps.Priors[n].Special["VarabilityCutoff"] = 0
 	}
 

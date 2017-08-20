@@ -28,6 +28,7 @@ func groupExists(group string) bool {
 
 // renames the network.
 func renameNetwork(group string, oldName string, newName string) {
+	//todo: It's better to regenerate ps from the modified fingerprints bucket than modifying the current ps
 	Debug.Println("Opening parameters")
 	ps, _ := openParameters(group)
 	Debug.Println("Opening persistent parameters")

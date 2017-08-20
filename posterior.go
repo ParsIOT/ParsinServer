@@ -2,7 +2,7 @@
 // Use of this source code is governed by a AGPL
 // license that can be found in the LICENSE file.
 
-// posteriors.go contains variables for calcualting Naive-Bayes posteriors.
+// posteriors.go contains variables for calculating Naive-Bayes posteriors.
 
 package main
 
@@ -92,7 +92,8 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 		ps, _ = openParameters(res.Group)
 	}
 	macs := []string{}
-	W := make(map[string]int)
+	//todo: rename W
+	W := make(map[string]int)//a map from mac to rssi
 	for v2 := range res.WifiFingerprint {
 		macs = append(macs, res.WifiFingerprint[v2].Mac)
 		W[res.WifiFingerprint[v2].Mac] = res.WifiFingerprint[v2].Rssi
@@ -106,7 +107,7 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 
 	PBayes1 := make(map[string]float64)
 	PBayes2 := make(map[string]float64)
-	PA := 1.0 / float64(len(ps.NetworkLocs[n]))                                      //the real prior !
+	PA := 1.0 / float64(len(ps.NetworkLocs[n]))//the real prior !
 	PnA := (float64(len(ps.NetworkLocs[n])) - 1.0) / float64(len(ps.NetworkLocs[n])) // 1.0 - PA
 	for loc := range ps.NetworkLocs[n] {
 		PBayes1[loc] = float64(0)
@@ -114,6 +115,8 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 		for mac := range W {
 			weight := float64(0)
 			nweight := float64(0)
+
+			// todo: The condition should be like this: ok && ps.Priors[n].MacFreq[loc][mac]!=0
 			if _, ok := ps.Priors[n].MacFreq[loc][mac]; ok {
 				weight = float64(ps.Priors[n].MacFreq[loc][mac])
 			} else {

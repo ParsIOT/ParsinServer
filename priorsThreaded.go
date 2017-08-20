@@ -16,7 +16,7 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-// following this:https://play.golang.org/p/hK2h-irKyz
+//following this:https://play.golang.org/p/hK2h-irKyz
 type resultA struct {
 	mixin         float64
 	locationGuess string
@@ -55,24 +55,26 @@ func worker(id int, jobs <-chan jobA, results chan<- resultA) {
 			}
 		}
 		results <- resultA{locationGuess: locationGuess,
-			locationTrue:                 j.locationTrue,
-			mixin:                        j.mixin,
-			n:                            j.n}
+			locationTrue: j.locationTrue,
+			mixin: j.mixin,
+			n: j.n}
 	}
 }
 
 // optimizePriorsThreaded generates the optimized prior data for Naive-Bayes classification.
 func optimizePriorsThreaded(group string) error {
-	// Debug.Println("Optimizing priors for " + group)
 	// generate the fingerprintsInMemory
 	fingerprintsInMemory := make(map[string]Fingerprint)
 	var fingerprintsOrdering []string
+	//opening the db
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 		return err
 	}
+
 	err = db.View(func(tx *bolt.Tx) error {
+		//gets the fingerprint bucket
 		b := tx.Bucket([]byte("fingerprints"))
 		if b == nil {
 			return fmt.Errorf("No fingerprint bucket")
@@ -80,6 +82,7 @@ func optimizePriorsThreaded(group string) error {
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			fingerprintsInMemory[string(k)] = loadFingerprint(v)
+			//fingerprintsOrdering is an array of fingerprintsInMemory keys
 			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
 		}
 		return nil
@@ -91,11 +94,12 @@ func optimizePriorsThreaded(group string) error {
 
 	var ps = *NewFullParameters()
 	getParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	//Info.Println("Running calculatePriors")
 	calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
 
 	var results = *NewResultsParameters()
 	for n := range ps.Priors {
-		ps.Results[n] = results
+		ps.Results[n] = results //Results is shared between all networks
 	}
 
 	// loop through these parameters
@@ -123,7 +127,7 @@ func optimizePriorsThreaded(group string) error {
 
 	for _, cutoff := range cutoffs {
 
-		//                 network      id      loc    value
+		//                  network    id         loc    value
 		PBayes1 := make(map[string]map[string]map[string]float64)
 		PBayes2 := make(map[string]map[string]map[string]float64)
 		totalJobs := 0
@@ -131,12 +135,14 @@ func optimizePriorsThreaded(group string) error {
 			it := float64(-1)
 			PBayes1[n] = make(map[string]map[string]float64)
 			PBayes2[n] = make(map[string]map[string]float64)
-			PBayes1[n] = make(map[string]map[string]float64)
-			PBayes2[n] = make(map[string]map[string]float64)
+
 			for _, v1 := range fingerprintsOrdering {
 				it++
+				// call calculatePosteriorThreadSafe function every 3 times in 4 times
 				if math.Mod(it, FoldCrossValidation) != 0 {
 					_, ok := ps.NetworkLocs[n][fingerprintsInMemory[v1].Location]
+					// Check if the fingerprint's location exists in ps
+					// todo: ps is made from the fingerprintsInMemory; so there is no need for bellow if!
 					if len(fingerprintsInMemory[v1].WifiFingerprint) == 0 || !ok {
 						continue
 					}
@@ -178,11 +184,11 @@ func optimizePriorsThreaded(group string) error {
 					}
 					trueLoc := fingerprintsInMemory[id].Location
 					chanJobs <- jobA{n: n,
-						mixin:          mixin,
-						locs:           locs,
-						locationTrue:   trueLoc,
-						bayes1:         bayes1,
-						bayes2:         bayes2}
+						mixin: mixin,
+						locs: locs,
+						locationTrue: trueLoc,
+						bayes1: bayes1,
+						bayes2: bayes2}
 				}
 			}
 		}
@@ -296,8 +302,7 @@ func optimizePriorsThreadedNot(group string) {
 			it := float64(-1)
 			PBayes1[n] = make(map[string]map[string]float64)
 			PBayes2[n] = make(map[string]map[string]float64)
-			PBayes1[n] = make(map[string]map[string]float64)
-			PBayes2[n] = make(map[string]map[string]float64)
+
 			for _, v1 := range fingerprintsOrdering {
 				it++
 				if math.Mod(it, FoldCrossValidation) != 0 {

@@ -250,6 +250,7 @@ func calculateSVM(group string) error {
 	// 	panic(err)
 	// }
 	//todo: test some other libsvm options here to find the best model for svm. the results could be checked with the console outCmd variable log
+	//todo: make a function to rename the mac of an AP in db. The solution should be compatible with bayesian solution.
 	cmd := "svm-train"
 	args := "-s 0 -t 0 -b 1 " + tempFileFull + " data/" + group + ".model"
 	Debug.Println(cmd, args)

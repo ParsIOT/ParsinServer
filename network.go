@@ -11,6 +11,7 @@ import (
 	"strconv"
 )
 
+//checks if a mac in macs array exists in the network map
 func hasNetwork(network map[string]map[string]bool, macs []string) (string, bool) {
 	for n := range network {
 		for _, val := range macs {
@@ -53,6 +54,7 @@ func buildNetwork(network map[string]map[string]bool, macs []string) map[string]
 		}
 	}
 	return network
+	//todo: Why network macs always true? What exactly does it mean?
 }
 
 func mergeNetwork(network map[string]map[string]bool) map[string]map[string]bool {

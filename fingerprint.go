@@ -37,7 +37,7 @@ type Fingerprint struct {
 	WifiFingerprint []Router `json:"wifi-fingerprint"`
 }
 
-// Router is the router information for each invdividual mac address
+// Router is the router information for each individual mac address
 type Router struct {
 	Mac  string `json:"mac"`
 	Rssi int    `json:"rssi"`
@@ -64,6 +64,7 @@ func dumpFingerprint(res Fingerprint) []byte {
 }
 
 // compression 30 us -> 600 us
+//loadFingerprint returns a fingerprint from given jsonByte input
 func loadFingerprint(jsonByte []byte) Fingerprint {
 	res := Fingerprint{}
 	//json.Unmarshal(decompressByte(jsonByte), res)
@@ -72,6 +73,7 @@ func loadFingerprint(jsonByte []byte) Fingerprint {
 	return res
 }
 
+//returns the filtered macs from macs.json file and remove the other macs from fingerprint
 func filterFingerprint(res *Fingerprint) {
 	if RuntimeArgs.Filtering {
 		newFingerprint := make([]Router, len(res.WifiFingerprint))
@@ -79,6 +81,7 @@ func filterFingerprint(res *Fingerprint) {
 		for i := range res.WifiFingerprint {
 			if ok2, ok := RuntimeArgs.FilterMacs[res.WifiFingerprint[i].Mac]; ok && ok2 {
 				newFingerprint[curNum] = res.WifiFingerprint[i]
+				//todo: why "0" is added at the end?
 				newFingerprint[curNum].Mac = newFingerprint[curNum].Mac[0:len(newFingerprint[curNum].Mac)-1] + "0"
 				curNum++
 			}
