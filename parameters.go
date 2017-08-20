@@ -39,7 +39,7 @@ type ResultsParameters struct {
 	Accuracy         map[string]int            // accuracy measurement for a given location
 	TotalLocations   map[string]int            // number of locations
 	CorrectLocations map[string]int            // number of times guessed correctly
-	Guess            map[string]map[string]int // correct -> guess -> times
+	Guess            map[string]map[string]int // correct(real location) -> guess -> times
 }
 
 // FullParameters is the full parameter set for a given group

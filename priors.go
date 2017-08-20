@@ -334,9 +334,10 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 					}
 				}
 				for i, val := range macAverages[mac] {
-					//todo: why not using the actual values of macAvarages instead of the normalized values?
+					//todo: why not using the actual values of macAverages instead of the normalized values?
 					macAverages[mac][i] = maxVal / val // normalization(because val is < 0, we use maxVal/val instead of val /maxVal)
 				}
+				// MacVariability shows the standard deviation of a specific AP in all locations
 				ps.MacVariability[mac] = standardDeviation(macAverages[mac])//refer to line 300 todo
 			}
 		}

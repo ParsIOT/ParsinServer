@@ -109,7 +109,8 @@ func optimizePriorsThreaded(group string) error {
 		mixins = []float64{mixinOverride}
 	}
 
-	// Choose cutoff
+	// cutoffs is a number which is compared with the standard deviation of a specific AP in all locations(MacVariability)
+	// if macVariability is lower than cutoff it is ignored in PBayes2 calculation.
 	cutoffs := []float64{0.005, 0.05, 0.1}
 	cutoffOverride, _ := getCutoffOverride(group)
 	if cutoffOverride >= 0 && cutoffOverride <= 1 {
@@ -147,6 +148,8 @@ func optimizePriorsThreaded(group string) error {
 						continue
 					}
 					totalJobs++
+					//todo: in the following line, fingerprintsInMemory[v1] is included in ps; so the test set(fingerprintsInMemory[v1]) is included in the training set(ps)
+					//
 					PBayes1[n][v1], PBayes2[n][v1] = calculatePosteriorThreadSafe(fingerprintsInMemory[v1], ps, cutoff)
 				}
 			}
@@ -161,6 +164,8 @@ func optimizePriorsThreaded(group string) error {
 		}
 
 		finalResults := make(map[string]map[float64]ResultsParameters)
+
+		// Fill chanJobs with Jobs
 		for n := range ps.Priors {
 			finalResults[n] = make(map[float64]ResultsParameters)
 			for _, mixin := range mixins {
@@ -172,7 +177,8 @@ func optimizePriorsThreaded(group string) error {
 					finalResults[n][mixin].Accuracy[loc] = 0
 					finalResults[n][mixin].Guess[loc] = make(map[string]int)
 				}
-				// Loop through each fingerprint
+				// Loop through fingerprints which their posterior is included in PBayes1
+
 				for id := range PBayes1[n] { //id = FG timestamps = fingerprint ordering members
 					locs := []string{}
 					bayes1 := []float64{}
@@ -180,7 +186,7 @@ func optimizePriorsThreaded(group string) error {
 					for key := range PBayes1[n][id] { //key = locations
 						locs = append(locs, key)
 						bayes1 = append(bayes1, PBayes1[n][id][key])
-						bayes2 = append(bayes2, PBayes2[n][id][key])
+						bayes2 = append(bayes2, PBayes2[n][id][key]) //length of PBayes1 array equals to length of PBayes2
 					}
 					trueLoc := fingerprintsInMemory[id].Location
 					chanJobs <- jobA{n: n,
@@ -196,9 +202,9 @@ func optimizePriorsThreaded(group string) error {
 
 		for a := 1; a <= numJobs; a++ {
 			t := <-chanResults
-			finalResults[t.n][t.mixin].TotalLocations[t.locationTrue]++
+			finalResults[t.n][t.mixin].TotalLocations[t.locationTrue]++ //num of location estimations
 			if t.locationGuess == t.locationTrue {
-				finalResults[t.n][t.mixin].CorrectLocations[t.locationTrue]++
+				finalResults[t.n][t.mixin].CorrectLocations[t.locationTrue]++ // num of correct estimations
 			}
 			//init
 			if _, ok := finalResults[t.n][t.mixin].Guess[t.locationTrue]; !ok {
@@ -216,7 +222,7 @@ func optimizePriorsThreaded(group string) error {
 				average := float64(0)
 				it := 0
 				for loc := range finalResults[n][mixin].TotalLocations {
-					if finalResults[n][mixin].TotalLocations[loc] > 0 {
+					if finalResults[n][mixin].TotalLocations[loc] > 0 { //todo: finalResults[n][mixin].TotalLocations[loc] is always greater than 0
 						finalResults[n][mixin].Accuracy[loc] = int(100.0 * finalResults[n][mixin].CorrectLocations[loc] / finalResults[n][mixin].TotalLocations[loc])
 						// Debug.Println(n, mixin, cutoff, loc, finalResults[n][mixin].Accuracy[loc])
 						average += float64(finalResults[n][mixin].Accuracy[loc])
@@ -225,6 +231,8 @@ func optimizePriorsThreaded(group string) error {
 				}
 				average = average / float64(it)
 				// fmt.Println(mixin, average)
+
+				// todo: choose a better algorithm to select the best MixIn rather than average
 				if average > bestResult[n] {
 					bestResult[n] = average
 					bestMixin[n] = mixin

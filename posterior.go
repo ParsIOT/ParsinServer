@@ -118,28 +118,37 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 
 			// todo: The condition should be like this: ok && ps.Priors[n].MacFreq[loc][mac]!=0
 			if _, ok := ps.Priors[n].MacFreq[loc][mac]; ok {
+				//if the MacFreq (or weight) of a Mac in a location is high, it means that the location is near the AP(Mac).
 				weight = float64(ps.Priors[n].MacFreq[loc][mac])
 			} else {
+				//todo:why not using 0 instead of ps.Priors[n].Special["MacFreqMin"]?
 				weight = float64(ps.Priors[n].Special["MacFreqMin"])
 			}
 			if _, ok := ps.Priors[n].NMacFreq[loc][mac]; ok {
+				// nweight determines presence of the AP signals in other locations
 				nweight = float64(ps.Priors[n].NMacFreq[loc][mac])
 			} else {
 				nweight = float64(ps.Priors[n].Special["NMacFreqMin"])
 			}
 			//fmt.Println("bayes", (weight*PA)/(weight*PA+PnA*nweight))
-			PBayes1[loc] += math.Log(weight*PA) - math.Log(weight*PA+PnA*nweight) //TODO : what is it ?!
+			//PBayes1 is used for proximity purposes.
+			PBayes1[loc] += math.Log(weight*PA) - math.Log(weight*PA+PnA*nweight)
 
+			// todo: why not verifying the (W[mac] > MinRssi) & (ps.MacVariability[mac]) >= cutoff) conditions while calculation PBayes1
+			// cutoffs is a number which is compared with the standard deviation of a specific AP in all locations(MacVariability)
+			// if macVariability is lower than cutoff it is ignored in PBayes2 calculation.
 			if float64(ps.MacVariability[mac]) >= cutoff && W[mac] > MinRssi { //TODO: why calculating the mac variability of a mac not a location?
-				ind := int(W[mac] - MinRssi)
+				ind := int(W[mac] - MinRssi) //same as what is done in P calculation
 				if len(ps.Priors[n].P[loc][mac]) > 0 {
 					PBA := float64(ps.Priors[n].P[loc][mac][ind])
 					PBnA := float64(ps.Priors[n].NP[loc][mac][ind])
 					if PBA > 0 {
+						//todo: replace the PBayes2 calculation with the standard bayesian calculation
 						PBayes2[loc] += (math.Log(PBA*PA) - math.Log(PBA*PA+PBnA*PnA)) //todo: what is this?
 					} else {
 						PBayes2[loc] += -1
 					}
+
 				}
 			}
 		}
@@ -160,6 +169,7 @@ func normalizeBayes(bayes map[string]float64) map[string]float64 {
 	mean := average64(vals)
 	sd := standardDeviation64(vals)
 	for key := range bayes {
+		// todo: why 1e-5?
 		if sd < 1e-5 {
 			bayes[key] = 0
 		} else {
