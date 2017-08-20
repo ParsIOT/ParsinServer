@@ -4,6 +4,7 @@
 
 //cache.go handles the global variables for caching and the clearing(With setter and getter functions).
 //Each global variable as a shared memory has a RWMutex to protect it.
+// [functionName]Threaded() means that this function used cached variables
 package main
 
 import (
@@ -13,6 +14,7 @@ import (
 )
 
 //Containing a map: key=group name, value= a FullParameters instance
+// if there is psCache in memory, ps isn't got from db
 var psCache = struct {
 	sync.RWMutex
 	m map[string]FullParameters

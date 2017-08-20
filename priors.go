@@ -150,6 +150,7 @@ func regenerateEverything(group string) {
 	saveParameters(group, ps)
 }
 
+// (1/FoldCrossValidation) of the learned fingerprints are predicted with ps data, then results are wrote in ps.Results
 func crossValidation(group string, n string, ps *FullParameters, fingerprintsInMemory map[string]Fingerprint, fingerprintsOrdering []string) float64 {
 	for loc := range ps.NetworkLocs[n] {
 		ps.Results[n].TotalLocations[loc] = 0
@@ -168,9 +169,9 @@ func crossValidation(group string, n string, ps *FullParameters, fingerprintsInM
 			}
 			if _, ok := ps.NetworkLocs[n][v2.Location]; ok {
 				locationGuess, _ := calculatePosterior(v2, *ps)
-				ps.Results[n].TotalLocations[v2.Location]++
+				ps.Results[n].TotalLocations[v2.Location]++ //set TotalLocations
 				if locationGuess == v2.Location {
-					ps.Results[n].CorrectLocations[v2.Location]++
+					ps.Results[n].CorrectLocations[v2.Location]++ //set CorrectLocations
 				}
 				if _, ok := ps.Results[n].Guess[v2.Location]; !ok {
 					ps.Results[n].Guess[v2.Location] = make(map[string]int)
@@ -178,7 +179,7 @@ func crossValidation(group string, n string, ps *FullParameters, fingerprintsInM
 				if _, ok := ps.Results[n].Guess[v2.Location][locationGuess]; !ok {
 					ps.Results[n].Guess[v2.Location][locationGuess] = 0
 				}
-				ps.Results[n].Guess[v2.Location][locationGuess]++
+				ps.Results[n].Guess[v2.Location][locationGuess]++ //set Guess
 			}
 		}
 	}
@@ -187,6 +188,7 @@ func crossValidation(group string, n string, ps *FullParameters, fingerprintsInM
 	for loc := range ps.NetworkLocs[n] {
 		if ps.Results[n].TotalLocations[loc] > 0 {
 			// fmt.Println(ps.Results[n].CorrectLocations[loc], ps.Results[n].TotalLocations[loc])
+			// set Accuracy
 			ps.Results[n].Accuracy[loc] = int(100.0 * ps.Results[n].CorrectLocations[loc] / ps.Results[n].TotalLocations[loc])
 			average += float64(ps.Results[n].Accuracy[loc])
 		}

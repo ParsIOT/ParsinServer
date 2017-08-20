@@ -137,7 +137,7 @@ func saveParameters(group string, res FullParameters) error {
 	return err
 }
 
-//get ps(a FullParameters instance) from db
+//return cached ps(a FullParameters instance) or get it from db then return
 func openParameters(group string) (FullParameters, error) {
 	psCached, ok := getPsCache(group)
 	if ok {

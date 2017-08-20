@@ -43,6 +43,7 @@ func MaxParallelism() int {
 	return numCPU
 }
 
+// calculate value of mixed pbayes1 and pbayes2 and find the location with the maximum probability
 func worker(id int, jobs <-chan jobA, results chan<- resultA) {
 	for j := range jobs {
 		maxVal := float64(-1)
@@ -202,6 +203,7 @@ func optimizePriorsThreaded(group string) error {
 
 		for a := 1; a <= numJobs; a++ {
 			t := <-chanResults
+			// ps.Results isn't set here(finalResults is a temporary struct), it is set in crossValidation() function
 			finalResults[t.n][t.mixin].TotalLocations[t.locationTrue]++ //num of location estimations
 			if t.locationGuess == t.locationTrue {
 				finalResults[t.n][t.mixin].CorrectLocations[t.locationTrue]++ // num of correct estimations
@@ -247,6 +249,8 @@ func optimizePriorsThreaded(group string) error {
 	for n := range ps.Priors {
 		ps.Priors[n].Special["MixIn"] = bestMixin[n]
 		ps.Priors[n].Special["VarabilityCutoff"] = bestCutoff[n]
+		// (1-1/FoldCrossValidation) of the learned fingerprints are used to set the best mixin and cutoff,
+		// 	then (1/FoldCrossValidation) of remained fingerprints are used to set ps.Results(Accuracy,TotalLocations,CorrectLocations,Guess)
 		crossValidation(group, n, &ps, fingerprintsInMemory, fingerprintsOrdering)
 	}
 
@@ -258,6 +262,7 @@ func optimizePriorsThreaded(group string) error {
 	return nil
 }
 
+// not threaded version of optimizePriorsThreaded() function
 func optimizePriorsThreadedNot(group string) {
 	// generate the fingerprintsInMemory
 	// Debug.Println("Optimizing priors for " + group)
