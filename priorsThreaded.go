@@ -74,6 +74,40 @@ func optimizePriorsThreaded(group string) error {
 		return err
 	}
 
+	//err = db.View(func(tx *bolt.Tx) error {
+	//	//gets the fingerprint bucket
+	//	b := tx.Bucket([]byte("fingerprints"))
+	//	if b == nil {
+	//		return fmt.Errorf("No fingerprint bucket")
+	//	}
+	//	c := b.Cursor()
+	//	var tempFP,resTempFP Fingerprint
+	//
+	//	for k, v := c.First(); k != nil; k, v = c.Next() {
+	//		aboveTh := false
+	//		tempFP = loadFingerprint(v)
+	//		for rt := range tempFP.WifiFingerprint {
+	//			var rtRes Router
+	//			if (tempFP.WifiFingerprint[rt].Rssi > -75) {
+	//				rtRes = tempFP.WifiFingerprint[rt]
+	//				resTempFP.Group = tempFP.Group
+	//				resTempFP.Username = tempFP.Username
+	//				resTempFP.Location = tempFP.Location
+	//				resTempFP.Timestamp = tempFP.Timestamp
+	//				resTempFP.WifiFingerprint = append(resTempFP.WifiFingerprint, rtRes)
+	//				aboveTh = true
+	//			}
+	//		}
+	//		if(aboveTh) {
+	//			fmt.Println(resTempFP)
+	//			fingerprintsInMemory[string(k)] = resTempFP
+	//			//fingerprintsOrdering is an array of fingerprintsInMemory keys
+	//			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
+	//		}
+	//	}
+	//	return nil
+	//})
+	//db.Close()
 	err = db.View(func(tx *bolt.Tx) error {
 		//gets the fingerprint bucket
 		b := tx.Bucket([]byte("fingerprints"))
@@ -89,6 +123,7 @@ func optimizePriorsThreaded(group string) error {
 		return nil
 	})
 	db.Close()
+
 	if err != nil {
 		return err
 	}
@@ -103,7 +138,7 @@ func optimizePriorsThreaded(group string) error {
 		ps.Results[n] = results //Results is shared between all networks
 	}
 
-	// loop through these parameters
+	// Mixin is ration of pbayes1(proximity to AP) to pbayes2(normal bayesian classifier result)
 	mixins := []float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9}
 	mixinOverride, _ := getMixinOverride(group)
 	if mixinOverride >= 0 && mixinOverride <= 1 {

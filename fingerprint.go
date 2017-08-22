@@ -20,6 +20,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/gin-gonic/gin"
+	//"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
 // Fingerprint is the prototypical information from the fingerprinting device
@@ -91,6 +92,7 @@ func filterFingerprint(res *Fingerprint) {
 	}
 }
 
+// convert quality (0 to 100) to rss(-100 to -50) and delete the records that their mac are "00:00:00:00:00"
 func cleanFingerprint(res *Fingerprint) {
 	res.Group = strings.TrimSpace(strings.ToLower(res.Group))
 	res.Location = strings.TrimSpace(strings.ToLower(res.Location))
@@ -104,12 +106,14 @@ func cleanFingerprint(res *Fingerprint) {
 			deleteIndex = r
 		}
 	}
+	// delete res.WifiFingerprint[deleteIndex]
 	if deleteIndex > -1 {
 		res.WifiFingerprint[deleteIndex] = res.WifiFingerprint[len(res.WifiFingerprint)-1]
 		res.WifiFingerprint = res.WifiFingerprint[:len(res.WifiFingerprint)-1]
 	}
 }
 
+// make a db according to group name
 func putFingerprintIntoDatabase(res Fingerprint, database string) error {
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, res.Group+".db"), 0600, nil)
 	if err != nil {
@@ -135,6 +139,7 @@ func putFingerprintIntoDatabase(res Fingerprint, database string) error {
 	return err
 }
 
+// track api that calls trackFingerprint() function
 func trackFingerprintPOST(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -157,6 +162,7 @@ func trackFingerprintPOST(c *gin.Context) {
 	}
 }
 
+// call leanFingerprint() function
 func learnFingerprintPOST(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -178,6 +184,7 @@ func learnFingerprintPOST(c *gin.Context) {
 	}
 }
 
+// cleanFingerPrint and save the Fingerprint to db
 func learnFingerprint(jsonFingerprint Fingerprint) (string, bool) {
 	cleanFingerprint(&jsonFingerprint)
 	Info.Println(jsonFingerprint)
@@ -193,6 +200,7 @@ func learnFingerprint(jsonFingerprint Fingerprint) (string, bool) {
 	return message, true
 }
 
+//
 func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[string]float64, map[string]float64, map[string]float64) {
 	// Classify with filter fingerprint
 	fullFingerprint := jsonFingerprint
@@ -283,6 +291,7 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 	userJSON.Time = time.Now().String()
 	if RuntimeArgs.RandomForests {
 		userJSON.Rf = rfClassify(strings.ToLower(jsonFingerprint.Group), jsonFingerprint)
+
 	}
 	go setUserPositionCache(strings.ToLower(jsonFingerprint.Group)+strings.ToLower(jsonFingerprint.Username), userJSON)
 

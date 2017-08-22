@@ -26,7 +26,7 @@ func groupExists(group string) bool {
 	return true
 }
 
-// renames the network.
+// renames the network, then calls savePersistentParameters() function to save ps
 func renameNetwork(group string, oldName string, newName string) {
 	//todo: It's better to regenerate ps from the modified fingerprints bucket than modifying the current ps
 	Debug.Println("Opening parameters")

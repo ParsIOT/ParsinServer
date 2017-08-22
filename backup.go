@@ -14,6 +14,7 @@ import (
 	"github.com/boltdb/bolt"
 )
 
+// make a folder that is named dump-groupName and dump track and learn db's data to files
 func dumpFingerprints(group string) error {
 	// Debug.Println("Making dump-" + group + " directory")
 	err := os.MkdirAll(path.Join(RuntimeArgs.SourcePath, "dump-"+group), 0777)

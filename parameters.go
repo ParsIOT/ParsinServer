@@ -103,6 +103,7 @@ func NewPersistentParameters() *PersistentParameters {
 	}
 }
 
+// returns compress state of res.MarshalJSON
 func dumpParameters(res FullParameters) []byte {
 	jsonByte, _ := res.MarshalJSON()
 	return compressByte(jsonByte)
@@ -139,6 +140,7 @@ func saveParameters(group string, res FullParameters) error {
 
 //return cached ps(a FullParameters instance) or get it from db then return
 func openParameters(group string) (FullParameters, error) {
+
 	psCached, ok := getPsCache(group)
 	if ok {
 		return psCached, nil
@@ -166,6 +168,7 @@ func openParameters(group string) (FullParameters, error) {
 	return ps, err
 }
 
+// Get persistentParameters from resources bucket in db
 func openPersistentParameters(group string) (PersistentParameters, error) {
 	var persistentPs = *NewPersistentParameters()
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
@@ -187,6 +190,7 @@ func openPersistentParameters(group string) (PersistentParameters, error) {
 	return persistentPs, err
 }
 
+// Set persistentParameters to resources bucket in db (it's used in remednetwork() function)
 func savePersistentParameters(group string, res PersistentParameters) error {
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	if err != nil {
@@ -331,6 +335,7 @@ func getParameters(group string, ps *FullParameters, fingerprintsInMemory map[st
 
 }
 
+// return mixinOverride value from resources bucket in db
 func getMixinOverride(group string) (float64, error) {
 	group = strings.ToLower(group)
 	override := float64(-1)
@@ -356,6 +361,7 @@ func getMixinOverride(group string) (float64, error) {
 	return override, err
 }
 
+// return cutoffOverride value from resources bucket in db
 func getCutoffOverride(group string) (float64, error) {
 	group = strings.ToLower(group)
 	override := float64(-1)
@@ -381,6 +387,7 @@ func getCutoffOverride(group string) (float64, error) {
 	return override, err
 }
 
+// Set mixinOverride value to resources bucket in db
 func setMixinOverride(group string, mixin float64) error {
 	if (mixin < 0 || mixin > 1) && mixin != -1 {
 		return fmt.Errorf("mixin must be between 0 and 1")
@@ -406,6 +413,7 @@ func setMixinOverride(group string, mixin float64) error {
 	return err
 }
 
+// Set cutoffOverride value to resources bucket in db
 func setCutoffOverride(group string, cutoff float64) error {
 	if (cutoff < 0 || cutoff > 1) && cutoff != -1 {
 		return fmt.Errorf("cutoff must be between 0 and 1")

@@ -12,6 +12,7 @@ import (
 	"path"
 
 	"github.com/boltdb/bolt"
+	"fmt"
 )
 
 // PdfType dictates the width of gaussian smoothing
@@ -39,7 +40,7 @@ func init() {
 	//todo:what is PdfType and how to find the values
 	PdfType = []float32{.1995, .1760, .1210, .0648, .027, 0.005}
 	Absentee = 1e-6
-	MinRssi = -85 //default:-110,ble=-80,wifi=-75
+	MinRssi = -80 //default:-110,ble=-80,wifi=-75
 	MaxRssi = 5
 	RssiPartitions = MaxRssi - MinRssi + 1
 	RssiRange = make([]float32, RssiPartitions)
@@ -241,6 +242,7 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 			if inNetwork {
 				for _, router := range v2.WifiFingerprint {
 					if router.Rssi > MinRssi {
+						//fmt.Println(router.Rssi)
 						ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi] += PdfType[0]
 						//make the real probability of the rssi distribution
 						for i, val := range PdfType {
