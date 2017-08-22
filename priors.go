@@ -12,7 +12,7 @@ import (
 	"path"
 
 	"github.com/boltdb/bolt"
-	"fmt"
+	//"fmt"
 )
 
 // PdfType dictates the width of gaussian smoothing
