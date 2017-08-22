@@ -247,6 +247,11 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 						//make the real probability of the rssi distribution
 						for i, val := range PdfType {
 							if i > 0 {
+								//if (router.Rssi-MinRssi-i<2) {
+								//	fmt.Println("i=", i)
+								//	fmt.Println("router.Rssi=", router.Rssi)
+								//	fmt.Println("router.rssi-MinRSSi-i=", router.Rssi-MinRssi-i)
+								//}
 								ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi-i] += val
 								ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi+i] += val
 							}
