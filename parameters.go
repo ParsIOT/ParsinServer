@@ -70,8 +70,8 @@ func NewFullParameters() *FullParameters {
 		UniqueLocs:     []string{},                         //UniqueLocs is an array of map's locations e.g.: ["P1","P2","P3",...]
 		Priors:         make(map[string]PriorParameters),
 		MacVariability: make(map[string]float32),           //the standard deviation of rssi of each mac
-		Results:        make(map[string]ResultsParameters), //todo:?
-		Loaded:         false,                              //todo:?
+		Results:        make(map[string]ResultsParameters),
+		Loaded:         false, //is true if ps was created and save in resources
 	}
 }
 
