@@ -169,6 +169,7 @@ func slashLocation(c *gin.Context) {
 }
 
 // slashExplore returns a chart of the data
+// todo: Use it
 func slashExplore(c *gin.Context) {
 	group := c.Param("group")
 	if _, err := os.Stat(path.Join(RuntimeArgs.SourcePath, group+".db")); os.IsNotExist(err) {

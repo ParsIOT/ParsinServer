@@ -134,7 +134,7 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 			//PBayes1 is used for proximity purposes.
 			PBayes1[loc] += math.Log(weight*PA) - math.Log(weight*PA+PnA*nweight)
 
-			// todo: why not verifying the (W[mac] > MinRssi) & (ps.MacVariability[mac]) >= cutoff) conditions while calculation PBayes1
+			// todo: why not verifying the (resRoutes[mac] > MinRssi) & (ps.MacVariability[mac]) >= cutoff) conditions while calculation PBayes1?
 			// cutoffs is a number which is compared with the standard deviation of a specific AP in all locations(MacVariability)
 			// if macVariability is lower than cutoff it is ignored in PBayes2 calculation.
 			if float64(ps.MacVariability[mac]) >= cutoff && resRoutes[mac] > MinRssiOpt { //TODO: why calculating the mac variability of a mac not a location?

@@ -269,7 +269,6 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 							}
 						}
 					} else {
-						//todo: replace with Warning.Println("RSSI is lower than minRssi, rssi = " + router.Rssi)
 						Warning.Println(router.Rssi)
 					}
 				}
