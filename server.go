@@ -214,9 +214,9 @@ cp svm-train /usr/local/bin/`)
 	r.DELETE("/database", deleteDatabase)
 	r.GET("/calculate", calculate)
 	r.GET("/status", getStatus)
-	// todo: delete these deprecated routes
-	r.GET("/userlocs", userLocations) // to be deprecated
-	r.GET("/whereami", whereAmI)      // to be deprecated
+	// Done: delete these deprecated routes
+	//r.GET("/userlocs", userLocations) // to be deprecated
+	//r.GET("/whereami", whereAmI)      // to be deprecated
 	r.PUT("/mixin", putMixinOverride)
 	r.PUT("/cutoff", putCutoffOverride)
 	r.PUT("/database", migrateDatabase)
