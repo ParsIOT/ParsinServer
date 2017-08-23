@@ -25,11 +25,11 @@ var EdgeRssiRange int
 // MaxRssi is the maximum level of signal
 var MaxRssi int
 
-// MinRssi is the minimum level of signal
+// MinRssi is the minimum level of signal that can save to db
 var MinRssi int
 
-// MinRssi is the minimum level of signal for tracking
-var MinRssiTrack int
+// MinRssi is the minimum level of signal for learning and tracking
+var MinRssiOpt int
 
 // RssiPartitions are the calculated number of partitions from MinRssi and MaxRssi
 var RssiPartitions int
@@ -48,7 +48,7 @@ func init() {
 	PdfType = []float32{.1995, .1760, .1210, .0648, .027, 0.005}
 	Absentee = 1e-6
 	MinRssi = -110 //default:-110,ble=-80,wifi=-75
-	MinRssiTrack = -70
+	MinRssiOpt = -70
 	MaxRssi = 5
 	EdgeRssiRange = len(PdfType) - 1
 	RssiPartitions = MaxRssi - MinRssi + 1
@@ -250,7 +250,7 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 			networkName, inNetwork := hasNetwork(ps.NetworkMacs, macs)
 			if inNetwork {
 				for _, router := range v2.WifiFingerprint {
-					if router.Rssi > MinRssiTrack {
+					if router.Rssi > MinRssiOpt {
 						//fmt.Println(router.Rssi)
 						ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi] += PdfType[0]
 						//make the real probability of the rssi distribution
