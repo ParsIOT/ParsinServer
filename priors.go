@@ -18,11 +18,18 @@ import (
 // PdfType dictates the width of gaussian smoothing
 var PdfType []float32
 
+// EdgeRssiRange is margin of save rssi lower than MinRssi or greater than MaxRssi
+// It's just for making a better gaussian graph; Any Rssi lower than MinRssi ignores
+var EdgeRssiRange int
+
 // MaxRssi is the maximum level of signal
 var MaxRssi int
 
 // MinRssi is the minimum level of signal
 var MinRssi int
+
+// MinRssi is the minimum level of signal for tracking
+var MinRssiTrack int
 
 // RssiPartitions are the calculated number of partitions from MinRssi and MaxRssi
 var RssiPartitions int
@@ -40,8 +47,10 @@ func init() {
 	//todo:what is PdfType and how to find the values
 	PdfType = []float32{.1995, .1760, .1210, .0648, .027, 0.005}
 	Absentee = 1e-6
-	MinRssi = -80 //default:-110,ble=-80,wifi=-75
+	MinRssi = -110 //default:-110,ble=-80,wifi=-75
+	MinRssiTrack = -70
 	MaxRssi = 5
+	EdgeRssiRange = len(PdfType) - 1
 	RssiPartitions = MaxRssi - MinRssi + 1
 	RssiRange = make([]float32, RssiPartitions)
 	for i := 0; i < len(RssiRange); i++ {
@@ -252,8 +261,11 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 								//	fmt.Println("router.Rssi=", router.Rssi)
 								//	fmt.Println("router.rssi-MinRSSi-i=", router.Rssi-MinRssi-i)
 								//}
-								ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi-i] += val
-								ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi+i] += val
+								if (router.Rssi-MinRssi-i > 0 && router.Rssi-MinRssi+i < RssiPartitions) {
+									ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi-i] += val
+									ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi+i] += val
+								}
+
 							}
 						}
 					} else {

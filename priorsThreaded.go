@@ -74,42 +74,6 @@ func optimizePriorsThreaded(group string) error {
 		return err
 	}
 
-	err = db.View(func(tx *bolt.Tx) error {
-		//gets the fingerprint bucket
-		b := tx.Bucket([]byte("fingerprints"))
-		if b == nil {
-			return fmt.Errorf("No fingerprint bucket")
-		}
-		c := b.Cursor()
-
-
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			var tempFP, resTempFP Fingerprint
-			aboveTh := false
-			tempFP = loadFingerprint(v)
-			for rt := range tempFP.WifiFingerprint {
-				var rtRes Router
-				// todo: actually real MinRssi is MinRssi+len(PdfType)-2, so the code must be redefined (check calculatePriors() function)
-				if (tempFP.WifiFingerprint[rt].Rssi > MinRssi+len(PdfType)-2) {
-					rtRes = tempFP.WifiFingerprint[rt]
-					resTempFP.Group = tempFP.Group
-					resTempFP.Username = tempFP.Username
-					resTempFP.Location = tempFP.Location
-					resTempFP.Timestamp = tempFP.Timestamp
-					resTempFP.WifiFingerprint = append(resTempFP.WifiFingerprint, rtRes)
-					aboveTh = true
-				}
-			}
-			if (aboveTh) {
-				//fmt.Println(resTempFP)
-				fingerprintsInMemory[string(k)] = resTempFP
-				//fingerprintsOrdering is an array of fingerprintsInMemory keys
-				fingerprintsOrdering = append(fingerprintsOrdering, string(k))
-			}
-		}
-		return nil
-	})
-	db.Close()
 	//err = db.View(func(tx *bolt.Tx) error {
 	//	//gets the fingerprint bucket
 	//	b := tx.Bucket([]byte("fingerprints"))
@@ -117,14 +81,49 @@ func optimizePriorsThreaded(group string) error {
 	//		return fmt.Errorf("No fingerprint bucket")
 	//	}
 	//	c := b.Cursor()
+	//
+	//
 	//	for k, v := c.First(); k != nil; k, v = c.Next() {
-	//		fingerprintsInMemory[string(k)] = loadFingerprint(v)
-	//		//fingerprintsOrdering is an array of fingerprintsInMemory keys
-	//		fingerprintsOrdering = append(fingerprintsOrdering, string(k))
+	//		var tempFP, resTempFP Fingerprint
+	//		aboveTh := false
+	//		tempFP = loadFingerprint(v)
+	//		for rt := range tempFP.WifiFingerprint {
+	//			var rtRes Router
+	//			if (tempFP.WifiFingerprint[rt].Rssi > MinRssi+len(PdfType)-2) {
+	//				rtRes = tempFP.WifiFingerprint[rt]
+	//				resTempFP.Group = tempFP.Group
+	//				resTempFP.Username = tempFP.Username
+	//				resTempFP.Location = tempFP.Location
+	//				resTempFP.Timestamp = tempFP.Timestamp
+	//				resTempFP.WifiFingerprint = append(resTempFP.WifiFingerprint, rtRes)
+	//				aboveTh = true
+	//			}
+	//		}
+	//		if (aboveTh) {
+	//			//fmt.Println(resTempFP)
+	//			fingerprintsInMemory[string(k)] = resTempFP
+	//			//fingerprintsOrdering is an array of fingerprintsInMemory keys
+	//			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
+	//		}
 	//	}
 	//	return nil
 	//})
 	//db.Close()
+	err = db.View(func(tx *bolt.Tx) error {
+		//gets the fingerprint bucket
+		b := tx.Bucket([]byte("fingerprints"))
+		if b == nil {
+			return fmt.Errorf("No fingerprint bucket")
+		}
+		c := b.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			fingerprintsInMemory[string(k)] = loadFingerprint(v)
+			//fingerprintsOrdering is an array of fingerprintsInMemory keys
+			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
+		}
+		return nil
+	})
+	db.Close()
 
 	if err != nil {
 		return err

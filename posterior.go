@@ -56,7 +56,7 @@ func calculatePosterior(res Fingerprint, ps FullParameters) (string, map[string]
 			}
 			PBayes1[loc] += math.Log(weight*PA) - math.Log(weight*PA+PnA*nweight)
 
-			if float64(ps.MacVariability[mac]) >= ps.Priors[n].Special["VarabilityCutoff"] && W[mac] > MinRssi {
+			if float64(ps.MacVariability[mac]) >= ps.Priors[n].Special["VarabilityCutoff"] && W[mac] > MinRssiTrack {
 				ind := int(W[mac] - MinRssi)
 				if len(ps.Priors[n].P[loc][mac]) > 0 {
 					PBA := float64(ps.Priors[n].P[loc][mac][ind])
@@ -137,7 +137,7 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 			// todo: why not verifying the (W[mac] > MinRssi) & (ps.MacVariability[mac]) >= cutoff) conditions while calculation PBayes1
 			// cutoffs is a number which is compared with the standard deviation of a specific AP in all locations(MacVariability)
 			// if macVariability is lower than cutoff it is ignored in PBayes2 calculation.
-			if float64(ps.MacVariability[mac]) >= cutoff && W[mac] > MinRssi { //TODO: why calculating the mac variability of a mac not a location?
+			if float64(ps.MacVariability[mac]) >= cutoff && W[mac] > MinRssiTrack { //TODO: why calculating the mac variability of a mac not a location?
 				ind := int(W[mac] - MinRssi) //same as what is done in P calculation
 				if len(ps.Priors[n].P[loc][mac]) > 0 {
 					PBA := float64(ps.Priors[n].P[loc][mac][ind])
