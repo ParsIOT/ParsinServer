@@ -93,10 +93,10 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 	}
 	macs := []string{}
 	//todo: rename W
-	W := make(map[string]int)//a map from mac to rssi
+	resRoutes := make(map[string]int) //a map from mac to rssi
 	for v2 := range res.WifiFingerprint {
 		macs = append(macs, res.WifiFingerprint[v2].Mac)
-		W[res.WifiFingerprint[v2].Mac] = res.WifiFingerprint[v2].Rssi
+		resRoutes[res.WifiFingerprint[v2].Mac] = res.WifiFingerprint[v2].Rssi
 	}
 	n, inNetworkAlready := hasNetwork(ps.NetworkMacs, macs)
 	// Debug.Println(n, inNetworkAlready, ps.NetworkLocs[n])
@@ -112,7 +112,7 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 	for loc := range ps.NetworkLocs[n] {
 		PBayes1[loc] = float64(0)
 		PBayes2[loc] = float64(0)
-		for mac := range W {
+		for mac := range resRoutes {
 			weight := float64(0)
 			nweight := float64(0)
 
@@ -137,8 +137,8 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 			// todo: why not verifying the (W[mac] > MinRssi) & (ps.MacVariability[mac]) >= cutoff) conditions while calculation PBayes1
 			// cutoffs is a number which is compared with the standard deviation of a specific AP in all locations(MacVariability)
 			// if macVariability is lower than cutoff it is ignored in PBayes2 calculation.
-			if float64(ps.MacVariability[mac]) >= cutoff && W[mac] > MinRssiOpt { //TODO: why calculating the mac variability of a mac not a location?
-				ind := int(W[mac] - MinRssi) //same as what is done in P calculation
+			if float64(ps.MacVariability[mac]) >= cutoff && resRoutes[mac] > MinRssiOpt { //TODO: why calculating the mac variability of a mac not a location?
+				ind := int(resRoutes[mac] - MinRssi) //same as what is done in P calculation
 				if len(ps.Priors[n].P[loc][mac]) > 0 {
 					PBA := float64(ps.Priors[n].P[loc][mac][ind])
 					PBnA := float64(ps.Priors[n].NP[loc][mac][ind])
