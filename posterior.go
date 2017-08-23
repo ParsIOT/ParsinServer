@@ -92,7 +92,7 @@ func calculatePosteriorThreadSafe(res Fingerprint, ps FullParameters, cutoff flo
 		ps, _ = openParameters(res.Group)
 	}
 	macs := []string{}
-	//todo: rename W
+	//Done: rename W
 	resRoutes := make(map[string]int) //a map from mac to rssi
 	for v2 := range res.WifiFingerprint {
 		macs = append(macs, res.WifiFingerprint[v2].Mac)
