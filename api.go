@@ -126,8 +126,8 @@ func apiGetLastFingerprint(c *gin.Context) {
 	}
 }
 
-// Returns the last location a user and the last fingerprint that was sent
-//TODO: fingerprints-learn bucket isn't set but is used here! Returning the last learn fingerprint must be defined
+// Returns the last location of a user and the last fingerprint that was sent
+//Done: fingerprints-learn bucket isn't set but is used here! Returning the last learn fingerprint must be defined
 func getLastFingerprint(group string, user string) string {
 	group = strings.ToLower(group)
 	user = strings.ToLower(user)
@@ -162,7 +162,7 @@ func getLastFingerprint(group string, user string) string {
 
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
-		b := tx.Bucket([]byte("fingerprints-learn"))
+		b := tx.Bucket([]byte("fingerprints"))
 		if b == nil {
 			return nil
 		}
@@ -626,7 +626,7 @@ func putCutoffOverride(c *gin.Context) {
 }
 
 // Calls renameNetwork() and then calls optimizePriors()
-// ToDo: replace optimizePriors() with optimizePriorsThreaded()
+// Done: replace optimizePriors() with optimizePriorsThreaded()
 // GET parameters: group, oldname, newname
 func editNetworkName(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
@@ -642,7 +642,7 @@ func editNetworkName(c *gin.Context) {
 	if group != "noneasdf" {
 		Debug.Println("Attempting renaming ", group, oldname, newname)
 		renameNetwork(group, oldname, newname)
-		optimizePriors(group)
+		optimizePriorsThreaded(group)
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Finished"})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
