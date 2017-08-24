@@ -200,7 +200,7 @@ func learnFingerprint(jsonFingerprint Fingerprint) (string, bool) {
 	return message, true
 }
 
-//
+// call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
 func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[string]float64, map[string]float64, map[string]float64) {
 	// Classify with filter fingerprint
 	fullFingerprint := jsonFingerprint
