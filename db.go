@@ -192,10 +192,10 @@ func getMacCountByLoc(group string) (macCountByLoc map[string]map[string]int) {
 	return
 }
 
-func getAdminUsers(group string) (map[string]string, error) {
+func getAdminUsers() (map[string]string, error) {
 	userList := make(map[string]string)
-	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-	fmt.Println("After Db open")
+
+	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, "users.db"), 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -223,9 +223,9 @@ func getAdminUsers(group string) (map[string]string, error) {
 }
 
 // Add an admin user or change his password
-func addAdminUser(group string, username string, password string) error {
+func addAdminUser(username string, password string) error {
 	userList := make(map[string]string)
-	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, "users.db"), 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -20,6 +20,7 @@ import (
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/appleboy/gin-jwt" // Authentication middleware lib
+	// installation : 1.go get github.com/gin-gonic/gin 2.Solve the miscellaneous lib problem 3. git get github.com/appleboy/gin-jwt
 	"time"
 )
 
@@ -82,7 +83,7 @@ func main() {
 	flag.StringVar(&RuntimeArgs.SourcePath, "data", "", "path to data folder")
 	flag.StringVar(&RuntimeArgs.RFPort, "rf", "", "port for random forests calculations")
 	flag.StringVar(&RuntimeArgs.FilterMacFile, "filter", "", "JSON file for macs to filter")
-	flag.StringVar(&RuntimeArgs.AdminAdd, "adminadd", "", "Add an admin user or change his password, foramt:<groupName>:<username>:<password>, e.g.:testdb:admin:admin")
+	flag.StringVar(&RuntimeArgs.AdminAdd, "adminadd", "", "Add an admin user or change his password, foramt:<username>:<password>, e.g.:admin:admin")
 	flag.CommandLine.Usage = func() {
 		fmt.Println(`find (version ` + VersionNum + ` (` + Build[0:8] + `), built ` + BuildTime + `)
 Example: 'findserver yourserver.com'
@@ -147,13 +148,13 @@ Options:`)
 	// Check whether we are just dumping the database
 	if len(RuntimeArgs.AdminAdd) > 0 {
 		addRequestSlice := strings.Split(strings.ToLower(RuntimeArgs.AdminAdd), ":")
-		group := addRequestSlice[0]
-		username := addRequestSlice[1]
-		password := addRequestSlice[2]
-		err := addAdminUser(group, username, password)
+		//group := addRequestSlice[0]
+		username := addRequestSlice[0]
+		password := addRequestSlice[1]
+		err := addAdminUser(username, password)
 		if err == nil {
 			fmt.Printf("Successfully new admin(username:%+v, password:%+v) was added Or new password was set.", username, password)
-			adminList, _ := getAdminUsers(group)
+			adminList, _ := getAdminUsers()
 			fmt.Println("Current admin list: \n", adminList)
 		} else {
 			log.Fatal(err)
@@ -196,25 +197,34 @@ cp svm-train /usr/local/bin/`)
 	r.Static("static/", path.Join(RuntimeArgs.Cwd, "static/"))
 
 	// the jwt middleware
+	adminUsers, err := getAdminUsers()
+	if err != nil {
+		Error.Println("Add an admin user first")
+		os.Exit(0)
+	}
+
 	authMiddleware := &jwt.GinJWTMiddleware{
 		Realm:      "test zone",
 		Key:        []byte("secret key"),
 		Timeout:    time.Hour,
 		MaxRefresh: time.Hour,
 		Authenticator: func(userId string, password string, c *gin.Context) (string, bool) {
-			c.HTML(http.StatusOK, "test.tmpl", gin.H{
-				"ErrorMessage": "Please login first.",
-			})
-			if (userId == "admin" && password == "admin") || (userId == "test" && password == "test") {
+			//c.HTML(http.StatusOK, "test.tmpl", gin.H{
+			//	"ErrorMessage": "Please login first.",
+			//})
+			for user := range adminUsers {
+				if (userId == user && password == adminUsers[userId]) {
 				return userId, true
+				}
 			}
 			return userId, false
 		},
 		Authorizator: func(userId string, c *gin.Context) bool {
-			if userId == "admin" {
-				return true
+			for user := range adminUsers {
+				if userId == user {
+					return true
+				}
 			}
-
 			return false
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {
@@ -243,20 +253,6 @@ cp svm-train /usr/local/bin/`)
 		// TimeFunc provides the current time. You can override it to use another time value. This is useful for testing or if your server uses a different time zone than your tokens.
 		TimeFunc: time.Now,
 	}
-
-	r.POST("/login1", authMiddleware.LoginHandler)
-
-	auth := r.Group("/auth")
-	auth.Use(authMiddleware.MiddlewareFunc())
-	{
-		auth.GET("/refresh_token", authMiddleware.RefreshHandler)
-		auth.Static("data/", path.Join(RuntimeArgs.Cwd, "data/"))
-	}
-
-	// Load db files
-	// Todo: Authentcation check
-	//r.Static("data/", path.Join(RuntimeArgs.Cwd, "data/"))
-
 
 	// Create cookie store to keep track of logged in user
 	store := sessions.NewCookieStore([]byte("secret"))
@@ -306,6 +302,20 @@ cp svm-train /usr/local/bin/`)
 	r.PUT("/cutoff", putCutoffOverride)
 	r.PUT("/database", migrateDatabase)
 	r.GET("/lastfingerprint", apiGetLastFingerprint)
+	//r.Static("data/", path.Join(RuntimeArgs.Cwd, "data/"))
+
+	// Authentication
+	r.POST("/authenticate", authMiddleware.LoginHandler)
+	auth := r.Group("/")
+	auth.Use(authMiddleware.MiddlewareFunc())
+	{
+		auth.GET("/refresh_token", authMiddleware.RefreshHandler)
+		auth.Static("data/", path.Join(RuntimeArgs.Cwd, "data/")) // Load db files
+	}
+
+	// Authenticate test:
+	// http -v --json POST http://192.168.0.45:8003/login1 username=t2 password=t2
+	// http -f GET http://192.168.0.45:8003/auth/data/iust_13_5_96_1.rf.json "Authorization:Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1MDM4NjIzMzEsImlkIjoiYWRtaW4xIiwib3JpZ19pYXQiOjE1MDM4NTg3MzF9.2ln7ccDV3mwrdXBLK06jNaBTJHxL0oR319Ile4ZNnzc"  "Content-Type: application/json"
 
 	// Load and display the logo
 	dat, _ := ioutil.ReadFile("./static/logo.txt")
