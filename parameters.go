@@ -109,6 +109,7 @@ func dumpParameters(res FullParameters) []byte {
 	return compressByte(jsonByte)
 }
 
+// UnmarshalJson a FullParameters
 func loadParameters(jsonByte []byte) FullParameters {
 	var res2 FullParameters
 	res2.UnmarshalJSON(decompressByte(jsonByte))

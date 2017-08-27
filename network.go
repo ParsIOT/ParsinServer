@@ -23,6 +23,7 @@ func hasNetwork(network map[string]map[string]bool, macs []string) (string, bool
 	return "none", false
 }
 
+// If a mac in the mac list is on a network then add other mac of mac list to that network, otherwise, create new network
 func buildNetwork(network map[string]map[string]bool, macs []string) map[string]map[string]bool {
 	if len(network) == 0 {
 		network["0"] = make(map[string]bool)
@@ -57,6 +58,7 @@ func buildNetwork(network map[string]map[string]bool, macs []string) map[string]
 	//todo: Why network macs always true? What exactly does it mean?
 }
 
+// Merge two network in networkmacs
 func mergeNetwork(network map[string]map[string]bool) map[string]map[string]bool {
 	for {
 		n, m, canMerge := hasMerge(network)
@@ -74,6 +76,7 @@ func mergeNetwork(network map[string]map[string]bool) map[string]map[string]bool
 
 }
 
+// Return true when a same mac is in two networks, returns the network names
 func hasMerge(network map[string]map[string]bool) (string, string, bool) {
 	for n := range network {
 		for m := range network {
@@ -91,11 +94,13 @@ func hasMerge(network map[string]map[string]bool) (string, string, bool) {
 	return "none", "none", false
 }
 
+// Marshal network
 func dumpNetwork(network map[string]map[string]bool) []byte {
 	jsonByte, _ := json.Marshal(network)
 	return jsonByte
 }
 
+// Unmarshal network
 func loadNetwork(jsonByte []byte) map[string]map[string]bool {
 	res2 := make(map[string]map[string]bool)
 	json.Unmarshal(jsonByte, &res2)

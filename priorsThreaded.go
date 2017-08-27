@@ -17,6 +17,7 @@ import (
 )
 
 //following this:https://play.golang.org/p/hK2h-irKyz
+// Result of worker()
 type resultA struct {
 	mixin         float64
 	locationGuess string
@@ -24,6 +25,7 @@ type resultA struct {
 	n             string
 }
 
+// Job that is got to worker()
 type jobA struct {
 	mixin        float64
 	locs         []string
@@ -43,7 +45,7 @@ func MaxParallelism() int {
 	return numCPU
 }
 
-// calculate value of mixed pbayes1 and pbayes2 and find the location with the maximum probability
+// Calculate the value of mixed pbayes1 and pbayes2 and find the location with the maximum probability
 func worker(id int, jobs <-chan jobA, results chan<- resultA) {
 	for j := range jobs {
 		maxVal := float64(-1)
@@ -298,7 +300,7 @@ func optimizePriorsThreaded(group string) error {
 	return nil
 }
 
-// not threaded version of optimizePriorsThreaded() function
+// Not threaded version of optimizePriorsThreaded() function
 func optimizePriorsThreadedNot(group string) {
 	// generate the fingerprintsInMemory
 	// Debug.Println("Optimizing priors for " + group)

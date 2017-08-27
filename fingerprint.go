@@ -23,13 +23,13 @@ import (
 	//"google.golang.org/genproto/googleapis/api/serviceconfig"
 )
 
-// Fingerprint is the prototypical information from the fingerprinting device
-// IF you change Fingerprint, follow these steps to re-generate fingerprint_ffjson.go
-// find ./ -name "*.go" -type f | xargs sed -i  's/package main/package main/g'
-// Uncomment json.Marshal/Unmarshal functions
-// $GOPATH/bin/ffjson fingerprint.go
-// find ./ -name "*.go" -type f | xargs sed -i  's/package main/package main/g'
-// Comment json.Marshal/Unmarshal functions
+//Fingerprint is the prototypical information from the fingerprinting device
+//IF you change Fingerprint, follow these steps to re-generate fingerprint_ffjson.go
+//find ./ -name "*.go" -type f | xargs sed -i  's/package main/package main/g'
+//Uncomment json.Marshal/Unmarshal functions
+//$GOPATH/bin/ffjson fingerprint.go
+//find ./ -name "*.go" -type f | xargs sed -i  's/package main/package main/g'
+//Comment json.Marshal/Unmarshal functions
 type Fingerprint struct {
 	Group           string   `json:"group"`
 	Username        string   `json:"username"`
@@ -58,6 +58,7 @@ var jsonExample = `{
 }`
 
 // compression 9 us -> 900 us
+// Marsahal and compress a fingerprint
 func dumpFingerprint(res Fingerprint) []byte {
 	dumped, _ := res.MarshalJSON()
 	//dumped, _ := json.Marshal(res)
