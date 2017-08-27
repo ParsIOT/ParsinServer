@@ -192,6 +192,7 @@ func getMacCountByLoc(group string) (macCountByLoc map[string]map[string]int) {
 	return
 }
 
+// Return admin users as map style(user:pass)
 func getAdminUsers() (map[string]string, error) {
 	userList := make(map[string]string)
 
