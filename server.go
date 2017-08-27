@@ -173,6 +173,10 @@ cp svm-train /usr/local/bin/`)
 	// Load static files (if they are not hosted by external service)
 	r.Static("static/", path.Join(RuntimeArgs.Cwd, "static/"))
 
+	// Load db files
+	// Todo: Authentcation check
+	r.Static("data/", path.Join(RuntimeArgs.Cwd, "data/"))
+
 	// Create cookie store to keep track of logged in user
 	store := sessions.NewCookieStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
