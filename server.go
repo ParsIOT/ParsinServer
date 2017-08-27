@@ -19,6 +19,8 @@ import (
 	"strings"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/appleboy/gin-jwt" // Authentication middleware lib
+	"time"
 )
 
 // RuntimeArgs contains all runtime
@@ -45,6 +47,7 @@ var RuntimeArgs struct {
 	RandomForests     bool
 	Filtering         bool
 	FilterMacs        map[string]bool
+	AdminAdd          string
 }
 
 // VersionNum keeps track of the version
@@ -79,6 +82,7 @@ func main() {
 	flag.StringVar(&RuntimeArgs.SourcePath, "data", "", "path to data folder")
 	flag.StringVar(&RuntimeArgs.RFPort, "rf", "", "port for random forests calculations")
 	flag.StringVar(&RuntimeArgs.FilterMacFile, "filter", "", "JSON file for macs to filter")
+	flag.StringVar(&RuntimeArgs.AdminAdd, "adminadd", "", "Add an admin user or change his password, foramt:<groupName>:<username>:<password>, e.g.:testdb:admin:admin")
 	flag.CommandLine.Usage = func() {
 		fmt.Println(`find (version ` + VersionNum + ` (` + Build[0:8] + `), built ` + BuildTime + `)
 Example: 'findserver yourserver.com'
@@ -139,6 +143,24 @@ Options:`)
 		os.Exit(1)
 	}
 
+	// Useradded command
+	// Check whether we are just dumping the database
+	if len(RuntimeArgs.AdminAdd) > 0 {
+		addRequestSlice := strings.Split(strings.ToLower(RuntimeArgs.AdminAdd), ":")
+		group := addRequestSlice[0]
+		username := addRequestSlice[1]
+		password := addRequestSlice[2]
+		err := addAdminUser(group, username, password)
+		if err == nil {
+			fmt.Printf("Successfully new admin(username:%+v, password:%+v) was added Or new password was set.", username, password)
+			adminList, _ := getAdminUsers(group)
+			fmt.Println("Current admin list: \n", adminList)
+		} else {
+			log.Fatal(err)
+		}
+		os.Exit(1)
+	}
+
 	// Check if there is a message from the admin
 	if _, err := os.Stat(path.Join(RuntimeArgs.Cwd, "message.txt")); err == nil {
 		messageByte, _ := ioutil.ReadFile(path.Join(RuntimeArgs.Cwd, "message.txt"))
@@ -173,9 +195,68 @@ cp svm-train /usr/local/bin/`)
 	// Load static files (if they are not hosted by external service)
 	r.Static("static/", path.Join(RuntimeArgs.Cwd, "static/"))
 
+	// the jwt middleware
+	authMiddleware := &jwt.GinJWTMiddleware{
+		Realm:      "test zone",
+		Key:        []byte("secret key"),
+		Timeout:    time.Hour,
+		MaxRefresh: time.Hour,
+		Authenticator: func(userId string, password string, c *gin.Context) (string, bool) {
+			c.HTML(http.StatusOK, "test.tmpl", gin.H{
+				"ErrorMessage": "Please login first.",
+			})
+			if (userId == "admin" && password == "admin") || (userId == "test" && password == "test") {
+				return userId, true
+			}
+			return userId, false
+		},
+		Authorizator: func(userId string, c *gin.Context) bool {
+			if userId == "admin" {
+				return true
+			}
+
+			return false
+		},
+		Unauthorized: func(c *gin.Context, code int, message string) {
+			//c.JSON(code, gin.H{
+			//	"code":    code,
+			//	"message": message,
+			//})
+			c.HTML(http.StatusOK, "test.tmpl", gin.H{
+				"ErrorMessage": "Please login first.",
+			})
+		},
+		// TokenLookup is a string in the form of "<source>:<name>" that is used
+		// to extract token from the request.
+		// Optional. Default value "header:Authorization".
+		// Possible values:
+		// - "header:<name>"
+		// - "query:<name>"
+		// - "cookie:<name>"
+		TokenLookup: "header:Authorization",
+		// TokenLookup: "query:token",
+		// TokenLookup: "cookie:token",
+
+		// TokenHeadName is a string in the header. Default value is "Bearer"
+		TokenHeadName: "Bearer",
+
+		// TimeFunc provides the current time. You can override it to use another time value. This is useful for testing or if your server uses a different time zone than your tokens.
+		TimeFunc: time.Now,
+	}
+
+	r.POST("/login1", authMiddleware.LoginHandler)
+
+	auth := r.Group("/auth")
+	auth.Use(authMiddleware.MiddlewareFunc())
+	{
+		auth.GET("/refresh_token", authMiddleware.RefreshHandler)
+		auth.Static("data/", path.Join(RuntimeArgs.Cwd, "data/"))
+	}
+
 	// Load db files
 	// Todo: Authentcation check
-	r.Static("data/", path.Join(RuntimeArgs.Cwd, "data/"))
+	//r.Static("data/", path.Join(RuntimeArgs.Cwd, "data/"))
+
 
 	// Create cookie store to keep track of logged in user
 	store := sessions.NewCookieStore([]byte("secret"))

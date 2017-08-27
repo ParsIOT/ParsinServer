@@ -14,8 +14,9 @@ import (
 	"path"
 	"strings"
 	"time"
-
+	"encoding/json"
 	"github.com/boltdb/bolt"
+	"fmt"
 )
 
 // checks is the database file exist or not.
@@ -189,4 +190,94 @@ func getMacCountByLoc(group string) (macCountByLoc map[string]map[string]int) {
 		return nil
 	})
 	return
+}
+
+func getAdminUsers(group string) (map[string]string, error) {
+	userList := make(map[string]string)
+	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	fmt.Println("After Db open")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	err = db.View(func(tx *bolt.Tx) error {
+		// Assume bucket exists and has keys
+		b := tx.Bucket([]byte("users"))
+		if b == nil {
+			return fmt.Errorf("Resources dont exist")
+		}
+		v := b.Get([]byte("adminList"))
+		if len(v) == 0 {
+			fmt.Errorf("Admin list is empty")
+			return nil
+		} else {
+			err := json.Unmarshal(v, &userList)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return err
+		}
+	})
+	return userList, err
+}
+
+// Add an admin user or change his password
+func addAdminUser(group string, username string, password string) error {
+	userList := make(map[string]string)
+	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Create users bucket if doesn't exist
+	err = db.Update(func(tx *bolt.Tx) error {
+		_, err2 := tx.CreateBucketIfNotExists([]byte("users"))
+		if err2 != nil {
+			return fmt.Errorf("create bucket: %s", err2)
+		}
+		return err2
+	})
+
+	err = db.View(func(tx *bolt.Tx) error {
+		// Assume bucket exists and has keys
+		b := tx.Bucket([]byte("users"))
+		if b == nil {
+			return fmt.Errorf("Resources dont exist")
+		}
+		v := b.Get([]byte("adminList"))
+		if len(v) == 0 {
+			fmt.Errorf("Admin list is empty")
+			return nil
+		} else {
+			err := json.Unmarshal(v, &userList)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return err
+		}
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// Add an admin user or change his password
+	userList[username] = password
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		bucket, err2 := tx.CreateBucketIfNotExists([]byte("users"))
+		if err2 != nil {
+			return fmt.Errorf("create bucket: %s", err2)
+		}
+		marshalledUserList, _ := json.Marshal(userList)
+		err2 = bucket.Put([]byte("adminList"), marshalledUserList)
+		if err2 != nil {
+			return fmt.Errorf("could add to bucket: %s", err2)
+		}
+		return err2
+	})
+
+	return err
 }
