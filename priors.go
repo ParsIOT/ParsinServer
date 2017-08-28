@@ -247,7 +247,7 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 			networkName, inNetwork := hasNetwork(ps.NetworkMacs, macs)
 			if inNetwork {
 				for _, router := range v2.WifiFingerprint {
-					if router.Rssi > MinRssi {
+					if router.Rssi > MinRssiOpt {
 						//fmt.Println(router.Rssi)
 						ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi] += PdfType[0]
 						//make the real probability of the rssi distribution
