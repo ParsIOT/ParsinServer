@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/boltdb/bolt"
+	"math"
 )
 
 // PersistentParameters are not reloaded each time
@@ -237,47 +238,51 @@ func getParameters(group string, ps *FullParameters, fingerprintsInMemory map[st
 	}
 	defer db.Close()
 
+	it := float64(-1)
 	// Get all parameters that don't need a network graph (?)
 	for _, v1 := range fingerprintsOrdering {
-		v2 := fingerprintsInMemory[v1]
+		it++
+		if math.Mod(it, FoldCrossValidation) != 0 {
+			v2 := fingerprintsInMemory[v1]
 
-		// append the fingerprint location to UniqueLocs array if doesn't exist in it.
-		if !stringInSlice(v2.Location, ps.UniqueLocs) {
-			ps.UniqueLocs = append(ps.UniqueLocs, v2.Location)
-		}
+			// append the fingerprint location to UniqueLocs array if doesn't exist in it.
+			if !stringInSlice(v2.Location, ps.UniqueLocs) {
+				ps.UniqueLocs = append(ps.UniqueLocs, v2.Location)
+			}
 
-		// MacCountByLoc initialization for new location
-		if _, ok := ps.MacCountByLoc[v2.Location]; !ok {
-			ps.MacCountByLoc[v2.Location] = make(map[string]int)
-		}
+			// MacCountByLoc initialization for new location
+			if _, ok := ps.MacCountByLoc[v2.Location]; !ok {
+				ps.MacCountByLoc[v2.Location] = make(map[string]int)
+			}
 
-		// building network
-		macs := []string{}
-
-		for _, router := range v2.WifiFingerprint {
 			// building network
-			macs = append(macs, router.Mac)
+			macs := []string{}
 
-			// append the fingerprint mac to UniqueMacs array if doesn't exist in it.
-			if !stringInSlice(router.Mac, ps.UniqueMacs) {
-				ps.UniqueMacs = append(ps.UniqueMacs, router.Mac)
+			for _, router := range v2.WifiFingerprint {
+				// building network
+				macs = append(macs, router.Mac)
+
+				// append the fingerprint mac to UniqueMacs array if doesn't exist in it.
+				if !stringInSlice(router.Mac, ps.UniqueMacs) {
+					ps.UniqueMacs = append(ps.UniqueMacs, router.Mac)
+				}
+
+				// mac count
+				if _, ok := ps.MacCount[router.Mac]; !ok {
+					ps.MacCount[router.Mac] = 0
+				}
+				ps.MacCount[router.Mac]++
+
+				// mac by location count
+				if _, ok := ps.MacCountByLoc[v2.Location][router.Mac]; !ok {
+					ps.MacCountByLoc[v2.Location][router.Mac] = 0
+				}
+				ps.MacCountByLoc[v2.Location][router.Mac]++
 			}
 
-			// mac count
-			if _, ok := ps.MacCount[router.Mac]; !ok {
-				ps.MacCount[router.Mac] = 0
-			}
-			ps.MacCount[router.Mac]++
-
-			// mac by location count
-			if _, ok := ps.MacCountByLoc[v2.Location][router.Mac]; !ok {
-				ps.MacCountByLoc[v2.Location][router.Mac] = 0
-			}
-			ps.MacCountByLoc[v2.Location][router.Mac]++
+			// building network
+			ps.NetworkMacs = buildNetwork(ps.NetworkMacs, macs)
 		}
-
-		// building network
-		ps.NetworkMacs = buildNetwork(ps.NetworkMacs, macs)
 	}
 
 	ps.NetworkMacs = mergeNetwork(ps.NetworkMacs)
@@ -314,22 +319,26 @@ func getParameters(group string, ps *FullParameters, fingerprintsInMemory map[st
 	}
 
 	// Get the locations for each graph (Has to have network built first)
+	it = float64(-1)
 	for _, v1 := range fingerprintsOrdering {
-		v2 := fingerprintsInMemory[v1]
-		//todo: Make the macs array just once for each fingerprint instead of repeating the process
+		it++
+		if math.Mod(it, FoldCrossValidation) != 0 {
+			v2 := fingerprintsInMemory[v1]
+			//todo: Make the macs array just once for each fingerprint instead of repeating the process
 
-		macs := []string{}
-		for _, router := range v2.WifiFingerprint {
-			macs = append(macs, router.Mac)
-		}
-		//todo: ps.NetworkMacs is created from mac array; so it seems that hasNetwork function doesn't do anything useful!
-		networkName, inNetwork := hasNetwork(ps.NetworkMacs, macs)
-		if inNetwork {
-			if _, ok := ps.NetworkLocs[networkName]; !ok {
-				ps.NetworkLocs[networkName] = make(map[string]bool)
+			macs := []string{}
+			for _, router := range v2.WifiFingerprint {
+				macs = append(macs, router.Mac)
 			}
-			if _, ok := ps.NetworkLocs[networkName][v2.Location]; !ok {
-				ps.NetworkLocs[networkName][v2.Location] = true
+			//todo: ps.NetworkMacs is created from mac array; so it seems that hasNetwork function doesn't do anything useful!
+			networkName, inNetwork := hasNetwork(ps.NetworkMacs, macs)
+			if inNetwork {
+				if _, ok := ps.NetworkLocs[networkName]; !ok {
+					ps.NetworkLocs[networkName] = make(map[string]bool)
+				}
+				if _, ok := ps.NetworkLocs[networkName][v2.Location]; !ok {
+					ps.NetworkLocs[networkName][v2.Location] = true
+				}
 			}
 		}
 	}

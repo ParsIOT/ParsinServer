@@ -17,11 +17,12 @@ import (
 	"os/exec"
 	"path"
 	"strings"
-	"github.com/gin-gonic/contrib/sessions"
+	//"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/appleboy/gin-jwt" // Authentication middleware lib
 	// installation : 1.go get github.com/gin-gonic/gin 2.Solve the miscellaneous lib problem 3. git get github.com/appleboy/gin-jwt
 	"time"
+	"github.com/gin-gonic/contrib/sessions"
 )
 
 // RuntimeArgs contains all runtime
@@ -203,7 +204,7 @@ cp svm-train /usr/local/bin/`)
 		os.Exit(0)
 	}
 
-	authMiddleware := &jwt.GinJWTMiddleware{
+	authMiddleware := &jwt.GinJWTMiddleware{//todo: Problem with token saving after authentication(no way to save!)
 		Realm:      "test zone",
 		Key:        []byte("secret key"),
 		Timeout:    time.Hour,
@@ -214,7 +215,7 @@ cp svm-train /usr/local/bin/`)
 			//})
 			for user := range adminUsers {
 				if (userId == user && password == adminUsers[userId]) {
-				return userId, true
+					return userId, true
 				}
 			}
 			return userId, false

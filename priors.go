@@ -46,14 +46,14 @@ func init() {
 	PdfType = []float32{.1995, .1760, .1210, .0648, .027, 0.005}
 	Absentee = 1e-6
 	MinRssi = -110 //default:-110,ble=-80,wifi=-75
-	MinRssiOpt = -70
+	MinRssiOpt = -75
 	MaxRssi = 5
 	RssiPartitions = MaxRssi - MinRssi + 1
 	RssiRange = make([]float32, RssiPartitions)
 	for i := 0; i < len(RssiRange); i++ {
 		RssiRange[i] = float32(MinRssi + i)
 	}
-	FoldCrossValidation = 4
+	FoldCrossValidation = 20
 }
 
 // deprecated
@@ -168,9 +168,9 @@ func crossValidation(group string, n string, ps *FullParameters, fingerprintsInM
 
 	it := float64(-1)
 	for _, v1 := range fingerprintsOrdering {
-		v2 := fingerprintsInMemory[v1]
 		it++
 		if math.Mod(it, FoldCrossValidation) == 0 {
+			v2 := fingerprintsInMemory[v1]
 			if len(v2.WifiFingerprint) == 0 {
 				continue
 			}
@@ -235,9 +235,9 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 	//create gaussian distribution for every mac in every location
 	it := float64(-1)
 	for _, v1 := range fingerprintsOrdering {
-		v2 := fingerprintsInMemory[v1]
 		it++
-		if math.Mod(it, FoldCrossValidation) != 0 { // cross-validation
+		if math.Mod(it, FoldCrossValidation) != 0 {
+			v2 := fingerprintsInMemory[v1]
 			macs := []string{}
 			for _, router := range v2.WifiFingerprint {
 				macs = append(macs, router.Mac)

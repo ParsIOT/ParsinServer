@@ -292,7 +292,8 @@
                 </a>
                  &nbsp;
                   <a id="{{ $loc }}" class="editloc" title="Click to change name of '{{ $loc }}'"><span class="fa fa-pencil-square-o"></span></a>&nbsp;<a id="{{ $loc }}" class="deleteloc"  title="Click to delete '{{ $loc }}'"><i class="fa fa-trash"></i></a>&nbsp;</dt>
-                <dd><span title="Number of fingerprints used for learning">({{ index $.Dash.LocationCount $loc }})</span> &nbsp;
+                  <dd><span title="Number of fingerprints used for Crossvalidation">({{ index $.Dash.LocationCount $loc }})</span>
+                      &nbsp;
                   <span class="bg-success"><a title="Click to open pie chart depicting frequency of classification for '{{ $loc }}'" href="#" onClick="window.open('/pie/{{ $.Group }}/{{ $element }}/{{ $loc }}','pagename','resizable,height=380,width=480'); return false;">{{ index $.Dash.LocationAccuracy $loc }}%</a>  </span>
                 </dd>
               </dl>

@@ -111,6 +111,7 @@ func optimizePriorsThreaded(group string) error {
 	//	return nil
 	//})
 	//db.Close()
+	it := float64(-1)
 	err = db.View(func(tx *bolt.Tx) error {
 		//gets the fingerprint bucket
 		b := tx.Bucket([]byte("fingerprints"))
@@ -119,9 +120,12 @@ func optimizePriorsThreaded(group string) error {
 		}
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			fingerprintsInMemory[string(k)] = loadFingerprint(v)
-			//fingerprintsOrdering is an array of fingerprintsInMemory keys
-			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
+			it++
+			if math.Mod(it, FoldCrossValidation) != 0 {
+				fingerprintsInMemory[string(k)] = loadFingerprint(v)
+				//fingerprintsOrdering is an array of fingerprintsInMemory keys
+				fingerprintsOrdering = append(fingerprintsOrdering, string(k))
+			}
 		}
 		return nil
 	})
@@ -356,7 +360,7 @@ func optimizePriorsThreadedNot(group string) {
 
 			for _, v1 := range fingerprintsOrdering {
 				it++
-				if math.Mod(it, FoldCrossValidation) != 0 {
+				if math.Mod(it, FoldCrossValidation) == 0 {
 					_, ok := ps.NetworkLocs[n][fingerprintsInMemory[v1].Location]
 					if len(fingerprintsInMemory[v1].WifiFingerprint) == 0 || !ok {
 						continue
