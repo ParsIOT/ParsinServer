@@ -297,7 +297,7 @@ cp svm-train /usr/local/bin/`)
 	r.GET("/calculate", calculate)
 	r.GET("/status", getStatus)
 	// Done: delete these deprecated routes
-	//r.GET("/userlocs", userLocations) // to be deprecated
+	r.GET("/userlocs", userLocations) // to be deprecated
 	//r.GET("/whereami", whereAmI)      // to be deprecated
 	r.PUT("/mixin", putMixinOverride)
 	r.PUT("/cutoff", putCutoffOverride)

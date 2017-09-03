@@ -53,7 +53,7 @@ func init() {
 	for i := 0; i < len(RssiRange); i++ {
 		RssiRange[i] = float32(MinRssi + i)
 	}
-	FoldCrossValidation = 2
+	FoldCrossValidation = 5
 }
 
 // deprecated
