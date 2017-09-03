@@ -135,14 +135,15 @@ func optimizePriorsThreaded(group string) error {
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			it++
 			if math.Mod(it, FoldCrossValidation) == 0 { // todo: Must use random fg from db
+				fingerprintsInMemoryCross[string(k)] = loadFingerprint(v)
+				//fingerprintsOrdering is an array of fingerprintsInMemory keys
+				fingerprintsOrderingCross = append(fingerprintsOrderingCross, string(k))
+			} else {
 				//if fpCounter*((FoldCrossValidation-float64(1))/FoldCrossValidation) >= it {
 				fingerprintsInMemory[string(k)] = loadFingerprint(v)
 				//fingerprintsOrdering is an array of fingerprintsInMemory keys
 				fingerprintsOrdering = append(fingerprintsOrdering, string(k))
-			} else {
-				fingerprintsInMemoryCross[string(k)] = loadFingerprint(v)
-				//fingerprintsOrdering is an array of fingerprintsInMemory keys
-				fingerprintsOrderingCross = append(fingerprintsOrderingCross, string(k))
+
 			}
 		}
 		return nil
