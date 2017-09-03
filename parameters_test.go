@@ -58,6 +58,6 @@ func BenchmarkGetParameters(b *testing.B) {
 	var ps = *NewFullParameters()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		getParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+		getParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering, true)
 	}
 }

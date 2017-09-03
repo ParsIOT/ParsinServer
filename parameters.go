@@ -15,12 +15,12 @@ import (
 	"strings"
 
 	"github.com/boltdb/bolt"
-	"math"
+
 )
 
 // PersistentParameters are not reloaded each time
 type PersistentParameters struct {
-	NetworkRenamed map[string][]string  // key:networkName, value:mac list; e.g.: {"1":["mac1","mac2"]}
+	NetworkRenamed map[string][]string // key:networkName, value:mac list; e.g.: {"1":["mac1","mac2"]}
 }
 
 // PriorParameters contains the network-specific bayesian priors and Mac frequency, as well as special variables
@@ -63,14 +63,14 @@ func NewFullParameters() *FullParameters {
 		//todo: networkMacs difference with UniqueMacs
 		//todo: NetworkLocs difference with UniqueLocs
 		//todo: in networkMacs and networkLocs what is the purpose of true values? Could it be false?
-		NetworkMacs:    make(map[string]map[string]bool),   //e.g.: {"0":["MAC1":true,"MAC2":true,...]}
-		NetworkLocs:    make(map[string]map[string]bool),   //e.g.: {"0":["P1":true,"P2":true,...]}
-		MacCount:       make(map[string]int),               //number of fingerprints of an AP(mac) in all locations; e.g. : {"MAC1":10,"Mac2":15,...}
-		MacCountByLoc:  make(map[string]map[string]int),    //e.g.: {"P1":{"MAC1":10,"MAC2":14},"P2":{MacCount2},}
-		UniqueMacs:     []string{},                         //UniqueMacs is an array of AP's macs
-		UniqueLocs:     []string{},                         //UniqueLocs is an array of map's locations e.g.: ["P1","P2","P3",...]
+		NetworkMacs:    make(map[string]map[string]bool), //e.g.: {"0":["MAC1":true,"MAC2":true,...]}
+		NetworkLocs:    make(map[string]map[string]bool), //e.g.: {"0":["P1":true,"P2":true,...]}
+		MacCount:       make(map[string]int),             //number of fingerprints of an AP(mac) in all locations; e.g. : {"MAC1":10,"Mac2":15,...}
+		MacCountByLoc:  make(map[string]map[string]int),  //e.g.: {"P1":{"MAC1":10,"MAC2":14},"P2":{MacCount2},}
+		UniqueMacs:     []string{},                       //UniqueMacs is an array of AP's macs
+		UniqueLocs:     []string{},                       //UniqueLocs is an array of map's locations e.g.: ["P1","P2","P3",...]
 		Priors:         make(map[string]PriorParameters),
-		MacVariability: make(map[string]float32),           //the standard deviation of rssi of each mac
+		MacVariability: make(map[string]float32), //the standard deviation of rssi of each mac
 		Results:        make(map[string]ResultsParameters),
 		Loaded:         false, //is true if ps was created and save in resources
 	}
@@ -116,6 +116,7 @@ func loadParameters(jsonByte []byte) FullParameters {
 	res2.UnmarshalJSON(decompressByte(jsonByte))
 	return res2
 }
+
 //save ps(a FullParameters instance) to db
 func saveParameters(group string, res FullParameters) error {
 	//todo: why we should save ps in database? It can be regenerated from fingerprints bucket in db.
@@ -216,6 +217,7 @@ func savePersistentParameters(group string, res PersistentParameters) error {
 	Debug.Println("Saved")
 	return err
 }
+
 //group: group
 //ps:
 //fingerprintsInMemory:
@@ -223,6 +225,7 @@ func savePersistentParameters(group string, res PersistentParameters) error {
 //updates ps with the new fingerprint.
 //(The Parameters which are manipulated: NetworkMacs,NetworkLocs,UniqueMacs,UniqueLocs,MacCount,MacCountByLoc and Loaded)
 func getParameters(group string, ps *FullParameters, fingerprintsInMemory map[string]Fingerprint, fingerprintsOrdering []string) {
+
 	persistentPs, err := openPersistentParameters(group) //persistentPs is just like ps but with renamed network name; e.g.: "0" -> "1"
 	ps.NetworkMacs = make(map[string]map[string]bool)
 	ps.NetworkLocs = make(map[string]map[string]bool)
@@ -238,52 +241,52 @@ func getParameters(group string, ps *FullParameters, fingerprintsInMemory map[st
 	}
 	defer db.Close()
 
-	it := float64(-1)
 	// Get all parameters that don't need a network graph (?)
 	for _, v1 := range fingerprintsOrdering {
-		it++
-		if math.Mod(it, FoldCrossValidation) != 0 {
-			v2 := fingerprintsInMemory[v1]
 
-			// append the fingerprint location to UniqueLocs array if doesn't exist in it.
-			if !stringInSlice(v2.Location, ps.UniqueLocs) {
-				ps.UniqueLocs = append(ps.UniqueLocs, v2.Location)
-			}
+		//log.Println("calculateResults=true")
+		v2 := fingerprintsInMemory[v1]
 
-			// MacCountByLoc initialization for new location
-			if _, ok := ps.MacCountByLoc[v2.Location]; !ok {
-				ps.MacCountByLoc[v2.Location] = make(map[string]int)
-			}
-
-			// building network
-			macs := []string{}
-
-			for _, router := range v2.WifiFingerprint {
-				// building network
-				macs = append(macs, router.Mac)
-
-				// append the fingerprint mac to UniqueMacs array if doesn't exist in it.
-				if !stringInSlice(router.Mac, ps.UniqueMacs) {
-					ps.UniqueMacs = append(ps.UniqueMacs, router.Mac)
-				}
-
-				// mac count
-				if _, ok := ps.MacCount[router.Mac]; !ok {
-					ps.MacCount[router.Mac] = 0
-				}
-				ps.MacCount[router.Mac]++
-
-				// mac by location count
-				if _, ok := ps.MacCountByLoc[v2.Location][router.Mac]; !ok {
-					ps.MacCountByLoc[v2.Location][router.Mac] = 0
-				}
-				ps.MacCountByLoc[v2.Location][router.Mac]++
-			}
-
-			// building network
-			ps.NetworkMacs = buildNetwork(ps.NetworkMacs, macs)
+		// append the fingerprint location to UniqueLocs array if doesn't exist in it.
+		if !stringInSlice(v2.Location, ps.UniqueLocs) {
+			ps.UniqueLocs = append(ps.UniqueLocs, v2.Location)
 		}
+
+		// MacCountByLoc initialization for new location
+		if _, ok := ps.MacCountByLoc[v2.Location]; !ok {
+			ps.MacCountByLoc[v2.Location] = make(map[string]int)
+		}
+
+		// building network
+		macs := []string{}
+
+		for _, router := range v2.WifiFingerprint {
+			// building network
+			macs = append(macs, router.Mac)
+
+			// append the fingerprint mac to UniqueMacs array if doesn't exist in it.
+			if !stringInSlice(router.Mac, ps.UniqueMacs) {
+				ps.UniqueMacs = append(ps.UniqueMacs, router.Mac)
+			}
+
+			// mac count
+			if _, ok := ps.MacCount[router.Mac]; !ok {
+				ps.MacCount[router.Mac] = 0
+			}
+			ps.MacCount[router.Mac]++
+
+			// mac by location count
+			if _, ok := ps.MacCountByLoc[v2.Location][router.Mac]; !ok {
+				ps.MacCountByLoc[v2.Location][router.Mac] = 0
+			}
+			ps.MacCountByLoc[v2.Location][router.Mac]++
+		}
+
+		// building network
+		ps.NetworkMacs = buildNetwork(ps.NetworkMacs, macs)
 	}
+
+
 
 	ps.NetworkMacs = mergeNetwork(ps.NetworkMacs)
 
@@ -319,26 +322,24 @@ func getParameters(group string, ps *FullParameters, fingerprintsInMemory map[st
 	}
 
 	// Get the locations for each graph (Has to have network built first)
-	it = float64(-1)
-	for _, v1 := range fingerprintsOrdering {
-		it++
-		if math.Mod(it, FoldCrossValidation) != 0 {
-			v2 := fingerprintsInMemory[v1]
-			//todo: Make the macs array just once for each fingerprint instead of repeating the process
 
-			macs := []string{}
-			for _, router := range v2.WifiFingerprint {
-				macs = append(macs, router.Mac)
+	for _, v1 := range fingerprintsOrdering {
+
+		v2 := fingerprintsInMemory[v1]
+		//todo: Make the macs array just once for each fingerprint instead of repeating the process
+
+		macs := []string{}
+		for _, router := range v2.WifiFingerprint {
+			macs = append(macs, router.Mac)
+		}
+		//todo: ps.NetworkMacs is created from mac array; so it seems that hasNetwork function doesn't do anything useful!
+		networkName, inNetwork := hasNetwork(ps.NetworkMacs, macs)
+		if inNetwork {
+			if _, ok := ps.NetworkLocs[networkName]; !ok {
+				ps.NetworkLocs[networkName] = make(map[string]bool)
 			}
-			//todo: ps.NetworkMacs is created from mac array; so it seems that hasNetwork function doesn't do anything useful!
-			networkName, inNetwork := hasNetwork(ps.NetworkMacs, macs)
-			if inNetwork {
-				if _, ok := ps.NetworkLocs[networkName]; !ok {
-					ps.NetworkLocs[networkName] = make(map[string]bool)
-				}
-				if _, ok := ps.NetworkLocs[networkName][v2.Location]; !ok {
-					ps.NetworkLocs[networkName][v2.Location] = true
-				}
+			if _, ok := ps.NetworkLocs[networkName][v2.Location]; !ok {
+				ps.NetworkLocs[networkName][v2.Location] = true
 			}
 		}
 	}

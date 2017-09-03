@@ -8,7 +8,7 @@ package main
 
 import (
 	"log"
-	"math"
+
 	"path"
 
 	"github.com/boltdb/bolt"
@@ -53,7 +53,7 @@ func init() {
 	for i := 0; i < len(RssiRange); i++ {
 		RssiRange[i] = float32(MinRssi + i)
 	}
-	FoldCrossValidation = 20
+	FoldCrossValidation = 2
 }
 
 // deprecated
@@ -166,11 +166,9 @@ func crossValidation(group string, n string, ps *FullParameters, fingerprintsInM
 		ps.Results[n].Guess[loc] = make(map[string]int)
 	}
 
-	it := float64(-1)
 	for _, v1 := range fingerprintsOrdering {
-		it++
-		if math.Mod(it, FoldCrossValidation) == 0 {
-			v2 := fingerprintsInMemory[v1]
+
+		v2 := fingerprintsInMemory[v1]
 			if len(v2.WifiFingerprint) == 0 {
 				continue
 			}
@@ -188,7 +186,7 @@ func crossValidation(group string, n string, ps *FullParameters, fingerprintsInM
 				}
 				ps.Results[n].Guess[v2.Location][locationGuess]++ //set Guess
 			}
-		}
+
 	}
 
 	average := float64(0)
@@ -233,46 +231,46 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 	}
 
 	//create gaussian distribution for every mac in every location
-	it := float64(-1)
+
 	for _, v1 := range fingerprintsOrdering {
-		it++
-		if math.Mod(it, FoldCrossValidation) != 0 {
-			v2 := fingerprintsInMemory[v1]
-			macs := []string{}
+
+		v2 := fingerprintsInMemory[v1]
+		macs := []string{}
+		for _, router := range v2.WifiFingerprint {
+			macs = append(macs, router.Mac)
+		}
+
+		// todo: ps is set in the getParameters function (getParameters is called before calculatePriors), so calling the hasNetwork function returns true
+		networkName, inNetwork := hasNetwork(ps.NetworkMacs, macs)
+		if inNetwork {
 			for _, router := range v2.WifiFingerprint {
-				macs = append(macs, router.Mac)
-			}
-
-			// todo: ps is set in the getParameters function (getParameters is called before calculatePriors), so calling the hasNetwork function returns true
-			networkName, inNetwork := hasNetwork(ps.NetworkMacs, macs)
-			if inNetwork {
-				for _, router := range v2.WifiFingerprint {
-					if router.Rssi > MinRssiOpt {
-						//fmt.Println(router.Rssi)
-						ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi] += PdfType[0]
-						//make the real probability of the rssi distribution
-						for i, val := range PdfType {
-							if i > 0 {
-								//if (router.Rssi-MinRssi-i<2) {
-								//	fmt.Println("i=", i)
-								//	fmt.Println("router.Rssi=", router.Rssi)
-								//	fmt.Println("router.rssi-MinRSSi-i=", router.Rssi-MinRssi-i)
-								//}
-								if (router.Rssi-MinRssi-i > 0 && router.Rssi-MinRssi+i < RssiPartitions) {
-									ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi-i] += val
-									ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi+i] += val
-								}
-
+				if router.Rssi > MinRssiOpt {
+					//fmt.Println(router.Rssi)
+					ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi] += PdfType[0]
+					//make the real probability of the rssi distribution
+					for i, val := range PdfType {
+						if i > 0 {
+							//if (router.Rssi-MinRssi-i<2) {
+							//	fmt.Println("i=", i)
+							//	fmt.Println("router.Rssi=", router.Rssi)
+							//	fmt.Println("router.rssi-MinRSSi-i=", router.Rssi-MinRssi-i)
+							//}
+							if (router.Rssi-MinRssi-i > 0 && router.Rssi-MinRssi+i < RssiPartitions) {
+								ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi-i] += val
+								ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi+i] += val
 							}
+
 						}
-					} else {
-						Warning.Println(router.Rssi)
 					}
+					//} else {
+					//	Warning.Println(router.Rssi)
 				}
 			}
-
 		}
+
 	}
+
+
 
 
 	// Calculate the nP

@@ -67,8 +67,13 @@ func worker(id int, jobs <-chan jobA, results chan<- resultA) {
 // optimizePriorsThreaded generates the optimized prior data for Naive-Bayes classification.
 func optimizePriorsThreaded(group string) error {
 	// generate the fingerprintsInMemory
+
+	var psMain = *NewFullParameters()
+
+	// Get real PS from raw fingerprint data
 	fingerprintsInMemory := make(map[string]Fingerprint)
 	var fingerprintsOrdering []string
+
 	//opening the db
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	if err != nil {
@@ -76,42 +81,8 @@ func optimizePriorsThreaded(group string) error {
 		return err
 	}
 
-	//err = db.View(func(tx *bolt.Tx) error {
-	//	//gets the fingerprint bucket
-	//	b := tx.Bucket([]byte("fingerprints"))
-	//	if b == nil {
-	//		return fmt.Errorf("No fingerprint bucket")
-	//	}
-	//	c := b.Cursor()
-	//
-	//
-	//	for k, v := c.First(); k != nil; k, v = c.Next() {
-	//		var tempFP, resTempFP Fingerprint
-	//		aboveTh := false
-	//		tempFP = loadFingerprint(v)
-	//		for rt := range tempFP.WifiFingerprint {
-	//			var rtRes Router
-	//			if (tempFP.WifiFingerprint[rt].Rssi > MinRssi+len(PdfType)-2) {
-	//				rtRes = tempFP.WifiFingerprint[rt]
-	//				resTempFP.Group = tempFP.Group
-	//				resTempFP.Username = tempFP.Username
-	//				resTempFP.Location = tempFP.Location
-	//				resTempFP.Timestamp = tempFP.Timestamp
-	//				resTempFP.WifiFingerprint = append(resTempFP.WifiFingerprint, rtRes)
-	//				aboveTh = true
-	//			}
-	//		}
-	//		if (aboveTh) {
-	//			//fmt.Println(resTempFP)
-	//			fingerprintsInMemory[string(k)] = resTempFP
-	//			//fingerprintsOrdering is an array of fingerprintsInMemory keys
-	//			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
-	//		}
-	//	}
-	//	return nil
-	//})
-	//db.Close()
-	it := float64(-1)
+	fpCounter := float64(0)
+
 	err = db.View(func(tx *bolt.Tx) error {
 		//gets the fingerprint bucket
 		b := tx.Bucket([]byte("fingerprints"))
@@ -120,11 +91,58 @@ func optimizePriorsThreaded(group string) error {
 		}
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
+			fpCounter++
+			fingerprintsInMemory[string(k)] = loadFingerprint(v)
+			//fingerprintsOrdering is an array of fingerprintsInMemory keys
+			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
+		}
+		return nil
+	})
+	db.Close()
+
+	if err != nil {
+		return err
+	}
+
+	getParameters(group, &psMain, fingerprintsInMemory, fingerprintsOrdering)
+	//Info.Println("Running calculatePriors")
+	calculatePriors(group, &psMain, fingerprintsInMemory, fingerprintsOrdering)
+
+	//fmt.Println(ps1)
+
+	fingerprintsInMemory = make(map[string]Fingerprint)
+	fingerprintsInMemoryCross := make(map[string]Fingerprint)
+
+	fingerprintsOrdering = fingerprintsOrdering[:0]
+	var fingerprintsOrderingCross []string
+
+	//opening the db
+	db, err = bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+
+	err = db.View(func(tx *bolt.Tx) error {
+		//gets the fingerprint bucket
+		b := tx.Bucket([]byte("fingerprints"))
+		if b == nil {
+			return fmt.Errorf("No fingerprint bucket")
+		}
+		c := b.Cursor()
+		it := float64(-1)
+		for k, v := c.First(); k != nil; k, v = c.Next() {
 			it++
-			if math.Mod(it, FoldCrossValidation) != 0 {
+			if math.Mod(it, FoldCrossValidation) == 0 { // todo: Must use random fg from db
+				//if fpCounter/2 >= it {
 				fingerprintsInMemory[string(k)] = loadFingerprint(v)
 				//fingerprintsOrdering is an array of fingerprintsInMemory keys
 				fingerprintsOrdering = append(fingerprintsOrdering, string(k))
+			} else {
+				fingerprintsInMemoryCross[string(k)] = loadFingerprint(v)
+				//fingerprintsOrdering is an array of fingerprintsInMemory keys
+				fingerprintsOrderingCross = append(fingerprintsOrderingCross, string(k))
 			}
 		}
 		return nil
@@ -180,21 +198,21 @@ func optimizePriorsThreaded(group string) error {
 			PBayes1[n] = make(map[string]map[string]float64)
 			PBayes2[n] = make(map[string]map[string]float64)
 
-			for _, v1 := range fingerprintsOrdering {
+			for _, v1 := range fingerprintsOrderingCross {
 				it++
 				// call calculatePosteriorThreadSafe function every 3 times in 4 times
-				if math.Mod(it, FoldCrossValidation) != 0 {
-					_, ok := ps.NetworkLocs[n][fingerprintsInMemory[v1].Location]
+				//if math.Mod(it, FoldCrossValidation) != 0 {
+				_, ok := ps.NetworkLocs[n][fingerprintsInMemoryCross[v1].Location]
 					// Check if the fingerprint's location exists in ps
 					// todo: ps is made from the fingerprintsInMemory; so there is no need for bellow if!
-					if len(fingerprintsInMemory[v1].WifiFingerprint) == 0 || !ok {
+				if len(fingerprintsInMemoryCross[v1].WifiFingerprint) == 0 || !ok {
 						continue
 					}
 					totalJobs++
 					//todo: in the following line, fingerprintsInMemory[v1] is included in ps; so the test set(fingerprintsInMemory[v1]) is included in the training set(ps)
 					//
-					PBayes1[n][v1], PBayes2[n][v1] = calculatePosteriorThreadSafe(fingerprintsInMemory[v1], ps, cutoff)
-				}
+				PBayes1[n][v1], PBayes2[n][v1] = calculatePosteriorThreadSafe(fingerprintsInMemoryCross[v1], ps, cutoff)
+				//}
 			}
 		}
 
@@ -231,7 +249,7 @@ func optimizePriorsThreaded(group string) error {
 						bayes1 = append(bayes1, PBayes1[n][id][key])
 						bayes2 = append(bayes2, PBayes2[n][id][key]) //length of PBayes1 array equals to length of PBayes2
 					}
-					trueLoc := fingerprintsInMemory[id].Location
+					trueLoc := fingerprintsInMemoryCross[id].Location
 					chanJobs <- jobA{n: n,
 						mixin: mixin,
 						locs: locs,
@@ -293,13 +311,22 @@ func optimizePriorsThreaded(group string) error {
 		ps.Priors[n].Special["VarabilityCutoff"] = bestCutoff[n]
 		// (1-1/FoldCrossValidation) of the learned fingerprints are used to set the best mixin and cutoff,
 		// 	then (1/FoldCrossValidation) of remained fingerprints are used to set ps.Results(Accuracy,TotalLocations,CorrectLocations,Guess)
-		crossValidation(group, n, &ps, fingerprintsInMemory, fingerprintsOrdering)
+		crossValidation(group, n, &ps, fingerprintsInMemoryCross, fingerprintsOrderingCross)
 	}
+
+	//fmt.Println(ps)
+
+	for n := range psMain.Priors {
+		psMain.Priors[n].Special["MixIn"] = bestMixin[n]
+		psMain.Priors[n].Special["VarabilityCutoff"] = bestCutoff[n]
+	}
+
+	psMain.Results = ps.Results
 
 	// Debug.Println(getUsers(group))
 	go resetCache("usersCache")
-	go saveParameters(group, ps)
-	go setPsCache(group, ps)
+	go saveParameters(group, psMain)
+	go setPsCache(group, psMain)
 
 	return nil
 }
@@ -326,6 +353,7 @@ func optimizePriorsThreadedNot(group string) {
 	db.Close()
 
 	var ps = *NewFullParameters()
+
 	getParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
 	calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
 
