@@ -46,7 +46,7 @@ func init() {
 	PdfType = []float32{.1995, .1760, .1210, .0648, .027, 0.005}
 	Absentee = 1e-6
 	MinRssi = -110 //default:-110,ble=-80,wifi=-75
-	MinRssiOpt = -75
+	MinRssiOpt = -100
 	MaxRssi = 5
 	RssiPartitions = MaxRssi - MinRssi + 1
 	RssiRange = make([]float32, RssiPartitions)

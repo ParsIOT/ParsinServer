@@ -81,7 +81,7 @@ func optimizePriorsThreaded(group string) error {
 		return err
 	}
 
-	fpCounter := float64(0)
+	fpCounter := float64(-1)
 
 	err = db.View(func(tx *bolt.Tx) error {
 		//gets the fingerprint bucket
@@ -134,8 +134,8 @@ func optimizePriorsThreaded(group string) error {
 		it := float64(-1)
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			it++
-			//if math.Mod(it, FoldCrossValidation) == 0 { // todo: Must use random fg from db
-			if fpCounter*(FoldCrossValidation-1)/FoldCrossValidation >= it {
+			if math.Mod(it, FoldCrossValidation) == 0 { // todo: Must use random fg from db
+				//if fpCounter*((FoldCrossValidation-float64(1))/FoldCrossValidation) >= it {
 				fingerprintsInMemory[string(k)] = loadFingerprint(v)
 				//fingerprintsOrdering is an array of fingerprintsInMemory keys
 				fingerprintsOrdering = append(fingerprintsOrdering, string(k))
