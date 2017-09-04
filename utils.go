@@ -126,6 +126,19 @@ func average64(vals []float64) float64 {
 }
 
 // standardDeviation64 computes the standard deviation of a float64 slice.
+func variance64(vals []float64) float64 {
+	meanVal := average64(vals)
+
+	sum := float64(0)
+	for _, val := range vals {
+		sum += math.Pow(float64(val)-meanVal, 2)
+	}
+	sum = sum / (float64(len(vals)) - 1)
+
+	return float64(sum)
+}
+
+// standardDeviation64 computes the standard deviation of a float64 slice.
 func standardDeviation64(vals []float64) float64 {
 	meanVal := average64(vals)
 
