@@ -13,7 +13,6 @@ import (
 
 	"github.com/boltdb/bolt"
 	//"fmt"
-	"fmt"
 )
 
 // PdfType dictates the width of gaussian smoothing
@@ -47,7 +46,7 @@ func init() {
 	PdfType = []float32{.1995, .1760, .1210, .0648, .027, 0.005}
 	Absentee = 1e-6
 	MinRssi = -110 //default:-110,ble=-80,wifi=-75
-	MinRssiOpt = -75
+	MinRssiOpt = -100
 	MaxRssi = 5
 	RssiPartitions = MaxRssi - MinRssi + 1
 	RssiRange = make([]float32, RssiPartitions)
@@ -170,23 +169,23 @@ func crossValidation(group string, n string, ps *FullParameters, fingerprintsInM
 	for _, v1 := range fingerprintsOrdering {
 
 		v2 := fingerprintsInMemory[v1]
-			if len(v2.WifiFingerprint) == 0 {
-				continue
+		if len(v2.WifiFingerprint) == 0 {
+			continue
+		}
+		if _, ok := ps.NetworkLocs[n][v2.Location]; ok {
+			locationGuess, _ := calculatePosterior(v2, *ps)
+			ps.Results[n].TotalLocations[v2.Location]++ //set TotalLocations
+			if locationGuess == v2.Location {
+				ps.Results[n].CorrectLocations[v2.Location]++ //set CorrectLocations
 			}
-			if _, ok := ps.NetworkLocs[n][v2.Location]; ok {
-				locationGuess, _ := calculatePosterior(v2, *ps)
-				ps.Results[n].TotalLocations[v2.Location]++ //set TotalLocations
-				if locationGuess == v2.Location {
-					ps.Results[n].CorrectLocations[v2.Location]++ //set CorrectLocations
-				}
-				if _, ok := ps.Results[n].Guess[v2.Location]; !ok {
-					ps.Results[n].Guess[v2.Location] = make(map[string]int)
-				}
-				if _, ok := ps.Results[n].Guess[v2.Location][locationGuess]; !ok {
-					ps.Results[n].Guess[v2.Location][locationGuess] = 0
-				}
-				ps.Results[n].Guess[v2.Location][locationGuess]++ //set Guess
+			if _, ok := ps.Results[n].Guess[v2.Location]; !ok {
+				ps.Results[n].Guess[v2.Location] = make(map[string]int)
 			}
+			if _, ok := ps.Results[n].Guess[v2.Location][locationGuess]; !ok {
+				ps.Results[n].Guess[v2.Location][locationGuess] = 0
+			}
+			ps.Results[n].Guess[v2.Location][locationGuess]++ //set Guess
+		}
 
 	}
 
@@ -215,31 +214,17 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 	}
 
 	// Initialization
-	Rssies := make(map[string]map[string][]float64)
-	RssiesVariance := make(map[string]map[string]float64)
-	RssiesAvg := make(map[string]map[string]float64)
-
 	ps.MacVariability = make(map[string]float32)
 	for n := range ps.Priors {
 		ps.Priors[n].Special["MacFreqMin"] = float64(100)
 		ps.Priors[n].Special["NMacFreqMin"] = float64(100)
 		for loc := range ps.NetworkLocs[n] {
 			ps.Priors[n].P[loc] = make(map[string][]float32)
-
-			Rssies[loc] = make(map[string][]float64)
-			RssiesVariance[loc] = make(map[string]float64)
-			RssiesAvg[loc] = make(map[string]float64)
-
 			ps.Priors[n].NP[loc] = make(map[string][]float32)
 			ps.Priors[n].MacFreq[loc] = make(map[string]float32)
 			ps.Priors[n].NMacFreq[loc] = make(map[string]float32)
 			for mac := range ps.NetworkMacs[n] {
 				ps.Priors[n].P[loc][mac] = make([]float32, RssiPartitions)
-
-				Rssies[loc][mac] = make([]float64, 0)
-				RssiesVariance[loc][mac] = float64(0)
-				RssiesAvg[loc][mac] = float64(0)
-
 				ps.Priors[n].NP[loc][mac] = make([]float32, RssiPartitions)
 			}
 		}
@@ -248,130 +233,42 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 	//create gaussian distribution for every mac in every location
 
 	for _, v1 := range fingerprintsOrdering {
+
 		v2 := fingerprintsInMemory[v1]
 		macs := []string{}
 		for _, router := range v2.WifiFingerprint {
 			macs = append(macs, router.Mac)
 		}
-		_, inNetwork := hasNetwork(ps.NetworkMacs, macs)
+
+		// todo: ps is set in the getParameters function (getParameters is called before calculatePriors), so calling the hasNetwork function returns true
+		networkName, inNetwork := hasNetwork(ps.NetworkMacs, macs)
 		if inNetwork {
 			for _, router := range v2.WifiFingerprint {
 				if router.Rssi > MinRssiOpt {
 					//fmt.Println(router.Rssi)
-					Rssies[v2.Location][router.Mac] = append(Rssies[v2.Location][router.Mac], float64(router.Rssi-MinRssi))
-					//ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi] += PdfType[0]
+					ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi] += PdfType[0]
 					//make the real probability of the rssi distribution
-					//for i, val := range PdfType {
-					//	if i > 0 {
-					//		//if (router.Rssi-MinRssi-i<2) {
-					//		//	fmt.Println("i=", i)
-					//		//	fmt.Println("router.Rssi=", router.Rssi)
-					//		//	fmt.Println("router.rssi-MinRSSi-i=", router.Rssi-MinRssi-i)
-					//		//}
-					//		if (router.Rssi-MinRssi-i > 0 && router.Rssi-MinRssi+i < RssiPartitions) {
-					//			ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi-i] += val
-					//			ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi+i] += val
-					//		}
-					//
-					//	}
-					//}
+					for i, val := range PdfType {
+						if i > 0 {
+							//if (router.Rssi-MinRssi-i<2) {
+							//	fmt.Println("i=", i)
+							//	fmt.Println("router.Rssi=", router.Rssi)
+							//	fmt.Println("router.rssi-MinRSSi-i=", router.Rssi-MinRssi-i)
+							//}
+							if (router.Rssi-MinRssi-i > 0 && router.Rssi-MinRssi+i < RssiPartitions) {
+								ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi-i] += val
+								ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi+i] += val
+							}
+
+						}
+					}
 					//} else {
 					//	Warning.Println(router.Rssi)
 				}
 			}
-
 		}
+
 	}
-
-	for loc := range Rssies {
-		for mac := range Rssies[loc] {
-			//fmt.Println("RSSIes for loc:",loc,"& mac:",mac)
-			//fmt.Println(Rssies[loc][mac])
-			//fmt.Println("######")
-			RssiesAvg[loc][mac] = average64(Rssies[loc][mac])
-			RssiesVariance[loc][mac] = variance64(Rssies[loc][mac])
-		}
-	}
-
-	fmt.Println("###")
-
-	g := NewGaussian(0, 1)
-
-	for n := range ps.Priors {
-		for loc := range ps.NetworkLocs[n] {
-			for mac := range ps.NetworkMacs[n] {
-				for rssi := 0; rssi < len(RssiRange); rssi++ {
-					if (RssiesVariance[loc][mac] == 0) {
-						g = NewGaussian(RssiesAvg[loc][mac], 1)
-					} else {
-						g = NewGaussian(RssiesAvg[loc][mac], RssiesVariance[loc][mac])
-					}
-					fmt.Println(float32(g.Pdf(float64(rssi))))
-					fmt.Println(loc)
-					fmt.Println(mac)
-					fmt.Println(rssi)
-
-					ps.Priors[n].P[loc][mac][rssi] = float32(g.Pdf(float64(rssi)))
-				}
-			}
-		}
-	}
-
-	//
-	//for _, v1 := range fingerprintsOrdering {
-	//
-	//	v2 := fingerprintsInMemory[v1]
-	//	macs := []string{}
-	//	for _, router := range v2.WifiFingerprint {
-	//		macs = append(macs, router.Mac)
-	//	}
-	//
-	//	// todo: ps is set in the getParameters function (getParameters is called before calculatePriors), so calling the hasNetwork function returns true
-	//	networkName, inNetwork := hasNetwork(ps.NetworkMacs, macs)
-	//	if inNetwork {
-	//
-	//		for _, router := range v2.WifiFingerprint {
-	//			if router.Rssi > MinRssiOpt {
-	//
-	//				g := NewGaussian(0,1)
-	//				fmt.Println( RssiesVariance[v2.Location][router.Mac])
-	//				if(RssiesVariance[v2.Location][router.Mac] == 0){
-	//					g = NewGaussian(RssiesAvg[v2.Location][router.Mac], 1)
-	//				}else{
-	//					g = NewGaussian(RssiesAvg[v2.Location][router.Mac], RssiesVariance[v2.Location][router.Mac])
-	//				}
-	//				//ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi] += PdfType[0]
-	//				//fmt.Println(float32(g.Pdf(float64(router.Rssi-MinRssi))))
-	//
-	//				ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi] = float32(g.Pdf(float64(router.Rssi-MinRssi)))
-	//				//make the real probability of the rssi distribution
-	//				//for i, val := range PdfType {
-	//				for i, _ := range PdfType {
-	//					if i > 0 {
-	//						//if (router.Rssi-MinRssi-i<2) {
-	//						//	fmt.Println("i=", i)
-	//						//	fmt.Println("router.Rssi=", router.Rssi)
-	//						//	fmt.Println("router.rssi-MinRSSi-i=", router.Rssi-MinRssi-i)
-	//						//}
-	//						if (router.Rssi-MinRssi-i > 0 && router.Rssi-MinRssi+i < RssiPartitions) {
-	//							//ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi-i] += val
-	//							//ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi+i] += val
-	//							ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi-i] += float32(g.Pdf(float64(router.Rssi-MinRssi-i)))
-	//							ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-MinRssi+i] += float32(g.Pdf(float64(router.Rssi-MinRssi+i)))
-	//						}
-	//
-	//					}
-	//				}
-	//				//} else {
-	//				//	Warning.Println(router.Rssi)
-	//			}
-	//		}
-	//	}
-	//
-	//}
-
-
-
 
 	// Calculate the nP
 	for n := range ps.Priors {
@@ -398,20 +295,20 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 
 		for loc := range ps.NetworkLocs[n] {
 			for mac := range ps.NetworkMacs[n] {
-				for i := range ps.Priors[n].P[loc][mac] {//i is rssi
+				for i := range ps.Priors[n].P[loc][mac] { //i is rssi
 					//why using Absentee instead of 0
 					ps.Priors[n].P[loc][mac][i] += Absentee
 					ps.Priors[n].NP[loc][mac][i] += Absentee
 				}
-				total := float32(0)//total = sum of probabilities(P) of all rssi for a specific mac and location
+				total := float32(0) //total = sum of probabilities(P) of all rssi for a specific mac and location
 				for _, val := range ps.Priors[n].P[loc][mac] {
 					total += val
 				}
 				averageMac := float32(0)
 				for i, val := range ps.Priors[n].P[loc][mac] {
-					if val > float32(0) {//val is always => Absentee >0 --> it is required in normalization
-						ps.Priors[n].P[loc][mac][i] = val / total //normalizing P
-						averageMac += RssiRange[i] * ps.Priors[n].P[loc][mac][i]  // RssiRange[i] equals to rssi.
+					if val > float32(0) { //val is always => Absentee >0 --> it is required in normalization
+						ps.Priors[n].P[loc][mac][i] = val / total                //normalizing P
+						averageMac += RssiRange[i] * ps.Priors[n].P[loc][mac][i] // RssiRange[i] equals to rssi.
 						//todo: average mac is not valid if the probability distribution (P) is not a standard gaussian function,e.g. has two peaks
 					}
 				}
@@ -453,11 +350,10 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 					macAverages[mac][i] = maxVal / val // normalization(because val is < 0, we use maxVal/val instead of val /maxVal)
 				}
 				// MacVariability shows the standard deviation of a specific AP in all locations
-				ps.MacVariability[mac] = standardDeviation(macAverages[mac])//refer to line 300 todo
+				ps.MacVariability[mac] = standardDeviation(macAverages[mac]) //refer to line 300 todo
 			}
 		}
 	}
-
 
 	// Determine mac frequencies and normalize
 	for n := range ps.Priors {
@@ -465,7 +361,7 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 			maxCount := 0
 			for mac := range ps.MacCountByLoc[loc] {
 				if ps.MacCountByLoc[loc][mac] > maxCount {
-					maxCount = ps.MacCountByLoc[loc][mac]//maxCount:repeat number of the most seen mac in a location
+					maxCount = ps.MacCountByLoc[loc][mac] //maxCount:repeat number of the most seen mac in a location
 
 				}
 			}
@@ -513,5 +409,5 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 		//todo: spell check for Varability!
 		ps.Priors[n].Special["VarabilityCutoff"] = 0
 	}
-
 }
+
