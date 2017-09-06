@@ -10,7 +10,7 @@
 
 [![](https://raw.githubusercontent.com/schollz/find/master/static/splash.gif)](https://www.internalpositioning.com/)
 
-Version: 2.41
+Version: 2.42
 **Keywords**: indoor GPS, WiFi positioning, indoor mapping, indoor navigation, indoor positioning
 
 # About
