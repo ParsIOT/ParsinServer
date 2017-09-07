@@ -50,6 +50,7 @@ var RuntimeArgs struct {
 	Filtering         bool
 	FilterMacs        map[string]bool
 	AdminAdd          string
+	GaussianDist      bool
 }
 
 // VersionNum keeps track of the version
@@ -85,6 +86,7 @@ func main() {
 	flag.StringVar(&RuntimeArgs.RFPort, "rf", "", "port for random forests calculations")
 	flag.StringVar(&RuntimeArgs.FilterMacFile, "filter", "", "JSON file for macs to filter")
 	flag.StringVar(&RuntimeArgs.AdminAdd, "adminadd", "", "Add an admin user or change his password, foramt:<username>:<password>, e.g.:admin:admin")
+	flag.BoolVar(&RuntimeArgs.GaussianDist, "gaussian", false, "Use gaussian distribution instead of historgram")
 	flag.CommandLine.Usage = func() {
 		fmt.Println(`find (version ` + VersionNum + ` (` + Build[0:8] + `), built ` + BuildTime + `)
 Example: 'findserver yourserver.com'

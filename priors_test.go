@@ -61,7 +61,11 @@ func BenchmarkCrossValidation(b *testing.B) {
 
 	var ps = *NewFullParameters()
 	getParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
-	calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	if RuntimeArgs.GaussianDist {
+		calculateGaussianPriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	} else {
+		calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	}
 	var results = *NewResultsParameters()
 	for n := range ps.Priors {
 		ps.Results[n] = results
@@ -103,6 +107,10 @@ func BenchmarkCalculatePriors(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+		if RuntimeArgs.GaussianDist {
+			calculateGaussianPriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+		} else {
+			calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+		}
 	}
 }

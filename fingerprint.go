@@ -149,7 +149,8 @@ func trackFingerprintPOST(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 	var jsonFingerprint Fingerprint
-	Info.Println(jsonFingerprint)
+	//Info.Println(jsonFingerprint)
+
 	if c.BindJSON(&jsonFingerprint) == nil {
 		message, success, locationGuess, bayes, svm, rf := trackFingerprint(jsonFingerprint)
 		if success {
@@ -236,6 +237,7 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 			go appendUserCache(group, jsonFingerprint.Username)
 		}
 	}
+	Info.Println(jsonFingerprint)
 	locationGuess1, bayes := calculatePosterior(jsonFingerprint, *NewFullParameters())
 	percentGuess1 := float64(0)
 	total := float64(0)

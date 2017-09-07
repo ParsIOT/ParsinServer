@@ -13,6 +13,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	//"fmt"
+	//"fmt"
 )
 
 // PdfType dictates the width of gaussian smoothing
@@ -80,7 +81,12 @@ func optimizePriors(group string) {
 
 	var ps = *NewFullParameters()
 	getParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
-	calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	if RuntimeArgs.GaussianDist {
+		calculateGaussianPriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	} else {
+		calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	}
+
 	// fmt.Println(string(dumpParameters(ps)))
 	// ps, _ = openParameters("findtest")
 	var results = *NewResultsParameters()
@@ -146,7 +152,11 @@ func regenerateEverything(group string) {
 	var ps = *NewFullParameters()
 	ps, _ = openParameters(group)
 	getParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)//openParameters is only called here.
-	calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	if RuntimeArgs.GaussianDist {
+		calculateGaussianPriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	} else {
+		calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	}
 	var results = *NewResultsParameters()
 	for n := range ps.Priors {
 		ps.Results[n] = results
@@ -411,3 +421,239 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 	}
 }
 
+func calculateGaussianPriors(group string, ps *FullParameters, fingerprintsInMemory map[string]Fingerprint, fingerprintsOrdering []string) {
+	// defer timeTrack(time.Now(), "calculatePriors")
+	ps.Priors = make(map[string]PriorParameters)
+	for n := range ps.NetworkLocs {
+		var newPrior = *NewPriorParameters()
+		ps.Priors[n] = newPrior
+	}
+
+	// Initialization
+	Rssies := make(map[string]map[string][]float64)
+	RssiesVariance := make(map[string]map[string]float64)
+	RssiesAvg := make(map[string]map[string]float64)
+
+	ps.MacVariability = make(map[string]float32)
+	for n := range ps.Priors {
+		ps.Priors[n].Special["MacFreqMin"] = float64(100)
+		ps.Priors[n].Special["NMacFreqMin"] = float64(100)
+		for loc := range ps.NetworkLocs[n] {
+			ps.Priors[n].P[loc] = make(map[string][]float32)
+
+			Rssies[loc] = make(map[string][]float64)
+			RssiesVariance[loc] = make(map[string]float64)
+			RssiesAvg[loc] = make(map[string]float64)
+
+			ps.Priors[n].NP[loc] = make(map[string][]float32)
+			ps.Priors[n].MacFreq[loc] = make(map[string]float32)
+			ps.Priors[n].NMacFreq[loc] = make(map[string]float32)
+			for mac := range ps.NetworkMacs[n] {
+				ps.Priors[n].P[loc][mac] = make([]float32, RssiPartitions)
+
+				Rssies[loc][mac] = make([]float64, 0)
+				RssiesVariance[loc][mac] = float64(0)
+				RssiesAvg[loc][mac] = float64(0)
+
+				ps.Priors[n].NP[loc][mac] = make([]float32, RssiPartitions)
+			}
+		}
+	}
+
+	//create gaussian distribution for every mac in every location
+
+	// create list of collected rssi according to the locations and MACs
+	for _, v1 := range fingerprintsOrdering {
+		v2 := fingerprintsInMemory[v1]
+		macs := []string{}
+		for _, router := range v2.WifiFingerprint {
+			macs = append(macs, router.Mac)
+		}
+		_, inNetwork := hasNetwork(ps.NetworkMacs, macs)
+		if inNetwork {
+			for _, router := range v2.WifiFingerprint {
+				if router.Rssi > MinRssiOpt {
+					//fmt.Println(router.Rssi)
+					Rssies[v2.Location][router.Mac] = append(Rssies[v2.Location][router.Mac], float64(router.Rssi-MinRssi))
+				}
+			}
+
+		}
+	}
+
+	// Calculate average and variance of a rssi list of a mac in a location
+	for loc := range Rssies {
+		for mac := range Rssies[loc] {
+			//fmt.Println("RSSIes for loc:",loc,"& mac:",mac)
+			//fmt.Println(Rssies[loc][mac])
+			//fmt.Println("######")
+			RssiesAvg[loc][mac] = average64(Rssies[loc][mac])
+			RssiesVariance[loc][mac] = variance64(Rssies[loc][mac])
+		}
+	}
+
+	//fmt.Println("###")
+
+	g := NewGaussian(0, 1)
+
+	// Create gaussian distribution; set probability for each rssi of each mac in each location
+	for n := range ps.Priors {
+		for loc := range ps.NetworkLocs[n] {
+			for mac := range ps.NetworkMacs[n] {
+				for rssi := 0; rssi < len(RssiRange); rssi++ {
+					if (RssiesVariance[loc][mac] == 0) {
+						g = NewGaussian(RssiesAvg[loc][mac], 1)
+					} else {
+						g = NewGaussian(RssiesAvg[loc][mac], RssiesVariance[loc][mac])
+					}
+					//fmt.Println(float32(g.Pdf(float64(rssi))))
+					//fmt.Println(loc)
+					//fmt.Println(mac)
+					//fmt.Println(rssi)
+					ps.Priors[n].P[loc][mac][rssi] = float32(g.Pdf(float64(rssi)))
+				}
+			}
+		}
+	}
+
+	// Calculate the nP
+	for n := range ps.Priors {
+		for locN := range ps.NetworkLocs[n] {
+			for loc := range ps.NetworkLocs[n] {
+				if loc != locN {
+					for mac := range ps.NetworkMacs[n] {
+						for i := range ps.Priors[n].P[locN][mac] {
+							//i is rssi
+							if ps.Priors[n].P[loc][mac][i] > 0 {
+								ps.Priors[n].NP[locN][mac][i] += ps.Priors[n].P[loc][mac][i]
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Add in absentee, normalize P and nP and determine MacVariability
+
+	for n := range ps.Priors {
+		macAverages := make(map[string][]float32)
+
+		for loc := range ps.NetworkLocs[n] {
+			for mac := range ps.NetworkMacs[n] {
+				for i := range ps.Priors[n].P[loc][mac] { //i is rssi
+					//why using Absentee instead of 0
+					ps.Priors[n].P[loc][mac][i] += Absentee
+					ps.Priors[n].NP[loc][mac][i] += Absentee
+				}
+				total := float32(0) //total = sum of probabilities(P) of all rssi for a specific mac and location
+				for _, val := range ps.Priors[n].P[loc][mac] {
+					total += val
+				}
+				averageMac := float32(0)
+				for i, val := range ps.Priors[n].P[loc][mac] {
+					if val > float32(0) { //val is always => Absentee >0 --> it is required in normalization
+						ps.Priors[n].P[loc][mac][i] = val / total                //normalizing P
+						averageMac += RssiRange[i] * ps.Priors[n].P[loc][mac][i] // RssiRange[i] equals to rssi.
+						//todo: average mac is not valid if the probability distribution (P) is not a standard gaussian function,e.g. has two peaks
+					}
+				}
+				//why checking is required?
+				if averageMac < float32(0) {
+					if _, ok := macAverages[mac]; !ok {
+						macAverages[mac] = []float32{}
+					}
+					macAverages[mac] = append(macAverages[mac], averageMac) // averageMac of each mac in every locations
+				}
+
+				//normalizing NP
+				total = float32(0)
+				for i := range ps.Priors[n].NP[loc][mac] {
+					total += ps.Priors[n].NP[loc][mac][i]
+				}
+				if total > 0 {
+					for i := range ps.Priors[n].NP[loc][mac] {
+						ps.Priors[n].NP[loc][mac][i] = ps.Priors[n].NP[loc][mac][i] / total
+					}
+				}
+			}
+		}
+
+		// Determine MacVariability
+		for mac := range macAverages {
+			//todo: why 2?
+			if len(macAverages[mac]) <= 2 {
+				ps.MacVariability[mac] = float32(1)
+			} else {
+				maxVal := float32(-10000)
+				for _, val := range macAverages[mac] {
+					if val > maxVal {
+						maxVal = val
+					}
+				}
+				for i, val := range macAverages[mac] {
+					//todo: why not using the actual values of macAverages instead of the normalized values?
+					macAverages[mac][i] = maxVal / val // normalization(because val is < 0, we use maxVal/val instead of val /maxVal)
+				}
+				// MacVariability shows the standard deviation of a specific AP in all locations
+				ps.MacVariability[mac] = standardDeviation(macAverages[mac]) //refer to line 300 todo
+			}
+		}
+	}
+
+	// Determine mac frequencies and normalize
+	for n := range ps.Priors {
+		for loc := range ps.NetworkLocs[n] {
+			maxCount := 0
+			for mac := range ps.MacCountByLoc[loc] {
+				if ps.MacCountByLoc[loc][mac] > maxCount {
+					maxCount = ps.MacCountByLoc[loc][mac] //maxCount:repeat number of the most seen mac in a location
+
+				}
+			}
+			//fmt.Println("MAX COUNT:", maxCount)
+			for mac := range ps.MacCountByLoc[loc] {
+				//if a mac is not seen in a location, the macFreq of that mac equals to 0 (ps.MacCountByLoc[loc][mac]).
+				//todo: Does the above mentioned 0 value make some error in the bayesian function?
+				ps.Priors[n].MacFreq[loc][mac] = float32(ps.MacCountByLoc[loc][mac]) / float32(maxCount)
+				//fmt.Println("mac freq:", ps.Priors[n].MacFreq[loc][mac])
+				if float64(ps.Priors[n].MacFreq[loc][mac]) < ps.Priors[n].Special["MacFreqMin"] {
+					ps.Priors[n].Special["MacFreqMin"] = float64(ps.Priors[n].MacFreq[loc][mac])
+				}
+			}
+		}
+	}
+
+	// Determine negative mac frequencies and normalize
+	for n := range ps.Priors {
+		for loc1 := range ps.Priors[n].MacFreq {
+			sum := float32(0)
+			for loc2 := range ps.Priors[n].MacFreq {
+				if loc2 != loc1 {
+					for mac := range ps.Priors[n].MacFreq[loc2] {
+						ps.Priors[n].NMacFreq[loc1][mac] += ps.Priors[n].MacFreq[loc2][mac]
+						sum++
+					}
+				}
+			}
+			// sum = i(i-1); i = ps.NetworkLocs[n]
+			// Normalize
+			//todo: it seems that sum is not calculated correctly. It should be equals to "number of locations-1"
+			if sum > 0 {
+				for mac := range ps.Priors[n].MacFreq[loc1] {
+					ps.Priors[n].NMacFreq[loc1][mac] = ps.Priors[n].NMacFreq[loc1][mac] / sum
+					if float64(ps.Priors[n].NMacFreq[loc1][mac]) < ps.Priors[n].Special["NMacFreqMin"] {
+						ps.Priors[n].Special["NMacFreqMin"] = float64(ps.Priors[n].NMacFreq[loc1][mac])
+					}
+				}
+			}
+		}
+	}
+	//todo: the default values for MixIn and Cutoff should be set as initial values not hardcoded values
+	for n := range ps.Priors {
+		ps.Priors[n].Special["MixIn"] = 0.5
+		//todo: spell check for Varability!
+		ps.Priors[n].Special["VarabilityCutoff"] = 0
+	}
+
+}

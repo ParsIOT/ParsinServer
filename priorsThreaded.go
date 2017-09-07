@@ -106,7 +106,11 @@ func optimizePriorsThreaded(group string) error {
 
 	getParameters(group, &psMain, fingerprintsInMemory, fingerprintsOrdering)
 	//Info.Println("Running calculatePriors")
-	calculatePriors(group, &psMain, fingerprintsInMemory, fingerprintsOrdering)
+	if RuntimeArgs.GaussianDist {
+		calculateGaussianPriors(group, &psMain, fingerprintsInMemory, fingerprintsOrdering)
+	} else {
+		calculatePriors(group, &psMain, fingerprintsInMemory, fingerprintsOrdering)
+	}
 
 	//fmt.Println(ps1)
 
@@ -157,7 +161,11 @@ func optimizePriorsThreaded(group string) error {
 	var ps = *NewFullParameters()
 	getParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
 	//Info.Println("Running calculatePriors")
-	calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	if RuntimeArgs.GaussianDist {
+		calculateGaussianPriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	} else {
+		calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	}
 
 	var results = *NewResultsParameters()
 	for n := range ps.Priors {
@@ -356,7 +364,11 @@ func optimizePriorsThreadedNot(group string) {
 	var ps = *NewFullParameters()
 
 	getParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
-	calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	if RuntimeArgs.GaussianDist {
+		calculateGaussianPriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	} else {
+		calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	}
 
 	var results = *NewResultsParameters()
 	for n := range ps.Priors {
