@@ -39,8 +39,8 @@ RUN apt-get install -y mosquitto-clients mosquitto
 
 # Install FIND
 # WORKDIR "/root"
-# RUN go get git@gitlab.com:hadiazaddel/findServer.git
-# RUN git clone git@gitlab.com:hadiazaddel/findServer.git
+# RUN go get git@gitlab.com:ParsIOT/findServer.git
+# RUN git clone git@gitlab.com:ParsIOT/findServer.git
 # WORKDIR "/root/findServer"
 WORKDIR "/root/project/"
 ADD . /root/project/
