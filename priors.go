@@ -396,13 +396,13 @@ func calculatePriors(group string, ps *FullParameters, fingerprintsInMemory map[
 				if loc2 != loc1 {
 					for mac := range ps.Priors[n].MacFreq[loc2] {
 						ps.Priors[n].NMacFreq[loc1][mac] += ps.Priors[n].MacFreq[loc2][mac]
-						sum++
 					}
+					sum++
 				}
 			}
 			// sum = i(i-1); i = ps.NetworkLocs[n]
 			// Normalize
-			//todo: it seems that sum is not calculated correctly. It should be equals to "number of locations-1"
+			//Done: it seems that sum is not calculated correctly. It should be equals to "number of locations-1"
 			if sum > 0 {
 				for mac := range ps.Priors[n].MacFreq[loc1] {
 					ps.Priors[n].NMacFreq[loc1][mac] = ps.Priors[n].NMacFreq[loc1][mac] / sum
@@ -632,13 +632,13 @@ func calculateGaussianPriors(group string, ps *FullParameters, fingerprintsInMem
 				if loc2 != loc1 {
 					for mac := range ps.Priors[n].MacFreq[loc2] {
 						ps.Priors[n].NMacFreq[loc1][mac] += ps.Priors[n].MacFreq[loc2][mac]
-						sum++
 					}
+					sum++
 				}
 			}
 			// sum = i(i-1); i = ps.NetworkLocs[n]
 			// Normalize
-			//todo: it seems that sum is not calculated correctly. It should be equals to "number of locations-1"
+			//Done: it seems that sum is not calculated correctly. It should be equals to "number of locations-1"
 			if sum > 0 {
 				for mac := range ps.Priors[n].MacFreq[loc1] {
 					ps.Priors[n].NMacFreq[loc1][mac] = ps.Priors[n].NMacFreq[loc1][mac] / sum
