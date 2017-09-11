@@ -156,6 +156,77 @@ func slashDashboard(c *gin.Context) {
 	})
 }
 
+// slashDashboard displays the dashboard
+func LiveLocationMap(c *gin.Context) {
+	filterUser := c.DefaultQuery("user", "")
+	filterUsers := c.DefaultQuery("users", "")
+	filterUserMap := make(map[string]bool)
+	if len(filterUser) > 0 {
+		u := strings.Replace(strings.TrimSpace(filterUser), ":", "", -1)
+		filterUserMap[u] = true
+	}
+	if len(filterUsers) > 0 {
+		for _, user := range strings.Split(filterUsers, ",") {
+			u := strings.Replace(strings.TrimSpace(user), ":", "", -1)
+			filterUserMap[u] = true
+		}
+	}
+	group := c.Param("group")
+	if _, err := os.Stat(path.Join(RuntimeArgs.SourcePath, group+".db")); os.IsNotExist(err) {
+		c.HTML(http.StatusOK, "login.tmpl", gin.H{
+			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+		})
+		return
+	}
+	ps, _ := openParameters(group)
+	var users []string
+	for user := range filterUserMap {
+		users = append(users, user)
+	}
+	people := make(map[string]UserPositionJSON)
+	if len(users) == 0 {
+		people = getCurrentPositionOfAllUsers(group)
+	} else {
+		for _, user := range users {
+			people[user] = getCurrentPositionOfUser(group, user)
+		}
+	}
+	type DashboardData struct {
+		Networks         []string
+		Locations        map[string][]string
+		LocationAccuracy map[string]int
+		LocationCount    map[string]int
+		Mixin            map[string]float64
+		VarabilityCutoff map[string]float64
+		Users            map[string]UserPositionJSON
+	}
+	var dash DashboardData
+	dash.Networks = []string{}
+	dash.Locations = make(map[string][]string)
+	dash.LocationAccuracy = make(map[string]int)
+	dash.LocationCount = make(map[string]int)
+	dash.Mixin = make(map[string]float64)
+	dash.VarabilityCutoff = make(map[string]float64)
+
+	for n := range ps.NetworkLocs {
+		dash.Mixin[n] = ps.Priors[n].Special["MixIn"]
+		dash.VarabilityCutoff[n] = ps.Priors[n].Special["VarabilityCutoff"]
+		dash.Networks = append(dash.Networks, n)
+		dash.Locations[n] = []string{}
+		for loc := range ps.NetworkLocs[n] {
+			dash.Locations[n] = append(dash.Locations[n], loc)
+			dash.LocationAccuracy[loc] = ps.Results[n].Accuracy[loc]
+			dash.LocationCount[loc] = ps.Results[n].TotalLocations[loc]
+		}
+	}
+	c.HTML(http.StatusOK, "live_location_map.tmpl", gin.H{
+		"Message": RuntimeArgs.Message,
+		"Group":   group,
+		"Dash":    dash,
+		"Users":   people,
+	})
+}
+
 // slash Location returns location (to be deprecated)
 func slashLocation(c *gin.Context) {
 	group := c.Param("group")

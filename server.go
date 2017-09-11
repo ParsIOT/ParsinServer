@@ -23,6 +23,7 @@ import (
 	// installation : 1.go get github.com/gin-gonic/gin 2.Solve the miscellaneous lib problem 3. git get github.com/appleboy/gin-jwt
 	"time"
 	"github.com/gin-gonic/contrib/sessions"
+	//"github.com/gin-gonic/contrib/jwt"
 )
 
 // RuntimeArgs contains all runtime
@@ -278,6 +279,7 @@ cp svm-train /usr/local/bin/`)
 	r.GET("/dashboard/:group", slashDashboard)
 	r.GET("/explore/:group/:network/:location", slashExplore2)
 	r.GET("/pie/:group/:network/:location", slashPie)
+	r.GET("/livemap/:group", LiveLocationMap)
 
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", learnFingerprintPOST)
