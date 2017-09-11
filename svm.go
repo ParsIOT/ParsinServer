@@ -384,7 +384,7 @@ func classify(jsonFingerprint Fingerprint) (string, map[string]float64) {
 func makeSVMLine(v2 Fingerprint, macs map[string]int, locations map[string]int) string {
 	m := make(map[int]int)
 	for _, fingerprint := range v2.WifiFingerprint {
-		if _, ok := macs[fingerprint.Mac]; ok {
+		if _, ok := macs[fingerprint.Mac]; ok && fingerprint.Rssi > MinRssiOpt {
 			m[macs[fingerprint.Mac]] = fingerprint.Rssi
 		}
 	}
