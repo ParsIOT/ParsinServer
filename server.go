@@ -52,6 +52,7 @@ var RuntimeArgs struct {
 	FilterMacs        map[string]bool
 	AdminAdd          string
 	GaussianDist      bool
+	MinRssOpt         int
 }
 
 // VersionNum keeps track of the version
@@ -88,6 +89,8 @@ func main() {
 	flag.StringVar(&RuntimeArgs.FilterMacFile, "filter", "", "JSON file for macs to filter")
 	flag.StringVar(&RuntimeArgs.AdminAdd, "adminadd", "", "Add an admin user or change his password, foramt:<username>:<password>, e.g.:admin:admin")
 	flag.BoolVar(&RuntimeArgs.GaussianDist, "gaussian", false, "Use gaussian distribution instead of historgram")
+	flag.IntVar(&RuntimeArgs.MinRssOpt, "minrss", -100, "Select minimum rss; Any Rss lower than minRss will be ignored.")
+
 	flag.CommandLine.Usage = func() {
 		fmt.Println(`find (version ` + VersionNum + ` (` + Build[0:8] + `), built ` + BuildTime + `)
 Example: 'findserver yourserver.com'
@@ -165,6 +168,10 @@ Options:`)
 		}
 		os.Exit(1)
 	}
+
+	//Set minRssOpt
+
+	MinRssiOpt = RuntimeArgs.MinRssOpt
 
 	// Check if there is a message from the admin
 	if _, err := os.Stat(path.Join(RuntimeArgs.Cwd, "message.txt")); err == nil {
