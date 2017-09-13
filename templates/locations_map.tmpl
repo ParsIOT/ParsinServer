@@ -31,7 +31,7 @@
             height: 500px;
         }
 
-        #live-users-table-container {
+        #users-table-container {
             overflow: scroll;
         }
     </style>
@@ -102,8 +102,8 @@
 
     <div class="row">
         <div class="col-lg-12">
-            <h2 class="page-header">Live Location Map
-                <small>view users on map</small>
+            <h2 class="page-header">Location On Map
+                <small>view all locations on map</small>
             </h2>
         </div>
     </div>
@@ -124,16 +124,16 @@
         <div class="col-md-3 col-sm-12">
             <div class="panel panel-success" id="users-list-panel">
                 <div class="panel-heading">
-                    Users
+                    Locations
                 </div>
-                <div class="panel-body" id="live-users-table-container">
-                    <table id="live-users-table"
-                           class="table table-responsive table-hover table-condensed table-bordered">
+                <div class="panel-body" id="users-table-container">
+                    <table id="users-table" class="table table-responsive table-hover table-condensed table-bordered">
                         <thead>
                         <tr>
-                            <td>User</td>
                             <td>X</td>
                             <td>Y</td>
+                            <td>accuracy</td>
+                            <td>count</td>
                         </tr>
                         </thead>
                     </table>
@@ -148,7 +148,7 @@
 
 <script type="application/javascript">
     $('#live-map').css('height', $(window.top).height() - 275);
-    $('#live-users-table-container').css('height', $(window.top).height() - 245);
+    $('#users-table').parent().css('height', $(window.top).height() - 245);
     var map = L.map('live-map', {
         crs: L.CRS.Simple,
         minZoom: -100,
@@ -162,46 +162,58 @@
     var markers = {};
     var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
 
-    //    var marker = L.userMarker([0, 0], {pulsing: true, accuracy: 100, smallIcon: true});
-    //    marker.addTo(map);
+    /*
+        var defaults = {
+            '1': [-450, -620],
+            '2': [60, 100],
+            '3': [-180, 700],
+            '4': [0, -950],
+            '5': [-700, -1360],
+            '6': [170, -1500],
+            '7': [-30, 1350],
+            '8': [-830, 1350]
+        };
+
+            $.each(defaults, function (key, val) {
+
+                defaults[key] = L.userMarker(val, {
+                    title: key,
+                    smallIcon: true
+                }).bindPopup(key).addTo(map).on('popupopen', function (e) {
+                    defaults[key]._popup.setContent("<b>" + key + "</b><br>x = " + e.target._accMarker._latlng.lat
+                        + "<br>y = " + e.target._accMarker._latlng.lng);
+                });
+            });
+     */
 
     map.on('click', function (e) {
         console.log(e.latlng.lat + "," + e.latlng.lng);
     });
 
-    $.getJSON("/location?group={{ .Group }}", function (data) {
+    $.getJSON("/locations?group={{ .Group }}", function (data) {
         var items = [];
-        $.each(data.users, function (key, val) {
 
-            let match = pattern.exec(val[0].location);
+        $.each(data.locations, function (key, val) {
+            let match = pattern.exec(key);
             if (match) {
-                items.push("<tr><td>" + key + "</td><td>" + match[1] + "</td><td>" + match[2] + "</td></tr>");
-                if (key in markers) {
-                    markers[key].slideTo([match[1], match[2]], {
-                        duration: 1000,
-                        keepAtCenter: false
-                    });
-                } else {
-                    markers[key] = L.userMarker([match[1], match[2]], {
+                items.push("<tr><td>" + match[1] + "</td><td>" + match[2] + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
+
+                markers[key] = L.userMarker([match[1], match[2]], {
 //                    pulsing: true,
 //                    accuracy: 200,
-                        title: key,
-                        smallIcon: true
-                    }).bindPopup(key).addTo(map).on('popupopen', function (e) {
-                        markers[key]._popup.setContent("<b>" + key + "</b><br>x = " + e.target._accMarker._latlng.lat
-                            + "<br>y = " + e.target._accMarker._latlng.lng);
-                    });
-
-                }
+                    title: key,
+                    smallIcon: true
+                }).bindPopup("<b>x = " + match[1] + "</b><br><b>y = " + match[2] + "</b>").addTo(map);
             } else {
-                items.push("<tr><td>" + key + "</td><td colspan='2' class='text-center'> NO DATA </td></tr>");
+                items.push("<tr><td colspan='2' class='text-center'>" + key + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
+
             }
         });
 
         $("<tbody/>", {
             "class": "tab-content",
             html: items.join("")
-        }).appendTo("#live-users-table");
+        }).appendTo("#users-table");
     });
 </script>
 </body>

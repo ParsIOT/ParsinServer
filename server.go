@@ -287,6 +287,7 @@ cp svm-train /usr/local/bin/`)
 	r.GET("/explore/:group/:network/:location", slashExplore2)
 	r.GET("/pie/:group/:network/:location", slashPie)
 	r.GET("/livemap/:group", LiveLocationMap)
+	r.GET("/locationsmap/:group", LocationsOnMap)
 
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", learnFingerprintPOST)

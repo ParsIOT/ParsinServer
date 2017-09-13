@@ -18,7 +18,7 @@
   <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
 
   <!-- Font Awesome CSS -->
-  <link rel="stylesheet" href="/static/font-awesome-4.3.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/static/css/font-awesome.min.css">
 
   <style>
     .location-listing > .row > .col-md-6:nth-child(2n+1) {
@@ -172,9 +172,15 @@
       <!-- Collect the nav links, forms, and other content for toggling -->
       <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
         <ul class="nav navbar-nav">
-          <!-- <li>
-            <a href="https://www.internalpositioning.com/"><i class="fa fa-tachometer"></i> Dashboard</a>
-          </li> -->
+          <li>
+            <a href="/dashboard/{{ .Group }}"><i class="fa fa-tachometer"></i> Dashboard</a>
+          </li>
+          <li>
+            <a href="/livemap/{{ .Group }}"><i class="fa fa-map"></i> Track Users</a>
+          </li>
+          <li>
+            <a href="/locationsmap/{{ .Group }}"><i class="fa fa-map"></i> Show Locations</a>
+          </li>
           <!--
 					<li>
 						<a href="/map2.html"><i class="fa fa-globe"></i> Geo-tracking</a>
