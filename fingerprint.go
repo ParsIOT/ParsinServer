@@ -38,6 +38,10 @@ type Fingerprint struct {
 	WifiFingerprint []Router `json:"wifi-fingerprint"`
 }
 
+type BulkFingerprint struct {
+	Fingerprints []Fingerprint    `json:"fingerprints"`
+}
+
 // Router is the router information for each individual mac address
 type Router struct {
 	Mac  string `json:"mac"`
@@ -185,6 +189,41 @@ func learnFingerprintPOST(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "Could not bind JSON", "success": false})
 	}
 }
+
+// call leanFingerprint() function for each fp of BulkFingerprint
+func bulkLearnFingerprintPOST(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	var bulkJsonFingerprint BulkFingerprint
+
+	var returnMessage string
+	var returnSuccess string
+	if c.BindJSON(&bulkJsonFingerprint) == nil {
+		for i, jsonFingerprint := range bulkJsonFingerprint.Fingerprints {
+			message, success := learnFingerprint(jsonFingerprint)
+			Debug.Println(i, " th fingerprint saving process: ", message)
+			if success {
+				Debug.Println(i, " th fingerprint data: ", jsonFingerprint)
+				returnSuccess = returnSuccess + strconv.Itoa(i) + " th success: true\n"
+				returnMessage = returnMessage + strconv.Itoa(i) + " th message: " + message + "\n"
+			} else {
+				returnSuccess = returnSuccess + strconv.Itoa(i) + " th success: false\n"
+				returnMessage = returnMessage + strconv.Itoa(i) + " th message: " + message + "\n"
+			}
+		}
+		c.JSON(http.StatusOK, gin.H{"message": returnMessage, "success": returnSuccess})
+	} else {
+		Warning.Println("Could not bind to BulkFingerprint")
+		c.JSON(http.StatusOK, gin.H{"message": "Could not bind JSON", "success": false})
+	}
+}
+
+
 
 // cleanFingerPrint and save the Fingerprint to db
 func learnFingerprint(jsonFingerprint Fingerprint) (string, bool) {

@@ -291,6 +291,7 @@ cp svm-train /usr/local/bin/`)
 
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", learnFingerprintPOST)
+	r.POST("/bulklearn", bulkLearnFingerprintPOST)
 	r.POST("/track", trackFingerprintPOST)
 
 	// Routes for MQTT (mqtt.go)
