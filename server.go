@@ -53,6 +53,7 @@ var RuntimeArgs struct {
 	AdminAdd          string
 	GaussianDist      bool
 	MinRssOpt         int
+	KNN               bool
 }
 
 // VersionNum keeps track of the version
