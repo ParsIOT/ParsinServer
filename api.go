@@ -40,6 +40,7 @@ type UserPositionJSON struct {
 	Bayes    map[string]float64 `json:"bayes"`
 	Svm      map[string]float64 `json:"svm"`
 	Rf       map[string]float64 `json:"rf"`
+	Knn      interface{}        `json:"knn"`
 }
 
 // Gets location list:
@@ -244,6 +245,7 @@ func getHistoricalUserPositions(group string, user string, n int) []UserPosition
 		if RuntimeArgs.RandomForests {
 			userJSON.Rf = rfClassify(group, fingerprint)
 		}
+		_, userJSON.Knn = calculateKnn(fingerprint)
 		userJSONs[i] = userJSON
 	}
 	return userJSONs
@@ -301,6 +303,7 @@ func getCurrentPositionOfAllUsers(group string) map[string]UserPositionJSON {
 		if RuntimeArgs.RandomForests {
 			foo.Rf = rfClassify(group, userFingerprints[user])
 		}
+		_, foo.Knn = calculateKnn(userFingerprints[user])
 		go setUserPositionCache(group+user, foo)
 		userPositions[user] = foo
 	}
@@ -361,6 +364,7 @@ func getCurrentPositionOfUser(group string, user string) UserPositionJSON {
 	if RuntimeArgs.RandomForests {
 		userJSON.Rf = rfClassify(group, userFingerprint)
 	}
+	_, userJSON.Knn = calculateKnn(userFingerprint)
 	go setUserPositionCache(group+user, userJSON)
 	return userJSON
 }

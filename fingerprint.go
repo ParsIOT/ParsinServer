@@ -337,6 +337,7 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 	userJSON.Bayes = bayes
 	userJSON.Svm = svmData
 	userJSON.Time = time.Now().String()
+	userJSON.Knn = locationGuessKnn
 	if RuntimeArgs.RandomForests {
 		userJSON.Rf = rfClassify(strings.ToLower(jsonFingerprint.Group), jsonFingerprint)
 
