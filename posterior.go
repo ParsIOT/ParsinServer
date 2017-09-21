@@ -60,9 +60,10 @@ func calculatePosterior(res Fingerprint, ps FullParameters) (string, map[string]
 				ind := int(W[mac] - MinRssi)
 				if len(ps.Priors[n].P[loc][mac]) > 0 {
 					PBA := float64(ps.Priors[n].P[loc][mac][ind])
-					PBnA := float64(ps.Priors[n].NP[loc][mac][ind])
+					//PBnA := float64(ps.Priors[n].NP[loc][mac][ind])
 					if PBA > 0 {
-						PBayes2[loc] += (math.Log(PBA*PA) - math.Log(PBA*PA+PBnA*PnA))
+						//PBayes2[loc] += (math.Log(PBA*PA) - math.Log(PBA*PA+PBnA*PnA))
+						PBayes2[loc] += math.Log(PBA)
 					} else {
 						PBayes2[loc] += -1
 					}
