@@ -63,7 +63,7 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 	currentY = 0
 
 	fingerprintSorted := sortedW(W)
-
+	sumW := float64(0)
 	for K, fpTime := range fingerprintSorted {
 		if (K < knnK) {
 			locXstr := strings.Split(fingerprintsInMemory[fpTime].Location, ",")[0]
@@ -72,11 +72,14 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 			locY, _ := strconv.ParseFloat(locYstr, 64)
 			currentX = currentX + W[fpTime]*locX
 			currentY = currentY + W[fpTime]*locY
+			sumW = sumW + W[fpTime]
 		} else {
 			break;
 		}
 	}
 
+	currentX = currentX / sumW
+	currentY = currentY / sumW
 	return nil, FloatToString(currentX) + "," + FloatToString(currentY)
 }
 
