@@ -625,6 +625,70 @@ func putCutoffOverride(c *gin.Context) {
 	}
 }
 
+// Calls setCutoffOverride() and then calls optimizePriorsThreaded()
+// GET parameters: group, cutoff
+func putKnnK(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	newK := c.DefaultQuery("knnK", "none")
+	Debug.Println(group)
+	Debug.Println(newK)
+	if group != "noneasdf" {
+		newKnnK, err := strconv.Atoi(newK)
+		if err == nil {
+			err2 := setKnnK(group, newKnnK)
+			if err2 == nil {
+				//optimizePriorsThreaded(strings.ToLower(group))
+				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K for " + group + ", now set to " + newK})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err2.Error()})
+			}
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
+	}
+}
+
+// Calls setCutoffOverride() and then calls optimizePriorsThreaded()
+// GET parameters: group, cutoff
+func putMinRss(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	newK := c.DefaultQuery("minRss", "none")
+	Debug.Println(group)
+	Debug.Println(newK)
+	if group != "noneasdf" {
+		newMinRss, err := strconv.Atoi(newK)
+		if err == nil {
+			err2 := setMinRSS(group, newMinRss)
+			if err2 == nil {
+				//optimizePriorsThreaded(strings.ToLower(group))
+				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding Minimum RSS for " + group + ", now set to " + newK})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err2.Error()})
+			}
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
+	}
+}
+
 // Calls renameNetwork() and then calls optimizePriors()
 // Done: replace optimizePriors() with optimizePriorsThreaded()
 // GET parameters: group, oldname, newname

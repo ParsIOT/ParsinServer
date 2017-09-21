@@ -316,6 +316,8 @@ cp svm-train /usr/local/bin/`)
 	r.PUT("/mixin", putMixinOverride)
 	r.PUT("/cutoff", putCutoffOverride)
 	r.PUT("/database", migrateDatabase)
+	r.PUT("/k_knn", putKnnK)
+	r.PUT("/minrss", putMinRss)
 	r.GET("/lastfingerprint", apiGetLastFingerprint)
 	//r.Static("data/", path.Join(RuntimeArgs.Cwd, "data/"))
 

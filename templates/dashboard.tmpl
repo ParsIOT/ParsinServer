@@ -258,18 +258,27 @@
       <div class="panel panel-primary" id="volume-fees-panel">
           <div class="panel-body">
             <div class="row">
-            <div class="col-sm-3 col-xs-6">
+                <div class="col-sm-2 col-xs-6">
               <button type="submit" class="btn btn-info btn-block" id="recalculateAll" title="Reclaculate the machine learning parameters and update your statistics.">Update</button>
             </div>
-            <div class="col-sm-3 col-xs-6">
+                <div class="col-sm-2 col-xs-6">
               <button type="submit" class="btn btn-success btn-block" id="getMQTT" title="Get MQTT password.">Get MQTT</button>
             </div>
-            <div class="col-sm-3 col-xs-6">
+                <div class="col-sm-2 col-xs-6">
               <button type="submit" class="btn btn-danger btn-block" id="setMixin" title="Set Mixin for parameters.">Set Mixin</button>
             </div>
-            <div class="col-sm-3 col-xs-6">
+                <div class="col-sm-2 col-xs-6">
               <button type="submit" class="btn btn-danger btn-block" id="setCutoff" title="Set Cutoff for parameters.">Set Cutoff</button>
             </div>
+                <div class="col-sm-2 col-xs-6">
+                    <button type="submit" class="btn btn-primary btn-block" id="setK" title="Set K for KNN.">Set K
+                    </button>
+                </div>
+                <div class="col-sm-2 col-xs-6">
+                    <button type="submit" class="btn btn-warning btn-block" id="setMinRss" title="Set K for KNN.">Set
+                        Min RSS
+                    </button>
+                </div>
           </div>
           </div>
       </div>
@@ -963,6 +972,82 @@ $('#setCutoff').click(function() {
           }
         });
       });
+  });
+
+  $('#setK').click(function () {
+      swal({
+              title: "Set K",
+              text: "Enter the new K for KNN:",
+              type: "input",
+              showCancelButton: true,
+              closeOnConfirm: false,
+              animation: "slide-from-top",
+              inputPlaceholder: "newlocation"
+          },
+          function (inputValue) {
+              if (inputValue === false || inputValue === "") {
+                  swal.showInputError("You need to write something!");
+                  return false
+              }
+
+              $.ajax({
+                  url: "/k_knn?group={{ .Group }}&knnK=" + inputValue,
+                  type: "PUT",
+                  success: function (data) {
+                      console.log(data);
+                      if (data['success']) {
+                          swal({
+                              title: "Updated!",
+                              text: data['message'],
+                              timer: 2000,
+                              showConfirmButton: true
+                          }, function () {
+                              location.reload();
+                          });
+                      } else {
+                          swal("Something went wrong.", data['message'], "error");
+                      }
+                  }
+              });
+          });
+  });
+
+  $('#setMinRss').click(function () {
+      swal({
+              title: "Set Minimum RSS",
+              text: "Enter the new Minimum RSS filter:",
+              type: "input",
+              showCancelButton: true,
+              closeOnConfirm: false,
+              animation: "slide-from-top",
+              inputPlaceholder: "newlocation"
+          },
+          function (inputValue) {
+              if (inputValue === false || inputValue === "") {
+                  swal.showInputError("You need to write something!");
+                  return false
+              }
+
+              $.ajax({
+                  url: "/minrss?group={{ .Group }}&minRss=" + inputValue,
+                  type: "PUT",
+                  success: function (data) {
+                      console.log(data);
+                      if (data['success']) {
+                          swal({
+                              title: "Updated!",
+                              text: data['message'],
+                              timer: 2000,
+                              showConfirmButton: true
+                          }, function () {
+                              location.reload();
+                          });
+                      } else {
+                          swal("Something went wrong.", data['message'], "error");
+                      }
+                  }
+              });
+          });
   });
   </script>
 

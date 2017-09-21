@@ -10,8 +10,18 @@ import (
 	"strconv"
 )
 
+var defaultKnnK int
+
+func init() {
+	defaultKnnK = 60
+}
+
 func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
-	knnK := 5
+	knnK, err := getKnnKOverride(jsonFingerprint.Group)
+	if err != nil {
+		knnK = defaultKnnK
+		Error.Println("KNN K Override is not set!")
+	}
 
 	fingerprintsInMemory := make(map[string]Fingerprint)
 	var fingerprintsOrdering []string

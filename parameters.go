@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/boltdb/bolt"
-
 )
 
 // PersistentParameters are not reloaded each time
@@ -286,8 +285,6 @@ func getParameters(group string, ps *FullParameters, fingerprintsInMemory map[st
 		ps.NetworkMacs = buildNetwork(ps.NetworkMacs, macs)
 	}
 
-
-
 	ps.NetworkMacs = mergeNetwork(ps.NetworkMacs)
 
 	// Rename the NetworkMacs
@@ -398,6 +395,58 @@ func getCutoffOverride(group string) (float64, error) {
 	return override, err
 }
 
+// return KNN K Override value from resources bucket in db
+func getKnnKOverride(group string) (int, error) {
+	group = strings.ToLower(group)
+	override := int(-1)
+	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
+	if err != nil {
+		Error.Println(err)
+	}
+
+	err = db.View(func(tx *bolt.Tx) error {
+		// Assume bucket exists and has keys
+		b := tx.Bucket([]byte("resources"))
+		if b == nil {
+			return fmt.Errorf("Resources dont exist")
+		}
+		v := b.Get([]byte("knnKOverride"))
+		if len(v) == 0 {
+			return fmt.Errorf("No mixin override")
+		}
+		override, err = strconv.Atoi(string(v))
+		return err
+	})
+	return override, err
+}
+
+// return KNN K Override value from resources bucket in db
+func getMinRSSOverride(group string) (int, error) {
+	group = strings.ToLower(group)
+	override := int(-1)
+	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
+	if err != nil {
+		Error.Println(err)
+	}
+
+	err = db.View(func(tx *bolt.Tx) error {
+		// Assume bucket exists and has keys
+		b := tx.Bucket([]byte("resources"))
+		if b == nil {
+			return fmt.Errorf("Resources dont exist")
+		}
+		v := b.Get([]byte("minRSSOverride"))
+		if len(v) == 0 {
+			return fmt.Errorf("No mixin override")
+		}
+		override, err = strconv.Atoi(string(v))
+		return err
+	})
+	return override, err
+}
+
 // Set mixinOverride value to resources bucket in db
 func setMixinOverride(group string, mixin float64) error {
 	if (mixin < 0 || mixin > 1) && mixin != -1 {
@@ -442,6 +491,58 @@ func setCutoffOverride(group string, cutoff float64) error {
 		}
 
 		err2 = bucket.Put([]byte("cutoffOverride"), []byte(strconv.FormatFloat(cutoff, 'E', -1, 64)))
+		if err2 != nil {
+			return fmt.Errorf("could add to bucket: %s", err2)
+		}
+		return err2
+	})
+	return err
+}
+
+// Set KNN K Override value to resources bucket in db
+func setKnnK(group string, knnk int) error {
+	if knnk < 0 && knnk != -1 {
+		return fmt.Errorf("knnk must be greater than 0")
+	}
+	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
+	if err != nil {
+		Error.Println(err)
+	}
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
+		if err2 != nil {
+			return fmt.Errorf("create bucket: %s", err2)
+		}
+
+		err2 = bucket.Put([]byte("knnKOverride"), []byte(strconv.Itoa(knnk)))
+		if err2 != nil {
+			return fmt.Errorf("could add to bucket: %s", err2)
+		}
+		return err2
+	})
+	return err
+}
+
+// Set KNN K Override value to resources bucket in db
+func setMinRSS(group string, minRss int) error {
+	if minRss < MaxRssi && minRss > MinRssi {
+		return fmt.Errorf("minRss must be greater than 0")
+	}
+	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
+	if err != nil {
+		Error.Println(err)
+	}
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
+		if err2 != nil {
+			return fmt.Errorf("create bucket: %s", err2)
+		}
+
+		err2 = bucket.Put([]byte("minRSSOverride"), []byte(strconv.Itoa(minRss)))
 		if err2 != nil {
 			return fmt.Errorf("could add to bucket: %s", err2)
 		}
