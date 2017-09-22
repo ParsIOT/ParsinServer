@@ -216,9 +216,9 @@ cp svm-train /usr/local/bin/`)
 	}
 
 	authMiddleware := &jwt.GinJWTMiddleware{//todo: Problem with token saving after authentication(no way to save!)
-		Realm:      "test zone",
-		Key:        []byte("secret key"),
-		Timeout:    time.Hour,
+		Realm: "test zone",
+		Key: []byte("secret key"),
+		Timeout: time.Hour,
 		MaxRefresh: time.Hour,
 		Authenticator: func(userId string, password string, c *gin.Context) (string, bool) {
 			//c.HTML(http.StatusOK, "test.tmpl", gin.H{
@@ -288,6 +288,12 @@ cp svm-train /usr/local/bin/`)
 	r.GET("/explore/:group/:network/:location", slashExplore2)
 	r.GET("/pie/:group/:network/:location", slashPie)
 	r.GET("/livemap/:group", LiveLocationMap)
+	/*
+	r.GET("/livemap/:group", func(context *gin.Context) {
+		r.LoadHTMLGlob(path.Join(RuntimeArgs.Cwd, "templates/*"))
+		LiveLocationMap(context)
+	})
+	*/
 	r.GET("/locationsmap/:group", LocationsOnMap)
 
 	// Routes for performing fingerprinting (fingerprint.go)

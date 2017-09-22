@@ -16,6 +16,7 @@
 
     <!-- Custom CSS -->
     <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
+    <link href="/static/css/custom.css" rel="stylesheet">
 
 
     <link href="/static/css/leaflet.css" rel="stylesheet">
@@ -127,6 +128,16 @@
                     Users
                 </div>
                 <div class="panel-body" id="live-users-table-container">
+                    <div class="bs-callout bs-callout-info" style="margin: 0 0 15px;padding-bottom: 5px;">
+                        <h4>Auto Refresh</h4>
+                        <div class="form-group">
+                            <label><input id="auto-reload" type="checkbox"/> Enable Auto reload</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="refresh-interval">Interval (milliseconds)</label>
+                            <input id="refresh-interval" type="number" min="1000" step="100" value="5000" class="form-control" disabled/>
+                        </div>
+                    </div>
                     <table id="live-users-table"
                            class="table table-responsive table-hover table-condensed table-bordered">
                         <thead>
@@ -147,6 +158,7 @@
 </div>
 
 <script type="application/javascript">
+    var reloadDataInterval;
     $('#live-map').css('height', $(window.top).height() - 275);
     $('#live-users-table-container').css('height', $(window.top).height() - 245);
     var map = L.map('live-map', {
@@ -165,44 +177,83 @@
     //    var marker = L.userMarker([0, 0], {pulsing: true, accuracy: 100, smallIcon: true});
     //    marker.addTo(map);
 
-    map.on('click', function (e) {
-        console.log(e.latlng.lat + "," + e.latlng.lng);
-    });
+    updateUsersLocation();
 
-    $.getJSON("/location?group={{ .Group }}", function (data) {
-        var items = [];
-        $.each(data.users, function (key, val) {
+    function updateUsersLocation() {
+        console.info("Loading");
+        clearInterval(reloadDataInterval);
+        $('.bs-callout').removeClass('bs-callout-info bs-callout-success').addClass('bs-callout-danger')
+        $.getJSON("/location?group={{ .Group }}", function (data) {
+            var items = [];
+            $.each(data.users, function (key, val) {
 
-            let match = pattern.exec(val[0].location);
-            if (match) {
-                items.push("<tr><td>" + key + "</td><td>" + match[1] + "</td><td>" + match[2] + "</td></tr>");
-                if (key in markers) {
-                    markers[key].slideTo([match[1], match[2]], {
-                        duration: 1000,
-                        keepAtCenter: false
-                    });
-                } else {
-                    markers[key] = L.userMarker([match[1], match[2]], {
+                let match = pattern.exec(val[0].location);
+                if (match) {
+                    items.push("<tr><td>" + key + "</td><td>" + match[1] + "</td><td>" + match[2] + "</td></tr>");
+                    if (key in markers) {
+                        markers[key].slideTo([match[1], match[2]], {
+                            duration: 1000,
+                            keepAtCenter: false
+                        });
+                    } else {
+                        markers[key] = L.userMarker([match[1], match[2]], {
 //                    pulsing: true,
 //                    accuracy: 200,
-                        title: key,
-                        smallIcon: true
-                    }).bindPopup(key).addTo(map).on('popupopen', function (e) {
-                        markers[key]._popup.setContent("<b>" + key + "</b><br>x = " + e.target._accMarker._latlng.lat
-                            + "<br>y = " + e.target._accMarker._latlng.lng);
-                    });
+                            title: key,
+                            smallIcon: true
+                        }).bindPopup(key).addTo(map).on('popupopen', function (e) {
+                            markers[key]._popup.setContent("<b>" + key + "</b><br>x = " + e.target._accMarker._latlng.lat
+                                + "<br>y = " + e.target._accMarker._latlng.lng);
+                        });
 
+                    }
+                } else {
+                    items.push("<tr><td>" + key + "</td><td colspan='2' class='text-center'> NO DATA </td></tr>");
                 }
-            } else {
-                items.push("<tr><td>" + key + "</td><td colspan='2' class='text-center'> NO DATA </td></tr>");
-            }
+            });
+            $("#live-users-table").find("tbody").remove();
+            $("<tbody/>", {
+                "class": "tab-content",
+                html: items.join("")
+            }).appendTo("#live-users-table");
+            console.info("done");
+            setTimeout(function () {
+                $('.bs-callout').removeClass('bs-callout-danger').addClass('bs-callout-success')
+                if ($('#auto-reload').is(':checked')) {
+                    resetDataLoadInterval()
+                }
+            }, 200);
         });
+    }
 
-        $("<tbody/>", {
-            "class": "tab-content",
-            html: items.join("")
-        }).appendTo("#live-users-table");
+    $('#auto-reload').change(function () {
+        if (this.checked) {
+            $('#refresh-interval').prop('disabled', false);
+            resetDataLoadInterval();
+        } else {
+            clearInterval(reloadDataInterval);
+            $('#refresh-interval').prop('disabled', true);
+        }
     });
+
+    $('#refresh-interval').change("change", function () {
+        resetDataLoadInterval();
+    });
+
+    function resetDataLoadInterval(interval = null) {
+        clearInterval(reloadDataInterval);
+        if (interval) {
+            reloadDataInterval = setInterval(updateUsersLocation, interval);
+            return
+        }
+        let v = parseInt($('#refresh-interval').val());
+        let m = parseInt($('#refresh-interval').prop('min'));
+        if (m < v) {
+            reloadDataInterval = setInterval(updateUsersLocation, v);
+        } else {
+            reloadDataInterval = setInterval(updateUsersLocation, m);
+        }
+    }
 </script>
 </body>
 
