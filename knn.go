@@ -8,8 +8,10 @@ import (
 	"sort"
 	"strings"
 	"strconv"
+	"errors"
 )
 
+// Default K in KNN algorithm
 var defaultKnnK int
 
 func init() {
@@ -76,8 +78,13 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 	sumW := float64(0)
 	for K, fpTime := range fingerprintSorted {
 		if (K < knnK) {
-			locXstr := strings.Split(fingerprintsInMemory[fpTime].Location, ",")[0]
-			locYstr := strings.Split(fingerprintsInMemory[fpTime].Location, ",")[1]
+			x_y := strings.Split(fingerprintsInMemory[fpTime].Location, ",")
+			if len(x_y) < 2 {
+				err := errors.New("Location names aren't in the format of x,y")
+				return err, ""
+			}
+			locXstr := x_y[0]
+			locYstr := x_y[1]
 			locX, _ := strconv.ParseFloat(locXstr, 64)
 			locY, _ := strconv.ParseFloat(locYstr, 64)
 			currentX = currentX + W[fpTime]*locX
