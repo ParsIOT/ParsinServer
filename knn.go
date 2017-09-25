@@ -15,9 +15,13 @@ import (
 var defaultKnnK int
 
 var knn_regression bool
+
+var minkowskyQ float64
+
 func init() {
 	defaultKnnK = 60
 	knn_regression = false
+	minkowskyQ = 3
 }
 
 func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
@@ -66,10 +70,10 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 
 		for curMac, curRssi := range mac2RssCur {
 			if fpRss, ok := mac2RssFP[curMac]; ok {
-				distance = distance + math.Pow(float64(curRssi-fpRss), 2)
+				distance = distance + math.Pow(float64(curRssi-fpRss), minkowskyQ)
 			}
 		}
-		distance = math.Sqrt(distance)
+		distance = math.Pow(distance, float64(1)/minkowskyQ)
 		W[fpTime] = float64(1) / distance
 	}
 	var currentX, currentY float64
