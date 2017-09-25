@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/boltdb/bolt"
+	"errors"
 )
 
 // PersistentParameters are not reloaded each time
@@ -418,6 +419,10 @@ func getKnnKOverride(group string) (int, error) {
 		override, err = strconv.Atoi(string(v))
 		return err
 	})
+	if (override == 0) {
+		err := errors.New("invalid knnOverride")
+		return defaultKnnK, err
+	}
 	return override, err
 }
 
@@ -501,7 +506,7 @@ func setCutoffOverride(group string, cutoff float64) error {
 
 // Set KNN K Override value to resources bucket in db
 func setKnnK(group string, knnk int) error {
-	if knnk < 0 && knnk != -1 {
+	if knnk <= 0 && knnk != -1 {
 		return fmt.Errorf("knnk must be greater than 0")
 	}
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
