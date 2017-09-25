@@ -14,8 +14,10 @@ import (
 // Default K in KNN algorithm
 var defaultKnnK int
 
+var knn_regression bool
 func init() {
 	defaultKnnK = 60
+	knn_regression = false
 }
 
 func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
@@ -75,29 +77,49 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 	currentY = 0
 
 	fingerprintSorted := sortedW(W)
-	sumW := float64(0)
-	for K, fpTime := range fingerprintSorted {
-		if (K < knnK) {
-			x_y := strings.Split(fingerprintsInMemory[fpTime].Location, ",")
-			if len(x_y) < 2 {
-				err := errors.New("Location names aren't in the format of x,y")
-				return err, ""
-			}
-			locXstr := x_y[0]
-			locYstr := x_y[1]
-			locX, _ := strconv.ParseFloat(locXstr, 64)
-			locY, _ := strconv.ParseFloat(locYstr, 64)
-			currentX = currentX + W[fpTime]*locX
-			currentY = currentY + W[fpTime]*locY
-			sumW = sumW + W[fpTime]
-		} else {
-			break;
-		}
-	}
+	fmt.Println(fingerprintSorted)
 
-	currentX = currentX / sumW
-	currentY = currentY / sumW
-	return nil, FloatToString(currentX) + "," + FloatToString(currentY)
+	if knn_regression {
+		sumW := float64(0)
+		for K, fpTime := range fingerprintSorted {
+			if (K < knnK) {
+				x_y := strings.Split(fingerprintsInMemory[fpTime].Location, ",")
+				if len(x_y) < 2 {
+					err := errors.New("Location names aren't in the format of x,y")
+					return err, ""
+				}
+				locXstr := x_y[0]
+				locYstr := x_y[1]
+				locX, _ := strconv.ParseFloat(locXstr, 64)
+				locY, _ := strconv.ParseFloat(locYstr, 64)
+				currentX = currentX + W[fpTime]*locX
+				currentY = currentY + W[fpTime]*locY
+				sumW = sumW + W[fpTime]
+			} else {
+				break;
+			}
+		}
+
+		currentX = currentX / sumW
+		currentY = currentY / sumW
+		return nil, FloatToString(currentX) + "," + FloatToString(currentY)
+	} else {
+		KNNList := make(map[string]float64)
+		for K, fpTime := range fingerprintSorted {
+			if (K < knnK) {
+				fpLoc := fingerprintsInMemory[fpTime].Location
+				if _, ok := KNNList[fpLoc]; ok {
+					KNNList[fpLoc] += W[fpTime]
+				} else {
+					KNNList[fpLoc] = W[fpTime]
+				}
+			} else {
+				break;
+			}
+		}
+		sortedKNNList := sortedW(KNNList)
+		return nil, sortedKNNList[0]
+	}
 }
 
 func FloatToString(input_num float64) string {
