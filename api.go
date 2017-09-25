@@ -807,6 +807,101 @@ func editName(c *gin.Context) {
 	}
 }
 
+// Changes a mac name in db(fingerprints and fingerprints-track buckets)
+// GET parameters: group, oldmac, newmac
+func editMac(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	group := c.DefaultQuery("group", "noneasdf")
+	oldmac := c.DefaultQuery("oldmac", "none")
+	newmac := c.DefaultQuery("newmac", "none")
+	if group != "noneasdf" {
+		toUpdate := make(map[string]string)
+		numChanges := 0
+
+		db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		db.View(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte("fingerprints"))
+			if b != nil {
+				c := b.Cursor()
+				for k, v := c.Last(); k != nil; k, v = c.Prev() {
+					v2 := loadFingerprint(v)
+					for i, rt := range v2.WifiFingerprint {
+						if rt.Mac == oldmac {
+							v2.WifiFingerprint[i].Mac = newmac
+							toUpdate[string(k)] = string(dumpFingerprint(v2))
+						}
+					}
+				}
+			}
+			return nil
+		})
+
+		db.Update(func(tx *bolt.Tx) error {
+			bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
+			if err != nil {
+				return fmt.Errorf("create bucket: %s", err)
+			}
+
+			for k, v := range toUpdate {
+				bucket.Put([]byte(k), []byte(v))
+			}
+			return nil
+		})
+
+		numChanges += len(toUpdate)
+
+		toUpdate = make(map[string]string)
+
+		db.View(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte("fingerprints-track"))
+			if b != nil {
+				c := b.Cursor()
+				for k, v := c.Last(); k != nil; k, v = c.Prev() {
+					v2 := loadFingerprint(v)
+					for i, rt := range v2.WifiFingerprint {
+						if rt.Mac == oldmac {
+							v2.WifiFingerprint[i].Mac = newmac
+							toUpdate[string(k)] = string(dumpFingerprint(v2))
+						}
+					}
+				}
+			}
+			return nil
+		})
+
+		db.Update(func(tx *bolt.Tx) error {
+			bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints-track"))
+			if err != nil {
+				return fmt.Errorf("create bucket: %s", err)
+			}
+
+			for k, v := range toUpdate {
+				bucket.Put([]byte(k), []byte(v))
+			}
+			return nil
+		})
+
+		db.Close()
+		numChanges += len(toUpdate)
+		optimizePriorsThreaded(strings.ToLower(group))
+
+		c.JSON(http.StatusOK, gin.H{"message": "Changed name of " + strconv.Itoa(numChanges) + " things", "success": true})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
+	}
+}
+
+
 // Same to editName() but edits username instead of the location name
 // GET paramets: group, user(the old username), newname
 func editUserName(c *gin.Context) {
