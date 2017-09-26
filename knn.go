@@ -18,10 +18,13 @@ var knn_regression bool
 
 var minkowskyQ float64
 
+var maxDist float64
+
 func init() {
 	defaultKnnK = 60
 	knn_regression = false
-	minkowskyQ = 3
+	minkowskyQ = 2
+	maxDist = 42
 }
 
 func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
@@ -74,14 +77,20 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 			}
 		}
 		distance = math.Pow(distance, float64(1)/minkowskyQ)
-		W[fpTime] = float64(1) / distance
+		if distance == 0 {
+			fmt.Println("location: ", fingerprintsInMemory[fpTime].Location)
+			W[fpTime] = float64(1) / maxDist
+		} else {
+			W[fpTime] = float64(1) / distance
+		}
+
 	}
 	var currentX, currentY float64
 	currentX = 0
 	currentY = 0
 
 	fingerprintSorted := sortedW(W)
-	fmt.Println(fingerprintSorted)
+	//fmt.Println(fingerprintSorted)
 
 	if knn_regression {
 		sumW := float64(0)
