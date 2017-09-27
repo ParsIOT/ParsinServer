@@ -9,6 +9,7 @@ import (
 	"strings"
 	"strconv"
 	"errors"
+	"runtime"
 )
 
 // Default K in KNN algorithm
@@ -24,7 +25,18 @@ func init() {
 	defaultKnnK = 60
 	knn_regression = false
 	minkowskyQ = 2
-	maxDist = 42
+	maxDist = 50
+}
+
+type resultW struct {
+	fpTime string
+	weight float64
+}
+
+type jobW struct {
+	fpTime     string
+	mac2RssCur map[string]int
+	mac2RssFP  map[string]int
 }
 
 func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
@@ -65,31 +77,35 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 	// calculating knn
 	W := make(map[string]float64)
 
+	numJobs := len(fingerprintsOrdering)
+	runtime.GOMAXPROCS(MaxParallelism())
+	chanJobs := make(chan jobW, 1+numJobs)
+	chanResults := make(chan resultW, 1+numJobs)
+	for id := 1; id <= MaxParallelism(); id++ {
+		go calcWeight(id, chanJobs, chanResults)
+	}
+
 	for _, fpTime := range fingerprintsOrdering {
 		fp := fingerprintsInMemory[fpTime]
-		distance := float64(0)
+
 		mac2RssFP := getMac2Rss(fp.WifiFingerprint)
 		mac2RssCur := getMac2Rss(jsonFingerprint.WifiFingerprint)
 
-		for curMac, curRssi := range mac2RssCur {
-			if fpRss, ok := mac2RssFP[curMac]; ok {
-				distance = distance + math.Pow(float64(curRssi-fpRss), minkowskyQ)
-			}
-		}
-		distance = math.Pow(distance, float64(1)/minkowskyQ)
-		if distance == 0 {
-			fmt.Println("location: ", fingerprintsInMemory[fpTime].Location)
-			W[fpTime] = float64(1) / maxDist
-		} else {
-			W[fpTime] = float64(1) / distance
-		}
+		chanJobs <- jobW{fpTime: fpTime,
+			mac2RssCur: mac2RssCur,
+			mac2RssFP: mac2RssFP}
 
 	}
+	for i := 1; i <= numJobs; i++ {
+		res := <-chanResults
+		W[res.fpTime] = res.weight
+	}
+
 	var currentX, currentY float64
 	currentX = 0
 	currentY = 0
 
-	fingerprintSorted := sortedW(W)
+	fingerprintSorted := sortDictByVal(W)
 	//fmt.Println(fingerprintSorted)
 
 	if knn_regression {
@@ -130,9 +146,28 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 				break;
 			}
 		}
-		sortedKNNList := sortedW(KNNList)
+		sortedKNNList := sortDictByVal(KNNList)
 		return nil, sortedKNNList[0]
 	}
+}
+
+func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
+
+	for job := range jobs {
+		distance := float64(0)
+		for curMac, curRssi := range job.mac2RssCur {
+			if fpRss, ok := job.mac2RssFP[curMac]; ok {
+				distance = distance + math.Pow(float64(curRssi-fpRss), minkowskyQ)
+			} else {
+				distance = distance + maxDist
+			}
+		}
+		distance = math.Pow(distance, float64(1)/minkowskyQ)
+		weight := float64(1) / distance
+		results <- resultW{fpTime: job.fpTime,
+			weight: weight}
+	}
+
 }
 
 func FloatToString(input_num float64) string {
@@ -148,7 +183,7 @@ func getMac2Rss(routeList []Router) map[string]int {
 	return mac2Rss
 }
 
-func sortedW(W map[string]float64) []string {
+func sortDictByVal(W map[string]float64) []string {
 	var fingerprintSorted []string
 	reverseMap := map[float64][]string{}
 	var valueList sort.Float64Slice
