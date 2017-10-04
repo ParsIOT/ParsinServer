@@ -333,13 +333,13 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 	// Send out the final responses
 	var userJSON UserPositionJSON
 	userJSON.Time = time.Now().String()
-	userJSON.bayesGuess = bayesGuess
-	userJSON.bayesData = bayesData
-	userJSON.svmGuess = svmGuess
-	userJSON.svmData = svmData
-	userJSON.rfGuess = rfGuess
-	userJSON.rfData = rfData
-	userJSON.knnGuess = knnGuess
+	userJSON.BayesGuess = bayesGuess
+	userJSON.BayesData = bayesData
+	userJSON.SvmGuess = svmGuess
+	userJSON.SvmData = svmData
+	userJSON.RfGuess = rfGuess
+	userJSON.RfData = rfData
+	userJSON.KnnGuess = knnGuess
 
 	go setUserPositionCache(strings.ToLower(jsonFingerprint.Group)+strings.ToLower(jsonFingerprint.Username), userJSON)
 
@@ -347,10 +347,10 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 	if RuntimeArgs.Mqtt {
 		type FingerprintResponse struct {
 			Timestamp  int64  `json:"time"`
-			BayesGuess string `json:"bayesGuess"`
-			SvmGuess   string `json:"svmGuess"`
-			RfGuess    string `json:"rfGuess"`
-			KnnGuess   string `json:"knnGuess"`
+			BayesGuess string `json:"bayesguess"`
+			SvmGuess   string `json:"svmguess"`
+			RfGuess    string `json:"rfguess"`
+			KnnGuess   string `json:"knnguess"`
 		}
 		mqttMessage, _ := json.Marshal(FingerprintResponse{
 			Timestamp:  time.Now().UnixNano(),
