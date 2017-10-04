@@ -35,12 +35,14 @@ func getStatus(c *gin.Context) {
 
 // UserPositionJSON stores the a users time, location and bayes after calculatePosterior()
 type UserPositionJSON struct {
-	Time     interface{}        `json:"time"`
-	Location interface{}        `json:"location"`
-	Bayes    map[string]float64 `json:"bayes"`
-	Svm      map[string]float64 `json:"svm"`
-	Rf       map[string]float64 `json:"rf"`
-	Knn      interface{}        `json:"knn"`
+	Time       interface{}        `json:"time"`
+	bayesGuess interface{}        `json:"bayesGuess"`
+	bayesData  map[string]float64 `json:"bayesData"`
+	svmGuess   interface{}        `json:"svmGuess"`
+	svmData    map[string]float64 `json:"svmData"`
+	rfGuess    interface{}        `json:"rfGuess"`
+	rfData     map[string]float64 `json:"rfData"`
+	knnGuess   interface{}        `json:"knnGuess"`
 }
 
 // Gets location list:
@@ -234,18 +236,18 @@ func getHistoricalUserPositions(group string, user string, n int) []UserPosition
 		var userJSON UserPositionJSON
 		UTCfromUnixNano := time.Unix(0, fingerprint.Timestamp)
 		userJSON.Time = UTCfromUnixNano.String()
-		location, bayes := calculatePosterior(fingerprint, *NewFullParameters())
-		userJSON.Location = location
-		userJSON.Bayes = bayes
+		bayesGuess, bayesData := calculatePosterior(fingerprint, *NewFullParameters())
+		userJSON.bayesGuess = bayesGuess
+		userJSON.bayesData = bayesData
 		// Process SVM if needed
 		if RuntimeArgs.Svm {
-			_, userJSON.Svm = classify(fingerprint)
+			userJSON.svmGuess, userJSON.svmData = classify(fingerprint)
 		}
 		// Process RF if needed
 		if RuntimeArgs.RandomForests {
-			userJSON.Rf = rfClassify(group, fingerprint)
+			userJSON.rfGuess, userJSON.rfData = rfClassify(group, fingerprint)
 		}
-		_, userJSON.Knn = calculateKnn(fingerprint)
+		_, userJSON.knnGuess = calculateKnn(fingerprint)
 		userJSONs[i] = userJSON
 	}
 	return userJSONs
@@ -292,18 +294,18 @@ func getCurrentPositionOfAllUsers(group string) map[string]UserPositionJSON {
 	}
 
 	for user := range userPositions {
-		location, bayes := calculatePosterior(userFingerprints[user], *NewFullParameters())
+		bayesGuess, bayesData := calculatePosterior(userFingerprints[user], *NewFullParameters())
 		foo := userPositions[user]
-		foo.Location = location
-		foo.Bayes = bayes
+		foo.bayesGuess = bayesGuess
+		foo.bayesData = bayesData
 		// Process SVM if needed
 		if RuntimeArgs.Svm {
-			_, foo.Svm = classify(userFingerprints[user])
+			foo.svmGuess, foo.svmData = classify(userFingerprints[user])
 		}
 		if RuntimeArgs.RandomForests {
-			foo.Rf = rfClassify(group, userFingerprints[user])
+			foo.rfGuess, foo.rfGuess = rfClassify(group, userFingerprints[user])
 		}
-		_, foo.Knn = calculateKnn(userFingerprints[user])
+		_, foo.knnGuess = calculateKnn(userFingerprints[user])
 		go setUserPositionCache(group+user, foo)
 		userPositions[user] = foo
 	}
@@ -354,17 +356,17 @@ func getCurrentPositionOfUser(group string, user string) UserPositionJSON {
 	if err != nil {
 		return userJSON
 	}
-	location, bayes := calculatePosterior(userFingerprint, *NewFullParameters())
-	userJSON.Location = location
-	userJSON.Bayes = bayes
+	bayesGuess, bayesData := calculatePosterior(userFingerprint, *NewFullParameters())
+	userJSON.bayesGuess = bayesGuess
+	userJSON.bayesData = bayesData
 	// Process SVM if needed
 	if RuntimeArgs.Svm {
-		_, userJSON.Svm = classify(userFingerprint)
+		userJSON.svmGuess, userJSON.svmData = classify(userFingerprint)
 	}
 	if RuntimeArgs.RandomForests {
-		userJSON.Rf = rfClassify(group, userFingerprint)
+		userJSON.rfGuess, userJSON.rfData = rfClassify(group, userFingerprint)
 	}
-	_, userJSON.Knn = calculateKnn(userFingerprint)
+	_, userJSON.knnGuess = calculateKnn(userFingerprint)
 	go setUserPositionCache(group+user, userJSON)
 	return userJSON
 }

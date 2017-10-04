@@ -156,9 +156,9 @@ func trackFingerprintPOST(c *gin.Context) {
 	//Info.Println(jsonFingerprint)
 
 	if c.BindJSON(&jsonFingerprint) == nil {
-		message, success, locationGuess, bayes, svm, rf, knn := trackFingerprint(jsonFingerprint)
+		message, success, bayesGuess, _, svmGuess, _, rfGuess, _, knnGuess := trackFingerprint(jsonFingerprint)
 		if success {
-			c.JSON(http.StatusOK, gin.H{"message": message, "success": true, "location": locationGuess, "bayes": bayes, "svm": svm, "rf": rf, "knn": knn})
+			c.JSON(http.StatusOK, gin.H{"message": message, "success": true, "bayes": bayesGuess, "svm": svmGuess, "rf": rfGuess, "knn": knnGuess})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"message": message, "success": false})
 		}
@@ -242,22 +242,28 @@ func learnFingerprint(jsonFingerprint Fingerprint) (string, bool) {
 }
 
 // call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
-func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[string]float64, map[string]float64, map[string]float64, string) {
+func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[string]float64, string, map[string]float64, string, map[string]float64, string) {
 	// Classify with filter fingerprint
 	fullFingerprint := jsonFingerprint
 	filterFingerprint(&jsonFingerprint)
 
-	bayes := make(map[string]float64)
+	bayesGuess := ""
+	bayesData := make(map[string]float64)
+	svmGuess := ""
 	svmData := make(map[string]float64)
+	rfGuess := ""
+	rfData := make(map[string]float64)
+	knnGuess := ""
+
 	cleanFingerprint(&jsonFingerprint)
 	if !groupExists(jsonFingerprint.Group) || len(jsonFingerprint.Group) == 0 {
-		return "You should insert fingerprints before tracking", false, "", bayes, make(map[string]float64), make(map[string]float64), ""
+		return "You should insert fingerprints before tracking", false, "", bayesData, "", make(map[string]float64), "", make(map[string]float64), ""
 	}
 	if len(jsonFingerprint.WifiFingerprint) == 0 {
-		return "No fingerprints found to track, see API", false, "", bayes, make(map[string]float64), make(map[string]float64), ""
+		return "No fingerprints found to track, see API", false, "", bayesData, "", make(map[string]float64), "", make(map[string]float64), ""
 	}
 	if len(jsonFingerprint.Username) == 0 {
-		return "No username defined, see API", false, "", bayes, make(map[string]float64), make(map[string]float64), ""
+		return "No username defined, see API", false, "", bayesData, "", make(map[string]float64), "", make(map[string]float64), ""
 	}
 	wasLearning, ok := getLearningCache(strings.ToLower(jsonFingerprint.Group))
 	if ok {
@@ -277,73 +283,85 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 		}
 	}
 	Info.Println(jsonFingerprint)
-	locationGuess1, bayes := calculatePosterior(jsonFingerprint, *NewFullParameters())
-	percentGuess1 := float64(0)
+	bayesGuess, bayesData = calculatePosterior(jsonFingerprint, *NewFullParameters())
+	percentBayesGuess := float64(0)
 	total := float64(0)
-	for _, locBayes := range bayes {
+	for _, locBayes := range bayesData {
 		total += math.Exp(locBayes)
-		if locBayes > percentGuess1 {
-			percentGuess1 = locBayes
+		if locBayes > percentBayesGuess {
+			percentBayesGuess = locBayes
 		}
 	}
-	percentGuess1 = math.Exp(bayes[locationGuess1]) / total * 100.0
+	percentBayesGuess = math.Exp(bayesData[bayesGuess]) / total * 100.0
 
-	jsonFingerprint.Location = locationGuess1
+	// todo: add abitlity to save rf, knn, svm guess
+	jsonFingerprint.Location = bayesGuess
 
 	// Insert full fingerprint
 	putFingerprintIntoDatabase(fullFingerprint, "fingerprints-track")
 
+	message := ""
 	Debug.Println("Tracking fingerprint containing " + strconv.Itoa(len(jsonFingerprint.WifiFingerprint)) + " APs for " + jsonFingerprint.Username + " (" + jsonFingerprint.Group + ") at " + jsonFingerprint.Location + " (guess)")
-	message := "Current location: " + locationGuess1 //+ " (" + strconv.Itoa(int(percentGuess1)) + "% confidence)"
+	message += " BayesGuess: " + bayesGuess //+ " (" + strconv.Itoa(int(percentGuess1)) + "% confidence)"
 
 	// Process SVM if needed
 	if RuntimeArgs.Svm {
-		locationGuess2, svmData2 := classify(jsonFingerprint)
-		percentGuess2 := int(100 * math.Exp(svmData2[locationGuess2]))
-		if percentGuess2 > 100 {
+		svmGuess, svmData := classify(jsonFingerprint)
+		percentSvmGuess := int(100 * math.Exp(svmData[svmGuess]))
+		if percentSvmGuess > 100 {
 			//todo: wtf? \/ \/ why is could be more than 100
-			percentGuess2 = percentGuess2 / 10
+			percentSvmGuess = percentSvmGuess / 10
 		}
+		message += " svmGuess: " + svmGuess
 		//message = "NB: " + locationGuess1 + " (" + strconv.Itoa(int(percentGuess1)) + "%)" + ", SVM: " + locationGuess2 + " (" + strconv.Itoa(int(percentGuess2)) + "%)"
-		svmData = svmData2
 	}
 
 	// Calculating KNN
-	err, locationGuessKnn := calculateKnn(jsonFingerprint)
+	err, knnGuess := calculateKnn(jsonFingerprint)
 	if err != nil {
 		Error.Println(err)
 	}
+	message += " knnGuess: " + knnGuess
 
-	// Send MQTT if needed
-	if RuntimeArgs.Mqtt {
-		type FingerprintResponse struct {
-			LocationGuess string             `json:"location"`
-			Timestamp     int64              `json:"time"`
-			Bayes         map[string]float64 `json:"bayes"`
-			Svm           map[string]float64 `json:"svm"`
-		}
-		mqttMessage, _ := json.Marshal(FingerprintResponse{
-			LocationGuess: locationGuess1,
-			Timestamp:     time.Now().UnixNano(),
-			Bayes:         bayes,
-			Svm:           svmData,
-		})
-		go sendMQTTLocation(string(mqttMessage), jsonFingerprint.Group, jsonFingerprint.Username)
+	// Calculating RF
+
+	if RuntimeArgs.RandomForests {
+		rfGuess, rfData = rfClassify(strings.ToLower(jsonFingerprint.Group), jsonFingerprint)
+		message += " rfGuess: " + rfGuess
 	}
 
 	// Send out the final responses
 	var userJSON UserPositionJSON
-	userJSON.Location = locationGuess1
-	userJSON.Bayes = bayes
-	userJSON.Svm = svmData
 	userJSON.Time = time.Now().String()
-	userJSON.Knn = locationGuessKnn
-	if RuntimeArgs.RandomForests {
-		userJSON.Rf = rfClassify(strings.ToLower(jsonFingerprint.Group), jsonFingerprint)
+	userJSON.bayesGuess = bayesGuess
+	userJSON.bayesData = bayesData
+	userJSON.svmGuess = svmGuess
+	userJSON.svmData = svmData
+	userJSON.rfGuess = rfGuess
+	userJSON.rfData = rfData
+	userJSON.knnGuess = knnGuess
 
-	}
 	go setUserPositionCache(strings.ToLower(jsonFingerprint.Group)+strings.ToLower(jsonFingerprint.Username), userJSON)
 
-	return message, true, locationGuess1, bayes, svmData, userJSON.Rf, locationGuessKnn
+	// Send MQTT if needed
+	if RuntimeArgs.Mqtt {
+		type FingerprintResponse struct {
+			Timestamp  int64  `json:"time"`
+			BayesGuess string `json:"bayesGuess"`
+			SvmGuess   string `json:"svmGuess"`
+			RfGuess    string `json:"rfGuess"`
+			KnnGuess   string `json:"knnGuess"`
+		}
+		mqttMessage, _ := json.Marshal(FingerprintResponse{
+			Timestamp:  time.Now().UnixNano(),
+			BayesGuess: bayesGuess,
+			SvmGuess:   svmGuess,
+			RfGuess:    rfGuess,
+			KnnGuess:   knnGuess,
+		})
+		go sendMQTTLocation(string(mqttMessage), jsonFingerprint.Group, jsonFingerprint.Username)
+	}
+
+	return message, true, bayesGuess, bayesData, svmGuess, svmData, rfGuess, rfData, knnGuess
 
 }

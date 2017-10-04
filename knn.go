@@ -5,7 +5,6 @@ import (
 	"github.com/boltdb/bolt"
 	"path"
 	"math"
-	"sort"
 	"strings"
 	"strconv"
 	"errors"
@@ -23,7 +22,7 @@ var maxDist float64
 
 func init() {
 	defaultKnnK = 60
-	knn_regression = false
+	knn_regression = true
 	minkowskyQ = 2
 	maxDist = 50
 }
@@ -183,23 +182,3 @@ func getMac2Rss(routeList []Router) map[string]int {
 	return mac2Rss
 }
 
-func sortDictByVal(W map[string]float64) []string {
-	var fingerprintSorted []string
-	reverseMap := map[float64][]string{}
-	var valueList sort.Float64Slice
-	for k, v := range W {
-		reverseMap[v] = append(reverseMap[v], k)
-	}
-	for k := range reverseMap {
-		valueList = append(valueList, k)
-	}
-	valueList.Sort()
-	sort.Sort(sort.Reverse(valueList))
-
-	for _, k := range valueList {
-		for _, s := range reverseMap[k] {
-			fingerprintSorted = append(fingerprintSorted, s)
-		}
-	}
-	return fingerprintSorted
-}

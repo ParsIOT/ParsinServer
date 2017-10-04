@@ -69,14 +69,15 @@ func rfLearn(group string) float64 {
 	return classificationSuccess
 }
 
-func rfClassify(group string, fingerprint Fingerprint) map[string]float64 {
+func rfClassify(group string, fingerprint Fingerprint) (string, map[string]float64) {
 	var m map[string]float64
+	var bestLocation string
 	tempFile := RandomString(10)
 	d1, _ := json.Marshal(fingerprint)
 	err := ioutil.WriteFile(tempFile+".rftemp", d1, 0644)
 	if err != nil {
 		Error.Println("Could not write file: " + err.Error())
-		return m
+		return bestLocation, m
 	}
 
 	// connect to this socket
@@ -92,5 +93,7 @@ func rfClassify(group string, fingerprint Fingerprint) map[string]float64 {
 	}
 
 	os.Remove(tempFile + ".rftemp")
-	return m
+
+	bestLocation = sortDictByVal(m)[0]
+	return bestLocation, m
 }

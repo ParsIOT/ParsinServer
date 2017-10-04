@@ -20,8 +20,8 @@ import (
 	"os"
 	"strings"
 	"time"
-
 	"log"
+	"sort"
 )
 
 var (
@@ -301,4 +301,25 @@ func copyFileContents(src, dst string) (err error) {
 	}
 	err = out.Sync()
 	return
+}
+
+func sortDictByVal(W map[string]float64) []string {
+	var keySorted []string
+	reverseMap := map[float64][]string{}
+	var valueList sort.Float64Slice
+	for k, v := range W {
+		reverseMap[v] = append(reverseMap[v], k)
+	}
+	for k := range reverseMap {
+		valueList = append(valueList, k)
+	}
+	valueList.Sort()
+	sort.Sort(sort.Reverse(valueList))
+
+	for _, k := range valueList {
+		for _, s := range reverseMap[k] {
+			keySorted = append(keySorted, s)
+		}
+	}
+	return keySorted
 }
