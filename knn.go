@@ -87,6 +87,10 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 	for _, fpTime := range fingerprintsOrdering {
 		fp := fingerprintsInMemory[fpTime]
 
+		if len(fp.WifiFingerprint) < 3 {
+			err = errors.New("Nums of AP is lower than 3 in " + strconv.Itoa(int(fp.Timestamp)))
+			return err, ""
+		}
 		mac2RssFP := getMac2Rss(fp.WifiFingerprint)
 		mac2RssCur := getMac2Rss(jsonFingerprint.WifiFingerprint)
 

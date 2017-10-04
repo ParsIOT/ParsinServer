@@ -156,11 +156,16 @@ func trackFingerprintPOST(c *gin.Context) {
 	//Info.Println(jsonFingerprint)
 
 	if c.BindJSON(&jsonFingerprint) == nil {
-		message, success, bayesGuess, _, svmGuess, _, rfGuess, _, knnGuess := trackFingerprint(jsonFingerprint)
-		if success {
-			c.JSON(http.StatusOK, gin.H{"message": message, "success": true, "bayes": bayesGuess, "svm": svmGuess, "rf": rfGuess, "knn": knnGuess})
+		if (len(jsonFingerprint.WifiFingerprint) >= 3) {
+			message, success, bayesGuess, _, svmGuess, _, rfGuess, _, knnGuess := trackFingerprint(jsonFingerprint)
+			if success {
+				c.JSON(http.StatusOK, gin.H{"message": message, "success": true, "bayes": bayesGuess, "svm": svmGuess, "rf": rfGuess, "knn": knnGuess})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"message": message, "success": false})
+			}
 		} else {
-			c.JSON(http.StatusOK, gin.H{"message": message, "success": false})
+			Warning.Println("Nums of AP must be greater than 3")
+			c.JSON(http.StatusOK, gin.H{"message": "Nums of AP must be greater than 3", "success": false})
 		}
 	} else {
 		Warning.Println("Could not bind JSON")
