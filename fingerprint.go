@@ -61,6 +61,11 @@ var jsonExample = `{
 	}]
 }`
 
+var minApNum int
+
+func init() {
+	minApNum = 4
+}
 // compression 9 us -> 900 us
 // Marsahal and compress a fingerprint
 func dumpFingerprint(res Fingerprint) []byte {
@@ -156,7 +161,7 @@ func trackFingerprintPOST(c *gin.Context) {
 	//Info.Println(jsonFingerprint)
 
 	if c.BindJSON(&jsonFingerprint) == nil {
-		if (len(jsonFingerprint.WifiFingerprint) >= 3) {
+		if (len(jsonFingerprint.WifiFingerprint) >= minApNum) {
 			message, success, bayesGuess, _, svmGuess, _, rfGuess, _, knnGuess := trackFingerprint(jsonFingerprint)
 			if success {
 				c.JSON(http.StatusOK, gin.H{"message": message, "success": true, "bayes": bayesGuess, "svm": svmGuess, "rf": rfGuess, "knn": knnGuess})

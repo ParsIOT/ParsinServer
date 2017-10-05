@@ -39,10 +39,16 @@ type jobW struct {
 }
 
 func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
+
+	//if (len(jsonFingerprint.WifiFingerprint) < minApNum) {
+	//	err := errors.New("Location names aren't in the format of x,y")
+	//	return err,"NaN,Nan"
+	//}
+
 	knnK, err := getKnnKOverride(jsonFingerprint.Group)
 	if err != nil {
 		knnK = defaultKnnK
-		Error.Println("KNN K Override is not set!")
+		Error.Println("Nums of AP must be greater than 3")
 	}
 
 	fingerprintsInMemory := make(map[string]Fingerprint)
@@ -87,7 +93,8 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 	for _, fpTime := range fingerprintsOrdering {
 		fp := fingerprintsInMemory[fpTime]
 
-		if (len(fp.WifiFingerprint) < 3) { // todo:
+		if (len(fp.WifiFingerprint) < minApNum) { // todo:
+			numJobs -= 1
 			continue
 		}
 		mac2RssFP := getMac2Rss(fp.WifiFingerprint)
