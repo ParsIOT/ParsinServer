@@ -241,6 +241,8 @@ func getParameters(group string, ps *FullParameters, fingerprintsInMemory map[st
 	}
 	defer db.Close()
 
+	macs := []string{}
+
 	// Get all parameters that don't need a network graph (?)
 	for _, v1 := range fingerprintsOrdering {
 
@@ -257,8 +259,8 @@ func getParameters(group string, ps *FullParameters, fingerprintsInMemory map[st
 			ps.MacCountByLoc[v2.Location] = make(map[string]int)
 		}
 
-		// building network
-		macs := []string{}
+		//// building network
+		//macs := []string{}
 
 		for _, router := range v2.WifiFingerprint {
 			// building network
@@ -283,11 +285,13 @@ func getParameters(group string, ps *FullParameters, fingerprintsInMemory map[st
 		}
 
 		// building network
-		ps.NetworkMacs = buildNetwork(ps.NetworkMacs, macs)
+		//ps.NetworkMacs = buildNetwork(ps.NetworkMacs, macs)
 	}
-
+	// todo: network definition and buildNetwork() must be redefined
+	ps.NetworkMacs = buildNetwork(ps.NetworkMacs, macs)
 	ps.NetworkMacs = mergeNetwork(ps.NetworkMacs)
 
+	Error.Println("ps.Networkmacs", ps.NetworkMacs)
 	// Rename the NetworkMacs
 	if len(persistentPs.NetworkRenamed) > 0 {
 		newNames := []string{}

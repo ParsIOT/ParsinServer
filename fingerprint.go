@@ -64,7 +64,7 @@ var jsonExample = `{
 var minApNum int
 
 func init() {
-	minApNum = 4
+	minApNum = 3
 }
 // compression 9 us -> 900 us
 // Marsahal and compress a fingerprint
@@ -89,16 +89,21 @@ func filterFingerprint(res *Fingerprint) {
 	if RuntimeArgs.Filtering {
 		newFingerprint := make([]Router, len(res.WifiFingerprint))
 		curNum := 0
+
 		for i := range res.WifiFingerprint {
 			if ok2, ok := RuntimeArgs.FilterMacs[res.WifiFingerprint[i].Mac]; ok && ok2 {
+				//Error.Println("filtered mac : ",res.WifiFingerprint[i].Mac)
 				newFingerprint[curNum] = res.WifiFingerprint[i]
 				//todo: why "0" is added at the end?
-				newFingerprint[curNum].Mac = newFingerprint[curNum].Mac[0:len(newFingerprint[curNum].Mac)-1] + "0"
+				//newFingerprint[curNum].Mac = newFingerprint[curNum].Mac[0:len(newFingerprint[curNum].Mac)-1] + "0"
 				curNum++
 			}
 		}
-		newFingerprint = newFingerprint[0:curNum]
-		res.WifiFingerprint = newFingerprint
+
+		res.WifiFingerprint = newFingerprint[0:curNum]
+		//Error.Println("Filtering ->")
+		//Error.Println(res.WifiFingerprint)
+		//Error.Println("<- Filtering")
 	}
 }
 
@@ -187,6 +192,7 @@ func learnFingerprintPOST(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 	var jsonFingerprint Fingerprint
+	Info.Println(jsonFingerprint)
 	if c.BindJSON(&jsonFingerprint) == nil {
 		message, success := learnFingerprint(jsonFingerprint)
 		Debug.Println(message)
