@@ -2,7 +2,16 @@
 <html>
 
 <head>
-	<script type="text/javascript">
+    <!-- Bootstrap Core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
+
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+
+    <script type="text/javascript">
 	window.onload = function () {
 		var chart = new CanvasJS.Chart("chartContainer",
 		{
@@ -85,6 +94,9 @@ function onMouseout(e){
 <script type="text/javascript" src="/static/js/canvasjs.min.js"></script>
 </head>
 <body>
+
+{{ template "navbar" . }}
+
 	<div id="chartContainer" style="height: 400px; width: 100%;">
 	</div>
 </body>

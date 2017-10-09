@@ -17,13 +17,11 @@ import (
 	"os/exec"
 	"path"
 	"strings"
-	//"github.com/gin-gonic/contrib/sessions"
-	"github.com/gin-gonic/gin"
-	"github.com/appleboy/gin-jwt" // Authentication middleware lib
-	// installation : 1.go get github.com/gin-gonic/gin 2.Solve the miscellaneous lib problem 3. git get github.com/appleboy/gin-jwt
-	"time"
 	"github.com/gin-gonic/contrib/sessions"
-	//"github.com/gin-gonic/contrib/jwt"
+	"github.com/gin-gonic/gin"
+	//"github.com/appleboy/gin-jwt" // Authentication middleware lib
+	// installation : 1.go get github.com/gin-gonic/gin 2.Solve the miscellaneous lib problem 3. git get github.com/appleboy/gin-jwt
+	"github.com/MA-Heshmatkhah/SimpleAuth" // Authentication middleware lib
 )
 
 // RuntimeArgs contains all runtime
@@ -60,6 +58,7 @@ var RuntimeArgs struct {
 var VersionNum string
 var BuildTime string
 var Build string
+var mySessionManager SimpleAuth.Manager
 
 // init initiates the paths in RuntimeArgs
 func init() {
@@ -67,6 +66,13 @@ func init() {
 	RuntimeArgs.Cwd = cwd
 	RuntimeArgs.SourcePath = path.Join(RuntimeArgs.Cwd, "data")
 	RuntimeArgs.Message = ""
+
+	mySessionManager.Initialize(path.Join(RuntimeArgs.SourcePath, "Settings.db"), &SimpleAuth.Options{
+		LoginURL:                   "/login",
+		LogoutURL:                  "/logout",
+		UnauthorizedURL:            "/change-db",
+		LoginSuccessfulRedirectURL: "/change-db",
+	})
 }
 
 func main() {
@@ -159,11 +165,11 @@ Options:`)
 		//group := addRequestSlice[0]
 		username := addRequestSlice[0]
 		password := addRequestSlice[1]
-		err := addAdminUser(username, password)
+		_, err := mySessionManager.RegisterNewUser(username, password, []string{"Admins"})
 		if err == nil {
 			fmt.Printf("Successfully new admin(username:%+v, password:%+v) was added Or new password was set.", username, password)
-			adminList, _ := getAdminUsers()
-			fmt.Println("Current admin list: \n", adminList)
+			adminList, _ := mySessionManager.ListAllUsers()
+			fmt.Println("Current admin list: \n", *adminList)
 		} else {
 			log.Fatal(err)
 		}
@@ -171,7 +177,6 @@ Options:`)
 	}
 
 	//Set minRssOpt
-
 	MinRssiOpt = RuntimeArgs.MinRssOpt
 
 	// Check if there is a message from the admin
@@ -208,138 +213,79 @@ cp svm-train /usr/local/bin/`)
 	// Load static files (if they are not hosted by external service)
 	r.Static("static/", path.Join(RuntimeArgs.Cwd, "static/"))
 
-	// the jwt middleware
-	adminUsers, err := getAdminUsers()
-	if err != nil {
-		Error.Println("Add an admin user first")
-		os.Exit(0)
-	}
-
-	authMiddleware := &jwt.GinJWTMiddleware{//todo: Problem with token saving after authentication(no way to save!)
-		Realm: "test zone",
-		Key: []byte("secret key"),
-		Timeout: time.Hour,
-		MaxRefresh: time.Hour,
-		Authenticator: func(userId string, password string, c *gin.Context) (string, bool) {
-			//c.HTML(http.StatusOK, "test.tmpl", gin.H{
-			//	"ErrorMessage": "Please login first.",
-			//})
-			for user := range adminUsers {
-				if (userId == user && password == adminUsers[userId]) {
-					return userId, true
-				}
-			}
-			return userId, false
-		},
-		Authorizator: func(userId string, c *gin.Context) bool {
-			for user := range adminUsers {
-				if userId == user {
-					return true
-				}
-			}
-			return false
-		},
-		Unauthorized: func(c *gin.Context, code int, message string) {
-			//c.JSON(code, gin.H{
-			//	"code":    code,
-			//	"message": message,
-			//})
-			c.HTML(http.StatusOK, "test.tmpl", gin.H{
-				"ErrorMessage": "Please login first.",
-			})
-		},
-		// TokenLookup is a string in the form of "<source>:<name>" that is used
-		// to extract token from the request.
-		// Optional. Default value "header:Authorization".
-		// Possible values:
-		// - "header:<name>"
-		// - "query:<name>"
-		// - "cookie:<name>"
-		TokenLookup: "header:Authorization",
-		// TokenLookup: "query:token",
-		// TokenLookup: "cookie:token",
-
-		// TokenHeadName is a string in the header. Default value is "Bearer"
-		TokenHeadName: "Bearer",
-
-		// TimeFunc provides the current time. You can override it to use another time value. This is useful for testing or if your server uses a different time zone than your tokens.
-		TimeFunc: time.Now,
-	}
-
 	// Create cookie store to keep track of logged in user
 	store := sessions.NewCookieStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
 
 	// 404-page redirects to login
 	r.NoRoute(func(c *gin.Context) {
-		c.HTML(http.StatusOK, "login.tmpl", gin.H{
-			"ErrorMessage": "Please login first.",
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+			"ErrorMessage": "Please Choose your group first.",
 		})
 	})
 
 	// r.PUT("/message", putMessage)
-
-	// Routes for logging in and viewing dashboards (routes.go)
-	r.GET("/", slash)
-	r.GET("/login", slashLogin)
-	r.POST("/login", slashLoginPOST)
-	r.GET("/logout", slashLogout)
-	r.GET("/dashboard/:group", slashDashboard)
-	r.GET("/explore/:group/:network/:location", slashExplore2)
-	r.GET("/pie/:group/:network/:location", slashPie)
-	r.GET("/livemap/:group", LiveLocationMap)
-	/*
-	r.GET("/livemap/:group", func(context *gin.Context) {
-		r.LoadHTMLGlob(path.Join(RuntimeArgs.Cwd, "templates/*"))
-		LiveLocationMap(context)
-	})
-	*/
-	r.GET("/locationsmap/:group", LocationsOnMap)
-
-	// Routes for performing fingerprinting (fingerprint.go)
-	r.POST("/learn", learnFingerprintPOST)
-	r.POST("/bulklearn", bulkLearnFingerprintPOST)
-	r.POST("/track", trackFingerprintPOST)
-
-	// Routes for MQTT (mqtt.go)
-	r.PUT("/mqtt", putMQTT)
-
-	// Routes for API access (api.go)
-	r.GET("/location", getUserLocations)
-	r.GET("/locations", getLocationList)
-	r.GET("/editname", editName)
-	r.GET("/editMac", editMac)
-	r.GET("/editusername", editUserName)
-	r.GET("/editnetworkname", editNetworkName)
-	r.DELETE("/location", deleteLocation)
-	r.DELETE("/locations", deleteLocations)
-	r.DELETE("/user", deleteUser)
-	r.DELETE("/database", deleteDatabase)
-	r.GET("/calculate", calculate)
-	r.GET("/status", getStatus)
-	// Done: delete these deprecated routes
-	r.GET("/userlocs", userLocations) // to be deprecated
-	//r.GET("/whereami", whereAmI)      // to be deprecated
-	r.PUT("/mixin", putMixinOverride)
-	r.PUT("/cutoff", putCutoffOverride)
-	r.PUT("/database", migrateDatabase)
-	r.PUT("/k_knn", putKnnK)
-	r.PUT("/minrss", putMinRss)
-	r.GET("/lastfingerprint", apiGetLastFingerprint)
-	//r.Static("data/", path.Join(RuntimeArgs.Cwd, "data/"))
-
-	// Authentication
-	r.POST("/authenticate", authMiddleware.LoginHandler)
-	auth := r.Group("/")
-	auth.Use(authMiddleware.MiddlewareFunc())
+	privateRoutes := r.Group("/", mySessionManager.AuthenticatedOnly())
 	{
-		auth.GET("/refresh_token", authMiddleware.RefreshHandler)
-		auth.Static("data/", path.Join(RuntimeArgs.Cwd, "data/")) // Load db files
+		privateRoutes.GET("/logout", mySessionManager.Logout)
+
+		// Routes for logging in and viewing dashboards (routes.go)
+		privateRoutes.GET("/", slash)
+		privateRoutes.GET("/change-db", slashChangeDb)
+		privateRoutes.POST("/change-db", slashChangeDbPOST)
+		privateRoutes.GET("/dashboard/:group", slashDashboard)
+		privateRoutes.GET("/explore/:group/:network/:location", slashExplore2)
+		privateRoutes.GET("/pie/:group/:network/:location", slashPie)
+		privateRoutes.GET("/livemap/:group", LiveLocationMap)
+		/*
+		r.GET("/livemap/:group", func(context *gin.Context) {
+			r.LoadHTMLGlob(path.Join(RuntimeArgs.Cwd, "templates/*"))
+			LiveLocationMap(context)
+		})
+		*/
+		privateRoutes.GET("/locationsmap/:group", LocationsOnMap)
+
+		// Routes for performing fingerprinting (fingerprint.go)
+		privateRoutes.POST("/learn", learnFingerprintPOST)
+		privateRoutes.POST("/bulklearn", bulkLearnFingerprintPOST)
+		privateRoutes.POST("/track", trackFingerprintPOST)
+
+		// Routes for MQTT (mqtt.go)
+		privateRoutes.PUT("/mqtt", putMQTT)
+
+		// Routes for API access (api.go)
+		privateRoutes.GET("/location", getUserLocations)
+		privateRoutes.GET("/locations", getLocationList)
+		privateRoutes.GET("/editname", editName)
+		privateRoutes.GET("/editMac", editMac)
+		privateRoutes.GET("/editusername", editUserName)
+		privateRoutes.GET("/editnetworkname", editNetworkName)
+		privateRoutes.DELETE("/location", deleteLocation)
+		privateRoutes.DELETE("/locations", deleteLocations)
+		privateRoutes.DELETE("/user", deleteUser)
+		privateRoutes.DELETE("/database", deleteDatabase)
+		privateRoutes.GET("/calculate", calculate)
+		privateRoutes.GET("/status", getStatus)
+		// Done: delete these deprecated routes
+		privateRoutes.GET("/userlocs", userLocations) // to be deprecated
+		//r.GET("/whereami", whereAmI)      // to be deprecated
+		privateRoutes.PUT("/mixin", putMixinOverride)
+		privateRoutes.PUT("/cutoff", putCutoffOverride)
+		privateRoutes.PUT("/database", migrateDatabase)
+		privateRoutes.PUT("/k_knn", putKnnK)
+		privateRoutes.PUT("/minrss", putMinRss)
+		privateRoutes.GET("/lastfingerprint", apiGetLastFingerprint)
+		//r.Static("data/", path.Join(RuntimeArgs.Cwd, "data/"))
+
+		privateRoutes.Static("data/", path.Join(RuntimeArgs.Cwd, "data/")) // Load db files
 	}
 
-	// Authenticate test:
-	// http -v --json POST http://192.168.0.45:8003/login1 username=t2 password=t2
-	// http -f GET http://192.168.0.45:8003/auth/data/iust_13_5_96_1.rf.json "Authorization:Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1MDM4NjIzMzEsImlkIjoiYWRtaW4xIiwib3JpZ19pYXQiOjE1MDM4NTg3MzF9.2ln7ccDV3mwrdXBLK06jNaBTJHxL0oR319Ile4ZNnzc"  "Content-Type: application/json"
+	// Authentication
+	auth := r.Group("/", mySessionManager.UnauthenticatedOnly())
+	{
+		auth.GET("/login", slashLogin)
+		auth.POST("/login", slashLoginPOST)
+	}
 
 	// Load and display the logo
 	dat, _ := ioutil.ReadFile("./static/logo.txt")

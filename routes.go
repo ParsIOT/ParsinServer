@@ -27,28 +27,39 @@ func slash(c *gin.Context) {
 	loginGroup := sessions.Default(c)
 	groupCookie := loginGroup.Get("group")
 	if groupCookie == nil {
-		c.Redirect(302, "/login")
+		c.Redirect(302, "/change-db")
 	} else {
 		group = groupCookie.(string)
 		c.Redirect(302, "/dashboard/"+group)
 	}
 }
 
-// slashLogin handles a login with url parameter and returns dashboard if successful, else login.
+// slashLogin shows login page
 func slashLogin(c *gin.Context) {
-	loginGroup := sessions.Default(c)
-	group := c.DefaultQuery("group", "noneasdf")
-	if group == "noneasdf" {
-		c.HTML(http.StatusOK, "login.tmpl", gin.H{})
+	c.HTML(http.StatusOK, "login.tmpl", gin.H{})
+}
+
+// slashLoginPOST handles a POST login and returns dashboard if successful, else login.
+func slashLoginPOST(c *gin.Context) {
+	username := c.PostForm("username")
+	password := c.PostForm("password")
+	if ok := mySessionManager.IsUserValid(username, password); ok {
+		session := sessions.Default(c)
+		session.Set("user", mySessionManager.GetUser(username))
+		session.Save()
+		cookieGroup := session.Get("group")
+		if cookieGroup == nil {
+			c.Redirect(http.StatusFound, mySessionManager.LoginSuccessfulRedirectURL)
+		} else {
+			c.Redirect(http.StatusFound, "/dashboard/"+cookieGroup.(string))
+		}
 	} else {
-		loginGroup.Set("group", group)
-		loginGroup.Save()
-		c.Redirect(302, "/dashboard/"+group)
+		c.HTML(http.StatusOK, "login.tmpl", gin.H{"ErrorMessage": "Invalid Username or Password",})
 	}
 }
 
-// slashLogin handles a POST login and returns dashboard if successful, else login.
-func slashLoginPOST(c *gin.Context) {
+// slashChangeDbPOST handles a POST login and returns dashboard if successful, else login.
+func slashChangeDbPOST(c *gin.Context) {
 	loginGroup := sessions.Default(c)
 	group := strings.ToLower(c.PostForm("group"))
 	if _, err := os.Stat(path.Join("data", group+".db")); err == nil {
@@ -56,26 +67,33 @@ func slashLoginPOST(c *gin.Context) {
 		loginGroup.Save()
 		c.Redirect(302, "/dashboard/"+group)
 	} else {
-		c.HTML(http.StatusOK, "login.tmpl", gin.H{
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
 			"ErrorMessage": "Incorrect login.",
 		})
 	}
 }
 
-// slashLogout handles a logout
-func slashLogout(c *gin.Context) {
+// slashChangeDb handles a selecting a group
+func slashChangeDb(c *gin.Context) {
 	var group string
 	loginGroup := sessions.Default(c)
 	groupCookie := loginGroup.Get("group")
+	group = c.DefaultQuery("group", "noneasdf")
 	if groupCookie == nil {
-		c.Redirect(302, "/login")
+		if group == "noneasdf" {
+			c.HTML(http.StatusOK, "changedb.tmpl", gin.H{})
+		} else {
+			loginGroup.Set("group", group)
+			loginGroup.Save()
+			c.Redirect(302, "/dashboard/"+group)
+		}
 	} else {
 		group = groupCookie.(string)
 		fmt.Println(group)
-		loginGroup.Clear()
+		loginGroup.Delete("group")
 		loginGroup.Save()
-		c.HTML(http.StatusOK, "login.tmpl", gin.H{
-			"Message": "You are now logged out.",
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+			"Message": "Now you can change your group",
 		})
 	}
 }
@@ -102,7 +120,7 @@ func slashDashboard(c *gin.Context) {
 	}
 	group := c.Param("group")
 	if _, err := os.Stat(path.Join(RuntimeArgs.SourcePath, group+".db")); os.IsNotExist(err) {
-		c.HTML(http.StatusOK, "login.tmpl", gin.H{
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
 			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
 		})
 		return
@@ -160,7 +178,7 @@ func slashDashboard(c *gin.Context) {
 func LiveLocationMap(c *gin.Context) {
 	group := c.Param("group")
 	if _, err := os.Stat(path.Join(RuntimeArgs.SourcePath, group+".db")); os.IsNotExist(err) {
-		c.HTML(http.StatusOK, "login.tmpl", gin.H{
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
 			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
 		})
 		return
@@ -173,7 +191,7 @@ func LiveLocationMap(c *gin.Context) {
 func LocationsOnMap(c *gin.Context) {
 	group := c.Param("group")
 	if _, err := os.Stat(path.Join(RuntimeArgs.SourcePath, group+".db")); os.IsNotExist(err) {
-		c.HTML(http.StatusOK, "login.tmpl", gin.H{
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
 			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
 		})
 		return
@@ -200,7 +218,7 @@ func slashLocation(c *gin.Context) {
 func slashExplore(c *gin.Context) {
 	group := c.Param("group")
 	if _, err := os.Stat(path.Join(RuntimeArgs.SourcePath, group+".db")); os.IsNotExist(err) {
-		c.HTML(http.StatusOK, "login.tmpl", gin.H{
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
 			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
 		})
 		return
@@ -242,7 +260,7 @@ func slashExplore(c *gin.Context) {
 func slashExplore2(c *gin.Context) {
 	group := c.Param("group")
 	if _, err := os.Stat(path.Join(RuntimeArgs.SourcePath, group+".db")); os.IsNotExist(err) {
-		c.HTML(http.StatusOK, "login.tmpl", gin.H{
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
 			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
 		})
 		return
@@ -308,7 +326,7 @@ func slashExplore2(c *gin.Context) {
 func slashPie(c *gin.Context) {
 	group := c.Param("group")
 	if _, err := os.Stat(path.Join(RuntimeArgs.SourcePath, group+".db")); os.IsNotExist(err) {
-		c.HTML(http.StatusOK, "login.tmpl", gin.H{
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
 			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
 		})
 		return

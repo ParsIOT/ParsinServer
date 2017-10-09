@@ -1,10 +1,21 @@
 <html>
 <head>
-  <!-- Latest compiled and minified plotly.js JavaScript -->
+    <!-- Bootstrap Core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
+
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+
+    <!-- Latest compiled and minified plotly.js JavaScript -->
   <script type="text/javascript" src="/static/js/plotly-latest.min.js"></script>
 </head>
 
 <body>
+
+{{ template "navbar" . }}
 
   <div id="myDiv" style="width: 1000px; height: 600px;"><!-- Plotly chart will be drawn inside this DIV --></div>
 
