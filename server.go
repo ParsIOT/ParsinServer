@@ -245,10 +245,7 @@ cp svm-train /usr/local/bin/`)
 		*/
 		privateRoutes.GET("/locationsmap/:group", LocationsOnMap)
 
-		// Routes for performing fingerprinting (fingerprint.go)
-		privateRoutes.POST("/learn", learnFingerprintPOST)
-		privateRoutes.POST("/bulklearn", bulkLearnFingerprintPOST)
-		privateRoutes.POST("/track", trackFingerprintPOST)
+
 
 		// Routes for MQTT (mqtt.go)
 		privateRoutes.PUT("/mqtt", putMQTT)
@@ -279,6 +276,11 @@ cp svm-train /usr/local/bin/`)
 
 		privateRoutes.Static("data/", path.Join(RuntimeArgs.Cwd, "data/")) // Load db files
 	}
+
+	// Routes for performing fingerprinting (fingerprint.go)
+	r.POST("/learn", learnFingerprintPOST)
+	r.POST("/bulklearn", bulkLearnFingerprintPOST)
+	r.POST("/track", trackFingerprintPOST)
 
 	// Authentication
 	auth := r.Group("/", mySessionManager.UnauthenticatedOnly())
