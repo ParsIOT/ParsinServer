@@ -245,7 +245,7 @@ func addAdminUser(username string, password string) error {
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("users"))
 		if b == nil {
-			return fmt.Errorf("Resources dont exist")
+			return fmt.Errorf("Resources don't exist")
 		}
 		v := b.Get([]byte("adminList"))
 		if len(v) == 0 {
@@ -281,4 +281,65 @@ func addAdminUser(username string, password string) error {
 	})
 
 	return err
+}
+
+// Set macs that to be filtered
+func setFilterMacDB(group string, FilterMacs []string) error {
+	Warning.Println(FilterMacs)
+	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group), 0600, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Create filtermacs bucket if doesn't exist & set filtermacs
+	err = db.Update(func(tx *bolt.Tx) error {
+		bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
+
+		if err2 != nil {
+			return fmt.Errorf("create bucket: %s", err2)
+		}
+		//Warning.Println(FilterMacs)
+		marshalledFilterMacList, _ := json.Marshal(FilterMacs)
+		err2 = bucket.Put([]byte("filterMacList"), marshalledFilterMacList)
+		//Warning.Println("bucket creation problem :",err2)
+		if err2 != nil {
+			return fmt.Errorf("could add to bucket: %s", err2)
+		}
+		//Warning.Println("setFilterMacDB successfully")
+		return err2
+	})
+
+	return err
+}
+
+// Get macs that to be filtered
+func getFilterMacDB(group string) (error, []string) {
+	var FilterMacs []string
+	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group), 0600, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	err = db.View(func(tx *bolt.Tx) error {
+		// Assume bucket exists and has keys
+		b := tx.Bucket([]byte("resources"))
+		if b == nil {
+			return fmt.Errorf("Resources don't exist")
+		}
+		v := b.Get([]byte("filterMacList"))
+		if len(v) == 0 {
+			fmt.Errorf("filterMacList list is empty")
+			return nil
+		} else {
+			err := json.Unmarshal(v, &FilterMacs)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return err
+		}
+	})
+
+	return err, FilterMacs
 }

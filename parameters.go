@@ -291,7 +291,7 @@ func getParameters(group string, ps *FullParameters, fingerprintsInMemory map[st
 	ps.NetworkMacs = buildNetwork(ps.NetworkMacs, macs)
 	ps.NetworkMacs = mergeNetwork(ps.NetworkMacs)
 
-	Error.Println("ps.Networkmacs", ps.NetworkMacs)
+	//Error.Println("ps.Networkmacs", ps.NetworkMacs)
 	// Rename the NetworkMacs
 	if len(persistentPs.NetworkRenamed) > 0 {
 		newNames := []string{}

@@ -7,7 +7,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -28,7 +27,7 @@ import (
 // arguments available
 var RuntimeArgs struct {
 	RFPort            string
-	FilterMacFile     string
+	//FilterMacFile     string
 	ExternalIP        string
 	Port              string
 	ServerCRT         string
@@ -46,8 +45,9 @@ var RuntimeArgs struct {
 	MqttExisting      bool
 	Svm               bool
 	RandomForests     bool
-	Filtering         bool
-	FilterMacs        map[string]bool
+	NeedToFilter      map[string]bool
+	//FilterMacs        map[string]bool
+	FilterMacsMap     map[string][]string
 	AdminAdd          string
 	GaussianDist      bool
 	MinRssOpt         int
@@ -93,7 +93,7 @@ func main() {
 	flag.StringVar(&RuntimeArgs.Message, "message", "", "message to display to all users")
 	flag.StringVar(&RuntimeArgs.SourcePath, "data", "", "path to data folder")
 	flag.StringVar(&RuntimeArgs.RFPort, "rf", "", "port for random forests calculations")
-	flag.StringVar(&RuntimeArgs.FilterMacFile, "filter", "", "JSON file for macs to filter")
+	//flag.StringVar(&RuntimeArgs.FilterMacFile, "filter", "", "JSON file for macs to filter")
 	flag.StringVar(&RuntimeArgs.AdminAdd, "adminadd", "", "Add an admin user or change his password, foramt:<username>:<password>, e.g.:admin:admin")
 	flag.BoolVar(&RuntimeArgs.GaussianDist, "gaussian", false, "Use gaussian distribution instead of historgram")
 	flag.IntVar(&RuntimeArgs.MinRssOpt, "minrss", -100, "Select minimum rss; Any Rss lower than minRss will be ignored.")
@@ -136,17 +136,21 @@ Options:`)
 		RuntimeArgs.RandomForests = true
 	}
 
-	// Check whether macs should be filtered
-	if len(RuntimeArgs.FilterMacFile) > 0 {
-		b, err := ioutil.ReadFile(RuntimeArgs.FilterMacFile)
-		if err != nil {
-			panic(err)
-		}
-		RuntimeArgs.FilterMacs = make(map[string]bool)
-		json.Unmarshal(b, &RuntimeArgs.FilterMacs)
-		fmt.Printf("Filtering %+v", RuntimeArgs.FilterMacs)
-		RuntimeArgs.Filtering = true
-	}
+	//// Check whether macs should be filtered
+
+	RuntimeArgs.FilterMacsMap = make(map[string][]string)
+	RuntimeArgs.NeedToFilter = make(map[string]bool)
+	//if len(RuntimeArgs.FilterMacFile) > 0 {
+	//	b, err := ioutil.ReadFile(RuntimeArgs.FilterMacFile)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	RuntimeArgs.FilterMacs = make(map[string]bool)
+	//	json.Unmarshal(b, &RuntimeArgs.FilterMacs)
+	//	fmt.Printf("Filtering %+v", RuntimeArgs.FilterMacs)
+	//	//RuntimeArgs.Filtering = true
+	//}
+
 	// Check whether we are just dumping the database
 	if len(RuntimeArgs.Dump) > 0 {
 		err := dumpFingerprints(strings.ToLower(RuntimeArgs.Dump))
@@ -272,11 +276,23 @@ cp svm-train /usr/local/bin/`)
 		privateRoutes.PUT("/k_knn", putKnnK)
 		privateRoutes.PUT("/minrss", putMinRss)
 		privateRoutes.GET("/lastfingerprint", apiGetLastFingerprint)
+		privateRoutes.GET("/reformdb", reformDB)
+
+		//privateRoutes.GET("/macfilterform/:group", macfilterform)
+
+		privateRoutes.GET("/macfilterform/:group", func(c *gin.Context) {
+			r.LoadHTMLGlob(path.Join(RuntimeArgs.Cwd, "templates/*"))
+			macfilterform(c)
+		})
+		privateRoutes.POST("/setfiltermacs", setfiltermacs)
+		privateRoutes.GET("/getfiltermacs", getfiltermacs)
+
 		//r.Static("data/", path.Join(RuntimeArgs.Cwd, "data/"))
 
 		privateRoutes.Static("data/", path.Join(RuntimeArgs.Cwd, "data/")) // Load db files
 	}
-
+	//r.POST("/setfiltermacs", setfiltermacs)
+	//r.GET("/getfiltermacs", getfiltermacs)
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", learnFingerprintPOST)
 	r.POST("/bulklearn", bulkLearnFingerprintPOST)
