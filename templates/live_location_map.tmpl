@@ -72,14 +72,41 @@
                     Users
                 </div>
                 <div class="panel-body" id="live-users-table-container">
-                    <div class="bs-callout bs-callout-info" style="margin: 0 0 15px;padding-bottom: 5px;">
-                        <h4>Auto Refresh</h4>
-                        <div class="form-group">
-                            <label><input id="auto-reload" type="checkbox"/> Enable Auto reload</label>
+                    <div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
+                        <div class="col-md-12">
+                            <a href="#filter-users" data-toggle="collapse"><h4 style="text-decoration: underline;">Filter Users</h4></a>
+                            <div id="filter-users" class="collapse">
+                                <div class="form-group">
+                                    <label for="refresh-interval">Enter user to filter</label>
+                                    <input id="filter-user" class="form-control" placeholder="user to filter"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <button onclick="filterUsers()" class="btn btn-success btn-sm btn-block">Filter</button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <button onclick="clearFilter()" class="btn btn-warning btn-sm btn-block">Clear Filter</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="refresh-interval">Interval (milliseconds)</label>
-                            <input id="refresh-interval" type="number" min="1000" step="100" value="5000" class="form-control" disabled/>
+                        <div class="col-md-12">
+                            <hr/>
+                        </div>
+                        <div class="col-md-12">
+                            <a href="#auto-refresh" data-toggle="collapse"><h4 style="text-decoration: underline;">Auto Refresh</h4></a>
+                            <div id="auto-refresh" class="collapse">
+
+                                <div class="form-group">
+                                    <label><input id="auto-reload" type="checkbox"/> Enable Auto reload</label>
+                                </div>
+                                <div class="form-group">
+                                    <label for="refresh-interval">Interval (milliseconds)</label>
+                                    <input id="refresh-interval" type="number" min="1000" step="100" value="5000" class="form-control" disabled/>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <table id="live-users-table"
@@ -102,6 +129,7 @@
 </div>
 
 <script type="application/javascript">
+    var filter_user = false;
     var reloadDataInterval;
     $('#live-map').css('height', $(window.top).height() - 275);
     $('#live-users-table-container').css('height', $(window.top).height() - 245);
@@ -131,28 +159,24 @@
             var items = [];
             $.each(data.users, function (key, val) {
 
-                let match = pattern.exec(val[0].location);
-                if (match) {
-                    items.push("<tr><td>" + key + "</td><td>" + match[1] + "</td><td>" + match[2] + "</td></tr>");
-                    if (key in markers) {
-                        markers[key].slideTo([match[1], match[2]], {
-                            duration: 1000,
-                            keepAtCenter: false
-                        });
+                let match = pattern.exec(val[0].knnguess);
+                if (match && match[1] && match[2]) {
+                    if (filter_user != false) {
+                        if (filter_user == key) {
+                            items.push("<tr class='bg-info'><td>" + key + "</td><td>" + match[1] + "</td><td>" + match[2] + "</td></tr>");
+                            createMarker(key, match);
+                        } else {
+                            items.push("<tr><td>" + key + "</td><td>" + match[1] + "</td><td>" + match[2] + "</td></tr>");
+                        }
                     } else {
-                        markers[key] = L.userMarker([match[1], match[2]], {
-//                    pulsing: true,
-//                    accuracy: 200,
-                            title: key,
-                            smallIcon: true
-                        }).bindPopup(key).addTo(map).on('popupopen', function (e) {
-                            markers[key]._popup.setContent("<b>" + key + "</b><br>x = " + e.target._accMarker._latlng.lat
-                                + "<br>y = " + e.target._accMarker._latlng.lng);
-                        });
-
+                        items.push("<tr><td>" + key + "</td><td>" + match[1] + "</td><td>" + match[2] + "</td></tr>");
+                        createMarker(key, match);
                     }
                 } else {
-                    items.push("<tr><td>" + key + "</td><td colspan='2' class='text-center'> NO DATA </td></tr>");
+                    if (filter_user != false && filter_user == key)
+                        items.push("<tr class='bg-info'><td>" + key + "</td><td colspan='2' class='text-center'> NO DATA </td></tr>");
+                    else
+                        items.push("<tr><td>" + key + "</td><td colspan='2' class='text-center'> NO DATA </td></tr>");
                 }
             });
             $("#live-users-table").find("tbody").remove();
@@ -196,6 +220,43 @@
             reloadDataInterval = setInterval(updateUsersLocation, v);
         } else {
             reloadDataInterval = setInterval(updateUsersLocation, m);
+        }
+    }
+
+    function filterUsers() {
+        filter_user = $('#filter-user').val();
+        for (var marker in markers) {
+            if (marker != filter_user) {
+                console.log(marker);
+                map.removeLayer(markers[marker]);
+                delete markers[marker];
+            }
+        }
+        updateUsersLocation();
+    }
+
+    function clearFilter() {
+        filter_user = false;
+        updateUsersLocation();
+    }
+
+    function createMarker(key, match) {
+        if (key in markers) {
+            markers[key].slideTo([match[1], match[2]], {
+                duration: 1000,
+                keepAtCenter: false
+            });
+        } else {
+            markers[key] = L.userMarker([match[1], match[2]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+                title: key,
+                smallIcon: true
+            }).bindPopup(key).addTo(map).on('popupopen', function (e) {
+                markers[key]._popup.setContent("<b>" + key + "</b><br>x = " + e.target._accMarker._latlng.lat
+                    + "<br>y = " + e.target._accMarker._latlng.lng);
+            });
+
         }
     }
 </script>
