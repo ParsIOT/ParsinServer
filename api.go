@@ -400,6 +400,7 @@ func calculate(c *gin.Context) {
 			rfLearn(group)
 		}
 		go resetCache("userPositionCache")
+		go setLearningCache(group, false)
 		c.JSON(http.StatusOK, gin.H{"message": "Parameters optimized.", "success": true})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
