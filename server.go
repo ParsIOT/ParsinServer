@@ -280,10 +280,7 @@ cp svm-train /usr/local/bin/`)
 
 		//privateRoutes.GET("/macfilterform/:group", macfilterform)
 
-		privateRoutes.GET("/macfilterform/:group", func(c *gin.Context) {
-			r.LoadHTMLGlob(path.Join(RuntimeArgs.Cwd, "templates/*"))
-			macfilterform(c)
-		})
+		privateRoutes.GET("/macfilterform/:group", macfilterform)
 		privateRoutes.POST("/setfiltermacs", setfiltermacs)
 		privateRoutes.GET("/getfiltermacs", getfiltermacs)
 
