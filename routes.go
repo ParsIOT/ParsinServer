@@ -349,3 +349,19 @@ func slashPie(c *gin.Context) {
 		"Vals":  template.JS(valsJSON),
 	})
 }
+
+// show mac filter form
+func macfilterform(c *gin.Context) {
+	group := c.Param("group")
+	if _, err := os.Stat(path.Join(RuntimeArgs.SourcePath, group+".db")); os.IsNotExist(err) {
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+		})
+		return
+	}
+	c.HTML(http.StatusOK, "mac_filter.tmpl", gin.H{
+		"Group": group,
+	})
+}
+
+

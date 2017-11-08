@@ -75,6 +75,7 @@ func optimizePriorsThreaded(group string) error {
 	var fingerprintsOrdering []string
 
 	//opening the db
+	Warning.Println(group)
 	db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	if err != nil {
 		log.Fatal(err)

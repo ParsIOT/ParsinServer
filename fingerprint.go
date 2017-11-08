@@ -39,7 +39,7 @@ type Fingerprint struct {
 }
 
 type BulkFingerprint struct {
-	Fingerprints []Fingerprint    `json:"fingerprints"`
+	Fingerprints []Fingerprint `json:"fingerprints"`
 }
 
 // Router is the router information for each individual mac address
@@ -66,6 +66,7 @@ var minApNum int
 func init() {
 	minApNum = 3
 }
+
 // compression 9 us -> 900 us
 // Marsahal and compress a fingerprint
 func dumpFingerprint(res Fingerprint) []byte {
@@ -86,24 +87,38 @@ func loadFingerprint(jsonByte []byte) Fingerprint {
 
 //returns the filtered macs from macs.json file and remove the other macs from fingerprint
 func filterFingerprint(res *Fingerprint) {
-	if RuntimeArgs.Filtering {
+
+	//Warning.Println(res.Group)
+	// end function if there is no macfilter set
+	if ok2, ok1 := RuntimeArgs.NeedToFilter[res.Group]; ok2 && ok1 {
+		if _, ok := RuntimeArgs.FilterMacsMap[res.Group]; !ok {
+			err, filterMacs := getFilterMacDB(res.Group)
+			Warning.Println(filterMacs)
+			if err != nil {
+				return
+			}
+			RuntimeArgs.FilterMacsMap[res.Group] = filterMacs
+			RuntimeArgs.NeedToFilter[res.Group] = false
+		}
+
+		filterMacs := RuntimeArgs.FilterMacsMap[res.Group]
+
 		newFingerprint := make([]Router, len(res.WifiFingerprint))
 		curNum := 0
 
 		for i := range res.WifiFingerprint {
-			if ok2, ok := RuntimeArgs.FilterMacs[res.WifiFingerprint[i].Mac]; ok && ok2 {
-				//Error.Println("filtered mac : ",res.WifiFingerprint[i].Mac)
-				newFingerprint[curNum] = res.WifiFingerprint[i]
-				//todo: why "0" is added at the end?
-				//newFingerprint[curNum].Mac = newFingerprint[curNum].Mac[0:len(newFingerprint[curNum].Mac)-1] + "0"
-				curNum++
+			for _, mac := range filterMacs {
+				if res.WifiFingerprint[i].Mac == mac {
+					//Error.Println("filtered mac : ",res.WifiFingerprint[i].Mac)
+					newFingerprint[curNum] = res.WifiFingerprint[i]
+
+					//newFingerprint[curNum].Mac = newFingerprint[curNum].Mac[0:len(newFingerprint[curNum].Mac)-1] + "0"
+					curNum++
+				}
 			}
 		}
 
 		res.WifiFingerprint = newFingerprint[0:curNum]
-		//Error.Println("Filtering ->")
-		//Error.Println(res.WifiFingerprint)
-		//Error.Println("<- Filtering")
 	}
 }
 
@@ -165,7 +180,7 @@ func trackFingerprintPOST(c *gin.Context) {
 	var jsonFingerprint Fingerprint
 	//Info.Println(jsonFingerprint)
 
-	if c.BindJSON(&jsonFingerprint) == nil {
+	if BindJSON(&jsonFingerprint, c) == nil {
 		if (len(jsonFingerprint.WifiFingerprint) >= minApNum) {
 			message, success, bayesGuess, _, svmGuess, _, rfGuess, _, knnGuess := trackFingerprint(jsonFingerprint)
 			if success {
@@ -193,7 +208,7 @@ func learnFingerprintPOST(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 	var jsonFingerprint Fingerprint
 	Info.Println(jsonFingerprint)
-	if c.BindJSON(&jsonFingerprint) == nil {
+	if BindJSON(&jsonFingerprint, c) == nil {
 		message, success := learnFingerprint(jsonFingerprint)
 		Debug.Println(message)
 		if !success {
@@ -219,7 +234,7 @@ func bulkLearnFingerprintPOST(c *gin.Context) {
 
 	var returnMessage string
 	var returnSuccess string
-	if c.BindJSON(&bulkJsonFingerprint) == nil {
+	if BindJSON(&bulkJsonFingerprint, c) == nil {
 		for i, jsonFingerprint := range bulkJsonFingerprint.Fingerprints {
 			message, success := learnFingerprint(jsonFingerprint)
 			Debug.Println(i, " th fingerprint saving process: ", message)
@@ -238,8 +253,6 @@ func bulkLearnFingerprintPOST(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "Could not bind JSON", "success": false})
 	}
 }
-
-
 
 // cleanFingerPrint and save the Fingerprint to db
 func learnFingerprint(jsonFingerprint Fingerprint) (string, bool) {

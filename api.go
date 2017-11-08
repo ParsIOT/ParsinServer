@@ -45,6 +45,12 @@ type UserPositionJSON struct {
 	KnnGuess   interface{}        `json:"knnguess"`
 }
 
+//	filterMacs is used for set filtermacs
+type FilterMacs struct {
+	Group string   `json:"group"`
+	Macs  []string `json:"macs"`
+}
+
 // Gets location list:
 // Example:
 // {"locations":{
@@ -247,7 +253,7 @@ func getHistoricalUserPositions(group string, user string, n int) []UserPosition
 		if RuntimeArgs.RandomForests {
 			userJSON.RfGuess, userJSON.RfData = rfClassify(group, fingerprint)
 		}
-		_, userJSON.KnnGuess = calculateKnn(fingerprint)
+		//_, userJSON.KnnGuess = calculateKnn(fingerprint)
 		userJSONs[i] = userJSON
 	}
 	return userJSONs
@@ -305,7 +311,7 @@ func getCurrentPositionOfAllUsers(group string) map[string]UserPositionJSON {
 		if RuntimeArgs.RandomForests {
 			foo.RfGuess, foo.RfGuess = rfClassify(group, userFingerprints[user])
 		}
-		_, foo.KnnGuess = calculateKnn(userFingerprints[user])
+		//_, foo.KnnGuess = calculateKnn(userFingerprints[user])
 		go setUserPositionCache(group+user, foo)
 		userPositions[user] = foo
 	}
@@ -366,7 +372,7 @@ func getCurrentPositionOfUser(group string, user string) UserPositionJSON {
 	if RuntimeArgs.RandomForests {
 		userJSON.RfGuess, userJSON.RfData = rfClassify(group, userFingerprint)
 	}
-	_, userJSON.KnnGuess = calculateKnn(userFingerprint)
+	//_, userJSON.KnnGuess = calculateKnn(userFingerprint)
 	go setUserPositionCache(group+user, userJSON)
 	return userJSON
 }
@@ -904,7 +910,6 @@ func editMac(c *gin.Context) {
 	}
 }
 
-
 // Same to editName() but edits username instead of the location name
 // GET paramets: group, user(the old username), newname
 func editUserName(c *gin.Context) {
@@ -1150,7 +1155,7 @@ func whereAmI(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	var jsonData whereAmIJson
-	if c.BindJSON(&jsonData) == nil {
+	if BindJSON(&jsonData, c) == nil {
 		defer timeTrack(time.Now(), "getUniqueMacs")
 		db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, jsonData.Group+".db"), 0600, nil)
 		if err != nil {
@@ -1181,5 +1186,167 @@ func whereAmI(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": message, "group": jsonData.Group, "user": jsonData.User, "locations": locations})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "Could not bind JSON - did you not send it as a JSON?", "success": false})
+	}
+}
+
+// Set filterMacs
+// POST parameters: filterMacs
+func setfiltermacs(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	var filterMacs FilterMacs
+
+	//x, _ := ioutil.ReadAll(c.Request.Body)
+	//Warning.Println("%s", string(x))
+
+	if BindJSON(&filterMacs, c) == nil {
+
+		if len(filterMacs.Macs) == 0 {
+			RuntimeArgs.NeedToFilter[filterMacs.Group] = false
+		} else {
+			RuntimeArgs.NeedToFilter[filterMacs.Group] = true
+		}
+
+		err := setFilterMacDB(filterMacs.Group, filterMacs.Macs)
+		if err == nil {
+			RuntimeArgs.FilterMacsMap[filterMacs.Group] = filterMacs.Macs
+			Warning.Println("MacFilter set successfully ")
+			if len(filterMacs.Macs) == 0 {
+				c.JSON(http.StatusOK, gin.H{"message": "MacFilter Cleared.", "success": true})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"message": "MacFilter set successfully", "success": true})
+			}
+
+		} else {
+			Warning.Println(err)
+			c.JSON(http.StatusOK, gin.H{"message": "setFilterMacDB problem", "success": false})
+		}
+	} else {
+		Warning.Println("Can't bind json")
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json"})
+		//c.JSON(http.StatusOK, gin.H{"message": "Nums of the FilterMacs are zero", "success": false})
+	}
+
+}
+
+// Get filterMacs
+// Get parameters: group
+func getfiltermacs(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	group := c.DefaultQuery("group", "noneasdf")
+	var err error
+	var FilterMacs []string
+	if group != "noneasdf" {
+		err, FilterMacs = getFilterMacDB(group)
+	} else {
+		c.JSON(http.StatusOK, gin.H{"message": "group field is null", "success": false})
+	}
+
+	if err == nil {
+		Warning.Println("FilterMacs: ", FilterMacs)
+		c.JSON(http.StatusOK, gin.H{"message": FilterMacs, "success": true})
+	} else {
+		Warning.Println(err)
+		c.JSON(http.StatusOK, gin.H{"message": err.Error(), "success": false})
+	}
+
+}
+
+// reset the db name as group name to fingerprints(fingerprint & fingerprint-track buckets)
+// Get parameters: group
+func reformDB(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+
+	if group != "noneasdf" {
+		toUpdate := make(map[string]string)
+		numChanges := 0
+
+		db, err := bolt.Open(path.Join(RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		db.View(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte("fingerprints"))
+			if b != nil {
+				c := b.Cursor()
+				for k, v := c.Last(); k != nil; k, v = c.Prev() {
+					v2 := loadFingerprint(v)
+
+					v2.Group = group
+					toUpdate[string(k)] = string(dumpFingerprint(v2))
+
+				}
+			}
+			return nil
+		})
+
+		db.Update(func(tx *bolt.Tx) error {
+			bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
+			if err != nil {
+				return fmt.Errorf("create bucket: %s", err)
+			}
+
+			for k, v := range toUpdate {
+				bucket.Put([]byte(k), []byte(v))
+			}
+			return nil
+		})
+
+		numChanges += len(toUpdate)
+
+		toUpdate = make(map[string]string)
+
+		db.View(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte("fingerprints-track"))
+			if b != nil {
+				c := b.Cursor()
+				for k, v := c.Last(); k != nil; k, v = c.Prev() {
+					v2 := loadFingerprint(v)
+
+					v2.Group = group
+					toUpdate[string(k)] = string(dumpFingerprint(v2))
+
+				}
+			}
+			return nil
+		})
+
+		db.Update(func(tx *bolt.Tx) error {
+			bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints-track"))
+			if err != nil {
+				return fmt.Errorf("create bucket: %s", err)
+			}
+
+			for k, v := range toUpdate {
+				bucket.Put([]byte(k), []byte(v))
+			}
+			return nil
+		})
+
+		db.Close()
+		numChanges += len(toUpdate)
+
+		Warning.Println("DB reformed successfully")
+		c.JSON(http.StatusOK, gin.H{"message": "Changed name of " + strconv.Itoa(numChanges) + " things", "success": true})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
 }
