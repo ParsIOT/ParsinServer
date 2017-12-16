@@ -48,7 +48,7 @@ func BenchmarkGetParameters(b *testing.B) {
 		b := tx.Bucket([]byte("fingerprints"))
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			fingerprintsInMemory[string(v)] = loadFingerprint(v)
+			fingerprintsInMemory[string(v)] = loadFingerprint(v,true)
 			fingerprintsOrdering = append(fingerprintsOrdering, string(v))
 		}
 		return nil

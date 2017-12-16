@@ -155,7 +155,7 @@ func getLastFingerprint(group string, user string) string {
 		}
 		c := b.Cursor()
 		for k, v := c.Last(); k != nil; k, v = c.Prev() {
-			v3 := loadFingerprint(v)
+			v3 := loadFingerprint(v, true)
 			if v3.Username == user {
 				v2 = v3
 				timestampString := string(k)
@@ -183,7 +183,7 @@ func getLastFingerprint(group string, user string) string {
 			if UTCfromUnixNano < v2.Timestamp {
 				break
 			}
-			v3 := loadFingerprint(v)
+			v3 := loadFingerprint(v, true)
 			if v2.Username == user {
 				v2 = v3
 				v2.Timestamp = UTCfromUnixNano
@@ -219,7 +219,7 @@ func getHistoricalUserPositions(group string, user string, n int) []UserPosition
 		c := b.Cursor()
 		numFound := 0
 		for k, v := c.Last(); k != nil; k, v = c.Prev() {
-			v2 := loadFingerprint(v)
+			v2 := loadFingerprint(v, true)
 			if v2.Username == user {
 				timestampString := string(k)
 				timestampUnixNano, _ := strconv.ParseInt(timestampString, 10, 64)
@@ -278,7 +278,7 @@ func getCurrentPositionOfAllUsers(group string) map[string]UserPositionJSON {
 		}
 		c := b.Cursor()
 		for k, v := c.Last(); k != nil; k, v = c.Prev() {
-			v2 := loadFingerprint(v)
+			v2 := loadFingerprint(v, true)
 			if _, ok := userPositions[v2.Username]; !ok {
 				timestampString := string(k)
 				timestampUnixNano, _ := strconv.ParseInt(timestampString, 10, 64)
@@ -342,7 +342,7 @@ func getCurrentPositionOfUser(group string, user string) UserPositionJSON {
 		c := b.Cursor()
 		i := 0
 		for k, v := c.Last(); k != nil; k, v = c.Prev() {
-			v2 := loadFingerprint(v)
+			v2 := loadFingerprint(v, true)
 			i++
 			if i > 10000 {
 				return fmt.Errorf("Too deep!")
@@ -753,7 +753,7 @@ func editName(c *gin.Context) {
 			if b != nil {
 				c := b.Cursor()
 				for k, v := c.Last(); k != nil; k, v = c.Prev() {
-					v2 := loadFingerprint(v)
+					v2 := loadFingerprint(v, false)
 					if v2.Location == location {
 						v2.Location = newname
 						toUpdate[string(k)] = string(dumpFingerprint(v2))
@@ -784,7 +784,7 @@ func editName(c *gin.Context) {
 			if b != nil {
 				c := b.Cursor()
 				for k, v := c.Last(); k != nil; k, v = c.Prev() {
-					v2 := loadFingerprint(v)
+					v2 := loadFingerprint(v, false)
 					if v2.Location == location {
 						v2.Location = newname
 						toUpdate[string(k)] = string(dumpFingerprint(v2))
@@ -843,7 +843,7 @@ func editMac(c *gin.Context) {
 			if b != nil {
 				c := b.Cursor()
 				for k, v := c.Last(); k != nil; k, v = c.Prev() {
-					v2 := loadFingerprint(v)
+					v2 := loadFingerprint(v, false)
 					for i, rt := range v2.WifiFingerprint {
 						if rt.Mac == oldmac {
 							v2.WifiFingerprint[i].Mac = newmac
@@ -876,7 +876,7 @@ func editMac(c *gin.Context) {
 			if b != nil {
 				c := b.Cursor()
 				for k, v := c.Last(); k != nil; k, v = c.Prev() {
-					v2 := loadFingerprint(v)
+					v2 := loadFingerprint(v, false)
 					for i, rt := range v2.WifiFingerprint {
 						if rt.Mac == oldmac {
 							v2.WifiFingerprint[i].Mac = newmac
@@ -937,7 +937,7 @@ func editUserName(c *gin.Context) {
 			if b != nil {
 				c := b.Cursor()
 				for k, v := c.Last(); k != nil; k, v = c.Prev() {
-					v2 := loadFingerprint(v)
+					v2 := loadFingerprint(v, false)
 					if v2.Username == user {
 						v2.Username = newname
 						toUpdate[string(k)] = string(dumpFingerprint(v2))
@@ -968,7 +968,7 @@ func editUserName(c *gin.Context) {
 			if b != nil {
 				c := b.Cursor()
 				for k, v := c.Last(); k != nil; k, v = c.Prev() {
-					v2 := loadFingerprint(v)
+					v2 := loadFingerprint(v, false)
 					if v2.Username == user {
 						v2.Username = newname
 						toUpdate[string(k)] = string(dumpFingerprint(v2))
@@ -1028,7 +1028,7 @@ func deleteLocation(c *gin.Context) {
 			if b != nil {
 				c := b.Cursor()
 				for k, v := c.Last(); k != nil; k, v = c.Prev() {
-					v2 := loadFingerprint(v)
+					v2 := loadFingerprint(v, false)
 					if v2.Location == location {
 						b.Delete(k)
 						numChanges++
@@ -1072,7 +1072,7 @@ func deleteLocations(c *gin.Context) {
 			if b != nil {
 				c := b.Cursor()
 				for k, v := c.Last(); k != nil; k, v = c.Prev() {
-					v2 := loadFingerprint(v)
+					v2 := loadFingerprint(v, false)
 					for _, location := range locations {
 						if v2.Location == location {
 							b.Delete(k)
@@ -1117,7 +1117,7 @@ func deleteUser(c *gin.Context) {
 			if b != nil {
 				c := b.Cursor()
 				for k, v := c.Last(); k != nil; k, v = c.Prev() {
-					v2 := loadFingerprint(v)
+					v2 := loadFingerprint(v, false)
 					if v2.Username == user {
 						b.Delete(k)
 						numChanges++
@@ -1168,7 +1168,7 @@ func whereAmI(c *gin.Context) {
 			b := tx.Bucket([]byte("fingerprints-track"))
 			c := b.Cursor()
 			for k, v := c.Last(); k != nil; k, v = c.Prev() {
-				v2 := loadFingerprint(v)
+				v2 := loadFingerprint(v, true)
 				if v2.Username == jsonData.User {
 					locations = append(locations, v2.Location)
 				}
@@ -1288,7 +1288,7 @@ func reformDB(c *gin.Context) {
 			if b != nil {
 				c := b.Cursor()
 				for k, v := c.Last(); k != nil; k, v = c.Prev() {
-					v2 := loadFingerprint(v)
+					v2 := loadFingerprint(v, false)
 
 					v2.Group = group
 					toUpdate[string(k)] = string(dumpFingerprint(v2))
@@ -1319,7 +1319,7 @@ func reformDB(c *gin.Context) {
 			if b != nil {
 				c := b.Cursor()
 				for k, v := c.Last(); k != nil; k, v = c.Prev() {
-					v2 := loadFingerprint(v)
+					v2 := loadFingerprint(v, false)
 
 					v2.Group = group
 					toUpdate[string(k)] = string(dumpFingerprint(v2))

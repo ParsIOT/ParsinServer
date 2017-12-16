@@ -44,6 +44,8 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 	//	err := errors.New("Location names aren't in the format of x,y")
 	//	return err,"NaN,Nan"
 	//}
+	//Debug.Println(jsonFingerprint)
+	//RuntimeArgs.NeedToFilter[jsonFingerprint.Group] = true
 
 	knnK, err := getKnnKOverride(jsonFingerprint.Group)
 	if err != nil {
@@ -67,7 +69,9 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 		}
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			fingerprintsInMemory[string(k)] = loadFingerprint(v)
+			//Debug.Println("begin ##################")
+			fingerprintsInMemory[string(k)] = loadFingerprint(v,true)
+			//Debug.Println("begin ##################")
 			//fingerprintsOrdering is an array of fingerprintsInMemory keys
 			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
 		}
@@ -97,6 +101,7 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 			numJobs -= 1
 			continue
 		}
+		//Debug.Println(fp.WifiFingerprint)
 		mac2RssFP := getMac2Rss(fp.WifiFingerprint)
 		mac2RssCur := getMac2Rss(jsonFingerprint.WifiFingerprint)
 
@@ -132,6 +137,7 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 				locY, _ := strconv.ParseFloat(locYstr, 64)
 				currentX = currentX + W[fpTime]*locX
 				currentY = currentY + W[fpTime]*locY
+				//Debug.Println(W[fpTime]*locX)
 				sumW = sumW + W[fpTime]
 			} else {
 				break;
@@ -140,6 +146,7 @@ func calculateKnn(jsonFingerprint Fingerprint) (error, string) {
 
 		currentX = currentX / sumW
 		currentY = currentY / sumW
+		//Debug.Println(currentX)
 		return nil, FloatToString(currentX) + "," + FloatToString(currentY)
 	} else {
 		KNNList := make(map[string]float64)
@@ -171,8 +178,9 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 				distance = distance + maxDist
 			}
 		}
-		distance = math.Pow(distance, float64(1)/minkowskyQ)
+		distance = math.Pow(distance, float64(1)/minkowskyQ)+ float64(0.0000001)
 		weight := float64(1) / distance
+ 		//Debug.Println("weight: ",weight)
 		results <- resultW{fpTime: job.fpTime,
 			weight: weight}
 	}

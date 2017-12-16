@@ -60,7 +60,7 @@ func dumpFingerprintsSVM(group string) error {
 		b := tx.Bucket([]byte("fingerprints"))
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			v2 := loadFingerprint(v)
+			v2 := loadFingerprint(v,true)
 			for _, fingerprint := range v2.WifiFingerprint {
 				if _, ok := macs[fingerprint.Mac]; !ok {
 
@@ -86,7 +86,7 @@ func dumpFingerprintsSVM(group string) error {
 		b := tx.Bucket([]byte("fingerprints"))
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			v2 := loadFingerprint(v)
+			v2 := loadFingerprint(v, true)
 			svmData = svmData + makeSVMLine(v2, macs, locations)
 			/*
 			svmData: 	loc mac1:rss1 mac2:rss2 ...

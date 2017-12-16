@@ -65,7 +65,7 @@ func TestCompression(t *testing.T) {
 	res := Fingerprint{}
 	json.Unmarshal([]byte(jsonTest), &res)
 	bFingerprint := dumpFingerprint(res)
-	loadedFingerprint := loadFingerprint(bFingerprint)
+	loadedFingerprint := loadFingerprint(bFingerprint,true)
 	dumped, _ := json.Marshal(loadedFingerprint)
 	bFingerprint2 := dumpFingerprint(loadedFingerprint)
 	isGood := 100*len(dumped)/len(bFingerprint2) == 244 || 100*len(dumped)/len(bFingerprint2) == 246
@@ -93,7 +93,7 @@ func BenchmarkGetFingerprintInDatabase(b *testing.B) {
 			b := tx.Bucket([]byte("fingerprints"))
 			c := b.Cursor()
 			for k, v := c.First(); k != nil; k, v = c.Next() {
-				loadFingerprint(v)
+				loadFingerprint(v,true)
 				break
 			}
 			return nil

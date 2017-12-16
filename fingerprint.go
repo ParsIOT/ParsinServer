@@ -77,11 +77,14 @@ func dumpFingerprint(res Fingerprint) []byte {
 
 // compression 30 us -> 600 us
 //loadFingerprint returns a fingerprint from given jsonByte input
-func loadFingerprint(jsonByte []byte) Fingerprint {
+func loadFingerprint(jsonByte []byte, doFilter bool) Fingerprint {
 	res := Fingerprint{}
 	//json.Unmarshal(decompressByte(jsonByte), res)
 	res.UnmarshalJSON(decompressByte(jsonByte))
-	filterFingerprint(&res)
+	if(doFilter){
+		filterFingerprint(&res)
+	}
+	//Debug.Println(res)
 	return res
 }
 
@@ -90,7 +93,11 @@ func filterFingerprint(res *Fingerprint) {
 
 	//Warning.Println(res.Group)
 	// end function if there is no macfilter set
+	//Debug.Println(res)
+	//Debug.Println(RuntimeArgs.NeedToFilter[res.Group])
+
 	if ok2, ok1 := RuntimeArgs.NeedToFilter[res.Group]; ok2 && ok1 {
+		//Debug.Println("1")
 		if _, ok := RuntimeArgs.FilterMacsMap[res.Group]; !ok {
 			err, filterMacs := getFilterMacDB(res.Group)
 			Warning.Println(filterMacs)
@@ -98,17 +105,18 @@ func filterFingerprint(res *Fingerprint) {
 				return
 			}
 			RuntimeArgs.FilterMacsMap[res.Group] = filterMacs
-			RuntimeArgs.NeedToFilter[res.Group] = false
+			//RuntimeArgs.NeedToFilter[res.Group] = false //ToDo: filtering in loadfingerprint that was called by rf.go not working! So i comment this line !
 		}
 
 		filterMacs := RuntimeArgs.FilterMacsMap[res.Group]
-
+		//Debug.Println(filterMacs)
 		newFingerprint := make([]Router, len(res.WifiFingerprint))
 		curNum := 0
 
 		for i := range res.WifiFingerprint {
 			for _, mac := range filterMacs {
 				if res.WifiFingerprint[i].Mac == mac {
+					//Debug.Println("4")
 					//Error.Println("filtered mac : ",res.WifiFingerprint[i].Mac)
 					newFingerprint[curNum] = res.WifiFingerprint[i]
 
@@ -117,7 +125,7 @@ func filterFingerprint(res *Fingerprint) {
 				}
 			}
 		}
-
+		//Debug.Println(newFingerprint[0:curNum])
 		res.WifiFingerprint = newFingerprint[0:curNum]
 	}
 }

@@ -75,7 +75,7 @@ func getUsers(group string) []string {
 		}
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			v2 := loadFingerprint(v)
+			v2 := loadFingerprint(v, true)
 			if !stringInSlice(v2.Username, uniqueUsers) {
 				uniqueUsers = append(uniqueUsers, v2.Username)
 			}
@@ -103,7 +103,7 @@ func getUniqueMacs(group string) []string {
 		b := tx.Bucket([]byte("fingerprints"))
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			v2 := loadFingerprint(v)
+			v2 := loadFingerprint(v, true)
 			for _, router := range v2.WifiFingerprint {
 				if !stringInSlice(router.Mac, uniqueMacs) {
 					uniqueMacs = append(uniqueMacs, router.Mac)
@@ -127,7 +127,7 @@ func getUniqueLocations(group string) (uniqueLocs []string) {
 		b := tx.Bucket([]byte("fingerprints"))
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			v2 := loadFingerprint(v)
+			v2 := loadFingerprint(v, true)
 			if !stringInSlice(v2.Location, uniqueLocs) {
 				uniqueLocs = append(uniqueLocs, v2.Location)
 			}
@@ -150,7 +150,7 @@ func getMacCount(group string) (macCount map[string]int) {
 		b := tx.Bucket([]byte("fingerprints"))
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			v2 := loadFingerprint(v)
+			v2 := loadFingerprint(v, true)
 			for _, router := range v2.WifiFingerprint {
 				if _, ok := macCount[router.Mac]; !ok {
 					macCount[router.Mac] = 0
@@ -176,7 +176,7 @@ func getMacCountByLoc(group string) (macCountByLoc map[string]map[string]int) {
 		b := tx.Bucket([]byte("fingerprints"))
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			v2 := loadFingerprint(v)
+			v2 := loadFingerprint(v, true)
 			if _, ok := macCountByLoc[v2.Location]; !ok {
 				macCountByLoc[v2.Location] = make(map[string]int)
 			}

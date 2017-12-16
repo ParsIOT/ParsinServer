@@ -20,7 +20,7 @@ func calculatePosterior(res Fingerprint, ps FullParameters) (string, map[string]
 		W[res.WifiFingerprint[v2].Mac] = res.WifiFingerprint[v2].Rssi
 	}
 	n, inNetworkAlready := hasNetwork(ps.NetworkMacs, macs)
-	// Debug.Println(n, inNetworkAlready, ps.NetworkLocs[n])
+	//Debug.Println(n, inNetworkAlready, ps.NetworkLocs[n])
 	if !inNetworkAlready {
 		Warning.Println("Not in network")
 		Debug.Println(n, inNetworkAlready, ps.NetworkLocs[n], res)
