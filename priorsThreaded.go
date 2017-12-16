@@ -93,13 +93,14 @@ func optimizePriorsThreaded(group string) error {
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			fpCounter++
-			fingerprintsInMemory[string(k)] = loadFingerprint(v)
+			fingerprintsInMemory[string(k)] = loadFingerprint(v,true)
 			//fingerprintsOrdering is an array of fingerprintsInMemory keys
 			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
 		}
 		return nil
 	})
 	db.Close()
+	//Debug.Println(fingerprintsInMemory, fingerprintsOrdering)
 
 	if err != nil {
 		return err
@@ -140,12 +141,12 @@ func optimizePriorsThreaded(group string) error {
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			it++
 			if math.Mod(it, FoldCrossValidation) == 0 { // todo: Must use random fg from db
-				fingerprintsInMemoryCross[string(k)] = loadFingerprint(v)
+				fingerprintsInMemoryCross[string(k)] = loadFingerprint(v,true)
 				//fingerprintsOrdering is an array of fingerprintsInMemory keys
 				fingerprintsOrderingCross = append(fingerprintsOrderingCross, string(k))
 			} else {
 				//if fpCounter*((FoldCrossValidation-float64(1))/FoldCrossValidation) >= it {
-				fingerprintsInMemory[string(k)] = loadFingerprint(v)
+				fingerprintsInMemory[string(k)] = loadFingerprint(v,true)
 				//fingerprintsOrdering is an array of fingerprintsInMemory keys
 				fingerprintsOrdering = append(fingerprintsOrdering, string(k))
 
@@ -355,7 +356,7 @@ func optimizePriorsThreadedNot(group string) {
 		b := tx.Bucket([]byte("fingerprints"))
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			fingerprintsInMemory[string(k)] = loadFingerprint(v)
+			fingerprintsInMemory[string(k)] = loadFingerprint(v,true)
 			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
 		}
 		return nil
