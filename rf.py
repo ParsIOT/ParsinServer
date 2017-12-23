@@ -68,6 +68,9 @@ class RF(object):
                 for signal in data['wifi-fingerprint']:
                     self.macSet.add(signal['mac'])
 
+        # print("macSet : ")
+        # print(list(self.macSet))
+
         if DEBUG:
             print("Loaded %d fingerprints" % len(X))
 
@@ -102,14 +105,14 @@ class RF(object):
             if i < trainSize:  # do training
                 self.trainX[curRowTrain, :] = newRow
                 xyList = X[i]['location'].split(",")
-                self.trainY[curRowTrain] = numpy.asarray(xyList, dtype=numpy.float32) 
+                self.trainY[curRowTrain] = numpy.asarray(xyList, dtype=numpy.float32)
                 # self.trainY[curRowTrain, :] = X[i]['location']
                 curRowTrain = curRowTrain + 1
             else:
                 self.testX[curRowTest, :] = newRow
                 # self.testY[curRowTest] = self.nameY.index(X[i]['location'])
                 xyList = X[i]['location'].split(",")
-                self.testY[curRowTest] = numpy.asarray(xyList, dtype=numpy.float32) 
+                self.testY[curRowTest] = numpy.asarray(xyList, dtype=numpy.float32)
                 curRowTest = curRowTest + 1
         # print(self.trainX)
         # print(self.trainY)
@@ -178,11 +181,21 @@ class RF(object):
         print(self.trainX)
         print(self.trainY)
         print("FFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
-        self.clf.fit(self.trainX, self.trainY)
+        try:
+            self.clf.fit(self.trainX, self.trainY)
+        except:
+            print("Trainx : ")
+            print(self.trainX)
+            print("TrainY : ")
+            print(self.trainY)
+
+        # self.clf.fit(self.trainX, self.trainY)
         # print(test)
-        # print(self.nameX)
-        # print(self.nameY)
+        print(self.nameX)
+        print(self.nameY)
         score = self.clf.score(self.testX, self.testY)
+        print("score")
+        print(score)
         with open('data/' + dataFile + '.rf.pkl', 'wb') as fid:
             pickle.dump([self.clf, self.nameX, self.nameY], fid)
         return score
@@ -282,7 +295,7 @@ if __name__ == '__main__':
         print(randomF.classify(args.group, args.file))
     elif args.group is not None:
         randomF = RF()
-        print(randomF.learn(args.group, 1))
+        print(randomF.learn(args.group, 0.9))
         # print(randomF.learn(args.group, 0.5))
     else:
         print("""Usage:

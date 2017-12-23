@@ -96,7 +96,10 @@ func filterFingerprint(res *Fingerprint) {
 	//Debug.Println(res)
 	//Debug.Println(RuntimeArgs.NeedToFilter[res.Group])
 
-	if ok2, ok1 := RuntimeArgs.NeedToFilter[res.Group]; ok2 && ok1 {
+	ok2, ok1 := RuntimeArgs.NeedToFilter[res.Group] //check need for filtering
+	ok3, ok4 := RuntimeArgs.NotNullFilterMap[res.Group] //check that filterMap is null
+
+	if ok2 && ok1 && ok3 && ok4{
 		//Debug.Println("1")
 		if _, ok := RuntimeArgs.FilterMacsMap[res.Group]; !ok {
 			err, filterMacs := getFilterMacDB(res.Group)
@@ -190,10 +193,13 @@ func trackFingerprintPOST(c *gin.Context) {
 
 	if BindJSON(&jsonFingerprint, c) == nil {
 		if (len(jsonFingerprint.WifiFingerprint) >= minApNum) {
+			Debug.Println("Track json: ",jsonFingerprint)
 			message, success, bayesGuess, _, svmGuess, _, rfGuess, _, knnGuess := trackFingerprint(jsonFingerprint)
 			if success {
+				Debug.Println("message", message, " success", true, " bayes", bayesGuess, " svm", svmGuess, " rf", rfGuess, " knn", knnGuess)
 				c.JSON(http.StatusOK, gin.H{"message": message, "success": true, "bayes": bayesGuess, "svm": svmGuess, "rf": rfGuess, "knn": knnGuess})
 			} else {
+				Debug.Println(message)
 				c.JSON(http.StatusOK, gin.H{"message": message, "success": false})
 			}
 		} else {

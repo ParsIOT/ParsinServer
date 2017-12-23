@@ -29,13 +29,13 @@ func RandomString(strlen int) string {
 func rfLearn(group string) float64 {
 	tempFile := group + ".rf.json"
 
-	var _, err = os.Stat(path.Join(RuntimeArgs.SourcePath, tempFile))
-	if !os.IsNotExist(err) {
-		var err = os.Remove(path.Join(RuntimeArgs.SourcePath, tempFile))
-		if err != nil {
-			panic(err)
-		}
-	}
+	//var _, err = os.Stat(path.Join(RuntimeArgs.SourcePath, tempFile))
+	//if !os.IsNotExist(err) {
+	//	var err = os.Remove(path.Join(RuntimeArgs.SourcePath, tempFile))
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//}
 	RuntimeArgs.NeedToFilter[group] = true
 
 	// Check existence of the group
@@ -73,6 +73,9 @@ func rfLearn(group string) float64 {
 	out, _ := bufio.NewReader(conn).ReadString('\n')
 
 	// After a successful learning, python client response the calculation time to go
+	Debug.Println("rf learn output")
+	Debug.Println(string(out))
+
 	classificationSuccess, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
 	if err != nil {
 		Error.Println(string(out))

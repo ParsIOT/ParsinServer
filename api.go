@@ -1208,8 +1208,10 @@ func setfiltermacs(c *gin.Context) {
 
 		if len(filterMacs.Macs) == 0 {
 			RuntimeArgs.NeedToFilter[filterMacs.Group] = false
+			RuntimeArgs.NotNullFilterMap[filterMacs.Group] = false
 		} else {
 			RuntimeArgs.NeedToFilter[filterMacs.Group] = true
+			RuntimeArgs.NotNullFilterMap[filterMacs.Group] = true
 		}
 
 		err := setFilterMacDB(filterMacs.Group, filterMacs.Macs)

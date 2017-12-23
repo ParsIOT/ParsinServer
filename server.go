@@ -45,7 +45,8 @@ var RuntimeArgs struct {
 	MqttExisting      bool
 	Svm               bool
 	RandomForests     bool
-	NeedToFilter      map[string]bool
+	NeedToFilter      map[string]bool //check needing for filtering
+	NotNullFilterMap     map[string]bool //check that filterMap is null(used to avoid filter fingerprint with null map)
 	//FilterMacs        map[string]bool
 	FilterMacsMap     map[string][]string
 	AdminAdd          string
@@ -140,6 +141,8 @@ Options:`)
 
 	RuntimeArgs.FilterMacsMap = make(map[string][]string)
 	RuntimeArgs.NeedToFilter = make(map[string]bool)
+	RuntimeArgs.NotNullFilterMap = make(map[string]bool)
+
 	//if len(RuntimeArgs.FilterMacFile) > 0 {
 	//	b, err := ioutil.ReadFile(RuntimeArgs.FilterMacFile)
 	//	if err != nil {
