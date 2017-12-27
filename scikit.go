@@ -9,10 +9,7 @@ import (
 	"net"
 	"os"
 	"path"
-	"strconv"
-	"strings"
 	"time"
-
 	"github.com/boltdb/bolt"
 )
 
@@ -26,9 +23,9 @@ func RandomString(strlen int) string {
 	return string(result)
 }
 
-func rfLearn(group string) float64 {
-	tempFile := group + ".rf.json"
-
+func scikitLearn(group string) string {
+	tempFile := group + ".scikit.json"
+	var outList map[string]float64
 	//var _, err = os.Stat(path.Join(RuntimeArgs.SourcePath, tempFile))
 	//if !os.IsNotExist(err) {
 	//	var err = os.Remove(path.Join(RuntimeArgs.SourcePath, tempFile))
@@ -49,7 +46,7 @@ func rfLearn(group string) float64 {
 	Debug.Println("Writing " + tempFile)
 	f, err := os.OpenFile(path.Join(RuntimeArgs.SourcePath, tempFile), os.O_WRONLY|os.O_CREATE, 0664)
 	if err != nil {
-		return -1
+		return "nil"
 	}
 
 	// Write fingerprints to the groupname.rf.json file in format of json(same as dump db result)
@@ -66,60 +63,66 @@ func rfLearn(group string) float64 {
 	f.Close()
 
 	// Do learning
-	conn, _ := net.Dial("tcp", "127.0.0.1:"+RuntimeArgs.RFPort)
+	conn, _ := net.Dial("tcp", "127.0.0.1:"+RuntimeArgs.ScikitPort)
 	// send to socket
 	fmt.Fprintf(conn, group+"=")
 	// listen for reply
 	out, _ := bufio.NewReader(conn).ReadString('\n')
 
 	// After a successful learning, python client response the calculation time to go
-	Debug.Println("rf learn output")
-	Debug.Println(string(out))
+	Debug.Println("scikit learn output")
 
-	classificationSuccess, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
+	err = json.Unmarshal([]byte(out), &outList)
 	if err != nil {
-		Error.Println(string(out))
+		Error.Println(err)
 	}
-	Debug.Printf("RF classification success for '%s' is %2.2f", group, classificationSuccess)
+
+	Debug.Println(outList)
+	classSuccessResStr := ""
+	for _, classSuccessRes := range outList {
+		Debug.Printf("Scikit classification success for '%s' is %2.2f", group, classSuccessRes)
+		classSuccessResStr += " "
+	}
 
 	os.Remove(tempFile)
-	return classificationSuccess
+	return classSuccessResStr
 }
 
-func rfClassify(group string, fingerprint Fingerprint) (string, map[string]float64) {
-	var m map[string]float64
-	var bestLocation string
+func scikitClassify(group string, fingerprint Fingerprint) (map[string]string) {
+	var algorithmsPrediction map[string]string
 	tempFile := RandomString(10)
 	d1, _ := json.Marshal(fingerprint)
 
 	// Sending track fingerprint to python client as a file
-	err := ioutil.WriteFile(tempFile+".rftemp", d1, 0644)
+	err := ioutil.WriteFile(tempFile+".scikittemp", d1, 0644)
 	if err != nil {
 		Error.Println("Could not write file: " + err.Error())
-		return bestLocation, m
+		return algorithmsPrediction
 	}
 
 	// connect to this socket
-	conn, _ := net.Dial("tcp", "127.0.0.1:"+RuntimeArgs.RFPort)
+	conn, _ := net.Dial("tcp", "127.0.0.1:"+RuntimeArgs.ScikitPort)
+
 	// send to socket
 	//Debug.Println(tempFile)
 	fmt.Fprintf(conn, group+"="+tempFile)
+
 	// listen for reply
 	message, _ := bufio.NewReader(conn).ReadString('\n')
 
-	err = json.Unmarshal([]byte(message), &m)
+	//Debug.Println(message)
+	err = json.Unmarshal([]byte(message), &algorithmsPrediction)
 	if err != nil {
-		// do nothing
+		Error.Println(err)
 	}
 
-	os.Remove(tempFile + ".rftemp")
+	os.Remove(tempFile + ".scikittemp")
 
-	Debug.Println(m)
+	Debug.Println(algorithmsPrediction)
 
-	if len(m) == 0{
-		return bestLocation, m
-	}
-	bestLocation = sortDictByVal(m)[0]
-	Debug.Println(bestLocation)
-	return bestLocation, m
+	//if len(algorithmsPrediction) == 0{
+	//	return bestLocation, res
+	//}
+
+	return algorithmsPrediction
 }

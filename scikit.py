@@ -38,10 +38,21 @@ random.seed(123)
 
 missingVal = -1000
 
-class RF(object):
+class Scikit(object):
     #data = []
 
+
+
     def __init__(self):
+        self.names = [
+            "BaggingRegression",
+            "SVCRegression"
+        ]
+        self.classifiers = [
+        MultiOutputRegressor(BaggingRegressor(random_state=1)),
+        MultiOutputRegressor(BaggingRegressor(base_estimator=LinearRegression(),random_state=1))
+        ]
+
         self.size = 0
         self.data = []
         self.nameX = []
@@ -52,12 +63,12 @@ class RF(object):
         self.testY = []
         self.macSet = set()
         self.locationSet = set()
-        self.clf = None
+        self.clf = []
 
     def get_data(self, fname, splitRatio):
         # First go through once and get set of macs/locations
         X = []
-        with open("data/" + fname + ".rf.json", 'r') as f_in:
+        with open("data/" + fname + ".scikit.json", 'r') as f_in:
             for fingerprint in f_in:
                 try:
                     data = json.loads(fingerprint)
@@ -123,40 +134,22 @@ class RF(object):
     def learn(self, dataFile, splitRatio):
         print("Learning...")
         self.get_data(dataFile, splitRatio)
-        if DEBUG:
-            names = [
-                # "Nearest Neighbors",
-                # "Linear SVM",
-                # "RBF SVM",
-                # "Gaussian Process",
-                # "Decision Tree",
-                # "Random Forest",
-                # "Neural Net",
-                # "AdaBoost",
-                # "Naive Bayes",
-                # "QDA",
-                "BaggingRegressor"]
-            classifiers = [
-                # KNeighborsClassifier(3),
-                # SVC(kernel="linear", C=0.025),
-                # SVC(gamma=2, C=1),
-                # GaussianProcessClassifier(1.0 * RBF(1.0), warm_start=True),
-                # RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
-                # MLPClassifier(alpha=1),
-                # DecisionTreeClassifier(max_depth=5),
-                # AdaBoostClassifier(),
-                # GaussianNB(),
-                # QuadraticDiscriminantAnalysis(),
-                MultiOutputRegressor(BaggingRegressor(random_state=1))]
-            # print(self.trainY)
-            for name, clf in zip(names, classifiers):
-                try:
-                    clf.fit(self.trainX, self.trainY)
-                    score = clf.score(self.testX, self.testY)
-                    print(name, score)
-                except:
-                    pass
-
+        # if DEBUG:
+        # print(self.trainY)
+        for name, clf in zip(self.names, self.classifiers):
+            try:
+                clf.fit(self.trainX, self.trainY)
+                score = clf.score(self.testX, self.testY)
+                print(name, score)
+            except Exception as ex:
+                print(ex)
+        for name, clf in zip(self.names, self.classifiers):
+            try:
+                self.clf.append(clf)
+                print(name)
+                print(clf)
+            except Exception as ex:
+                print(ex)
         # for max_feature in ["auto","log2",None,"sqrt"]:
         # 	for n_estimator in range(1,30,1):
         # 		for min_samples_split in range(2,10):
@@ -176,33 +169,46 @@ class RF(object):
 
         # self.clf = MultiOutputRegressor(BaggingRegressor(base_estimator=SVC(probability=True, kernel='linear'),random_state=1))
         # adaboost and baggingresgressor that are regression and classifier are good too!
-        self.clf = MultiOutputRegressor(BaggingRegressor(random_state=1))
+        # self.clf = MultiOutputRegressor(BaggingRegressor(base_estimator=SVC(probability=True, kernel='linear'),random_state=1))
+        # self.clf.append(MultiOutputRegressor(BaggingRegressor(random_state=1)))
+        # self.clf.append(MultiOutputRegressor(BaggingRegressor(random_state=1)))
+        # self.clf.append(MultiOutputRegressor(BaggingRegressor(base_estimator=SVC(probability=True, kernel='linear'),random_state=1)))
+
+        # print(self.clf)
         print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
-        print(self.trainX)
-        print(self.trainY)
+        # print(self.trainX)
+        # print(self.trainY)
         print("FFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
         try:
-            self.clf.fit(self.trainX, self.trainY)
-        except:
-            print("Trainx : ")
-            print(self.trainX)
-            print("TrainY : ")
-            print(self.trainY)
-
-        # self.clf.fit(self.trainX, self.trainY)
-        # print(test)
-        print(self.nameX)
-        print(self.nameY)
-        score = self.clf.score(self.testX, self.testY)
+            for i in range(len(self.clf)):
+                self.clf[i].fit(self.trainX, self.trainY)
+        except Exception as ex:
+            print(ex)
+            # print("error in fitting")
+        #     print("Trainx : ")
+        #     print(self.trainX)
+        #     print("TrainY : ")
+        #     print(self.trainY)
+        #
+        # # self.clf.fit(self.trainX, self.trainY)
+        # # print(test)
+        # print(self.nameX)
+        # print(self.nameY)
+        score = {}
+        for i in range(len(self.clf)):
+            score[self.names[i]] = self.clf[i].score(self.testX, self.testY)
+        # score["bagging"] = self.clf[0].score(self.testX, self.testY)
+        # score["svc"] =self.clf[1].score(self.testX, self.testY)
+        # score = self.clf.score(self.testX, self.testY)
         print("score")
         print(score)
-        with open('data/' + dataFile + '.rf.pkl', 'wb') as fid:
+        with open('data/' + dataFile + '.scikit.pkl', 'wb') as fid:
             pickle.dump([self.clf, self.nameX, self.nameY], fid)
         return score
 
     def classify(self, groupName, fingerpintFile):
         print("Classifing...")
-        with open('data/' + groupName + '.rf.pkl', 'rb') as pickle_file:
+        with open('data/' + groupName + '.scikit.pkl', 'rb') as pickle_file:
             [self.clf, self.nameX, self.nameY] = pickle.load(pickle_file)
 
 
@@ -227,13 +233,31 @@ class RF(object):
         if(len(newRow) == 0):
             return {}
         # print(newRow.reshape(1, -1))
-        prediction = self.clf.predict(newRow.reshape(1, -1))
-        print("Predicition: ",prediction)
-        predictStr = str(prediction[0][0])+","+str(prediction[0][1])
+
+        print(self.clf)
+        prediction = []
+        for i in range(len(self.clf)):
+            prediction.append(self.clf[i].predict(newRow.reshape(1, -1)))
+        # prediction.append(self.clf[0].predict(newRow.reshape(1, -1)))
+        # prediction.append(self.clf[1].predict(newRow.reshape(1, -1)))
+        print("Prediction: ",prediction)
+
+        # predictStr = str(prediction[0][0])+","+str(prediction[0][1])
+        predictStr = []
+        for i in range(len(prediction)):
+            predictStr.append(str(prediction[i][0][0])+","+str(prediction[i][0][1]))
+        # predictStr1 = str(prediction[0][0][0])+","+str(prediction[0][0][1])
+        # predictStr2 = str(prediction[1][0][0])+","+str(prediction[1][0][1])
+
         predictionJson = {}
         # for i in range(len(prediction[0])):
         #     predictionJson[self.nameY[i]] = prediction[0][i]
-        predictionJson[predictStr]=1
+
+        for i in range(len(predictStr)):
+            predictionJson[self.names[i]]=predictStr[i]
+        # predictionJson["bagging"]=predictStr1
+        # predictionJson["svc"]=predictStr2
+
         return predictionJson
 
 
@@ -250,7 +274,7 @@ class EchoRequestHandler(socketserver.BaseRequestHandler):
         if len(group) == 0:
             self.request.send(payload)
             return
-        randomF = RF()
+        randomF = Scikit()
         print("fileName:",filename)
         print("group:",group)
         if len(filename) == 0:
@@ -263,7 +287,7 @@ class EchoRequestHandler(socketserver.BaseRequestHandler):
                 randomF.classify(
                     group,
                     filename +
-                    ".rftemp")).encode('utf-8')
+                    ".scikittemp")).encode('utf-8')
             print("Payload: ",payload)
         self.request.send(payload)
         return
@@ -291,18 +315,18 @@ if __name__ == '__main__':
         ip, port = server.server_address  # find out what port we were given
         server.serve_forever()
     elif args.file is not None and args.group is not None:
-        randomF = RF()
+        randomF = Scikit()
         print(randomF.classify(args.group, args.file))
     elif args.group is not None:
-        randomF = RF()
+        randomF = Scikit()
         print(randomF.learn(args.group, 0.9))
         # print(randomF.learn(args.group, 0.5))
     else:
         print("""Usage:
 To just run as TCP server:
-	python3 rf.py --port 5009
+	python3 scikit.py --port 5009
 To just learn:
-	python3 rf.py --group GROUP
+	python3 scikit.py --group GROUP
 To classify
-	python3 rf.py --group GROUP --file FILEWITHFINGERPRINTS
+	python3 scikit.py --group GROUP --file FILEWITHFINGERPRINTS
 """)

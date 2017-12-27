@@ -323,3 +323,11 @@ func sortDictByVal(W map[string]float64) []string {
 	}
 	return keySorted
 }
+
+func stringMap2String(stringMap map[string]string) string{
+	res := ""
+	for k,v := range stringMap{
+		res += k+": "+v+" "
+	}
+	return res
+}

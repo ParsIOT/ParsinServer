@@ -93,3 +93,4 @@ CMakeLists.txt
 Documentation/_build
 Documentation/_static
 Documentation/_templates
+/data/

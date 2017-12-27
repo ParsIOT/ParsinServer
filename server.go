@@ -26,7 +26,7 @@ import (
 // RuntimeArgs contains all runtime
 // arguments available
 var RuntimeArgs struct {
-	RFPort            string
+	ScikitPort            string
 	//FilterMacFile     string
 	ExternalIP        string
 	Port              string
@@ -44,7 +44,7 @@ var RuntimeArgs struct {
 	Mqtt              bool
 	MqttExisting      bool
 	Svm               bool
-	RandomForests     bool
+	Scikit	          bool
 	NeedToFilter      map[string]bool //check needing for filtering
 	NotNullFilterMap     map[string]bool //check that filterMap is null(used to avoid filter fingerprint with null map)
 	//FilterMacs        map[string]bool
@@ -93,7 +93,7 @@ func main() {
 	flag.StringVar(&RuntimeArgs.Dump, "dump", "", "group to dump to folder")
 	flag.StringVar(&RuntimeArgs.Message, "message", "", "message to display to all users")
 	flag.StringVar(&RuntimeArgs.SourcePath, "data", "", "path to data folder")
-	flag.StringVar(&RuntimeArgs.RFPort, "rf", "", "port for random forests calculations")
+	flag.StringVar(&RuntimeArgs.ScikitPort, "scikit", "", "port for scikit-learn calculations")
 	//flag.StringVar(&RuntimeArgs.FilterMacFile, "filter", "", "JSON file for macs to filter")
 	flag.StringVar(&RuntimeArgs.AdminAdd, "adminadd", "", "Add an admin user or change his password, foramt:<username>:<password>, e.g.:admin:admin")
 	flag.BoolVar(&RuntimeArgs.GaussianDist, "gaussian", false, "Use gaussian distribution instead of historgram")
@@ -133,8 +133,8 @@ Options:`)
 	}
 
 	// Check whether random forests are used
-	if len(RuntimeArgs.RFPort) > 0 {
-		RuntimeArgs.RandomForests = true
+	if len(RuntimeArgs.ScikitPort) > 0 {
+		RuntimeArgs.Scikit = true
 	}
 
 	//// Check whether macs should be filtered

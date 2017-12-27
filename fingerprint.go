@@ -108,7 +108,7 @@ func filterFingerprint(res *Fingerprint) {
 				return
 			}
 			RuntimeArgs.FilterMacsMap[res.Group] = filterMacs
-			//RuntimeArgs.NeedToFilter[res.Group] = false //ToDo: filtering in loadfingerprint that was called by rf.go not working! So i comment this line !
+			//RRuntimeArgs.NeedToFilter[res.Group] = false //ToDo: filtering in loadfingerprint that was called by scikit.go not working! So i comment this line !
 		}
 
 		filterMacs := RuntimeArgs.FilterMacsMap[res.Group]
@@ -194,10 +194,16 @@ func trackFingerprintPOST(c *gin.Context) {
 	if BindJSON(&jsonFingerprint, c) == nil {
 		if (len(jsonFingerprint.WifiFingerprint) >= minApNum) {
 			Debug.Println("Track json: ",jsonFingerprint)
-			message, success, bayesGuess, _, svmGuess, _, rfGuess, _, knnGuess := trackFingerprint(jsonFingerprint)
+			message, success, bayesGuess, _, svmGuess, _, knnGuess, scikitData  := trackFingerprint(jsonFingerprint)
 			if success {
-				Debug.Println("message", message, " success", true, " bayes", bayesGuess, " svm", svmGuess, " rf", rfGuess, " knn", knnGuess)
-				c.JSON(http.StatusOK, gin.H{"message": message, "success": true, "bayes": bayesGuess, "svm": svmGuess, "rf": rfGuess, "knn": knnGuess})
+				scikitDataStr := stringMap2String(scikitData)
+				resJsonMap := gin.H{"message": message, "success": true, "bayes": bayesGuess, "svm": svmGuess, "knn": knnGuess}
+				for algorithm, valXY := range scikitData{
+					resJsonMap[algorithm]=valXY
+				}
+
+				Debug.Println("message", message, " success", true, " bayes", bayesGuess, " svm", svmGuess, scikitDataStr, " knn", knnGuess)
+				c.JSON(http.StatusOK, resJsonMap)
 			} else {
 				Debug.Println(message)
 				c.JSON(http.StatusOK, gin.H{"message": message, "success": false})
@@ -285,7 +291,7 @@ func learnFingerprint(jsonFingerprint Fingerprint) (string, bool) {
 }
 
 // call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
-func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[string]float64, string, map[string]float64, string, map[string]float64, string) {
+func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[string]float64, string, map[string]float64, string, map[string]string) {
 	// Classify with filter fingerprint
 	fullFingerprint := jsonFingerprint
 	filterFingerprint(&jsonFingerprint)
@@ -294,19 +300,18 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 	bayesData := make(map[string]float64)
 	svmGuess := ""
 	svmData := make(map[string]float64)
-	rfGuess := ""
-	rfData := make(map[string]float64)
+	scikitData := make(map[string]string)
 	knnGuess := ""
 
 	cleanFingerprint(&jsonFingerprint)
 	if !groupExists(jsonFingerprint.Group) || len(jsonFingerprint.Group) == 0 {
-		return "You should insert fingerprints before tracking", false, "", bayesData, "", make(map[string]float64), "", make(map[string]float64), ""
+		return "You should insert fingerprints before tracking", false, "", bayesData, "", make(map[string]float64), "", make(map[string]string)
 	}
 	if len(jsonFingerprint.WifiFingerprint) == 0 {
-		return "No fingerprints found to track, see API", false, "", bayesData, "", make(map[string]float64), "", make(map[string]float64), ""
+		return "No fingerprints found to track, see API", false, "", bayesData, "", make(map[string]float64), "", make(map[string]string)
 	}
 	if len(jsonFingerprint.Username) == 0 {
-		return "No username defined, see API", false, "", bayesData, "", make(map[string]float64), "", make(map[string]float64), ""
+		return "No username defined, see API", false, "", bayesData, "", make(map[string]float64), "", make(map[string]string)
 	}
 	wasLearning, ok := getLearningCache(strings.ToLower(jsonFingerprint.Group))
 	if ok {
@@ -319,8 +324,8 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 				dumpFingerprintsSVM(group)
 				calculateSVM(group)
 			}
-			if RuntimeArgs.RandomForests {
-				rfLearn(group)
+			if RuntimeArgs.Scikit {
+				scikitLearn(group)
 			}
 			go appendUserCache(group, jsonFingerprint.Username)
 		}
@@ -368,9 +373,13 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 
 	// Calculating RF
 
-	if RuntimeArgs.RandomForests {
-		rfGuess, rfData = rfClassify(strings.ToLower(jsonFingerprint.Group), jsonFingerprint)
-		message += " rfGuess: " + rfGuess
+	if RuntimeArgs.Scikit {
+		scikitData = scikitClassify(strings.ToLower(jsonFingerprint.Group), jsonFingerprint)
+		Debug.Println(scikitData)
+		for algorithm, valueXY := range scikitData{
+			message += " "+algorithm+":v" + valueXY
+		}
+
 	}
 
 	// Send out the final responses
@@ -380,8 +389,7 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 	userJSON.BayesData = bayesData
 	userJSON.SvmGuess = svmGuess
 	userJSON.SvmData = svmData
-	userJSON.RfGuess = rfGuess
-	userJSON.RfData = rfData
+	userJSON.ScikitData = scikitData
 	userJSON.KnnGuess = knnGuess
 
 	go setUserPositionCache(strings.ToLower(jsonFingerprint.Group)+strings.ToLower(jsonFingerprint.Username), userJSON)
@@ -392,19 +400,21 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 			Timestamp  int64  `json:"time"`
 			BayesGuess string `json:"bayesguess"`
 			SvmGuess   string `json:"svmguess"`
-			RfGuess    string `json:"rfguess"`
+			ScikitData    map[string]string `json:"scikitdata"`
 			KnnGuess   string `json:"knnguess"`
 		}
 		mqttMessage, _ := json.Marshal(FingerprintResponse{
 			Timestamp:  time.Now().UnixNano(),
 			BayesGuess: bayesGuess,
 			SvmGuess:   svmGuess,
-			RfGuess:    rfGuess,
+			ScikitData:    scikitData,
 			KnnGuess:   knnGuess,
 		})
 		go sendMQTTLocation(string(mqttMessage), jsonFingerprint.Group, jsonFingerprint.Username)
 	}
 
-	return message, true, bayesGuess, bayesData, svmGuess, svmData, rfGuess, rfData, knnGuess
+
+
+	return message, true, bayesGuess, bayesData, svmGuess, svmData, knnGuess, scikitData
 
 }

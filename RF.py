@@ -85,6 +85,6 @@ class RF(object):
 		
 	
 randomF = RF()
-data = randomF.get_data("data/hackduke.rf.data")
+data = randomF.get_data("data/hackduke.scikit.data")
 randomF.splitDataset(data, 0.6)
 randomF.randomFC()

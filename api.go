@@ -40,8 +40,7 @@ type UserPositionJSON struct {
 	BayesData  map[string]float64 `json:"bayesdata"`
 	SvmGuess   interface{}        `json:"svmguess"`
 	SvmData    map[string]float64 `json:"svmdata"`
-	RfGuess    interface{}        `json:"rfguess"`
-	RfData     map[string]float64 `json:"rfdata"`
+	ScikitData     map[string]string `json:"rfdata"`
 	KnnGuess   interface{}        `json:"knnguess"`
 }
 
@@ -250,8 +249,8 @@ func getHistoricalUserPositions(group string, user string, n int) []UserPosition
 			userJSON.SvmGuess, userJSON.SvmData = classify(fingerprint)
 		}
 		// Process RF if needed
-		if RuntimeArgs.RandomForests {
-			userJSON.RfGuess, userJSON.RfData = rfClassify(group, fingerprint)
+		if RuntimeArgs.Scikit {
+			userJSON.ScikitData = scikitClassify(group, fingerprint)
 		}
 		//_, userJSON.KnnGuess = calculateKnn(fingerprint)
 		userJSONs[i] = userJSON
@@ -308,8 +307,8 @@ func getCurrentPositionOfAllUsers(group string) map[string]UserPositionJSON {
 		if RuntimeArgs.Svm {
 			foo.SvmGuess, foo.SvmData = classify(userFingerprints[user])
 		}
-		if RuntimeArgs.RandomForests {
-			foo.RfGuess, foo.RfGuess = rfClassify(group, userFingerprints[user])
+		if RuntimeArgs.Scikit {
+			foo.ScikitData = scikitClassify(group, userFingerprints[user])
 		}
 		//_, foo.KnnGuess = calculateKnn(userFingerprints[user])
 		go setUserPositionCache(group+user, foo)
@@ -369,8 +368,8 @@ func getCurrentPositionOfUser(group string, user string) UserPositionJSON {
 	if RuntimeArgs.Svm {
 		userJSON.SvmGuess, userJSON.SvmData = classify(userFingerprint)
 	}
-	if RuntimeArgs.RandomForests {
-		userJSON.RfGuess, userJSON.RfData = rfClassify(group, userFingerprint)
+	if RuntimeArgs.Scikit {
+		userJSON.ScikitData = scikitClassify(group, userFingerprint)
 	}
 	//_, userJSON.KnnGuess = calculateKnn(userFingerprint)
 	go setUserPositionCache(group+user, userJSON)
@@ -402,8 +401,8 @@ func calculate(c *gin.Context) {
 				Warning.Println(err)
 			}
 		}
-		if RuntimeArgs.RandomForests {
-			rfLearn(group)
+		if RuntimeArgs.Scikit {
+			scikitLearn(group)
 		}
 		go resetCache("userPositionCache")
 		go setLearningCache(group, false)

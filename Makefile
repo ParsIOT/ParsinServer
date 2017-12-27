@@ -32,21 +32,21 @@ binaries:
 	mkdir builds
 	# Build Windows
 	env GOOS=windows GOARCH=amd64 go build ${LDFLAGS} -o findserver.exe -v *.go
-	zip -r find_${VERSION}_windows_amd64.zip findserver.exe LICENSE ./templates/* ./data/.datagoeshere ./static/* rf.py
+	zip -r find_${VERSION}_windows_amd64.zip findserver.exe LICENSE ./templates/* ./data/.datagoeshere ./static/* scikit.py
 	mv find_${VERSION}_windows_amd64.zip builds/
 	rm findserver.exe
 	# Build Linux
 	env GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o findserver -v *.go
-	zip -r find_${VERSION}_linux_amd64.zip findserver LICENSE ./templates/* ./data/.datagoeshere ./static/* rf.py
+	zip -r find_${VERSION}_linux_amd64.zip findserver LICENSE ./templates/* ./data/.datagoeshere ./static/* scikit.py
 	mv find_${VERSION}_linux_amd64.zip builds/
 	rm findserver
 	# Build OS X
 	env GOOS=darwin GOARCH=amd64 go build ${LDFLAGS} -o findserver -v *.go
-	zip -r find_${VERSION}_osx.zip findserver LICENSE ./templates/* ./data/.datagoeshere ./static/* rf.py
+	zip -r find_${VERSION}_osx.zip findserver LICENSE ./templates/* ./data/.datagoeshere ./static/* scikit.py
 	mv find_${VERSION}_osx.zip builds/
 	rm findserver
 	# Build Raspberry Pi / Chromebook
 	env GOOS=linux GOARCH=arm go build ${LDFLAGS} -o findserver -v *.go
-	zip -r find_${VERSION}_linux_arm.zip findserver LICENSE ./templates/* ./data/.datagoeshere ./static/* rf.py
+	zip -r find_${VERSION}_linux_arm.zip findserver LICENSE ./templates/* ./data/.datagoeshere ./static/* scikit.py
 	mv find_${VERSION}_linux_arm.zip builds/
 	rm findserver

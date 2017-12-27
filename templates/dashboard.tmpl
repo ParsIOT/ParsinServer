@@ -288,7 +288,7 @@
                         <strong>Last seen:</strong> {{ $user.Time }} at {{ $user.KnnGuess }}</p>
                   <p id="bayes{{$index}}" title="Shows the exponential Bayesian scores when you are tracking."></p>
                   <p id="svm{{$index}}" title="Shows the SVM scores when you are tracking."></p>
-                  <p id="rf{{$index}}" title="Shows the random forest scores when you are tracking."></p>
+                  <p id="scikit{{$index}}" title="Shows the random forest scores when you are tracking."></p>
                 </div>
               </div>
             </div>
@@ -390,7 +390,7 @@ function userLocPolling() {
                 console.log(vals.join())
                $(jq('#svm' + userkey)).html("<strong>SVM:</strong> " + vals.join())
               }
-              if (data['users'][key]['rf'] != undefined && Object.keys(data['users'][key]['rf']).length > 0) {
+              if (data['users'][key]['scikit'] != undefined && Object.keys(data['users'][key]['rf']).length > 0) {
                 console.log(data['users'][key]['rf'])
                 var tuples = [];
                 for (var key2 in data['users'][key]['rf']) tuples.push([key2, data['users'][key]['rf'][key2]]);
@@ -409,7 +409,7 @@ function userLocPolling() {
                     }
                 }
                 console.log(vals.join())
-               $(jq('#rf' + userkey)).html("<strong>RF:</strong> " + vals.join())
+               $(jq('#scikit' + userkey)).html("<strong>scikit:</strong> " + vals.join())
               }
 
 
