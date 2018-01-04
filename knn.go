@@ -24,7 +24,7 @@ func init() {
 	defaultKnnK = 60
 	knn_regression = true
 	minkowskyQ = 2
-	maxDist = 50
+	maxDist = 60
 }
 
 type resultW struct {

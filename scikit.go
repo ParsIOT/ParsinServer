@@ -42,6 +42,7 @@ func scikitLearn(group string) string {
 	}
 	defer db.Close()
 
+	// Todo: .scikit file must be in /data folder
 	// Creating a file that its name is group+.rf.json
 	Debug.Println("Writing " + tempFile)
 	f, err := os.OpenFile(path.Join(RuntimeArgs.SourcePath, tempFile), os.O_WRONLY|os.O_CREATE, 0664)
