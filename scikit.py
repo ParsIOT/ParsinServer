@@ -11,7 +11,14 @@ import argparse
 from random import shuffle
 
 import socketserver
+
+from sklearn.neural_network import MLPClassifier
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.ensemble import RandomForestClassifier
+
 from sklearn.ensemble import RandomForestClassifier,BaggingRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import LassoCV
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.pipeline import make_pipeline
 from sklearn.multioutput import MultiOutputRegressor
@@ -36,7 +43,7 @@ DEBUG = False
 
 random.seed(123)
 
-missingVal = -1000
+missingVal = -100
 
 class Scikit(object):
     #data = []
@@ -44,28 +51,44 @@ class Scikit(object):
 
 
     def __init__(self):
-        self.names = [
-            "BaggingRegression",
-            "SVCRegression"
-        ]
-        self.classifiers = [
-        MultiOutputRegressor(BaggingRegressor(random_state=1)),
-        MultiOutputRegressor(BaggingRegressor(base_estimator=LinearRegression(),random_state=1))
-        ]
-
         self.size = 0
         self.data = []
         self.nameX = []
         self.trainX = numpy.array([])
-        self.testX = numpy.array([])
         self.nameY = []
-        self.trainY = []
-        self.testY = []
+        self.nameY2 = []
+        self.trainY1 = []
+        self.trainY2 = []
         self.macSet = set()
         self.locationSet = set()
-        self.clf = []
+        self.locationList = []
+        self.clfClassifiers = []
+        self.clfRegressors = []
+        self.mainK = 10
 
-    def get_data(self, fname, splitRatio):
+        self.regressorsNames = [
+            "BaggingRegression",
+            "DecisionTreeRegression",
+            "Lasso"
+        ]
+        self.regressors = [
+            MultiOutputRegressor(BaggingRegressor(random_state=1)),
+            MultiOutputRegressor(DecisionTreeRegressor(random_state=1)),
+            MultiOutputRegressor(LassoCV())
+        ]
+
+        self.classifiersNames = [
+            "scikitKNN",
+            "mlp",
+            "rf",
+        ]
+        self.classifiers = [
+            KNeighborsClassifier(n_neighbors=10,weights='distance',n_jobs=-1),
+            MLPClassifier(alpha=1),
+            RandomForestClassifier(),
+        ]
+
+    def get_data(self, fname):
         # First go through once and get set of macs/locations
         X = []
         with open("data/" + fname + ".scikit.json", 'r') as f_in:
@@ -76,6 +99,7 @@ class Scikit(object):
                     pass
                 X.append(data)
                 self.locationSet.add(data['location'])
+                self.locationList.append(data['location'])
                 for signal in data['wifi-fingerprint']:
                     self.macSet.add(signal['mac'])
 
@@ -88,23 +112,28 @@ class Scikit(object):
         # Convert them to lists, for indexing
         self.nameX = list(self.macSet)
         self.nameY = list(self.locationSet)
+        # print(self.locationList)
+        # print(len(self.locationList))
+        # print(len(self.locationList))
 
         # Go through the data again, in a random way
         # shuffle(X)
         # Split the dataset for training / learning
-        trainSize = int(len(X) * splitRatio)
+        trainSize = int(len(X))
         if DEBUG:
             print("Training size is %d fingerprints" % trainSize)
         # Initialize X, Y matricies for training and testing
+        # self.trainX = numpy.full((trainSize, len(self.nameX)),missingVal)
+        # self.testX = numpy.full((len(X) - trainSize, len(self.nameX)),missingVal)
+        # # self.trainY = [0] * trainSize
+        # # self.trainY = [[0,0] for i in range(trainSize)]
+        # self.trainY = numpy.zeros(shape=(trainSize,2))
+        # # self.testY = [0] * (len(X) - trainSize)
+        # # self.testY = [[0,0] for i in range(len(X) - trainSize)]
+        # self.testY = numpy.zeros(shape=(len(X) - trainSize,2))
         self.trainX = numpy.full((trainSize, len(self.nameX)),missingVal)
-        self.testX = numpy.full((len(X) - trainSize, len(self.nameX)),missingVal)
-        # self.trainY = [0] * trainSize
-        # self.trainY = [[0,0] for i in range(trainSize)]
-        self.trainY = numpy.zeros(shape=(trainSize,2))
-        # self.testY = [0] * (len(X) - trainSize)
-        # self.testY = [[0,0] for i in range(len(X) - trainSize)]
-        self.testY = numpy.zeros(shape=(len(X) - trainSize,2))
-
+        self.trainY1 = [0] * trainSize
+        self.trainY2 = numpy.zeros(shape=(trainSize,2))
         curRowTrain = 0
         curRowTest = 0
 
@@ -113,39 +142,50 @@ class Scikit(object):
             newXY = numpy.zeros(2)
             for signal in X[i]['wifi-fingerprint']:
                 newRow[self.nameX.index(signal['mac'])] = signal['rssi']
-            if i < trainSize:  # do training
-                self.trainX[curRowTrain, :] = newRow
-                xyList = X[i]['location'].split(",")
-                self.trainY[curRowTrain] = numpy.asarray(xyList, dtype=numpy.float32)
-                # self.trainY[curRowTrain, :] = X[i]['location']
-                curRowTrain = curRowTrain + 1
-            else:
-                self.testX[curRowTest, :] = newRow
-                # self.testY[curRowTest] = self.nameY.index(X[i]['location'])
-                xyList = X[i]['location'].split(",")
-                self.testY[curRowTest] = numpy.asarray(xyList, dtype=numpy.float32)
-                curRowTest = curRowTest + 1
-        # print(self.trainX)
-        # print(self.trainY)
-        # print(self.testX)
-        # print(self.testY)
-        # print(self.nameX)
-
-    def learn(self, dataFile, splitRatio):
+            # if i < trainSize:  # do training
+            self.trainX[curRowTrain, :] = newRow
+            xyList = X[i]['location'].split(",")
+            self.trainY2[curRowTrain] = numpy.asarray(xyList, dtype=numpy.float32)
+            # self.trainY[curRowTrain, :] = X[i]['location']
+            self.trainY1[curRowTrain] = curRowTrain
+            #self.trainY2[curRowTrain] = self.nameY.index(X[i]['location'])
+            curRowTrain = curRowTrain + 1
+            # else:
+            #     self.testX[curRowTest, :] = newRow
+            #     # self.testY[curRowTest] = self.nameY.index(X[i]['location'])
+            #     #xyList = X[i]['location'].split(",")
+            #     #self.testY[curRowTest] = numpy.asarray(xyList, dtype=numpy.float32)
+            #     self.testY1[curRowTest] = curRowTest
+            #     self.testY2[curRowTest] = self.nameY.index(X[i]['location'])
+            #     curRowTest = curRowTest + 1
+            # print(self.trainX)
+            # print(self.trainY)
+            # print(self.testX)
+            # print(self.testY)
+            # print(self.nameX)
+            # print(len(self.trainY1))
+    def learn(self, dataFile):
         print("Learning...")
-        self.get_data(dataFile, splitRatio)
+        self.get_data(dataFile)
         # if DEBUG:
         # print(self.trainY)
-        for name, clf in zip(self.names, self.classifiers):
+        # for name, clf in zip(self.names, self.classifiers):
+        #     try:
+        #         clf.fit(self.trainX, self.trainY1)
+        #         # score = clf.score(self.testX, self.testY1)
+        #         # print(name, score)
+        #     except Exception as ex:
+        #         print("ERROR:",ex)
+        for name, clf in zip(self.classifiersNames, self.classifiers):
             try:
-                clf.fit(self.trainX, self.trainY)
-                score = clf.score(self.testX, self.testY)
-                print(name, score)
+                self.clfClassifiers.append(clf)
+                print(name)
+                print(clf)
             except Exception as ex:
                 print(ex)
-        for name, clf in zip(self.names, self.classifiers):
+        for name, clf in zip(self.regressorsNames, self.regressors):
             try:
-                self.clf.append(clf)
+                self.clfRegressors.append(clf)
                 print(name)
                 print(clf)
             except Exception as ex:
@@ -180,8 +220,10 @@ class Scikit(object):
         # print(self.trainY)
         print("FFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
         try:
-            for i in range(len(self.clf)):
-                self.clf[i].fit(self.trainX, self.trainY)
+            for i in range(len(self.clfClassifiers)):
+                self.clfClassifiers[i].fit(self.trainX, self.trainY1)
+            for i in range(len(self.clfRegressors)):
+                self.clfRegressors[i].fit(self.trainX, self.trainY2)
         except Exception as ex:
             print(ex)
             # print("error in fitting")
@@ -194,22 +236,43 @@ class Scikit(object):
         # # print(test)
         # print(self.nameX)
         # print(self.nameY)
-        score = {}
-        for i in range(len(self.clf)):
-            score[self.names[i]] = self.clf[i].score(self.testX, self.testY)
+        # score = {}
+        # for i in range(len(self.clf)):
+        #     score[self.names[i]] = self.clf[i].score(self.testX, self.testY1)
         # score["bagging"] = self.clf[0].score(self.testX, self.testY)
         # score["svc"] =self.clf[1].score(self.testX, self.testY)
         # score = self.clf.score(self.testX, self.testY)
-        print("score")
-        print(score)
+        # print("score")
+        # print(score)
         with open('data/' + dataFile + '.scikit.pkl', 'wb') as fid:
-            pickle.dump([self.clf, self.nameX, self.nameY], fid)
-        return score
+            pickle.dump([self.clfClassifiers,self.clfRegressors, self.nameX, self.nameY, self.locationList], fid)
+        return {'learn': 1}
+
+
+    def predictions2XY(self, prdWithName):
+
+        prdWithName = sorted(prdWithName.items(), key=lambda x: x[1], reverse=True)
+        print(prdWithName)
+        i=0
+        wigthSum = 0
+        xyResult = [0,0]
+        for keyval in prdWithName:
+            i+=1
+            if(i>self.mainK):
+                break
+            xy = keyval[0][0].split(",")
+            wigth = keyval[1]
+            wigthSum += wigth
+            xyResult[0] += float(xy[0])*wigth
+            xyResult[1] += float(xy[1])*wigth
+        xyResult[0] = xyResult[0] / wigthSum
+        xyResult[1] = xyResult[1] / wigthSum
+        return str(xyResult[0])+","+str(xyResult[1])
 
     def classify(self, groupName, fingerpintFile):
         print("Classifing...")
         with open('data/' + groupName + '.scikit.pkl', 'rb') as pickle_file:
-            [self.clf, self.nameX, self.nameY] = pickle.load(pickle_file)
+            [self.clfClassifiers,self.clfRegressors, self.nameX, self.nameY, self.locationList] = pickle.load(pickle_file)
 
 
         # print(self.nameX)
@@ -233,11 +296,28 @@ class Scikit(object):
         if(len(newRow) == 0):
             return {}
         # print(newRow.reshape(1, -1))
-
-        print(self.clf)
+        print("Classifiers:")
+        print(self.clfClassifiers)
+        print("Regressors: ")
+        print(self.clfRegressors)
         prediction = []
-        for i in range(len(self.clf)):
-            prediction.append(self.clf[i].predict(newRow.reshape(1, -1)))
+
+        #Add classifier results
+        for i in range(len(self.clfClassifiers)):
+            prdWithName = {}
+            prdWithNameSorted= {}
+            # prediction.append(self.clf[i].predict(newRow.reshape(1, -1)))
+            prd = self.clfClassifiers[i].predict_proba(newRow.reshape(1, -1))
+            print(prd)
+            for i in range(len(prd[0])):
+                # prdWithName[self.nameY[i]] = prd[0][i]
+                prdWithName[(self.locationList[i],i)] = prd[0][i]
+            #print(prdWithName)
+            prediction.append(self.predictions2XY(prdWithName))
+
+            # print(self.predictions2XY(prdWithName))
+            # print(sorted(prdWithName.items(), key=lambda x: x[1], reverse=True))
+            # prediction.append(prdWithName)
         # prediction.append(self.clf[0].predict(newRow.reshape(1, -1)))
         # prediction.append(self.clf[1].predict(newRow.reshape(1, -1)))
         print("Prediction: ",prediction)
@@ -245,7 +325,8 @@ class Scikit(object):
         # predictStr = str(prediction[0][0])+","+str(prediction[0][1])
         predictStr = []
         for i in range(len(prediction)):
-            predictStr.append(str(prediction[i][0][0])+","+str(prediction[i][0][1]))
+            # predictStr.append(str(prediction[i][0][0])+","+str(prediction[i][0][1]))
+            predictStr.append(str(prediction[i][0]))
         # predictStr1 = str(prediction[0][0][0])+","+str(prediction[0][0][1])
         # predictStr2 = str(prediction[1][0][0])+","+str(prediction[1][0][1])
 
@@ -253,8 +334,20 @@ class Scikit(object):
         # for i in range(len(prediction[0])):
         #     predictionJson[self.nameY[i]] = prediction[0][i]
 
+        for i in range(len(prediction)):
+            predictionJson[self.classifiersNames[i]]=prediction[i]
+
+        #Add regressions results
+        predictionRg = []
+        for i in range(len(self.clfRegressors)):
+            predictionRg.append(self.clfRegressors[i].predict(newRow.reshape(1, -1)))
+
+        predictStr = []
+        for i in range(len(predictionRg)):
+            predictStr.append(str(predictionRg[i][0][0])+","+str(predictionRg[i][0][1]))
+
         for i in range(len(predictStr)):
-            predictionJson[self.names[i]]=predictStr[i]
+            predictionJson[self.regressorsNames[i]]=predictStr[i]
         # predictionJson["bagging"]=predictStr1
         # predictionJson["svc"]=predictStr2
 
@@ -280,7 +373,7 @@ class EchoRequestHandler(socketserver.BaseRequestHandler):
         if len(filename) == 0:
             # payload = json.dumps(randomF.learn(group, 1)).encode('utf-8')
             # print("filename length is zero!")
-            payload = json.dumps(randomF.learn(group, 0.9)).encode('utf-8')
+            payload = json.dumps(randomF.learn(group)).encode('utf-8')
         else:
             # print("filename length isn't zero!")
             payload = json.dumps(
@@ -319,7 +412,7 @@ if __name__ == '__main__':
         print(randomF.classify(args.group, args.file))
     elif args.group is not None:
         randomF = Scikit()
-        print(randomF.learn(args.group, 0.9))
+        print(randomF.learn(args.group))
         # print(randomF.learn(args.group, 0.5))
     else:
         print("""Usage:
@@ -330,3 +423,4 @@ To just learn:
 To classify
 	python3 scikit.py --group GROUP --file FILEWITHFINGERPRINTS
 """)
+
