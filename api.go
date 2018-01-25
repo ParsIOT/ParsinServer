@@ -404,6 +404,7 @@ func calculate(c *gin.Context) {
 		if RuntimeArgs.Scikit {
 			scikitLearn(group)
 		}
+		learnKnn(group)
 		go resetCache("userPositionCache")
 		go setLearningCache(group, false)
 		c.JSON(http.StatusOK, gin.H{"message": "Parameters optimized.", "success": true})

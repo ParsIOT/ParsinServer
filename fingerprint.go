@@ -327,6 +327,7 @@ func trackFingerprint(jsonFingerprint Fingerprint) (string, bool, string, map[st
 			if RuntimeArgs.Scikit {
 				scikitLearn(group)
 			}
+			learnKnn(group)
 			go appendUserCache(group, jsonFingerprint.Username)
 		}
 	}

@@ -20,6 +20,12 @@ var psCache = struct {
 	m map[string]FullParameters
 }{m: make(map[string]FullParameters)}
 
+
+var knnFPCache = struct {
+	sync.RWMutex
+	m map[string]KnnFingerprints
+}{m: make(map[string]KnnFingerprints)}
+
 //List of users that is tracked.
 //Containing a map : key= group name, value= users list
 var usersCache = struct {
@@ -145,6 +151,25 @@ func setPsCache(group string, ps FullParameters) {
 	psCache.Lock()
 	psCache.m[group] = ps
 	psCache.Unlock()
+	return
+}
+
+
+//psCache variable getter function
+func getKnnFPCache(group string) (KnnFingerprints, bool) {
+	//Debug.Println("Getting pscache")
+	knnFPCache.RLock()
+	knnFPCached, ok := knnFPCache.m[group]
+	knnFPCache.RUnlock()
+	return knnFPCached, ok
+}
+
+//psCache variable setter function
+func setKnnFPCache(group string, knnFP KnnFingerprints) {
+	//Debug.Println("Setting pscache")
+	knnFPCache.Lock()
+	knnFPCache.m[group] = knnFP
+	knnFPCache.Unlock()
 	return
 }
 
