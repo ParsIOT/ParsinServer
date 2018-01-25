@@ -78,6 +78,7 @@ while(1):
         print("\thistoryClear --> clear history")
         print("\thistoryMath --> min,max,Average of list of rss")
         print("\tbyMac --> load plot of an ap's rss in list of location")
+        print("\tbyLoc --> load plot of all of ap in specific location")
         print("\n")
 
     elif(inpt=="exit"):
@@ -123,6 +124,11 @@ while(1):
 
     elif(inpt=="historyMath"):
         try:
+            dots = []
+            avgVals = []
+            minVals = []
+            maxVals = []
+            
             for inpttemp in history:
                 print("\n")
                 inptList = inpttemp.split(",")
@@ -134,10 +140,67 @@ while(1):
                 print("\t"+inpttemp+":")
                 print("\t\t"+str(y))
                 avgY = sum(y) / float(len(y))
+                dots.append((float(inptList[0]),float(inptList[1])))
+                avgVals.append(avgY)
                 minY = min(y)
+                minVals.append(minY)
                 maxY = max(y)
+                maxVals.append(maxY)
                 print("\t\tAverage: "+str(avgY)+" Min: "+str(minY)+" Max: "+str(maxY))  
             print("\n")
+
+            while(1):
+                doRssDistPlot = input(">> Do you want to draw rss_dist plot:(y/n) ").strip()
+                if(doRssDistPlot=="n"):
+                    break
+                elif(doRssDistPlot=="y"):
+                    fig = plt.figure(inptMac)
+                    fig.canvas.set_window_title(inptMac)
+                    xList = []
+                    apXY = input(">> Enter x,y of Ap: ").strip().split(",")
+                    apX = float(apXY[0])
+                    apY = float(apXY[1])
+
+                    for dotIndex in range(len(dots)):
+                        dot = dots[dotIndex]
+                        dist = ((dot[0]-apX)**2+(dot[1]-apY)**2)**0.5
+                        xList.append(dist)
+                    
+                    distRssDict = {}
+                    distRssDictForMax = {}
+                    distRssDictForMin = {}
+                    for distIndex in range(len(xList)):
+                        distRssDict[xList[distIndex]]=avgVals[distIndex]
+                        distRssDictForMax[xList[distIndex]]=maxVals[distIndex]
+                        distRssDictForMin[xList[distIndex]]=minVals[distIndex]
+                        
+                    distSorted = list(distRssDict.keys())
+                    distSorted.sort()
+
+                    rssSortedByDist = []
+                    rssSortedByDistForMax = []
+                    rssSortedByDistForMin = []
+                    for dist in distSorted:
+                        rssSortedByDist.append(distRssDict[dist])
+                        rssSortedByDistForMax.append(distRssDictForMax[dist])
+                        rssSortedByDistForMin.append(distRssDictForMin[dist])
+
+                    print(xList)
+                    print(avgVals)
+                    print(distSorted)
+                    print(rssSortedByDist)
+                    print(rssSortedByDistForMax)
+                    print(rssSortedByDistForMin)
+                    plt.plot(distSorted, rssSortedByDist, linewidth=2, linestyle="-", c=cm.hot(20))
+                    doRssDistPlot = input(">> Do you want to draw Min and Max Plot too?:(y/n) ").strip()
+                    if(doRssDistPlot=="y"):
+                        plt.plot(distSorted, rssSortedByDistForMax, linewidth=2, linestyle="-", c=cm.hot(60))
+                        plt.plot(distSorted, rssSortedByDistForMin, linewidth=2, linestyle="-", c=cm.hot(200))
+                    plt.axis([0, distSorted[-1], -110,-10])
+                    avgVals = []
+                    plt.show()
+                    break
+
         except Exception as e:
             print("\tError in historyMath mode")
             print(e)
@@ -146,8 +209,11 @@ while(1):
     elif(inpt=="byMac"):
         try:
             inptMac = input(">> Enter mac: ").strip()
-            inptLocList = input(">> Enter loc list (example: x1,y1 x2,y2): ").split(" ")
-
+            inptLocList = input(">> Enter loc list (example: x1,y1 x2,y2) or enter 'ALL': ").strip()
+            if(inptLocList == "ALL"):
+                inptLocList = list(resultDic.keys())    
+            else:
+                inptLocList = inptLocList.split(" ")
             figNum = 0
             for xy in inptLocList:
                 y = resultDic[xy][inptMac]
@@ -163,7 +229,25 @@ while(1):
             print("\tError in byMac mode")
             print(e)
             continue
-    
+    elif(inpt=="byLoc"):
+        try:
+            inptLoc = input(">> Enter loc: ").strip()
+
+            figNum = 0
+            for mac in apList:
+                y = resultDic[inptLoc][mac]
+                print("\t"+inptLoc+": "+str(y))
+                fig = plt.figure(inptLoc+":"+mac)
+                figNum += 1
+                fig.canvas.set_window_title(str(figNum)+":"+inptLoc+":"+mac)
+                plt.plot(list(range(len(y))), y, linewidth=2, linestyle="-", c=cm.hot(random.randint(40,200)))
+                plt.axis([0, len(y), -110,-10])
+                history.append(inptLoc+","+mac)
+
+        except Exception as e:
+            print("\tError in byMac mode")
+            print(e)
+            continue
     # default command is to get input as x,y,apMac format
     else:
         try:
