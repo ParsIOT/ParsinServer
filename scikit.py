@@ -57,7 +57,9 @@ class Scikit(object):
         self.trainX = numpy.array([])
         self.nameY = []
         self.nameY2 = []
+        # trainY1 is used for classifiers --> each fp is a class
         self.trainY1 = []
+        # trainY2 is used for regression --> each location is a class
         self.trainY2 = []
         self.macSet = set()
         self.locationSet = set()
@@ -79,12 +81,12 @@ class Scikit(object):
 
         self.classifiersNames = [
             "scikitKNN",
-            "mlp",
+            # "mlp",
             "rf",
         ]
         self.classifiers = [
             KNeighborsClassifier(n_neighbors=10,weights='distance',n_jobs=-1),
-            MLPClassifier(alpha=1),
+            # MLPClassifier(alpha=1),
             RandomForestClassifier(),
         ]
 
