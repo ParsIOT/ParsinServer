@@ -61,8 +61,8 @@ RUN apt-get update
 RUN apt-get install -y supervisor
 
 # Add supervisor
-#COPY /root/project/src/ParsinServer/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-ADD ./src/ParsinServer/supervisord.conf /etc/supervisor/conf.d/
+#COPY /root/project/src/ParsinServer/configs/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+ADD ./src/ParsinServer/configs/supervisord.conf /etc/supervisor/conf.d/
 # Add Tini
 ENV TINI_VERSION v0.13.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
