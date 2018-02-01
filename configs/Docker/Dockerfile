@@ -1,5 +1,5 @@
-# sudo docker build -t finddocker .
-# sudo docker run -it -p 18003:8003 -p 11883:1883 -v /path/to/host/data/folder:/data finddocker bash
+# sudo docker build -t parsinserverdocker .
+# sudo docker run -it -p 18003:8003 -p 11883:1883 -v /path/to/host/data/folder:/data parsinserverdocker bash
 FROM ubuntu:16.04
 
 # Get basics
@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y apt-transport-https
 RUN apt-get update
 RUN apt-get install -y mosquitto-clients mosquitto
 
-# Install FIND
+# Install Parsin
 # WORKDIR "/root"
 # RUN go get git@gitlab.com:ParsIOT/ParsinServer.git
 # RUN git clone git@gitlab.com:ParsIOT/ParsinServer.git
@@ -51,10 +51,10 @@ ADD . /root/project/
 WORKDIR "/root/project/src/ParsinServer"
 RUN go get ./...
 RUN go build
-RUN echo "\ninclude_dir /root/find/mosquitto" >> /etc/mosquitto/mosquitto.conf
+RUN echo "\ninclude_dir /root/ParsinServer/mosquitto" >> /etc/mosquitto/mosquitto.conf
 
 # Old entrypoint
-# ENTRYPOINT git pull && go build && mosquitto -c /root/find/mosquitto/conf -d && ./find -mqtt localhost:1883 -mqttadmin admin -mqttadminpass 123 -mosquitto `pgrep mosquitto` -data /data > log & bash
+# ENTRYPOINT git pull && go build && mosquitto -c /root/ParsinServer/mosquitto/conf -d && ./ParsinServer -mqtt localhost:1883 -mqttadmin admin -mqttadminpass 123 -mosquitto `pgrep mosquitto` -data /data > log & bash
 
 # Setup supervisor
 RUN apt-get update
