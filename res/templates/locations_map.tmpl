@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8/>
+    <title>PARSIN</title>
+    <link rel="shortcut icon" sizes="16x16 24x24 32x32 48x48 64x64" href="/static/img/favicon.ico"/>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
+
+    <!-- Bootstrap and JQuery JS -->
+    <script src="/static/js/jquery-2.0.0.min.js"></script>
+    <script src='/static/js/bootstrap.js'></script>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
+    <link href="/static/css/custom.css" rel="stylesheet">
+
+
+    <link href="/static/css/leaflet.css" rel="stylesheet">
+    <link href="/static/css/leaflet.usermarker.css" rel="stylesheet">
+    <script src='/static/js/leaflet.js'></script>
+    <script src='/static/js/leaflet.usermarker.js'></script>
+    <script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
+
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+    <style>
+        #live-map {
+            height: 500px;
+        }
+
+        #users-table-container {
+            overflow: scroll;
+        }
+    </style>
+</head>
+
+<body>
+
+{{ template "navbar" . }}
+
+<!-- Page Content -->
+<div class="container-fluid">
+
+    <div class="row">
+        <div class="col-lg-12">
+            <h2 class="page-header">Location On Map
+                <small>view all locations on map</small>
+            </h2>
+        </div>
+    </div>
+
+    <!--<div class="well">-->
+    <div class="row">
+        <div class="col-md-9 col-sm-12">
+            <div class="panel panel-primary" id="map-panel">
+                <div class="panel-heading">
+                    Map
+                </div>
+                <div class="panel-body">
+                    <div id="live-map"></div>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-12">
+            <div class="panel panel-success" id="users-list-panel">
+                <div class="panel-heading">
+                    Locations
+                </div>
+                <div class="panel-body" id="users-table-container">
+                    <div class="bs-callout bs-callout-info" style="margin: 0 0 15px;padding-bottom: 5px;">
+                        <h4>Settings</h4>
+                        <div class="form-group">
+                            <input id="click-x" type="text" disabled value="X" class="form-control"/>
+                        </div>
+                        <div class="form-group">
+                            <input id="click-y" type="text" disabled value="Y" class="form-control"/>
+                        </div>
+                    </div>
+                    <table id="users-table" class="table table-responsive table-hover table-condensed table-bordered">
+                        <thead>
+                        <tr>
+                            <td>X</td>
+                            <td>Y</td>
+                            <td>accuracy</td>
+                            <td>count</td>
+                        </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--</div>-->
+
+
+</div>
+
+<script type="application/javascript">
+    $('#live-map').css('height', $(window.top).height() - 275);
+    $('#users-table').parent().css('height', $(window.top).height() - 245);
+    var map = L.map('live-map', {
+        crs: L.CRS.Simple,
+        minZoom: -100,
+//        maxZoom: 4
+    });
+    var bounds = [[-1200, -1800], [1200, 1800]];
+    //    var bounds = [[-400, -300], [400, 300]];
+    var image = L.imageOverlay('/static/img/Map.png', bounds).addTo(map);
+    map.setView([0, 0], -2);
+
+    var markers = {};
+    var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
+
+    /*
+        var defaults = {
+            '1': [-450, -620],
+            '2': [60, 100],
+            '3': [-180, 700],
+            '4': [0, -950],
+            '5': [-700, -1360],
+            '6': [170, -1500],
+            '7': [-30, 1350],
+            '8': [-830, 1350]
+        };
+
+            $.each(defaults, function (key, val) {
+
+                defaults[key] = L.userMarker(val, {
+                    title: key,
+                    smallIcon: true
+                }).bindPopup(key).addTo(map).on('popupopen', function (e) {
+                    defaults[key]._popup.setContent("<b>" + key + "</b><br>x = " + e.target._accMarker._latlng.lat
+                        + "<br>y = " + e.target._accMarker._latlng.lng);
+                });
+            });
+     */
+
+    map.on('click', function (e) {
+//        console.log(e.latlng.lat + "," + e.latlng.lng);
+        $('#click-x').val(e.latlng.lng);
+        $('#click-y').val(e.latlng.lat);
+    });
+
+    $.getJSON("/locations?group={{ .Group }}", function (data) {
+        var items = [];
+
+        $.each(data.locations, function (key, val) {
+            let match = pattern.exec(key);
+            if (match) {
+                items.push("<tr><td>" + match[1] + "</td><td>" + match[2] + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
+
+                markers[key] = L.userMarker([match[1], match[2]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+                    title: key,
+                    smallIcon: true
+                }).bindPopup("<b>x = " + match[1] + "</b><br><b>y = " + match[2] + "</b>").addTo(map);
+            } else {
+                items.push("<tr><td colspan='2' class='text-center'>" + key + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
+
+            }
+        });
+
+        $("<tbody/>", {
+            "class": "tab-content",
+            html: items.join("")
+        }).appendTo("#users-table");
+    });
+</script>
+</body>
+
+</html>

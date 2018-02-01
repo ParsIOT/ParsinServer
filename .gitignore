@@ -7,7 +7,7 @@ data/analysis/
 data/images/
 documentation/site
 find
-findserver
+ParsinServer
 
 __pycache__/
 www/sphinx-api/_build/
@@ -90,7 +90,7 @@ data/*
 cmake-build-debug/
 CMakeLists.txt
 
-Documentation/_build
-Documentation/_static
-Documentation/_templates
+documentation/_build
+documentation/_static
+documentation/_templates
 /data/

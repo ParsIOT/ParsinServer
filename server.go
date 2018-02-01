@@ -1,7 +1,3 @@
-// Copyright 2015-2016 Zack Scholl. All rights reserved.
-// Use of this source code is governed by a AGPL
-// license that can be found in the LICENSE file.
-
 // server.go handles Flag parsing and starts the Gin-Tonic webserver.
 
 package main
@@ -15,60 +11,34 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"ParsinServer/routes"
+	"ParsinServer/glb"
 	"strings"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	//"github.com/appleboy/gin-jwt" // Authentication middleware lib
 	// installation : 1.go get github.com/gin-gonic/gin 2.Solve the miscellaneous lib problem 3. git get github.com/appleboy/gin-jwt
 	"github.com/MA-Heshmatkhah/SimpleAuth" // Authentication middleware lib
+	"ParsinServer/algorithms"
+	"ParsinServer/dbm"
 )
 
-// RuntimeArgs contains all runtime
-// arguments available
-var RuntimeArgs struct {
-	ScikitPort            string
-	//FilterMacFile     string
-	ExternalIP        string
-	Port              string
-	ServerCRT         string
-	ServerKey         string
-	SourcePath        string
-	Socket            string
-	Cwd               string
-	MqttServer        string
-	MqttAdmin         string
-	MosquittoPID      string
-	MqttAdminPassword string
-	Dump              string
-	Message           string
-	Mqtt              bool
-	MqttExisting      bool
-	Svm               bool
-	Scikit	          bool
-	NeedToFilter      map[string]bool //check needing for filtering
-	NotNullFilterMap     map[string]bool //check that filterMap is null(used to avoid filter fingerprint with null map)
-	//FilterMacs        map[string]bool
-	FilterMacsMap     map[string][]string
-	AdminAdd          string
-	GaussianDist      bool
-	MinRssOpt         int
-	KNN               bool
-}
+
 
 // VersionNum keeps track of the version
 var VersionNum string
 var BuildTime string
 var Build string
-var mySessionManager SimpleAuth.Manager
 
-// init initiates the paths in RuntimeArgs
+
+// init initiates the paths in gvar.RuntimeArgs
 func init() {
 	cwd, _ := os.Getwd()
-	RuntimeArgs.Cwd = cwd
-	RuntimeArgs.SourcePath = path.Join(RuntimeArgs.Cwd, "data")
-	RuntimeArgs.Message = ""
+	glb.RuntimeArgs.Cwd = cwd
+	glb.RuntimeArgs.SourcePath = path.Join(glb.RuntimeArgs.Cwd, "data")
+	glb.RuntimeArgs.Message = ""
 
-	mySessionManager.Initialize(path.Join(RuntimeArgs.SourcePath, "Settings.db"), &SimpleAuth.Options{
+	glb.SessionManager.Initialize(path.Join(glb.RuntimeArgs.SourcePath, "Settings.db"), &SimpleAuth.Options{
 		LoginURL:                   "/login",
 		LogoutURL:                  "/logout",
 		UnauthorizedURL:            "/change-db",
@@ -77,86 +47,88 @@ func init() {
 }
 
 func main() {
+	fmt.Println("-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----")
+
 	// _, executableFile, _, _ := runtime.Caller(0) // get full path of this file
 	if len(Build) == 0 {
 		Build = "devdevdevdevdevdevdev"
 	}
 	// Bing flags for changing parameters of FIND
-	flag.StringVar(&RuntimeArgs.Port, "p", ":8003", "port to bind")
-	flag.StringVar(&RuntimeArgs.Socket, "s", "", "unix socket")
-	flag.StringVar(&RuntimeArgs.ServerCRT, "crt", "", "location of ssl crt")
-	flag.StringVar(&RuntimeArgs.ServerKey, "key", "", "location of ssl key")
-	flag.StringVar(&RuntimeArgs.MqttServer, "mqtt", "", "ADDRESS:PORT of mosquitto server")
-	flag.StringVar(&RuntimeArgs.MqttAdmin, "mqttadmin", "", "admin to read all messages")
-	flag.StringVar(&RuntimeArgs.MqttAdminPassword, "mqttadminpass", "", "admin to read all messages")
-	flag.StringVar(&RuntimeArgs.MosquittoPID, "mosquitto", "", "mosquitto PID (`pgrep mosquitto`)")
-	flag.StringVar(&RuntimeArgs.Dump, "dump", "", "group to dump to folder")
-	flag.StringVar(&RuntimeArgs.Message, "message", "", "message to display to all users")
-	flag.StringVar(&RuntimeArgs.SourcePath, "data", "", "path to data folder")
-	flag.StringVar(&RuntimeArgs.ScikitPort, "scikit", "", "port for scikit-learn calculations")
-	//flag.StringVar(&RuntimeArgs.FilterMacFile, "filter", "", "JSON file for macs to filter")
-	flag.StringVar(&RuntimeArgs.AdminAdd, "adminadd", "", "Add an admin user or change his password, foramt:<username>:<password>, e.g.:admin:admin")
-	flag.BoolVar(&RuntimeArgs.GaussianDist, "gaussian", false, "Use gaussian distribution instead of historgram")
-	flag.IntVar(&RuntimeArgs.MinRssOpt, "minrss", -100, "Select minimum rss; Any Rss lower than minRss will be ignored.")
+	flag.StringVar(&glb.RuntimeArgs.Port, "p", ":8003", "port to bind")
+	flag.StringVar(&glb.RuntimeArgs.Socket, "s", "", "unix socket")
+	flag.StringVar(&glb.RuntimeArgs.ServerCRT, "crt", "", "location of ssl crt")
+	flag.StringVar(&glb.RuntimeArgs.ServerKey, "key", "", "location of ssl key")
+	flag.StringVar(&glb.RuntimeArgs.MqttServer, "mqtt", "", "ADDRESS:PORT of mosquitto server")
+	flag.StringVar(&glb.RuntimeArgs.MqttAdmin, "mqttadmin", "", "admin to read all messages")
+	flag.StringVar(&glb.RuntimeArgs.MqttAdminPassword, "mqttadminpass", "", "admin to read all messages")
+	flag.StringVar(&glb.RuntimeArgs.MosquittoPID, "mosquitto", "", "mosquitto PID (`pgrep mosquitto`)")
+	flag.StringVar(&glb.RuntimeArgs.Dump, "dump", "", "group to dump to folder")
+	flag.StringVar(&glb.RuntimeArgs.Message, "message", "", "message to display to all users")
+	flag.StringVar(&glb.RuntimeArgs.SourcePath, "data", "", "path to data folder")
+	flag.StringVar(&glb.RuntimeArgs.ScikitPort, "scikit", "", "port for scikit-learn calculations")
+	//flag.StringVar(&gvar.RuntimeArgs.FilterMacFile, "filter", "", "JSON file for macs to filter")
+	flag.StringVar(&glb.RuntimeArgs.AdminAdd, "adminadd", "", "Add an admin user or change his password, foramt:<username>:<password>, e.g.:admin:admin")
+	flag.BoolVar(&glb.RuntimeArgs.GaussianDist, "gaussian", false, "Use gaussian distribution instead of historgram")
+	flag.IntVar(&glb.RuntimeArgs.MinRssOpt, "minrss", -100, "Select minimum rss; Any Rss lower than minRss will be ignored.")
 
 	flag.CommandLine.Usage = func() {
 		fmt.Println(`find (version ` + VersionNum + ` (` + Build[0:8] + `), built ` + BuildTime + `)
-Example: 'findserver yourserver.com'
-Example: 'findserver -p :8080 localhost:8080'
-Example (mosquitto): 'findserver -mqtt 127.0.0.1:1883 -mqttadmin admin -mqttadminpass somepass -mosquitto ` + "`pgrep mosquitto`" + `
-Options:`)
+				Example: 'ParsinServer yourserver.com'
+				Example: 'ParsinServer -p :8080 localhost:8080'
+				Example (mosquitto): 'ParsinServer -mqtt 127.0.0.1:1883 -mqttadmin admin -mqttadminpass somepass -mosquitto ` + "`pgrep mosquitto`" + `
+				Options:`)
 		flag.CommandLine.PrintDefaults()
 	}
 	flag.Parse()
-	RuntimeArgs.ExternalIP = flag.Arg(0)
-	if RuntimeArgs.ExternalIP == "" {
-		RuntimeArgs.ExternalIP = GetLocalIP() + RuntimeArgs.Port
+	glb.RuntimeArgs.ExternalIP = flag.Arg(0)
+	if glb.RuntimeArgs.ExternalIP == "" {
+		glb.RuntimeArgs.ExternalIP = glb.GetLocalIP() + glb.RuntimeArgs.Port
 	}
 
-	if RuntimeArgs.SourcePath == "" {
-		RuntimeArgs.SourcePath = path.Join(RuntimeArgs.Cwd, "data")
+	if glb.RuntimeArgs.SourcePath == "" {
+		glb.RuntimeArgs.SourcePath = path.Join(glb.RuntimeArgs.Cwd, "data")
 	}
-	fmt.Println(RuntimeArgs.SourcePath)
+	fmt.Println(glb.RuntimeArgs.SourcePath)
 
 	// Check whether all the MQTT variables are passed to initiate the MQTT routines
-	if len(RuntimeArgs.MqttServer) > 0 && len(RuntimeArgs.MqttAdmin) > 0 && len(RuntimeArgs.MosquittoPID) > 0 {
-		RuntimeArgs.Mqtt = true
-		setupMqtt()
+	if len(glb.RuntimeArgs.MqttServer) > 0 && len(glb.RuntimeArgs.MqttAdmin) > 0 && len(glb.RuntimeArgs.MosquittoPID) > 0 {
+		glb.RuntimeArgs.Mqtt = true
+		routes.SetupMqtt()
 	} else {
-		if len(RuntimeArgs.MqttServer) > 0 {
-			RuntimeArgs.Mqtt = true
-			RuntimeArgs.MqttExisting = true
-			setupMqtt()
+		if len(glb.RuntimeArgs.MqttServer) > 0 {
+			glb.RuntimeArgs.Mqtt = true
+			glb.RuntimeArgs.MqttExisting = true
+			routes.SetupMqtt()
 		} else {
-			RuntimeArgs.Mqtt = false
+			glb.RuntimeArgs.Mqtt = false
 		}
 	}
 
 	// Check whether random forests are used
-	if len(RuntimeArgs.ScikitPort) > 0 {
-		RuntimeArgs.Scikit = true
+	if len(glb.RuntimeArgs.ScikitPort) > 0 {
+		glb.RuntimeArgs.Scikit = true
 	}
 
 	//// Check whether macs should be filtered
 
-	RuntimeArgs.FilterMacsMap = make(map[string][]string)
-	RuntimeArgs.NeedToFilter = make(map[string]bool)
-	RuntimeArgs.NotNullFilterMap = make(map[string]bool)
+	glb.RuntimeArgs.FilterMacsMap = make(map[string][]string)
+	glb.RuntimeArgs.NeedToFilter = make(map[string]bool)
+	glb.RuntimeArgs.NotNullFilterMap = make(map[string]bool)
 
-	//if len(RuntimeArgs.FilterMacFile) > 0 {
-	//	b, err := ioutil.ReadFile(RuntimeArgs.FilterMacFile)
+	//if len(gvar.RuntimeArgs.FilterMacFile) > 0 {
+	//	b, err := ioutil.ReadFile(gvar.RuntimeArgs.FilterMacFile)
 	//	if err != nil {
 	//		panic(err)
 	//	}
-	//	RuntimeArgs.FilterMacs = make(map[string]bool)
-	//	json.Unmarshal(b, &RuntimeArgs.FilterMacs)
-	//	fmt.Printf("Filtering %+v", RuntimeArgs.FilterMacs)
-	//	//RuntimeArgs.Filtering = true
+	//	gvar.RuntimeArgs.FilterMacs = make(map[string]bool)
+	//	json.Unmarshal(b, &gvar.RuntimeArgs.FilterMacs)
+	//	fmt.Printf("Filtering %+v", gvar.RuntimeArgs.FilterMacs)
+	//	//gvar.RuntimeArgs.Filtering = true
 	//}
 
 	// Check whether we are just dumping the database
-	if len(RuntimeArgs.Dump) > 0 {
-		err := dumpFingerprints(strings.ToLower(RuntimeArgs.Dump))
+	if len(glb.RuntimeArgs.Dump) > 0 {
+		err := dbm.DumpFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
 		if err == nil {
 			fmt.Println("Successfully dumped.")
 		} else {
@@ -167,16 +139,16 @@ Options:`)
 
 	// Useradded command
 	// Check whether we are just dumping the database
-	if len(RuntimeArgs.AdminAdd) > 0 {
-		addRequestSlice := strings.Split(strings.ToLower(RuntimeArgs.AdminAdd), ":")
+	if len(glb.RuntimeArgs.AdminAdd) > 0 {
+		addRequestSlice := strings.Split(strings.ToLower(glb.RuntimeArgs.AdminAdd), ":")
 		//group := addRequestSlice[0]
 		username := addRequestSlice[0]
 		password := addRequestSlice[1]
-		_, err := mySessionManager.RegisterNewUser(username, password, []string{"Admins"})
+		_, err := glb.SessionManager.RegisterNewUser(username, password, []string{"Admins"})
 		if err == nil {
 			fmt.Printf("Successfully new admin(username:%+v, password:%+v) was added Or new password was set.", username, password)
-			adminList, _ := mySessionManager.ListAllUsers()
-			fmt.Println("Current admin list: \n", *adminList)
+			adminList, _ := glb.SessionManager.ListAllUsers()
+			fmt.Println("Current admin list:", *adminList)
 		} else {
 			log.Fatal(err)
 		}
@@ -184,41 +156,42 @@ Options:`)
 	}
 
 	//Set minRssOpt
-	MinRssiOpt = RuntimeArgs.MinRssOpt
+	glb.MinRssiOpt = glb.RuntimeArgs.MinRssOpt
 
 	// Check if there is a message from the admin
-	if _, err := os.Stat(path.Join(RuntimeArgs.Cwd, "message.txt")); err == nil {
-		messageByte, _ := ioutil.ReadFile(path.Join(RuntimeArgs.Cwd, "message.txt"))
-		RuntimeArgs.Message = string(messageByte)
+	if _, err := os.Stat(path.Join(glb.RuntimeArgs.Cwd, "message.txt")); err == nil {
+		messageByte, _ := ioutil.ReadFile(path.Join(glb.RuntimeArgs.Cwd, "message.txt"))
+		glb.RuntimeArgs.Message = string(messageByte)
 	}
 
 	// Check whether SVM libraries are available
 	cmdOut, _ := exec.Command("svm-scale", "").CombinedOutput()
 	if len(cmdOut) == 0 {
-		RuntimeArgs.Svm = false
+		glb.RuntimeArgs.Svm = false
 		fmt.Println("SVM is not detected.")
 		fmt.Println(`To install:
-sudo apt-get install g++
-wget http://www.csie.ntu.edu.tw/~cjlin/cgi-bin/libsvm.cgi?+http://www.csie.ntu.edu.tw/~cjlin/libsvm+tar.gz
-tar -xvf libsvm-*.tar.gz
-cd libsvm-*
-make
-cp svm-scale /usr/local/bin/
-cp svm-predict /usr/local/bin/
-cp svm-train /usr/local/bin/`)
+	sudo apt-get install g++
+	wget http://www.csie.ntu.edu.tw/~cjlin/cgi-bin/libsvm.cgi?+http://www.csie.ntu.edu.tw/~cjlin/libsvm+tar.gz
+	tar -xvf libsvm-*.tar.gz
+	cd libsvm-*
+	make
+	cp svm-scale /usr/local/bin/
+	cp svm-predict /usr/local/bin/
+	cp svm-train /usr/local/bin/`)
 	} else {
-		RuntimeArgs.Svm = true
+		glb.RuntimeArgs.Svm = true
 	}
 
 	// Setup Gin-Gonic
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
+
 	// Load templates
-	r.LoadHTMLGlob(path.Join(RuntimeArgs.Cwd, "templates/*"))
+	r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
 
 	// Load static files (if they are not hosted by external service)
-	r.Static("static/", path.Join(RuntimeArgs.Cwd, "static/"))
+	r.Static("static/", path.Join(glb.RuntimeArgs.Cwd, "res/static/"))
 
 	// Create cookie store to keep track of logged in user
 	store := sessions.NewCookieStore([]byte("secret"))
@@ -232,94 +205,82 @@ cp svm-train /usr/local/bin/`)
 	})
 
 	// r.PUT("/message", putMessage)
-	privateRoutes := r.Group("/", mySessionManager.AuthenticatedOnly())
+	privateRoutes := r.Group("/", glb.SessionManager.AuthenticatedOnly())
 	{
-		privateRoutes.GET("/logout", mySessionManager.Logout)
+		privateRoutes.GET("/logout", glb.SessionManager.Logout)
 
-		// Routes for logging in and viewing dashboards (routes.go)
-		privateRoutes.GET("/", slash)
-		privateRoutes.GET("/change-db", slashChangeDb)
-		privateRoutes.POST("/change-db", slashChangeDbPOST)
-		privateRoutes.GET("/dashboard/:group", slashDashboard)
-		privateRoutes.GET("/explore/:group/:network/:location", slashExplore2)
-		privateRoutes.GET("/pie/:group/:network/:location", slashPie)
-		privateRoutes.GET("/livemap/:group", LiveLocationMap)
+		// Routes for logging in and viewing dashboards (pages.go)
+		privateRoutes.GET("/", routes.Slash)
+		privateRoutes.GET("/change-db", routes.SlashChangeDb)
+		privateRoutes.POST("/change-db", routes.SlashChangeDbPOST)
+		privateRoutes.GET("/dashboard/:group", routes.SlashDashboard)
+		privateRoutes.GET("/explore/:group/:network/:location", routes.SlashExplore2)
+		privateRoutes.GET("/pie/:group/:network/:location", routes.SlashPie)
+		privateRoutes.GET("/livemap/:group", routes.LiveLocationMap)
 		/*
 		r.GET("/livemap/:group", func(context *gin.Context) {
-			r.LoadHTMLGlob(path.Join(RuntimeArgs.Cwd, "templates/*"))
+			r.LoadHTMLGlob(path.Join(gvar.RuntimeArgs.Cwd, "templates/*"))
 			LiveLocationMap(context)
 		})
 		*/
-		privateRoutes.GET("/locationsmap/:group", LocationsOnMap)
-
-
-
-		// Routes for MQTT (mqtt.go)
-		privateRoutes.PUT("/mqtt", putMQTT)
+		privateRoutes.GET("/locationsmap/:group", routes.LocationsOnMap)
+		privateRoutes.PUT("/mqtt", routes.PutMQTT) // Routes for MQTT (mqtt.go)
 
 		// Routes for API access (api.go)
-		privateRoutes.GET("/location", getUserLocations)
-		privateRoutes.GET("/locations", getLocationList)
-		privateRoutes.GET("/editname", editName)
-		privateRoutes.GET("/editMac", editMac)
-		privateRoutes.GET("/editusername", editUserName)
-		privateRoutes.GET("/editnetworkname", editNetworkName)
-		privateRoutes.DELETE("/location", deleteLocation)
-		privateRoutes.DELETE("/locations", deleteLocations)
-		privateRoutes.DELETE("/user", deleteUser)
-		privateRoutes.DELETE("/database", deleteDatabase)
-		privateRoutes.GET("/calculate", calculate)
-		privateRoutes.GET("/status", getStatus)
-		// Done: delete these deprecated routes
-		privateRoutes.GET("/userlocs", userLocations) // to be deprecated
-		//r.GET("/whereami", whereAmI)      // to be deprecated
-		privateRoutes.PUT("/mixin", putMixinOverride)
-		privateRoutes.PUT("/cutoff", putCutoffOverride)
-		privateRoutes.PUT("/database", migrateDatabase)
-		privateRoutes.PUT("/k_knn", putKnnK)
-		privateRoutes.PUT("/minrss", putMinRss)
-		privateRoutes.GET("/lastfingerprint", apiGetLastFingerprint)
-		privateRoutes.GET("/reformdb", reformDB)
-
-		//privateRoutes.GET("/macfilterform/:group", macfilterform)
-
-		privateRoutes.GET("/macfilterform/:group", macfilterform)
-		privateRoutes.POST("/setfiltermacs", setfiltermacs)
-		privateRoutes.GET("/getfiltermacs", getfiltermacs)
-
-		//r.Static("data/", path.Join(RuntimeArgs.Cwd, "data/"))
-
-		privateRoutes.Static("data/", path.Join(RuntimeArgs.Cwd, "data/")) // Load db files
+		privateRoutes.GET("/location", routes.GetUserLocations)
+		privateRoutes.GET("/locations", routes.GetLocationList)
+		privateRoutes.GET("/editname", routes.EditName)
+		privateRoutes.GET("/editMac", routes.EditMac)
+		privateRoutes.GET("/editusername", routes.EditUserName)
+		privateRoutes.GET("/editnetworkname", routes.EditNetworkName)
+		privateRoutes.DELETE("/location", routes.DeleteLocation)
+		privateRoutes.DELETE("/locations", routes.DeleteLocations)
+		privateRoutes.DELETE("/user", routes.DeleteUser)
+		privateRoutes.DELETE("/database", routes.DeleteDatabase)
+		privateRoutes.GET("/calculate", routes.Calculate)
+		privateRoutes.GET("/status", routes.GetStatus)
+		privateRoutes.PUT("/mixin", routes.PutMixinOverride)
+		privateRoutes.PUT("/cutoff", routes.PutCutoffOverride)
+		privateRoutes.PUT("/database", routes.MigrateDatabase)
+		privateRoutes.PUT("/k_knn", routes.PutKnnK)
+		privateRoutes.PUT("/minrss", routes.PutMinRss)
+			privateRoutes.GET("/lastfingerprint", routes.GetLastFingerprint)
+		privateRoutes.GET("/reformdb", routes.ReformDB)
+		privateRoutes.GET("/macfilterform/:group", routes.Macfilterform)
+		privateRoutes.POST("/setfiltermacs", routes.Setfiltermacs)
+		privateRoutes.GET("/getfiltermacs", routes.Getfiltermacs)
+		//r.Static("data/", path.Join(gvar.RuntimeArgs.Cwd, "data/"))
+		privateRoutes.Static("data/", path.Join(glb.RuntimeArgs.Cwd, "data/")) // Load db files
 	}
-	//r.POST("/setfiltermacs", setfiltermacs)
-	//r.GET("/getfiltermacs", getfiltermacs)
+
 	// Routes for performing fingerprinting (fingerprint.go)
-	r.POST("/learn", learnFingerprintPOST)
-	r.POST("/bulklearn", bulkLearnFingerprintPOST)
-	r.POST("/track", trackFingerprintPOST)
+	r.POST("/learn", algorithms.LearnFingerprintPOST)
+	r.POST("/bulklearn", algorithms.BulkLearnFingerprintPOST)
+	r.POST("/track", algorithms.TrackFingerprintPOST)
 
 	// Authentication
-	auth := r.Group("/", mySessionManager.UnauthenticatedOnly())
+	auth := r.Group("/")
 	{
-		auth.GET("/login", slashLogin)
-		auth.POST("/login", slashLoginPOST)
+		auth.GET("/login", routes.SlashLogin)
+		auth.POST("/login", routes.SlashLoginPOST)
 	}
 
+
 	// Load and display the logo
-	dat, _ := ioutil.ReadFile("./static/logo.txt")
+	dat, _ := ioutil.ReadFile("./res/static/logo.txt")
 	fmt.Println(string(dat))
 
 	// Check whether user is providing certificates
-	if RuntimeArgs.Socket != "" {
-		r.RunUnix(RuntimeArgs.Socket)
-	} else if RuntimeArgs.ServerCRT != "" && RuntimeArgs.ServerKey != "" {
-		fmt.Println(`(version ` + VersionNum + ` build ` + Build[0:8] + `) is up and running on https://` + RuntimeArgs.ExternalIP)
+	if glb.RuntimeArgs.Socket != "" {
+		r.RunUnix(glb.RuntimeArgs.Socket)
+	} else if glb.RuntimeArgs.ServerCRT != "" && glb.RuntimeArgs.ServerKey != "" {
+		fmt.Println(`(version ` + VersionNum + ` build ` + Build[0:8] + `) is up and running on https://` + glb.RuntimeArgs.ExternalIP)
 		fmt.Println("-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----")
-		r.RunTLS(RuntimeArgs.Port, RuntimeArgs.ServerCRT, RuntimeArgs.ServerKey)
+		r.RunTLS(glb.RuntimeArgs.Port, glb.RuntimeArgs.ServerCRT, glb.RuntimeArgs.ServerKey)
 	} else {
-		fmt.Println(`(version ` + VersionNum + ` build ` + Build[0:8] + `) is up and running on http://` + RuntimeArgs.ExternalIP)
+		fmt.Println(`(version ` + VersionNum + ` build ` + Build[0:8] + `) is up and running on http://` + glb.RuntimeArgs.ExternalIP)
 		fmt.Println("-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----")
-		r.Run(RuntimeArgs.Port)
+		r.Run(glb.RuntimeArgs.Port)
 	}
 }
 
@@ -327,7 +288,7 @@ cp svm-train /usr/local/bin/`)
 // func putMessage(c *gin.Context) {
 // 	newText := c.DefaultQuery("text", "none")
 // 	if newText != "none" {
-// 		RuntimeArgs.Message = newText
+// 		gvar.RuntimeArgs.Message = newText
 // 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Message set as '" + newText + "'"})
 // 	} else {
 // 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
