@@ -290,15 +290,18 @@ func SvmClassify(jsonFingerprint parameters.Fingerprint) (string, map[string]flo
 
 	err = dbm.GetResourceInBucket("locations",&locations,"svmresources",jsonFingerprint.Group)
 	if err != nil {
-		panic(err)
+		glb.Error.Println(err)
+		return "",nil
 	}
 	err = dbm.GetResourceInBucket("locationsFromID",&locationsFromID,"svmresources",jsonFingerprint.Group)
 	if err != nil {
-		panic(err)
+		glb.Error.Println(err)
+		return "",nil
 	}
 	err = dbm.GetResourceInBucket("macs",&macs,"svmresources",jsonFingerprint.Group)
 	if err != nil {
-		panic(err)
+		glb.Error.Println(err)
+		return "",nil
 	}
 
 
