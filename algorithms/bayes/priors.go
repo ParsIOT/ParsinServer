@@ -7,7 +7,6 @@
 package bayes
 
 import (
-	"log"
 	"ParsinServer/glb"
 	"ParsinServer/algorithms/parameters"
 	"ParsinServer/algorithms/clustering"
@@ -636,8 +635,10 @@ func GetParameters(group string, ps *parameters.FullParameters, fingerprintsInMe
 
 	persistentPs, err := dbm.OpenPersistentParameters(group) //persistentPs is just like ps but with renamed network name; e.g.: "0" -> "1"
 	if err != nil {
-		log.Fatal(err)
+		//log.Fatal(err)
+		glb.Error.Println(err)
 	}
+	glb.Error.Println("d")
 	ps.NetworkMacs = make(map[string]map[string]bool)
 	ps.NetworkLocs = make(map[string]map[string]bool)
 	ps.UniqueMacs = []string{}

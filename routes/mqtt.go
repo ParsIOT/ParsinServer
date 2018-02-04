@@ -24,6 +24,7 @@ import (
 	"ParsinServer/glb"
 	"ParsinServer/algorithms/parameters"
 	"ParsinServer/algorithms"
+	"errors"
 )
 
 var adminClient *MQTT.Client
@@ -114,7 +115,7 @@ func GetMQTT(group string) (string, error) {
 		b := tx.Bucket([]byte("mqtt"))
 		if b == nil {
 			glb.Error.Println("Resources dont exist")
-			return ""
+			return errors.New("")
 		}
 		v := b.Get([]byte(group))
 		password = string(v)
