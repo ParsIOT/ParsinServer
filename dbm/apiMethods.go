@@ -257,8 +257,7 @@ func MigrateDatabaseDB(fromDB string,toDB string){
 func EditNameDB(location string, newname string, group string) int{
 	toUpdate := make(map[string]string)
 	numChanges := 0
-
-
+	//glb.Debug.Println(group)
 	_,fingerprintInMemory,err := GetLearnFingerPrints(group,false)
 	if err!= nil{
 		return 0
@@ -270,6 +269,7 @@ func EditNameDB(location string, newname string, group string) int{
 			toUpdate[fpTime] = string(parameters.DumpFingerprint(tempFp))
 		}
 	}
+	//glb.Debug.Println(fingerprintInMemory)
 
 	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	if err != nil {
@@ -556,6 +556,7 @@ func ReformDBDB(group string)int{
 	numChanges := 0
 
 	_,fingerprintInMemory,err := GetLearnFingerPrints(group,false)
+	glb.Warning.Println(fingerprintInMemory)
 	if err!= nil{
 		return 0
 	}

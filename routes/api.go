@@ -234,20 +234,7 @@ func Calculate(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "You should insert a fingerprint first, see documentation", "success": false})
 			return
 		}
-		group = strings.ToLower(group)
-		bayes.OptimizePriorsThreaded(group)
-		if glb.RuntimeArgs.Svm {
-			algorithms.DumpFingerprintsSVM(group)
-			err := algorithms.CalculateSVM(group)
-			if err != nil {
-				glb.Warning.Println("Encountered error when calculating SVM")
-				glb.Warning.Println(err)
-			}
-		}
-		if glb.RuntimeArgs.Scikit {
-			algorithms.ScikitLearn(group)
-		}
-		algorithms.LearnKnn(group)
+		CalculateLearn(group)
 		go dbm.ResetCache("userPositionCache")
 		go dbm.SetLearningCache(group, false)
 		c.JSON(http.StatusOK, gin.H{"message": "Parameters optimized.", "success": true})
@@ -256,7 +243,22 @@ func Calculate(c *gin.Context) {
 	}
 }
 
-
+func CalculateLearn(group string){
+	group = strings.ToLower(group)
+	bayes.OptimizePriorsThreaded(group)
+	if glb.RuntimeArgs.Svm {
+		algorithms.DumpFingerprintsSVM(group)
+		err := algorithms.CalculateSVM(group)
+		if err != nil {
+			glb.Warning.Println("Encountered error when calculating SVM")
+			glb.Warning.Println(err)
+		}
+	}
+	if glb.RuntimeArgs.Scikit {
+		algorithms.ScikitLearn(group)
+	}
+	algorithms.LearnKnn(group)
+}
 // An api that calls getHistoricalUserPositions() & getCurrentPositionOfUser()
 // Returns location of a user, user list or users of a group
 // GET parameters: group, user, users, n
@@ -336,9 +338,9 @@ func DeleteDatabase(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "DELETE, OPTIONS")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-
 	group := strings.TrimSpace(strings.ToLower(c.DefaultQuery("group", "noneasdf")))
 	if glb.Exists(path.Join(glb.RuntimeArgs.SourcePath, group+".db")) {
+
 		os.Remove(path.Join(glb.RuntimeArgs.SourcePath, group+".db"))
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Successfully deleted " + group})
 	} else {
@@ -487,9 +489,10 @@ func EditNetworkName(c *gin.Context) {
 	oldname := c.DefaultQuery("oldname", "none")
 	newname := c.DefaultQuery("newname", "none")
 	if group != "noneasdf" {
-		glb.Debug.Println("Attempting renaming ", group, oldname, newname)
+		//glb.Debug.Println("Attempting renaming ", group, oldname, newname)
 		dbm.RenameNetwork(group, oldname, newname)
-		bayes.OptimizePriorsThreaded(group)
+		CalculateLearn(group)
+		//bayes.OptimizePriorsThreaded(group)
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Finished"})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
@@ -511,8 +514,8 @@ func EditName(c *gin.Context) {
 	newname := c.DefaultQuery("newname", "none")
 	if group != "noneasdf" {
 		numChanges := dbm.EditNameDB(location,newname,group)
-		bayes.OptimizePriorsThreaded(strings.ToLower(group))
-
+		//bayes.OptimizePriorsThreaded(strings.ToLower(group))
+		CalculateLearn(group)
 		c.JSON(http.StatusOK, gin.H{"message": "Changed name of " + strconv.Itoa(numChanges) + " things", "success": true})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})

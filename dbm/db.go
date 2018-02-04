@@ -34,11 +34,11 @@ func GroupExists(group string) bool {
 // renames the network, then calls savePersistentParameters() function to save ps
 func RenameNetwork(group string, oldName string, newName string) {
 	//todo: It's better to regenerate ps from the modified fingerprints bucket than modifying the current ps
-	glb.Debug.Println("Opening parameters")
+	//glb.Debug.Println("Opening parameters")
 	ps, _ := OpenParameters(group)
-	glb.Debug.Println("Opening persistent parameters")
+	//glb.Debug.Println("Opening persistent parameters")
 	persistentPs, _ := OpenPersistentParameters(group)
-	glb.Debug.Println("Looping network macs")
+	//glb.Debug.Println("Looping network macs")
 	for n := range ps.NetworkMacs {
 		if n == oldName {
 			macs := []string{}
@@ -52,7 +52,7 @@ func RenameNetwork(group string, oldName string, newName string) {
 			break
 		}
 	}
-	glb.Debug.Println("Saving persistentPs")
+	//glb.Debug.Println("Saving persistentPs")
 	SavePersistentParameters(group, persistentPs)
 }
 
@@ -350,7 +350,7 @@ func SetFilterMacDB(group string, FilterMacs []string) error {
 		log.Fatal(err)
 	}
 	defer db.Close()
-
+	glb.Debug.Println(FilterMacs)
 	// Create filtermacs bucket if doesn't exist & set filtermacs
 	err = db.Update(func(tx *bolt.Tx) error {
 		bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
@@ -620,7 +620,6 @@ func SetMinRSS(group string, minRss int) error {
 func GetLearnFingerPrints(group string,doFilter bool)([]string,map[string]parameters.Fingerprint,error){
 	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
 	var fingerprintsOrdering []string
-
 	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	if err != nil {
 		glb.Error.Println("Can't get learn fingerprints.")

@@ -43,9 +43,9 @@ func LoadFingerprint(jsonByte []byte, doFilter bool) parameters.Fingerprint{
 	var fp parameters.Fingerprint
 	fp = parameters.LoadRawFingerprint(jsonByte)
 	err, filterMacs := GetFilterMacDB(fp.Group)
-	//glb.Warning.Println(filterMacs)
 	if err != nil {
-		glb.Error.Println("LoadFingerprint function: Error on GetFilterMacDB")
+		glb.Warning.Println("LoadFingerprint function: Error on GetFilterMacDB : ")
+		glb.Warning.Println(err)
 		return fp
 	}
 	if(doFilter){

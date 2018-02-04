@@ -1,6 +1,12 @@
 package glb
 
-import "github.com/MA-Heshmatkhah/SimpleAuth"
+import (
+	"github.com/MA-Heshmatkhah/SimpleAuth"
+	"os"
+	"path"
+	"strings"
+	"reflect"
+)
 
 var SessionManager SimpleAuth.Manager
 
@@ -50,4 +56,21 @@ type UserPositionJSON struct {
 type FilterMacs struct {
 	Group string   `json:"group"`
 	Macs  []string `json:"macs"`
+}
+type Empty struct{}
+
+func init(){
+	cwd, _ := os.Getwd()
+	pkgName := reflect.TypeOf(Empty{}).PkgPath()
+	projName := strings.Split(pkgName,"/")[0]
+	for _,p := range strings.Split(cwd,"/") {
+		if p == projName {
+			RuntimeArgs.Cwd += p +"/"
+			break
+		}
+		RuntimeArgs.Cwd += p +"/"
+	}
+	RuntimeArgs.SourcePath = path.Join(RuntimeArgs.Cwd, "data")
+	//RuntimeArgs.SourcePath
+	RuntimeArgs.Message = ""
 }

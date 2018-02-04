@@ -61,11 +61,10 @@ func OptimizePriorsThreaded(group string) error {
 	var psMain = *parameters.NewFullParameters()
 
 	// Get real PS from raw fingerprint data
-	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
-	var fingerprintsOrdering []string
+	fingerprintsInMemoryMain := make(map[string]parameters.Fingerprint)
+	var fingerprintsOrderingMain []string
 	var err error
 	//opening the db
-	glb.Warning.Println(group)
 	//db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	//if err != nil {
 	//	log.Fatal(err)
@@ -73,31 +72,33 @@ func OptimizePriorsThreaded(group string) error {
 	//}
 	//defer db.Close()
 
-	fingerprintsOrdering,fingerprintsInMemory,err = dbm.GetLearnFingerPrints(group,true)
+	fingerprintsOrderingMain,fingerprintsInMemoryMain,err = dbm.GetLearnFingerPrints(group,true)
 	if err != nil {
 		return err
 	}
 
-	GetParameters(group, &psMain, fingerprintsInMemory, fingerprintsOrdering)
+	GetParameters(group, &psMain, fingerprintsInMemoryMain, fingerprintsOrderingMain)
+
+	//glb.Debug.Println(fingerprintsInMemory)
 	//Info.Println("Running calculatePriors")
 	if glb.RuntimeArgs.GaussianDist {
-		calculateGaussianPriors(group, &psMain, fingerprintsInMemory, fingerprintsOrdering)
+		calculateGaussianPriors(group, &psMain, fingerprintsInMemoryMain, fingerprintsOrderingMain)
 	} else {
-		calculatePriors(group, &psMain, fingerprintsInMemory, fingerprintsOrdering)
+		calculatePriors(group, &psMain, fingerprintsInMemoryMain, fingerprintsOrderingMain)
 	}
 
 	//fmt.Println(ps1)
 
-	fingerprintsInMemory = make(map[string]parameters.Fingerprint)
+	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
 	fingerprintsInMemoryCross := make(map[string]parameters.Fingerprint)
 
-	fingerprintsOrdering = fingerprintsOrdering[:0]
+	var fingerprintsOrdering []string
 	var fingerprintsOrderingCross []string
 
 	//opening the db
 
 	it := float64(-1)
-	for fpTime,fp := range fingerprintsInMemory{
+	for fpTime,fp := range fingerprintsInMemoryMain{
 		it++
 		if math.Mod(it, FoldCrossValidation) == 0 {
 			fingerprintsInMemoryCross[fpTime] = fp
@@ -115,6 +116,7 @@ func OptimizePriorsThreaded(group string) error {
 
 	var ps = *parameters.NewFullParameters()
 	GetParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+
 	//Info.Println("Running calculatePriors")
 	if glb.RuntimeArgs.GaussianDist {
 		calculateGaussianPriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
