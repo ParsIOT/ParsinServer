@@ -21,7 +21,8 @@ func BenchmarkLoadParameters(b *testing.B) {
 			// Assume bucket exists and has keys
 			b := tx.Bucket([]byte("resources"))
 			if b == nil {
-				return glb.Error("Resources dont exist")
+				glb.Error.Println("Resources dont exist")
+				return ""
 			}
 			v := b.Get([]byte("fullParameters"))
 			ps = LoadParameters(v)

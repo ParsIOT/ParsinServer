@@ -113,7 +113,8 @@ func GetMQTT(group string) (string, error) {
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("mqtt"))
 		if b == nil {
-			return fmt.Errorf("Resources dont exist")
+			glb.Error.Println("Resources dont exist")
+			return ""
 		}
 		v := b.Get([]byte(group))
 		password = string(v)

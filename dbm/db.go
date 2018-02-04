@@ -265,7 +265,8 @@ func GetAdminUsers() (map[string]string, error) {
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("users"))
 		if b == nil {
-			return fmt.Errorf("Resources dont exist")
+			glb.Error.Println("Resources dont exist")
+			return ""
 		}
 		v := b.Get([]byte("adminList"))
 		if len(v) == 0 {
@@ -395,6 +396,7 @@ func GetFilterMacDB(group string) (error, []string) {
 			err := json.Unmarshal(v, &FilterMacs)
 			if err != nil {
 				log.Fatal(err)
+				fmt.Println("hi")
 			}
 			return err
 		}
@@ -418,7 +420,8 @@ func GetMixinOverride(group string) (float64, error) {
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("resources"))
 		if b == nil {
-			return fmt.Errorf("Resources dont exist")
+			glb.Error.Println("Resources dont exist")
+			return ""
 		}
 		v := b.Get([]byte("mixinOverride"))
 		if len(v) == 0 {
@@ -444,7 +447,8 @@ func GetCutoffOverride(group string) (float64, error) {
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("resources"))
 		if b == nil {
-			return fmt.Errorf("Resources dont exist")
+			glb.Error.Println("Resources dont exist")
+			return ""
 		}
 		v := b.Get([]byte("cutoffOverride"))
 		if len(v) == 0 {
@@ -470,7 +474,8 @@ func GetKnnKOverride(group string) (int, error) {
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("resources"))
 		if b == nil {
-			return fmt.Errorf("Resources dont exist")
+			glb.Error.Println("Resources dont exist")
+			return ""
 		}
 		v := b.Get([]byte("knnKOverride"))
 		if len(v) == 0 {
@@ -500,7 +505,8 @@ func GetMinRSSOverride(group string) (int, error) {
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("resources"))
 		if b == nil {
-			return fmt.Errorf("Resources dont exist")
+			glb.Error.Println("Resources dont exist")
+			return ""
 		}
 		v := b.Get([]byte("minRSSOverride"))
 		if len(v) == 0 {

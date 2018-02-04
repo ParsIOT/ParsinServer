@@ -29,7 +29,8 @@ func OpenParameters(group string) (parameters.FullParameters, error) {
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("resources"))
 		if b == nil {
-			return fmt.Errorf("Resources dont exist")
+			glb.Error.Println("Resources dont exist")
+			return ""
 		}
 		v := b.Get([]byte("fullParameters"))
 		ps = parameters.LoadParameters(v)
@@ -79,7 +80,8 @@ func OpenPersistentParameters(group string) (parameters.PersistentParameters, er
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("resources"))
 		if b == nil {
-			return fmt.Errorf("Resources dont exist")
+			glb.Error.Println("Resources dont exist")
+			return ""
 		}
 		v := b.Get([]byte("persistentParameters"))
 		json.Unmarshal(v, &persistentPs)
@@ -157,7 +159,8 @@ func GetKnnFingerprints(group string) (parameters.KnnFingerprints,error){
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("knnresources"))
 		if b == nil {
-			return fmt.Errorf("Resources dont exist")
+			glb.Error.Println("Resources dont exist")
+			return ""
 		}
 		KnnFingerprintsJson := b.Get([]byte("knnFingerprints"))
 		err = json.Unmarshal(KnnFingerprintsJson,&tempKnnFingerprints)
@@ -209,7 +212,8 @@ func GetResourceInBucket(keyName string,input interface{},bucketName string,grou
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte(bucketName))
 		if b == nil {
-			return fmt.Errorf("Resources dont exist")
+			glb.Error.Println("Resources dont exist")
+			return ""
 		}
 		//gets some data from db
 		v := b.Get([]byte(keyName))
@@ -235,7 +239,8 @@ func GetCompressedResourceInBucket(keyName string,input interface{},bucketName s
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte(bucketName))
 		if b == nil {
-			return fmt.Errorf("Resources dont exist")
+			glb.Error.Println("Resources dont exist")
+			return ""
 		}
 		//gets some data from db
 		v := b.Get([]byte(keyName))
