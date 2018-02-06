@@ -13,6 +13,7 @@ var SessionManager SimpleAuth.Manager
 
 // RuntimeArgs contains all runtime
 // arguments available
+// Todo: May be shared value, so must use lock to edit it.
 var RuntimeArgs struct {
 	ScikitPort            string
 					  //FilterMacFile     string

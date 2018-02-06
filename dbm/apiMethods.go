@@ -556,7 +556,7 @@ func ReformDBDB(group string)int{
 	numChanges := 0
 
 	_,fingerprintInMemory,err := GetLearnFingerPrints(group,false)
-	glb.Warning.Println(fingerprintInMemory)
+	//glb.Warning.Println(fingerprintInMemory)
 	if err!= nil{
 		return 0
 	}

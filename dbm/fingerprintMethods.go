@@ -39,31 +39,61 @@ func PutFingerprintIntoDatabase(res parameters.Fingerprint, database string) err
 	return err
 }
 
+
+//returns the filtered macs from macs.json file and remove the other macs from fingerprint
+func FilterFingerprint(res *parameters.Fingerprint) {
+
+	//glb.Warning.Println(res.Group)
+	// end function if there is no macfilter set
+	//glb.Debug.Println(res)
+	//glb.Debug.Println(glb.RuntimeArgs.NeedToFilter[res.Group])
+
+	ok2, ok1 := glb.RuntimeArgs.NeedToFilter[res.Group] //check need for filtering
+	ok3, ok4 := glb.RuntimeArgs.NotNullFilterMap[res.Group] //check that filterMap is null
+
+	if ok2 && ok1 && ok3 && ok4{
+		//glb.Debug.Println("1")
+		if _, ok := glb.RuntimeArgs.FilterMacsMap[res.Group]; !ok {
+			err, filterMacs := GetFilterMacDB(res.Group)
+			glb.Warning.Println(filterMacs)
+			if err != nil {
+				return
+			}
+			glb.RuntimeArgs.FilterMacsMap[res.Group] = filterMacs
+			//Rglb.RuntimeArgs.NeedToFilter[res.Group] = false //ToDo: filtering in loadfingerprint that was called by scikit.go not working! So i comment this line !
+		}
+
+		filterMacs := glb.RuntimeArgs.FilterMacsMap[res.Group]
+		//glb.Debug.Println(filterMacs)
+		newFingerprint := make([]parameters.Router, len(res.WifiFingerprint))
+		curNum := 0
+
+		for i := range res.WifiFingerprint {
+			for _, mac := range filterMacs {
+				if res.WifiFingerprint[i].Mac == mac {
+					//glb.Debug.Println("4")
+					//Error.Println("filtered mac : ",res.WifiFingerprint[i].Mac)
+					newFingerprint[curNum] = res.WifiFingerprint[i]
+
+					//newFingerprint[curNum].Mac = newFingerprint[curNum].Mac[0:len(newFingerprint[curNum].Mac)-1] + "0"
+					curNum++
+				}
+			}
+		}
+		//glb.Debug.Println(newFingerprint[0:curNum])
+		res.WifiFingerprint = newFingerprint[0:curNum]
+	}
+}
+
 func LoadFingerprint(jsonByte []byte, doFilter bool) parameters.Fingerprint{
 	var fp parameters.Fingerprint
 	fp = parameters.LoadRawFingerprint(jsonByte)
-	err, filterMacs := GetFilterMacDB(fp.Group)
-	if err != nil {
-		glb.Warning.Println("LoadFingerprint function: Error on GetFilterMacDB : ")
-		glb.Warning.Println(err)
-		return fp
-	}
 	if(doFilter){
-		parameters.FilterRawFingerprint(&fp,filterMacs)
+		FilterFingerprint(&fp)
 	}
 	//glb.Debug.Println(res)
 	return fp
 }
-
-func FilterFingerprint(fp *parameters.Fingerprint){
-	err, filterMacs := GetFilterMacDB(fp.Group)
-	glb.Warning.Println(filterMacs)
-	if err != nil {
-		glb.Error.Println("FilterFingerprint function: Error on GetFilterMacDB")
-	}
-	parameters.FilterRawFingerprint(fp,filterMacs)
-}
-
 
 // make a folder that is named dump-groupName and dump track and learn db's data to files
 func DumpFingerprints(group string) error {

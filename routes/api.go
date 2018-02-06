@@ -36,7 +36,6 @@ func GetStatus(c *gin.Context) {
 
 // glb.UserPositionJSON stores the a users time, location and bayes after calculatePosterior()
 
-
 // Gets location list:
 // Example:
 // {"locations":{
@@ -121,7 +120,6 @@ func GetLastFingerprint(c *gin.Context) {
 	}
 }
 
-
 //Returns n of the last location estimations that were stored in fingerprints-track bucket in db
 func GetHistoricalUserPositions(group string, user string, n int) []glb.UserPositionJSON {
 	group = strings.ToLower(group)
@@ -129,8 +127,8 @@ func GetHistoricalUserPositions(group string, user string, n int) []glb.UserPosi
 	var fingerprints []parameters.Fingerprint
 	var err error
 
-	fingerprints,err = dbm.TrackFingerprints(user,n,group)
-	if(err!=nil){
+	fingerprints, err = dbm.TrackFingerprints(user, n, group)
+	if (err != nil) {
 		return make([]glb.UserPositionJSON, 0) //empty userJSONs
 	}
 
@@ -163,8 +161,8 @@ func GetCurrentPositionOfAllUsers(group string) map[string]glb.UserPositionJSON 
 	userPositions := make(map[string]glb.UserPositionJSON)
 	userFingerprints := make(map[string]parameters.Fingerprint)
 	var err error
-	userPositions,userFingerprints,err = dbm.TrackFingerprintsEmptyPosition(group)
-	if (err!=nil ){
+	userPositions, userFingerprints, err = dbm.TrackFingerprintsEmptyPosition(group)
+	if (err != nil ) {
 		return userPositions
 	}
 
@@ -199,8 +197,8 @@ func GetCurrentPositionOfUser(group string, user string) glb.UserPositionJSON {
 	var userJSON glb.UserPositionJSON
 	var userFingerprint parameters.Fingerprint
 	var err error
-	userJSON,userFingerprint,err = dbm.TrackFingeprintEmptyPosition(user,group)
-	if (err!=nil){
+	userJSON, userFingerprint, err = dbm.TrackFingeprintEmptyPosition(user, group)
+	if (err != nil) {
 		return userJSON
 	}
 
@@ -243,7 +241,7 @@ func Calculate(c *gin.Context) {
 	}
 }
 
-func CalculateLearn(group string){
+func CalculateLearn(group string) {
 	group = strings.ToLower(group)
 	bayes.OptimizePriorsThreaded(group)
 	if glb.RuntimeArgs.Svm {
@@ -259,6 +257,7 @@ func CalculateLearn(group string){
 	}
 	algorithms.LearnKnn(group)
 }
+
 // An api that calls getHistoricalUserPositions() & getCurrentPositionOfUser()
 // Returns location of a user, user list or users of a group
 // GET parameters: group, user, users, n
@@ -324,7 +323,7 @@ func MigrateDatabase(c *gin.Context) {
 	if !glb.Exists(path.Join(glb.RuntimeArgs.SourcePath, toDB)) {
 		glb.CopyFile(path.Join(glb.RuntimeArgs.SourcePath, fromDB+".db"), path.Join(glb.RuntimeArgs.SourcePath, toDB+".db"))
 	} else {
-		dbm.MigrateDatabaseDB(fromDB,toDB)
+		dbm.MigrateDatabaseDB(fromDB, toDB)
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Successfully migrated " + fromDB + " to " + toDB})
 }
@@ -513,7 +512,7 @@ func EditName(c *gin.Context) {
 	location := c.DefaultQuery("location", "none")
 	newname := c.DefaultQuery("newname", "none")
 	if group != "noneasdf" {
-		numChanges := dbm.EditNameDB(location,newname,group)
+		numChanges := dbm.EditNameDB(location, newname, group)
 		//bayes.OptimizePriorsThreaded(strings.ToLower(group))
 		CalculateLearn(group)
 		c.JSON(http.StatusOK, gin.H{"message": "Changed name of " + strconv.Itoa(numChanges) + " things", "success": true})
@@ -536,7 +535,7 @@ func EditMac(c *gin.Context) {
 	oldmac := c.DefaultQuery("oldmac", "none")
 	newmac := c.DefaultQuery("newmac", "none")
 	if group != "noneasdf" {
-		numChanges := dbm.EditMacDB(oldmac,newmac,group)
+		numChanges := dbm.EditMacDB(oldmac, newmac, group)
 		bayes.OptimizePriorsThreaded(strings.ToLower(group))
 
 		c.JSON(http.StatusOK, gin.H{"message": "Changed name of " + strconv.Itoa(numChanges) + " things", "success": true})
@@ -559,7 +558,7 @@ func EditUserName(c *gin.Context) {
 	user := strings.ToLower(c.DefaultQuery("user", "none"))
 	newname := strings.ToLower(c.DefaultQuery("newname", "none"))
 	if group != "noneasdf" {
-		numChanges := dbm.EditUserNameDB(user,newname,group)
+		numChanges := dbm.EditUserNameDB(user, newname, group)
 
 		// reset the cache (cache.go)
 		go dbm.ResetCache("usersCache")
@@ -584,7 +583,7 @@ func DeleteLocation(c *gin.Context) {
 	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
 	location := strings.ToLower(c.DefaultQuery("location", "none"))
 	if group != "noneasdf" {
-		numChanges := dbm.DeleteLocationDB(location,group)
+		numChanges := dbm.DeleteLocationDB(location, group)
 		bayes.OptimizePriorsThreaded(strings.ToLower(group))
 
 		c.JSON(http.StatusOK, gin.H{"message": "Deleted " + strconv.Itoa(numChanges) + " locations", "success": true})
@@ -607,7 +606,7 @@ func DeleteLocations(c *gin.Context) {
 	locationsQuery := strings.ToLower(c.DefaultQuery("names", "none"))
 	if group != "noneasdf" && locationsQuery != "none" {
 		locations := strings.Split(strings.ToLower(locationsQuery), ",")
-		numChanges := dbm.DeleteLocationsDB(locations,group)
+		numChanges := dbm.DeleteLocationsDB(locations, group)
 		bayes.OptimizePriorsThreaded(strings.ToLower(group))
 		c.JSON(http.StatusOK, gin.H{"message": "Deleted " + strconv.Itoa(numChanges) + " locations", "success": true})
 	} else {
@@ -628,7 +627,7 @@ func DeleteUser(c *gin.Context) {
 	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
 	user := strings.ToLower(c.DefaultQuery("user", "noneasdf"))
 	if group != "noneasdf" && user != "noneasdf" {
-		numChanges := dbm.DeleteUser(user,group)
+		numChanges := dbm.DeleteUser(user, group)
 		// reset the cache (cache.go)
 		go dbm.ResetCache("usersCache")
 		go dbm.ResetCache("userPositionCache")
@@ -734,4 +733,3 @@ func ReformDB(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
 }
-

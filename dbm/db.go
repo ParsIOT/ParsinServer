@@ -630,7 +630,7 @@ func GetLearnFingerPrints(group string,doFilter bool)([]string,map[string]parame
 	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	if err != nil {
 		glb.Error.Println("Can't get learn fingerprints.")
-		return fingerprintsOrdering,fingerprintsInMemory,err
+		return fingerprintsOrdering, fingerprintsInMemory, err
 	}
 	defer db.Close()
 
@@ -638,6 +638,7 @@ func GetLearnFingerPrints(group string,doFilter bool)([]string,map[string]parame
 		//gets the fingerprint bucket
 		b := tx.Bucket([]byte("fingerprints"))
 		if b == nil {
+			glb.Error.Println("No fingerprint bucket")
 			return fmt.Errorf("No fingerprint bucket")
 		}
 		c := b.Cursor()
@@ -648,6 +649,7 @@ func GetLearnFingerPrints(group string,doFilter bool)([]string,map[string]parame
 		return nil
 	})
 	if err != nil {
+		glb.Debug.Println(group)
 		glb.Error.Println("Can't get learn fingerprints.")
 		return fingerprintsOrdering,fingerprintsInMemory,err
 	}

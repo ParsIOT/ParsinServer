@@ -155,20 +155,19 @@ func TestEditUserName(t *testing.T) {
 	router := gin.New()
 	router.GET("/foo", EditUserName)
 
-	req, _ := http.NewRequest("GET", "/foo?group=testdb&user=hadi&newname=hadi1", nil)
+	req, _ := http.NewRequest("GET", "/foo?group=testdb&user=hadi1&newname=hadi1", nil)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
 	response := "{\"message\":\"Changed name of 6 things\",\"success\":true}"
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
 }
 
-//func TestDeleteUser(t *testing.T) {
-//	router := gin.New()
-//	router.DELETE("/foo", DeleteUser)
-//
-//	req, _ := http.NewRequest("DELETE", "/foo?group=testdb&user=zack2@gmail.com", nil)
-//	resp := httptest.NewRecorder()
-//	router.ServeHTTP(resp, req)
-//	response := "{\"message\":\"Deletes 0 things  with user zack2@gmail.com\",\"success\":true}"
-//	assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
-//}
+func TestDeleteUser(t *testing.T) {
+	router := gin.New()
+	router.DELETE("/foo", DeleteUser)
+	req, _ := http.NewRequest("DELETE", "/foo?group=testdb&user=hadi", nil)
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+	response := "{\"message\":\"Deletes 6 things  with user hadi\",\"success\":true}"
+	assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
+}

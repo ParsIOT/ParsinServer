@@ -70,50 +70,6 @@ func LoadRawFingerprint(jsonByte []byte) Fingerprint {
 	return res
 }
 
-//returns the filtered macs from macs.json file and remove the other macs from fingerprint
-func FilterRawFingerprint(res *Fingerprint,filterMacs []string) {
-
-	//glb.Warning.Println(res.Group)
-	// end function if there is no macfilter set
-	//glb.Debug.Println(res)
-	//glb.Debug.Println(glb.RuntimeArgs.NeedToFilter[res.Group])
-
-	ok2, ok1 := glb.RuntimeArgs.NeedToFilter[res.Group] //check need for filtering
-	ok3, ok4 := glb.RuntimeArgs.NotNullFilterMap[res.Group] //check that filterMap is null
-
-	if ok2 && ok1 && ok3 && ok4{
-		//glb.Debug.Println("1")
-		if _, ok := glb.RuntimeArgs.FilterMacsMap[res.Group]; !ok {
-			//err, filterMacs := dbm.GetFilterMacDB(res.Group)
-			//glb.Warning.Println(filterMacs)
-			//if err != nil {
-			//	return
-			//}
-			glb.RuntimeArgs.FilterMacsMap[res.Group] = filterMacs
-			//Rglb.RuntimeArgs.NeedToFilter[res.Group] = false //ToDo: filtering in loadfingerprint that was called by scikit.go not working! So i comment this line !
-		}
-
-		filterMacs := glb.RuntimeArgs.FilterMacsMap[res.Group]
-		//glb.Debug.Println(filterMacs)
-		newFingerprint := make([]Router, len(res.WifiFingerprint))
-		curNum := 0
-
-		for i := range res.WifiFingerprint {
-			for _, mac := range filterMacs {
-				if res.WifiFingerprint[i].Mac == mac {
-					//glb.Debug.Println("4")
-					//Error.Println("filtered mac : ",res.WifiFingerprint[i].Mac)
-					newFingerprint[curNum] = res.WifiFingerprint[i]
-
-					//newFingerprint[curNum].Mac = newFingerprint[curNum].Mac[0:len(newFingerprint[curNum].Mac)-1] + "0"
-					curNum++
-				}
-			}
-		}
-		//glb.Debug.Println(newFingerprint[0:curNum])
-		res.WifiFingerprint = newFingerprint[0:curNum]
-	}
-}
 
 // convert quality (0 to 100) to rss(-100 to -50) and delete the records that their mac are "00:00:00:00:00"
 func CleanFingerprint(res *Fingerprint) {
