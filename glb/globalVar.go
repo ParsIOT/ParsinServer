@@ -35,7 +35,7 @@ var RuntimeArgs struct {
 	Svm               bool
 	Scikit	          bool
 	NeedToFilter      map[string]bool //check needing for filtering
-	NotNullFilterMap  map[string]bool //check that filterMap is null(used to avoid filter fingerprint with null map)
+	NotNullFilterMap     map[string]bool //check that filterMap is null(used to avoid filter fingerprint with null map)
 	FilterMacsMap     map[string][]string
 	AdminAdd          string
 	GaussianDist      bool

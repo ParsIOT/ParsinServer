@@ -1,12 +1,10 @@
 package dbm
 
 import (
-	"fmt"
-	"path"
 	"testing"
-	"github.com/boltdb/bolt"
 	"ParsinServer/algorithms/parameters"
 	"ParsinServer/glb"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUserCache(t *testing.T) {
