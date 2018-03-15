@@ -175,7 +175,8 @@ func TestGetUniqueMacs(t *testing.T){
 	//}
 
 	uniqueMacs := GetUniqueMacs(testdb)
-	responseList := []string{"6c:19:8f:50:c6:a5", "b4:52:7d:26:e3:f3", "6c:3b:6b:09:da:6f", "9c:d6:43:72:0e:83", "02:1a:11:f5:6c:03", "34:97:f6:63:bd:94", "00:23:f8:91:be:43", "58:6d:8f:2b:26:42", "c4:6e:1f:d7:2e:de", "98:42:46:00:99:eb", "c4:12:f5:01:89:70", "4c:5e:0c:ec:85:85", "4c:5e:0c:40:1c:77", "b4:75:0e:e1:39:1a", "50:67:f0:7b:02:c7", "00:23:f8:91:c5:27", "6c:fd:b9:8c:fa:9b", "e4:8d:8c:15:e1:6f", "c4:e9:84:98:cb:ed", "40:4a:03:ad:17:ae"}
+	//responseList := []string{"6c:19:8f:50:c6:a5", "b4:52:7d:26:e3:f3", "6c:3b:6b:09:da:6f", "9c:d6:43:72:0e:83", "02:1a:11:f5:6c:03", "34:97:f6:63:bd:94", "00:23:f8:91:be:43", "58:6d:8f:2b:26:42", "c4:6e:1f:d7:2e:de", "98:42:46:00:99:eb", "c4:12:f5:01:89:70", "4c:5e:0c:ec:85:85", "4c:5e:0c:40:1c:77", "b4:75:0e:e1:39:1a", "50:67:f0:7b:02:c7", "00:23:f8:91:c5:27", "6c:fd:b9:8c:fa:9b", "e4:8d:8c:15:e1:6f", "c4:e9:84:98:cb:ed", "40:4a:03:ad:17:ae"}
+	responseList := []string{"b4:52:7d:26:e3:f3","50:67:f0:7b:02:c7","6c:19:8f:50:c6:a5","9c:d6:43:72:0e:83","6c:3b:6b:09:da:6f","4c:5e:0c:ec:85:85","02:1a:11:f5:6c:03","34:97:f6:63:bd:94","58:6d:8f:2b:26:42","b4:75:0e:e1:39:1a","98:42:46:00:99:eb"}
 
 	listEqual := true
 	itemFound := false
@@ -239,9 +240,12 @@ func TestGetMacCount(t *testing.T){
 	defer freedb(testdb)
 
 	macs := GetMacCount(testdb)
-	jsonTest := "{\"4c:5e:0c:40:1c:77\":3,\"e4:8d:8c:15:e1:6f\":2,\"c4:e9:84:98:cb:ed\":3,\"b4:75:0e:e1:39:1a\":16,\"00:23:f8:91:be:43\":14,\"6c:19:8f:50:c6:a5\":100,\"b4:52:7d:26:e3:f3\":99,\"34:97:f6:63:bd:94\":90,\"02:1a:11:f5:6c:03\":100,\"c4:12:f5:01:89:70\":50,\"6c:fd:b9:8c:fa:9b\":2,\"50:67:f0:7b:02:c7\":8,\"40:4a:03:ad:17:ae\":1,\"00:23:f8:91:c5:27\":1,\"6c:3b:6b:09:da:6f\":100,\"98:42:46:00:99:eb\":97,\"4c:5e:0c:ec:85:85\":78,\"c4:6e:1f:d7:2e:de\":13,\"58:6d:8f:2b:26:42\":100,\"9c:d6:43:72:0e:83\":65}"
+	//jsonTest := "{\"4c:5e:0c:40:1c:77\":3,\"e4:8d:8c:15:e1:6f\":2,\"c4:e9:84:98:cb:ed\":3,\"b4:75:0e:e1:39:1a\":16,\"00:23:f8:91:be:43\":14,\"6c:19:8f:50:c6:a5\":100,\"b4:52:7d:26:e3:f3\":99,\"34:97:f6:63:bd:94\":90,\"02:1a:11:f5:6c:03\":100,\"c4:12:f5:01:89:70\":50,\"6c:fd:b9:8c:fa:9b\":2,\"50:67:f0:7b:02:c7\":8,\"40:4a:03:ad:17:ae\":1,\"00:23:f8:91:c5:27\":1,\"6c:3b:6b:09:da:6f\":100,\"98:42:46:00:99:eb\":97,\"4c:5e:0c:ec:85:85\":78,\"c4:6e:1f:d7:2e:de\":13,\"58:6d:8f:2b:26:42\":100,\"9c:d6:43:72:0e:83\":65}"
+	jsonTest :="{\"b4:75:0e:e1:39:1a\":1,\"6c:19:8f:50:c6:a5\":1,\"9c:d6:43:72:0e:83\":1,\"58:6d:8f:2b:26:42\":1,\"4c:5e:0c:ec:85:85\":1,\"02:1a:11:f5:6c:03\":1,\"34:97:f6:63:bd:94\":1,\"98:42:46:00:99:eb\":1,\"b4:52:7d:26:e3:f3\":99,\"50:67:f0:7b:02:c7\":8,\"6c:3b:6b:09:da:6f\":1}"
 	tempMac := make(map[string]int)
 	json.Unmarshal([]byte(jsonTest), &tempMac)
+	//glb.Debug.Println(tempMac)
+	//glb.Debug.Println(macs)
 	isEqual := glb.MapLike(macs,tempMac)
 	assert.Equal(t, isEqual, true)
 }
@@ -259,7 +263,7 @@ func TestSetFilterMacDB(t *testing.T){
 	defer freedb(testdb)
 
 	filterMacs := []string{"6c:19:8f:50:c6:a5","4c:5e:0c:40:1c:77"}
-	err := SetFilterMacDB(testdb, filterMacs)
+	err := SetSharedPrf(testdb,"FilterMacsMap", filterMacs)
 	assert.Equal(t, err, nil)
 }
 
@@ -267,13 +271,20 @@ func TestGetFilterMacDB(t *testing.T){
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
+
+	filterMacs := []string{"6c:19:8f:50:c6:a5","4c:5e:0c:40:1c:77"}
+	//err := SetFilterMacDB(testdb,  filterMacs)
+
+	err := SetSharedPrf(testdb,"FilterMacsMap", filterMacs)
+	assert.Equal(t, err, nil)
+
 	//err, filterMacs := GetFilterMacDB(testdb)
-	filterMacs := GetSharedPrf(res.Group).FilterMacsMap
-	glb.Warning.Println(filterMacs)
+	filterMacs = GetSharedPrf(testdb).FilterMacsMap
+
 	//if err != nil {
 	//	t.Errorf("Can't get macs list")
 	//}
-	filterMacsRes := []string{"6c:19:8f:50:c6:a5","b4:52:7d:26:e3:f3"}
+	filterMacsRes := []string{"6c:19:8f:50:c6:a5","4c:5e:0c:40:1c:77"}
 	assert.Equal(t, filterMacs, filterMacsRes)
 }
 //
