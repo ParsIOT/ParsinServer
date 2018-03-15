@@ -12,16 +12,18 @@ var MinRssi int
 // RssiRange is the calculated partitions in array form
 var RssiRange []float32
 
-
+var DefaultCutoff,DefaultMixin float64
 var MinApNum int
 
 // Default K in KNN algorithm
 var DefaultKnnK,MinClusterRss int
 
 func init() {
+	DefaultMixin = float64(0.1)
+	DefaultCutoff = float64(0.01)
 	MinApNum = 3
 	MinRssi = -110
 	MaxRssi = 5
-	DefaultKnnK = 60
+	DefaultKnnK = 10
 	MinClusterRss = -70
 }

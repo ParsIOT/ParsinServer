@@ -20,11 +20,11 @@ func OpenParameters(group string) (parameters.FullParameters, error) {
 	}
 
 	var ps = *parameters.NewFullParameters()
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0755, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
 
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
@@ -45,11 +45,12 @@ func OpenParameters(group string) (parameters.FullParameters, error) {
 //save ps(a FullParameters instance) to db
 func SaveParameters(group string, res parameters.FullParameters) error {
 	//todo: why we should save ps in database? It can be regenerated from fingerprints bucket in db.
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
+
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
@@ -71,11 +72,12 @@ func SaveParameters(group string, res parameters.FullParameters) error {
 // Get persistentParameters from resources bucket in db
 func OpenPersistentParameters(group string) (parameters.PersistentParameters, error) {
 	var persistentPs = *parameters.NewPersistentParameters()
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
+
 
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
@@ -94,11 +96,12 @@ func OpenPersistentParameters(group string) (parameters.PersistentParameters, er
 
 // Set persistentParameters to resources bucket in db (it's used in remednetwork() function)
 func SavePersistentParameters(group string, res parameters.PersistentParameters) error {
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
+
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
@@ -119,11 +122,11 @@ func SavePersistentParameters(group string, res parameters.PersistentParameters)
 
 func SetKnnFingerprints(tempKnnFingerprints parameters.KnnFingerprints, group string) error {
 	// Set KnnFingerprints to db
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		bucket, err2 := tx.CreateBucketIfNotExists([]byte("knnresources"))
@@ -150,11 +153,11 @@ func SetKnnFingerprints(tempKnnFingerprints parameters.KnnFingerprints, group st
 
 func GetKnnFingerprints(group string) (parameters.KnnFingerprints,error){
 	var tempKnnFingerprints parameters.KnnFingerprints
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		return tempKnnFingerprints,err
 	}
-	defer db.Close()
 
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
@@ -179,11 +182,11 @@ func GetKnnFingerprints(group string) (parameters.KnnFingerprints,error){
 }
 
 func SetResourceInBucket(keyName string,input interface{},bucketName string,group string) error {
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0755, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0755, nil)
+	defer db.Close()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 	//open the database and save the previously generated variables to database
 	err = db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte(bucketName))
@@ -202,12 +205,12 @@ func SetResourceInBucket(keyName string,input interface{},bucketName string,grou
 
 
 func GetResourceInBucket(keyName string,input interface{},bucketName string,group string) error {
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0755, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0755, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 		return err
 	}
-	defer db.Close()
 
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
@@ -229,12 +232,12 @@ func GetResourceInBucket(keyName string,input interface{},bucketName string,grou
 }
 
 func GetCompressedResourceInBucket(keyName string,input interface{},bucketName string,group string) error {
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0755, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0755, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 		return err
 	}
-	defer db.Close()
 
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys

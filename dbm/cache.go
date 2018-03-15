@@ -15,6 +15,13 @@ import (
 	"ParsinServer/glb"
 )
 
+//Todo: These time can be dynamic for each group and each variable
+//Todo: is it necessary to clear cache ?!!!!
+
+var CacheResetFastPeriod time.Duration = 30 //second
+var CacheResetPeriod time.Duration = 600 //second
+
+
 //Containing a map: key=group name, value= a FullParameters instance
 // if there is psCache in memory, ps isn't got from db
 var psCache = struct {
@@ -59,7 +66,7 @@ func init() {
 func ClearCacheFast() {
 	for {
 		go ResetCache("userCache")
-		time.Sleep(time.Second * 30)
+		time.Sleep(time.Second * CacheResetFastPeriod)
 	}
 }
 
@@ -70,7 +77,8 @@ func ClearCache() {
 		go ResetCache("isLearning")
 		go ResetCache("psCache")
 		go ResetCache("userPositionCache")
-		time.Sleep(time.Second * 600)
+		go ResetCache("knnFPCache")
+		time.Sleep(time.Second * CacheResetPeriod)
 	}
 }
 
@@ -92,6 +100,10 @@ func ResetCache(cache string) {
 		isLearning.Lock()
 		isLearning.m = make(map[string]bool)
 		isLearning.Unlock()
+	} else if cache == "knnFPCache" {
+		knnFPCache.Lock()
+		knnFPCache.m = make(map[string]parameters.KnnFingerprints)
+		knnFPCache.Unlock()
 	}
 }
 

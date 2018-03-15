@@ -15,7 +15,7 @@ import (
 
 // make a db according to group name
 func PutFingerprintIntoDatabase(res parameters.Fingerprint, database string) error {
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, res.Group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, res.Group+".db"), 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,23 +47,32 @@ func FilterFingerprint(res *parameters.Fingerprint) {
 	// end function if there is no macfilter set
 	//glb.Debug.Println(res)
 	//glb.Debug.Println(glb.RuntimeArgs.NeedToFilter[res.Group])
+	//
+	//ok2, ok1 := glb.RuntimeArgs.NeedToFilter[res.Group] //check need for filtering
+	//ok3, ok4 := glb.RuntimeArgs.NotNullFilterList[res.Group] //check that filterMap is null
+	ok1 := GetRuntimePrf(res.Group).NeedToFilter      //check need for filtering
+	ok2 := GetRuntimePrf(res.Group).NotNullFilterList //check that filterMap is null
+	//
+	//glb.Debug.Println(ok1)
+	//glb.Debug.Println(ok2)
+	//glb.Debug.Println(ok3)
+	//glb.Debug.Println(ok4)
 
-	ok2, ok1 := glb.RuntimeArgs.NeedToFilter[res.Group] //check need for filtering
-	ok3, ok4 := glb.RuntimeArgs.NotNullFilterMap[res.Group] //check that filterMap is null
-
-	if ok2 && ok1 && ok3 && ok4{
+	if ok1 && ok2 {
 		//glb.Debug.Println("1")
-		if _, ok := glb.RuntimeArgs.FilterMacsMap[res.Group]; !ok {
-			err, filterMacs := GetFilterMacDB(res.Group)
-			glb.Warning.Println(filterMacs)
-			if err != nil {
-				return
-			}
-			glb.RuntimeArgs.FilterMacsMap[res.Group] = filterMacs
-			//Rglb.RuntimeArgs.NeedToFilter[res.Group] = false //ToDo: filtering in loadfingerprint that was called by scikit.go not working! So i comment this line !
-		}
+		//if _, ok := glb.RuntimeArgs.FilterMacsMap[res.Group]; !ok {
+		//	err, filterMacs := GetFilterMacDB(res.Group)
+		//
+		//	glb.Warning.Println(filterMacs)
+		//	if err != nil {
+		//		return
+		//	}
+		//	glb.RuntimeArgs.FilterMacsMap[res.Group] = filterMacs
+		//	//Rglb.RuntimeArgs.NeedToFilter[res.Group] = false //ToDo: filtering in loadfingerprint that was called by scikit.go not working! So i comment this line !
+		//}
 
-		filterMacs := glb.RuntimeArgs.FilterMacsMap[res.Group]
+		//filterMacs := glb.RuntimeArgs.FilterMacsMap[res.Group]
+		filterMacs := GetSharedPrf(res.Group).FilterMacsMap
 		//glb.Debug.Println(filterMacs)
 		newFingerprint := make([]parameters.Router, len(res.WifiFingerprint))
 		curNum := 0
@@ -88,8 +97,15 @@ func FilterFingerprint(res *parameters.Fingerprint) {
 func LoadFingerprint(jsonByte []byte, doFilter bool) parameters.Fingerprint{
 	var fp parameters.Fingerprint
 	fp = parameters.LoadRawFingerprint(jsonByte)
+	t1 := len(fp.WifiFingerprint)
 	if(doFilter){
 		FilterFingerprint(&fp)
+	}
+	t2 := len(fp.WifiFingerprint)
+	if(t1 != t2 ){
+		glb.Error.Println("Filtered #############")
+	}else{
+		glb.Debug.Println("worked")
 	}
 	//glb.Debug.Println(res)
 	return fp
@@ -104,11 +120,11 @@ func DumpFingerprints(group string) error {
 	}
 
 	// glb.Debug.Println("Opening db")
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0664, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0664, nil)
+	defer db.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 
 	// glb.Debug.Println("Opening file for learning fingerprints")
 	// glb.Debug.Println(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "learning"))

@@ -82,10 +82,10 @@ func PutMQTT(c *gin.Context) {
 func SetMQTT(group string) (string, error) {
 	password := glb.RandStringBytesMaskImprSrc(6)
 	db, err := bolt.Open(path.Join(glb.RuntimeArgs.Cwd, "global.db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte("mqtt"))
@@ -105,10 +105,10 @@ func SetMQTT(group string) (string, error) {
 func GetMQTT(group string) (string, error) {
 	password := ""
 	db, err := bolt.Open(path.Join(glb.RuntimeArgs.Cwd, "global.db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
 
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
@@ -126,10 +126,10 @@ func GetMQTT(group string) (string, error) {
 
 func UpdateMosquittoConfig() {
 	db, err := bolt.Open(path.Join(glb.RuntimeArgs.Cwd, "global.db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
 
 	acl := "user " + glb.RuntimeArgs.MqttAdmin + "\ntopic readwrite #\n\n"
 	passwd := "admin:" + glb.RuntimeArgs.MqttAdminPassword + "\n"

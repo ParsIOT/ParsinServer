@@ -111,9 +111,9 @@ func main() {
 
 	//// Check whether macs should be filtered
 
-	glb.RuntimeArgs.FilterMacsMap = make(map[string][]string)
-	glb.RuntimeArgs.NeedToFilter = make(map[string]bool)
-	glb.RuntimeArgs.NotNullFilterMap = make(map[string]bool)
+	//glb.RuntimeArgs.FilterMacsMap = make(map[string][]string)
+	//glb.RuntimeArgs.NeedToFilter = make(map[string]bool)
+	//glb.RuntimeArgs.NotNullFilterList = make(map[string]bool)
 
 	//if len(gvar.RuntimeArgs.FilterMacFile) > 0 {
 	//	b, err := ioutil.ReadFile(gvar.RuntimeArgs.FilterMacFile)
@@ -208,56 +208,68 @@ func main() {
 	privateRoutes := r.Group("/", glb.SessionManager.AuthenticatedOnly())
 	{
 		privateRoutes.GET("/logout", glb.SessionManager.Logout)
-
+		//routes.PreLoadSettings(
 		// Routes for logging in and viewing dashboards (pages.go)
 		privateRoutes.GET("/", routes.Slash)
 		privateRoutes.GET("/change-db", routes.SlashChangeDb)
 		privateRoutes.POST("/change-db", routes.SlashChangeDbPOST)
-		privateRoutes.GET("/dashboard/:group", routes.SlashDashboard)
-		privateRoutes.GET("/explore/:group/:network/:location", routes.SlashExplore2)
-		privateRoutes.GET("/pie/:group/:network/:location", routes.SlashPie)
-		privateRoutes.GET("/livemap/:group", routes.LiveLocationMap)
-		/*
+			/*
 		r.GET("/livemap/:group", func(context *gin.Context) {
 			r.LoadHTMLGlob(path.Join(gvar.RuntimeArgs.Cwd, "templates/*"))
 			LiveLocationMap(context)
 		})
 		*/
-		privateRoutes.GET("/locationsmap/:group", routes.LocationsOnMap)
 		privateRoutes.PUT("/mqtt", routes.PutMQTT) // Routes for MQTT (mqtt.go)
 
 		// Routes for API access (api.go)
-		privateRoutes.GET("/location", routes.GetUserLocations)
-		privateRoutes.GET("/locations", routes.GetLocationList)
-		privateRoutes.GET("/editname", routes.EditName)
-		privateRoutes.GET("/editMac", routes.EditMac)
-		privateRoutes.GET("/editusername", routes.EditUserName)
-		privateRoutes.GET("/editnetworkname", routes.EditNetworkName)
-		privateRoutes.DELETE("/location", routes.DeleteLocation)
-		privateRoutes.DELETE("/locations", routes.DeleteLocations)
-		privateRoutes.DELETE("/user", routes.DeleteUser)
-		privateRoutes.DELETE("/database", routes.DeleteDatabase)
-		privateRoutes.GET("/calculate", routes.Calculate)
-		privateRoutes.GET("/status", routes.GetStatus)
-		privateRoutes.PUT("/mixin", routes.PutMixinOverride)
-		privateRoutes.PUT("/cutoff", routes.PutCutoffOverride)
-		privateRoutes.PUT("/database", routes.MigrateDatabase)
-		privateRoutes.PUT("/k_knn", routes.PutKnnK)
-		privateRoutes.PUT("/minrss", routes.PutMinRss)
-			privateRoutes.GET("/lastfingerprint", routes.GetLastFingerprint)
-		privateRoutes.GET("/reformdb", routes.ReformDB)
-		privateRoutes.GET("/macfilterform/:group", routes.Macfilterform)
-		privateRoutes.POST("/setfiltermacs", routes.Setfiltermacs)
-		privateRoutes.GET("/getfiltermacs", routes.Getfiltermacs)
+		//privateRoutes.GET("/location", routes.GetUserLocations)
+
 		//r.Static("data/", path.Join(gvar.RuntimeArgs.Cwd, "data/"))
 		privateRoutes.Static("data/", path.Join(glb.RuntimeArgs.Cwd, "data/")) // Load db files
+		privateRoutes.GET("/status", routes.GetStatus)
+
+		needToLoadSettings := privateRoutes.Group("/",routes.PreLoadSettings)
+		{
+			//Todo: Url must be same format to mention group name (now, group can be url param or be GET param)
+			needToLoadSettings.GET("/dashboard/:group", routes.SlashDashboard)
+			needToLoadSettings.GET("/explore/:group/:network/:location", routes.SlashExplore2)
+			needToLoadSettings.GET("/pie/:group/:network/:location", routes.SlashPie)
+			needToLoadSettings.GET("/livemap/:group", routes.LiveLocationMap)
+			needToLoadSettings.GET("/location", routes.GetUserLocations)
+			needToLoadSettings.GET("/locationsmap/:group", routes.LocationsOnMap)
+			needToLoadSettings.GET("/locations", routes.GetLocationList)
+			needToLoadSettings.GET("/editname", routes.EditName)
+			needToLoadSettings.GET("/editMac", routes.EditMac)
+			needToLoadSettings.GET("/editusername", routes.EditUserName)
+			needToLoadSettings.GET("/editnetworkname", routes.EditNetworkName)
+			needToLoadSettings.DELETE("/location", routes.DeleteLocation)
+			needToLoadSettings.DELETE("/locations", routes.DeleteLocations)
+			needToLoadSettings.DELETE("/user", routes.DeleteUser)
+			needToLoadSettings.DELETE("/database", routes.DeleteDatabase)
+			needToLoadSettings.GET("/calculate", routes.Calculate)
+			needToLoadSettings.PUT("/mixin", routes.PutMixinOverride)
+			needToLoadSettings.PUT("/cutoff", routes.PutCutoffOverride)
+			needToLoadSettings.PUT("/database", routes.MigrateDatabase)
+			needToLoadSettings.PUT("/k_knn", routes.PutKnnK)
+			needToLoadSettings.PUT("/minrss", routes.PutMinRss)
+			needToLoadSettings.GET("/lastfingerprint", routes.GetLastFingerprint)
+			needToLoadSettings.GET("/reformdb", routes.ReformDB)
+			needToLoadSettings.GET("/macfilterform/:group", routes.Macfilterform)
+			needToLoadSettings.POST("/setfiltermacs", routes.Setfiltermacs)
+			needToLoadSettings.GET("/getfiltermacs", routes.Getfiltermacs)
+		}
+
 	}
 
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", algorithms.LearnFingerprintPOST)
 	r.POST("/bulklearn", algorithms.BulkLearnFingerprintPOST)
-	r.POST("/track", algorithms.TrackFingerprintPOST)
+	//r.POST("/track", algorithms.TrackFingerprintPOST)
 
+	needToLoadSettings := r.Group("/",routes.PreLoadSettings)
+	{
+		needToLoadSettings.POST("/track", algorithms.TrackFingerprintPOST)
+	}
 	// Authentication
 	auth := r.Group("/")
 	{

@@ -638,7 +638,7 @@ func GetParameters(group string, ps *parameters.FullParameters, fingerprintsInMe
 		//log.Fatal(err)
 		glb.Error.Println(err)
 	}
-	glb.Error.Println("d")
+	//glb.Error.Println("d")
 	ps.NetworkMacs = make(map[string]map[string]bool)
 	ps.NetworkLocs = make(map[string]map[string]bool)
 	ps.UniqueMacs = []string{}
@@ -647,11 +647,12 @@ func GetParameters(group string, ps *parameters.FullParameters, fingerprintsInMe
 	ps.MacCountByLoc = make(map[string]map[string]int)
 	ps.Loaded = true
 	//opening the db
-	//db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-	//if err != nil {
+	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	//defer db.Close()
+	// if err != nil {
 	//	log.Fatal(err)
 	//}
-	//defer db.Close()
+
 
 	macs := []string{}
 

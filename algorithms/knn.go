@@ -148,15 +148,17 @@ func TrackKnn(jsonFingerprint parameters.Fingerprint) (error, string) {
 	}
 
 
-	glb.Debug.Println(len(fingerprintsOrdering))
-	glb.Debug.Println(len(mainFingerprintsOrdering))
+	//glb.Debug.Println(len(fingerprintsOrdering))
+	//glb.Debug.Println(len(mainFingerprintsOrdering))
 
 	// Get k from db
-	knnK, err := dbm.GetKnnKOverride(jsonFingerprint.Group)
-	if err != nil {
-		knnK = glb.DefaultKnnK
-		glb.Error.Println("Nums of AP must be greater than 3")
-	}
+	//knnK, err := dbm.GetKnnKOverride(jsonFingerprint.Group)
+	//if err != nil {
+	//	knnK = glb.DefaultKnnK
+	//	glb.Error.Println("Nums of AP must be greater than 3")
+	//}
+
+	knnK := dbm.GetSharedPrf(jsonFingerprint.Group).KnnK
 
 	// calculating knn
 	W := make(map[string]float64)

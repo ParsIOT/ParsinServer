@@ -15,7 +15,7 @@ func BenchmarkCalculatePosteriors1(b *testing.B) {
 	json.Unmarshal([]byte(jsonTest), &res)
 	var err error
 	//var ps parameters.FullParameters
-	//db, err := bolt.Open(path.Join("data", "testdb.db"), 0600, nil)
+	//db, err := boltOpen(path.Join("data", "testdb.db"), 0600, nil)
 	//if err != nil {
 	//	glb.Error.Println(err)
 	//}

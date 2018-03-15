@@ -109,7 +109,7 @@ func StringInSlice(s string, strings []string) bool {
 // timeTrack can be defered to provide function timing.
 func TimeTrack(start time.Time, name string) {
 	elapsed := time.Since(start)
-	Debug.Println(name, " took ", elapsed)
+	Debug.Println(name, "took", elapsed)
 }
 
 // getMD5Hash returns a md5 hash of string.
@@ -329,6 +329,7 @@ func SortDictByVal(W map[string]float64) []string {
 
 func StringMap2String(stringMap map[string]string) string{
 	res := ""
+
 	for k,v := range stringMap{
 		res += k+": "+v+" "
 	}
@@ -358,4 +359,144 @@ func BindWith(obj interface{}, b binding.Binding, c *gin.Context) error {
 		return err
 	}
 	return nil
+}
+
+func SliceLike(obj1 []interface{},obj2 []interface{}) bool {
+	listEqual1 := true
+	listEqual2 := true
+
+	itemFound1 := false
+	for _,item1 := range obj1{
+		for _,item2 := range obj2{
+			if (item1 == item2){
+				itemFound1 = true
+				break
+			}
+		}
+		if (!itemFound1){
+			listEqual1 = false
+			break
+		}
+		itemFound1 = false
+	}
+
+	itemFound2 := false
+	for _,item1 := range obj1{
+		for _,item2 := range obj2{
+			if (item1 == item2){
+				itemFound2 = true
+				break
+			}
+		}
+		if (!itemFound2){
+			listEqual2 = false
+			break
+		}
+		itemFound2 = false
+	}
+
+	if (listEqual1 && listEqual2){
+		return true
+	}else{
+		return false
+	}
+}
+
+func MapLike(obj1in interface{},obj2in  interface{}) bool {
+	listEqual1 := true
+	listEqual2 := true
+
+	switch obj1in.(type) {
+	case map[string]int:
+		obj1 := obj1in.(map[string]int)
+		obj2 := obj2in.(map[string]int)
+
+		itemFound1 := false
+		for key1,val1 := range obj1{
+			for key2,val2 := range obj2{
+				if (key1 == key2 ){
+					if (val1 == val2){
+						itemFound1 = true
+						break
+					}
+				}
+			}
+			if (!itemFound1){
+				listEqual1= false
+				break
+			}
+			itemFound1 = false
+		}
+
+		itemFound2 := false
+		for key1,val1 := range obj1{
+			for key2,val2 := range obj2{
+				if (key1 == key2 ){
+					if (val1 == val2){
+						itemFound2 = true
+						break
+					}
+				}
+			}
+			if (!itemFound2){
+				listEqual2 = false
+				break
+			}
+			itemFound2 = false
+		}
+
+		if (listEqual1 && listEqual2){
+			return true
+		}else{
+			return false
+		}
+	case map[string]float64:
+		obj1 := obj1in.(map[string]float64)
+		obj2 := obj2in.(map[string]float64)
+
+		itemFound1 := false
+		for key1,val1 := range obj1{
+			for key2,val2 := range obj2{
+				if (key1 == key2 ){
+					if (val1 == val2){
+						itemFound1 = true
+						break
+					}
+				}
+			}
+			if (!itemFound1){
+				listEqual1= false
+				break
+			}
+			itemFound1 = false
+		}
+
+		itemFound2 := false
+		for key1,val1 := range obj1{
+			for key2,val2 := range obj2{
+				if (key1 == key2 ){
+					if (val1 == val2){
+						itemFound2 = true
+						break
+					}
+				}
+			}
+			if (!itemFound2){
+				listEqual2 = false
+				break
+			}
+			itemFound2 = false
+		}
+
+		if (listEqual1 && listEqual2){
+			return true
+		}else{
+			return false
+		}
+	default:
+	}
+
+	return false
+
+
 }

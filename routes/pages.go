@@ -108,6 +108,7 @@ func SlashDashboard(c *gin.Context) {
 	// if len(skipUsers) > 0 {
 	// 	skipAllUsers = true
 	// }
+
 	filterUser := c.DefaultQuery("user", "")
 	filterUsers := c.DefaultQuery("users", "")
 	filterUserMap := make(map[string]bool)
@@ -128,6 +129,7 @@ func SlashDashboard(c *gin.Context) {
 		})
 		return
 	}
+
 	ps, _ := dbm.OpenParameters(group)
 	var users []string
 	for user := range filterUserMap {
@@ -141,6 +143,9 @@ func SlashDashboard(c *gin.Context) {
 			people[user] = GetCurrentPositionOfUser(group, user)
 		}
 	}
+	glb.Debug.Println("3333333333")
+
+
 	type DashboardData struct {
 		Networks         []string
 		Locations        map[string][]string
@@ -166,6 +171,7 @@ func SlashDashboard(c *gin.Context) {
 		for loc := range ps.NetworkLocs[n] {
 			dash.Locations[n] = append(dash.Locations[n], loc)
 			dash.LocationAccuracy[loc] = ps.Results[n].Accuracy[loc]
+			//glb.Debug.Println(ps.Results[n].TotalLocations[loc])
 			dash.LocationCount[loc] = ps.Results[n].TotalLocations[loc]
 		}
 	}

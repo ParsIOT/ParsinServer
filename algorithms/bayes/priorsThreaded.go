@@ -65,12 +65,12 @@ func OptimizePriorsThreaded(group string) error {
 	var fingerprintsOrderingMain []string
 	var err error
 	//opening the db
-	//db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-	//if err != nil {
+	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	//defer db.Close()
+	// if err != nil {
 	//	log.Fatal(err)
 	//	return err
 	//}
-	//defer db.Close()
 
 	fingerprintsOrderingMain,fingerprintsInMemoryMain,err = dbm.GetLearnFingerPrints(group,true)
 	if err != nil {
@@ -129,9 +129,17 @@ func OptimizePriorsThreaded(group string) error {
 		ps.Results[n] = results //Results is shared between all networks
 	}
 
+	//glb.Debug.Println("########################################")
+	//glb.Debug.Println(group)
+	//glb.Debug.Println(len(fingerprintsInMemoryMain))
+	//glb.Debug.Println(len(fingerprintsInMemoryCross))
+	//glb.Debug.Println(len(fingerprintsInMemory))
+	//glb.Debug.Println("########################################")
+
 	// Mixin is ration of pbayes1(proximity to AP) to pbayes2(normal bayesian classifier result)
 	mixins := []float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9}
-	mixinOverride, _ := dbm.GetMixinOverride(group)
+	//mixinOverride, _ := dbm.GetMixinOverride(group)
+	mixinOverride := dbm.GetSharedPrf(group).Mixin
 	if mixinOverride >= 0 && mixinOverride <= 1 {
 		mixins = []float64{mixinOverride}
 	}
@@ -139,7 +147,8 @@ func OptimizePriorsThreaded(group string) error {
 	// cutoffs is a number which is compared with the standard deviation of a specific AP in all locations(MacVariability)
 	// if macVariability is lower than cutoff it is ignored in PBayes2 calculation.
 	cutoffs := []float64{0.005, 0.05, 0.1}
-	cutoffOverride, _ := dbm.GetCutoffOverride(group)
+	//cutoffOverride, _ := dbm.GetCutoffOverride(group)
+	cutoffOverride := dbm.GetSharedPrf(group).Cutoff
 	if cutoffOverride >= 0 && cutoffOverride <= 1 {
 		cutoffs = []float64{cutoffOverride}
 	}

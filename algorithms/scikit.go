@@ -35,7 +35,8 @@ func ScikitLearn(group string) string {
 	//		panic(err)
 	//	}
 	//}
-	glb.RuntimeArgs.NeedToFilter[group] = true
+	//glb.RuntimeArgs.NeedToFilter[group] = true
+	dbm.SetRuntimePrf(group,"NeedToFilter",true)
 
 	// Check existence of the group
 	exist := dbm.GroupExists(group)

@@ -106,11 +106,11 @@ func CalculateSVM(group string) error {
 	var err error
 	//opening the database
 
-	//db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0755, nil)
-	//if err != nil {
+	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0755, nil)
+	//defer db.Close()
+	// if err != nil {
 	//	panic(err)
 	//}
-	//defer db.Close()
 	//
 	//svmData := ""
 	//err = db.View(func(tx *bolt.Tx) error {
@@ -263,11 +263,11 @@ func SvmClassify(jsonFingerprint parameters.Fingerprint) (string, map[string]flo
 	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, strings.ToLower(jsonFingerprint.Group)+".model")); os.IsNotExist(err) {
 		return "", make(map[string]float64)
 	}
-	//db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, jsonFingerprint.Group+".db"), 0755, nil)
-	//if err != nil {
+	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, jsonFingerprint.Group+".db"), 0755, nil)
+	//defer db.Close()
+	// if err != nil {
 	//	panic(err)
 	//}
-	//defer db.Close()
 
 	var locations map[string]int
 	var macs map[string]int

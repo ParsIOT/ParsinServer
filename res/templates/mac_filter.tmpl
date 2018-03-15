@@ -143,7 +143,7 @@
             function () {
                 $.ajax({
                     type: 'POST',
-                    url: "/setfiltermacs",
+                    url: "/setfiltermacs?group={{ .Group }}",
                     data: JSON.stringify({
                         "group": "{{.Group}}",
                         "macs": JSON.parse($("#macList").val())

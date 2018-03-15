@@ -38,7 +38,7 @@ func BenchmarkResetCache(b *testing.B) {
 // BenchmarkCache needs to have precomputed parameters for testdb (run Optimize after loading testdb.sh)
 func BenchmarkGetPSCache(b *testing.B) {
 	var err error
-	//db, err := bolt.Open(path.Join("data", "testdb.db"), 0600, nil)
+	//db, err := boltOpen(path.Join("data", "testdb.db"), 0600, nil)
 	//if err != nil {
 	//	glb.Error.Println(err)
 	//}
@@ -78,7 +78,7 @@ func BenchmarkGetPSCache(b *testing.B) {
 func BenchmarkSetPSCache(b *testing.B) {
 	var err error
 	//var ps parameters.FullParameters
-	//db, err := bolt.Open(path.Join("data", "testdb.db"), 0600, nil)
+	//db, err := boltOpen(path.Join("data", "testdb.db"), 0600, nil)
 	//if err != nil {
 	//	Error.Println(err)
 	//}

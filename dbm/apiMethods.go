@@ -10,19 +10,20 @@ import (
 	"ParsinServer/glb"
 	"ParsinServer/algorithms/parameters"
 	"encoding/json"
+	"errors"
 )
 
 func TrackFingerprintsEmptyPosition(group string)(map[string]glb.UserPositionJSON,map[string]parameters.Fingerprint,error){
 	userPositions := make(map[string]glb.UserPositionJSON)
 	userFingerprints := make(map[string]parameters.Fingerprint)
 
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 		return userPositions,userFingerprints,err
 	}
 
-	defer db.Close()
 	numUsersFound := 0
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
@@ -59,12 +60,12 @@ func TrackFingeprintEmptyPosition(user string, group string)(glb.UserPositionJSO
 	var userJSON glb.UserPositionJSON
 	var userFingerprint parameters.Fingerprint
 
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 		return userJSON,userFingerprint,err
 	}
-	defer db.Close()
 
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
@@ -103,12 +104,12 @@ func TrackFingeprintEmptyPosition(user string, group string)(glb.UserPositionJSO
 func TrackFingerprints(user string,n int, group string) ([]parameters.Fingerprint,error){
 	var fingerprints []parameters.Fingerprint
 
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 		return fingerprints,err
 	}
-	defer db.Close()
 
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
@@ -150,12 +151,10 @@ func LastFingerprint(group string, user string) string {
 	user = strings.ToLower(user)
 	sentAs := ""
 
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
-
 	var tempFp parameters.Fingerprint
 
 	err = db.View(func(tx *bolt.Tx) error {
@@ -179,12 +178,11 @@ func LastFingerprint(group string, user string) string {
 		}
 		return fmt.Errorf("User " + user + " not found")
 	})
-
+	db.Close()
 	_,fingerprintsInMemory,err := GetLearnFingerPrints(group,true)
 	if err != nil {
 		return ""
 	}
-
 	for fpTime,fp := range fingerprintsInMemory{
 		timestampString := fpTime
 		timestampUnixNano, _ := strconv.ParseInt(timestampString, 10, 64)
@@ -206,13 +204,13 @@ func LastFingerprint(group string, user string) string {
 }
 
 func MigrateDatabaseDB(fromDB string,toDB string){
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, fromDB+".db"), 0664, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, fromDB+".db"), 0664, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
 
-	db2, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, toDB+".db"), 0664, nil)
+	db2, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, toDB+".db"), 0664, nil)
 	if err != nil {
 		glb.Error.Println(err)
 	}
@@ -271,11 +269,11 @@ func EditNameDB(location string, newname string, group string) int{
 	}
 	//glb.Debug.Println(fingerprintInMemory)
 
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
 	db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
 		if err != nil {
@@ -342,11 +340,12 @@ func EditMacDB(oldmac string, newmac string, group string) int{
 		}
 	}
 
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
+
 	db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
 		if err != nil {
@@ -414,11 +413,11 @@ func EditUserNameDB(user string, newname string, group string) int{
 	}
 
 
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
 	db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
 		if err != nil {
@@ -471,82 +470,96 @@ func EditUserNameDB(user string, newname string, group string) int{
 func DeleteLocationDB(location string,group string)int {
 	numChanges := 0
 
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
 
-	db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("fingerprints"))
-		if b != nil {
-			c := b.Cursor()
-			for k, v := c.Last(); k != nil; k, v = c.Prev() {
-				v2 := LoadFingerprint(v, false)
-				if v2.Location == location {
-					b.Delete(k)
-					numChanges++
-				}
+		if b == nil {
+			return errors.New("fingerprints dont exist")
+		}
+		c := b.Cursor()
+		for k, v := c.Last(); k != nil; k, v = c.Prev() {
+			v2 := LoadFingerprint(v, false)
+			if v2.Location == location {
+				b.Delete(k)
+				numChanges++
 			}
 		}
 		return nil
 	})
 
+	if err != nil{
+		glb.Error.Println(err)
+	}
 	return numChanges
 }
 
 
 func DeleteLocationsDB(locations []string,group string) int{
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
 	numChanges := 0
-	db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("fingerprints"))
-		if b != nil {
-			c := b.Cursor()
-			for k, v := c.Last(); k != nil; k, v = c.Prev() {
-				v2 := LoadFingerprint(v, false)
-				for _, location := range locations {
-					if v2.Location == location {
-						b.Delete(k)
-						numChanges++
-						break
-					}
+		if b == nil {
+			return errors.New("fingerprints dont exist")
+		}
+		c := b.Cursor()
+		for k, v := c.Last(); k != nil; k, v = c.Prev() {
+			v2 := LoadFingerprint(v, false)
+			for _, location := range locations {
+				if v2.Location == location {
+					b.Delete(k)
+					numChanges++
+					break
 				}
 			}
 		}
+
 		return nil
 	})
 
+	if err != nil{
+		glb.Error.Println(err)
+	}
 	return numChanges
 }
 
 func DeleteUser(user string, group string)int{
 	numChanges := 0
 
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
-	db.Update(func(tx *bolt.Tx) error {
+	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("fingerprints-track"))
-		if b != nil {
-			c := b.Cursor()
-			for k, v := c.Last(); k != nil; k, v = c.Prev() {
-				v2 := LoadFingerprint(v, false)
-				if v2.Username == user {
-					b.Delete(k)
-					numChanges++
-				}
+		if b == nil {
+			return errors.New("fingerprints-track dont exist")
+		}
+
+		c := b.Cursor()
+		for k, v := c.Last(); k != nil; k, v = c.Prev() {
+			v2 := LoadFingerprint(v, false)
+			if v2.Username == user {
+				b.Delete(k)
+				numChanges++
 			}
 		}
 		return nil
-	})
 
+	})
+	if err != nil{
+		glb.Error.Println(err)
+	}
 	return numChanges
 
 }
@@ -566,11 +579,11 @@ func ReformDBDB(group string)int{
 		toUpdate[fpTime] = string(parameters.DumpFingerprint(tempFp))
 	}
 
-	db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	defer db.Close()
 
 	db.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))

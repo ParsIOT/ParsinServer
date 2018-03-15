@@ -10,13 +10,16 @@ import (
 
 var SessionManager SimpleAuth.Manager
 
+// There are 3 type of global var :
+//	1.Constants: in globalVar.go and algoVar.go in glb package
+//  2.Share variables(in db or runtime): in cache.go
+//  3.Runtime arguments: in RuntimeArgs struct in globalVar.go
 
 // RuntimeArgs contains all runtime
 // arguments available
-// Todo: May be shared value, so must use lock to edit it.
+// Todo: Just add runtime variable here. Add shared variable in cache.go. Add constant in another fields and in algoVar.go
 var RuntimeArgs struct {
-	ScikitPort            string
-					  //FilterMacFile     string
+	ScikitPort        string
 	ExternalIP        string
 	Port              string
 	ServerCRT         string
@@ -33,10 +36,10 @@ var RuntimeArgs struct {
 	Mqtt              bool
 	MqttExisting      bool
 	Svm               bool
-	Scikit	          bool
-	NeedToFilter      map[string]bool //check needing for filtering
-	NotNullFilterMap  map[string]bool //check that filterMap is null(used to avoid filter fingerprint with null map)
-	FilterMacsMap     map[string][]string
+	Scikit            bool
+	//NeedToFilter      map[string]bool //check needing for filtering
+	//NotNullFilterList map[string]bool //check that filterMap is null(used to avoid filter fingerprint with null map)
+	//FilterMacsMap     map[string][]string
 	AdminAdd          string
 	GaussianDist      bool
 	MinRssOpt         int
@@ -74,4 +77,9 @@ func init(){
 	RuntimeArgs.SourcePath = path.Join(RuntimeArgs.Cwd, "data")
 	//RuntimeArgs.SourcePath
 	RuntimeArgs.Message = ""
+	//RuntimeArgs.FilterMacsMap = make(map[string][]string)
+	//RuntimeArgs.NeedToFilter = make(map[string]bool)
+	//RuntimeArgs.NotNullFilterList = make(map[string]bool)
 }
+
+

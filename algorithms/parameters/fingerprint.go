@@ -71,22 +71,22 @@ func LoadRawFingerprint(jsonByte []byte) Fingerprint {
 }
 
 
-// convert quality (0 to 100) to rss(-100 to -50) and delete the records that their mac are "00:00:00:00:00"
+// delete the records that their mac are "00:00:00:00:00"
 func CleanFingerprint(res *Fingerprint) {
 	res.Group = strings.TrimSpace(strings.ToLower(res.Group))
 	res.Location = strings.TrimSpace(strings.ToLower(res.Location))
 	res.Username = strings.TrimSpace(strings.ToLower(res.Username))
-	deleteIndex := -1
+	var deleteIndexwes []int
 	for r := range res.WifiFingerprint {
-		if res.WifiFingerprint[r].Rssi >= 0 { // https://stackoverflow.com/questions/15797920/how-to-convert-wifi-signal-strength-from-quality-percent-to-rssi-dbm
-			res.WifiFingerprint[r].Rssi = int(res.WifiFingerprint[r].Rssi/2) - 100
-		}
+		//if res.WifiFingerprint[r].Rssi >= 0 { // https://stackoverflow.com/questions/15797920/how-to-convert-wifi-signal-strength-from-quality-percent-to-rssi-dbm
+		//	res.WifiFingerprint[r].Rssi = int(res.WifiFingerprint[r].Rssi/2) - 100
+		//}
 		if res.WifiFingerprint[r].Mac == "00:00:00:00:00:00" {
-			deleteIndex = r
+			deleteIndexwes = append(deleteIndexwes,r)
 		}
 	}
 	// delete res.WifiFingerprint[deleteIndex]
-	if deleteIndex > -1 {
+	for _,deleteIndex := range deleteIndexwes{
 		res.WifiFingerprint[deleteIndex] = res.WifiFingerprint[len(res.WifiFingerprint)-1]
 		res.WifiFingerprint = res.WifiFingerprint[:len(res.WifiFingerprint)-1]
 	}

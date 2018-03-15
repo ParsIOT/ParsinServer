@@ -86,10 +86,11 @@ func BulkLearnFingerprintPOST(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	var bulkJsonFingerprint parameters.BulkFingerprint
-
 	var returnMessage string
 	var returnSuccess string
 	if glb.BindJSON(&bulkJsonFingerprint, c) == nil {
+		glb.Debug.Println("@@@@@@@@@@@  BulkFingerPrints:")
+		glb.Debug.Println(bulkJsonFingerprint)
 		for i, jsonFingerprint := range bulkJsonFingerprint.Fingerprints {
 			message, success := LearnFingerprint(jsonFingerprint)
 			glb.Debug.Println(i, " th fingerprint saving process: ", message)

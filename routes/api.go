@@ -29,6 +29,39 @@ func init() {
 	startTime = time.Now()
 }
 
+
+func PreLoadSettingsDecorator(routeFunc func(c *gin.Context)) func(c *gin.Context){
+	return func(c *gin.Context){
+		group := c.DefaultQuery("group", "noneasdf")
+		if group != "noneasdf" {
+			dbm.GetSharedPrf(group)
+		}
+		routeFunc(c)
+	}
+}
+
+func PreLoadSettings(c *gin.Context){
+	glb.Debug.Println("PreloadSettings")
+	group1 := c.Param("group")
+	group2 := c.DefaultQuery("group", "noneasdf")
+	//glb.Debug.Println(c)
+	if len(group1)!=0 {
+		//glb.Debug.Println(group1)
+		//glb.Debug.Println(dbm.GetSharedPrf(group1))
+		dbm.GetSharedPrf(group1)
+	}else if group2 != "noneasdf"{
+		//glb.Debug.Println(group2)
+		//glb.Debug.Println(dbm.GetSharedPrf(group2))
+		dbm.GetSharedPrf(group2)
+	}else{
+		glb.Error.Println("Group name not mentioned in url")
+		c.JSON(http.StatusOK, gin.H{
+			"message":   fmt.Sprintf("group name must be mentioned in url(e.g.: /groupName (url param) or ?group=groupName (GET param))"),
+			"success":   false})
+	}
+	// Todo: add real "noneasdf" state
+}
+
 //returns uptime, starttime, number of cpu cores
 func GetStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"uptime": time.Since(startTime).Seconds(), "registered": startTime.String(), "status": "standard", "num_cores": runtime.NumCPU(), "success": true})
@@ -114,6 +147,7 @@ func GetLastFingerprint(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "You need to specify user", "success": false})
 			return
 		}
+		glb.Debug.Println(group)
 		c.String(http.StatusOK, dbm.LastFingerprint(group, user))
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "You need to specify group", "success": false})
@@ -362,7 +396,8 @@ func PutMixinOverride(c *gin.Context) {
 	if group != "noneasdf" {
 		newMixinFloat, err := strconv.ParseFloat(newMixin, 64)
 		if err == nil {
-			err2 := dbm.SetMixinOverride(group, newMixinFloat)
+			//err2 := dbm.SetMixinOverride(group, newMixinFloat)
+			err2 := dbm.SetSharedPrf(group,"Mixin", newMixinFloat)
 			if err2 == nil {
 				bayes.OptimizePriorsThreaded(strings.ToLower(group))
 				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding mixin for " + group + ", now set to " + newMixin})
@@ -394,7 +429,7 @@ func PutCutoffOverride(c *gin.Context) {
 	if group != "noneasdf" {
 		newCutoffFloat, err := strconv.ParseFloat(newCutoff, 64)
 		if err == nil {
-			err2 := dbm.SetCutoffOverride(group, newCutoffFloat)
+			err2 := dbm.SetSharedPrf(group, "Cutoff", newCutoffFloat)
 			if err2 == nil {
 				bayes.OptimizePriorsThreaded(strings.ToLower(group))
 				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding cutoff for " + group + ", now set to " + newCutoff})
@@ -426,7 +461,7 @@ func PutKnnK(c *gin.Context) {
 	if group != "noneasdf" {
 		newKnnK, err := strconv.Atoi(newK)
 		if err == nil {
-			err2 := dbm.SetKnnK(group, newKnnK)
+			err2 := dbm.SetSharedPrf(group,"KnnK", newKnnK)
 			if err2 == nil {
 				//optimizePriorsThreaded(strings.ToLower(group))
 				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K for " + group + ", now set to " + newK})
@@ -452,16 +487,16 @@ func PutMinRss(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
-	newK := c.DefaultQuery("minRss", "none")
+	minRss := c.DefaultQuery("minRss", "none")
 	glb.Debug.Println(group)
-	glb.Debug.Println(newK)
+	glb.Debug.Println(minRss)
 	if group != "noneasdf" {
-		newMinRss, err := strconv.Atoi(newK)
+		newMinRss, err := strconv.Atoi(minRss)
 		if err == nil {
-			err2 := dbm.SetMinRSS(group, newMinRss)
+			err2 := dbm.SetSharedPrf(group, "MinRss",newMinRss)
 			if err2 == nil {
 				//optimizePriorsThreaded(strings.ToLower(group))
-				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding Minimum RSS for " + group + ", now set to " + newK})
+				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding Minimum RSS for " + group + ", now set to " + minRss})
 			} else {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": err2.Error()})
 			}
@@ -654,19 +689,25 @@ func Setfiltermacs(c *gin.Context) {
 	//Warning.Println("%s", string(x))
 
 	if glb.BindJSON(&filterMacs, c) == nil {
-
 		if len(filterMacs.Macs) == 0 {
-			glb.RuntimeArgs.NeedToFilter[filterMacs.Group] = false
-			glb.RuntimeArgs.NotNullFilterMap[filterMacs.Group] = false
+			//glb.RuntimeArgs.NeedToFilter[filterMacs.Group] = false
+			//glb.RuntimeArgs.NotNullFilterList[filterMacs.Group] = false
+			dbm.SetRuntimePrf(filterMacs.Group,"NeedToFilter",false)
+			dbm.SetRuntimePrf(filterMacs.Group,"NotNullFilterList",false)
 		} else {
-			glb.RuntimeArgs.NeedToFilter[filterMacs.Group] = true
-			glb.RuntimeArgs.NotNullFilterMap[filterMacs.Group] = true
+			//glb.RuntimeArgs.NeedToFilter[filterMacs.Group] = true
+			//glb.RuntimeArgs.NotNullFilterList[filterMacs.Group] = true
+			dbm.SetRuntimePrf(filterMacs.Group,"NeedToFilter",true)
+			dbm.SetRuntimePrf(filterMacs.Group,"NotNullFilterList",true)
 		}
+
 
 		err := dbm.SetFilterMacDB(filterMacs.Group, filterMacs.Macs)
 		if err == nil {
-			glb.RuntimeArgs.FilterMacsMap[filterMacs.Group] = filterMacs.Macs
-			glb.Warning.Println("MacFilter set successfully ")
+			//glb.RuntimeArgs.FilterMacsMap[filterMacs.Group] = filterMacs.Macs
+			dbm.SetSharedPrf(filterMacs.Group,"FilterMacsMap",filterMacs.Macs)
+
+			glb.Debug.Println("MacFilter set successfully ")
 			if len(filterMacs.Macs) == 0 {
 				c.JSON(http.StatusOK, gin.H{"message": "MacFilter Cleared.", "success": true})
 			} else {
@@ -698,13 +739,15 @@ func Getfiltermacs(c *gin.Context) {
 	var err error
 	var FilterMacs []string
 	if group != "noneasdf" {
-		err, FilterMacs = dbm.GetFilterMacDB(group)
+		//err, FilterMacs = dbm.GetFilterMacDB(group)
+		//glb.Debug.Println("filterMacs")
+		FilterMacs = dbm.GetSharedPrf(group).FilterMacsMap
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "group field is null", "success": false})
 	}
 
 	if err == nil {
-		glb.Warning.Println("FilterMacs: ", FilterMacs)
+		glb.Debug.Println("FilterMacs: ", FilterMacs)
 		c.JSON(http.StatusOK, gin.H{"message": FilterMacs, "success": true})
 	} else {
 		glb.Warning.Println(err)
@@ -727,7 +770,7 @@ func ReformDB(c *gin.Context) {
 
 	if group != "noneasdf" {
 		numChanges := dbm.ReformDBDB(group)
-		glb.Warning.Println("DB reformed successfully")
+		glb.Debug.Println("DB reformed successfully")
 		c.JSON(http.StatusOK, gin.H{"message": "Changed name of " + strconv.Itoa(numChanges) + " things", "success": true})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
