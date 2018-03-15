@@ -351,33 +351,33 @@ func GetMacCountByLoc(group string) (macCountByLoc map[string]map[string]int) {
 //}
 
 // Set macs that to be filtered
-func SetFilterMacDB(group string, FilterMacs []string) error {
-	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-	defer db.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	glb.Debug.Println(FilterMacs)
-	// Create filtermacs bucket if doesn't exist & set filtermacs
-	err = db.Update(func(tx *bolt.Tx) error {
-		bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
-
-		if err2 != nil {
-			return fmt.Errorf("create bucket: %s", err2)
-		}
-		//Warning.Println(FilterMacs)
-		marshalledFilterMacList, _ := json.Marshal(FilterMacs)
-		err2 = bucket.Put([]byte("filterMacList"), marshalledFilterMacList)
-		//Warning.Println("bucket creation problem :",err2)
-		if err2 != nil {
-			return fmt.Errorf("could add to bucket: %s", err2)
-		}
-		//Warning.Println("setFilterMacDB successfully")
-		return err2
-	})
-
-	return err
-}
+//func SetFilterMacDB(group string, FilterMacs []string) error {
+//	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+//	defer db.Close()
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	glb.Debug.Println(FilterMacs)
+//	// Create filtermacs bucket if doesn't exist & set filtermacs
+//	err = db.Update(func(tx *bolt.Tx) error {
+//		bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
+//
+//		if err2 != nil {
+//			return fmt.Errorf("create bucket: %s", err2)
+//		}
+//		//Warning.Println(FilterMacs)
+//		marshalledFilterMacList, _ := json.Marshal(FilterMacs)
+//		err2 = bucket.Put([]byte("filterMacList"), marshalledFilterMacList)
+//		//Warning.Println("bucket creation problem :",err2)
+//		if err2 != nil {
+//			return fmt.Errorf("could add to bucket: %s", err2)
+//		}
+//		//Warning.Println("setFilterMacDB successfully")
+//		return err2
+//	})
+//
+//	return err
+//}
 
 // Get macs that to be filtered
 //func GetFilterMacDB(group string) (error, []string) {

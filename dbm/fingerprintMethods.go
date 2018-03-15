@@ -97,16 +97,17 @@ func FilterFingerprint(res *parameters.Fingerprint) {
 func LoadFingerprint(jsonByte []byte, doFilter bool) parameters.Fingerprint{
 	var fp parameters.Fingerprint
 	fp = parameters.LoadRawFingerprint(jsonByte)
-	t1 := len(fp.WifiFingerprint)
+	//t1 := len(fp.WifiFingerprint)
 	if(doFilter){
 		FilterFingerprint(&fp)
 	}
-	t2 := len(fp.WifiFingerprint)
-	if(t1 != t2 ){
-		glb.Error.Println("Filtered #############")
-	}else{
-		glb.Debug.Println("worked")
-	}
+	//t2 := len(fp.WifiFingerprint)
+	//if(t1 != t2 ){
+	//	glb.Error.Println("Filtered #############")
+	//}else{
+	//	glb.Debug.Println("worked")
+	//}
+
 	//glb.Debug.Println(res)
 	return fp
 }

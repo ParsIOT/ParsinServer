@@ -143,7 +143,7 @@ func SlashDashboard(c *gin.Context) {
 			people[user] = GetCurrentPositionOfUser(group, user)
 		}
 	}
-	glb.Debug.Println("3333333333")
+	//glb.Debug.Println("3333333333")
 
 
 	type DashboardData struct {

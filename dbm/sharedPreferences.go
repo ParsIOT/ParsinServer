@@ -136,7 +136,7 @@ func GetSharedPrf(group string) RawSharedPreferences{
 		RuntimeSharedPreferencesCache.Lock()
 		RuntimeSharedPreferencesCache.isChangedShrPrf[group] = true
 		RuntimeSharedPreferencesCache.Unlock()
-		return SavedSharedPreferencesCache.dbFields[group]
+		return tempSharedPreferences
 	}
 }
 
