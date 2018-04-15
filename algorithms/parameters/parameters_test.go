@@ -73,33 +73,33 @@ func init() {
 }
 
 // It's using bolt to check LoadParameters
-func BenchmarkLoadParameters(b *testing.B) {
-	testdb := gettestdbName()
-	defer freedb(testdb)
-
-	var ps FullParameters = *NewFullParameters()
-	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, testdb+".db"), 0600, nil)
-	defer db.Close()
-	if err != nil {
-		glb.Error.Println(err)
-	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		err = db.View(func(tx *bolt.Tx) error {
-			// Assume bucket exists and has keys
-			b := tx.Bucket([]byte("resources"))
-			if b == nil {
-				glb.Error.Println("Resources dont exist")
-				return fmt.Errorf("")
-			}
-			v := b.Get([]byte("fullParameters"))
-			ps = LoadParameters(v)
-			return nil
-		})
-		if err != nil {
-			glb.Error.Println(err)
-		}
-
-	}
-}
+//func BenchmarkLoadParameters(b *testing.B) {
+//	testdb := gettestdbName()
+//	defer freedb(testdb)
+//
+//	var ps FullParameters = *NewFullParameters()
+//	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, testdb+".db"), 0600, nil)
+//	defer db.Close()
+//	if err != nil {
+//		glb.Error.Println(err)
+//	}
+//	b.ResetTimer()
+//	for i := 0; i < b.N; i++ {
+//		err = db.View(func(tx *bolt.Tx) error {
+//			// Assume bucket exists and has keys
+//			b := tx.Bucket([]byte("resources"))
+//			if b == nil {
+//				glb.Error.Println("Resources dont exist")
+//				return fmt.Errorf("")
+//			}
+//			v := b.Get([]byte("fullParameters"))
+//			ps = LoadParameters(v)
+//			return nil
+//		})
+//		if err != nil {
+//			glb.Error.Println(err)
+//		}
+//
+//	}
+//}
 

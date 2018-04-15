@@ -110,14 +110,16 @@ func NewRuntimeSharedPreferences() RawRuntimeSharedPreferences{
 
 
 func GetSharedPrf(group string) RawSharedPreferences{
-	SavedSharedPreferencesCache.Lock()
+	//SavedSharedPreferencesCache.Lock()
+	SavedSharedPreferencesCache.RLock()
 	loaded := SavedSharedPreferencesCache.isLoad[group]
-	SavedSharedPreferencesCache.Unlock()
+	//SavedSharedPreferencesCache.Unlock()
+	SavedSharedPreferencesCache.RUnlock()
 
 	if loaded{ // the group was loaded
-		SavedSharedPreferencesCache.Lock()
+		SavedSharedPreferencesCache.RLock()
 		sharedPrf := SavedSharedPreferencesCache.dbFields[group]
-		SavedSharedPreferencesCache.Unlock()
+		SavedSharedPreferencesCache.RUnlock()
 		return sharedPrf
 	}else{ // load shared preferences
 
@@ -141,14 +143,14 @@ func GetSharedPrf(group string) RawSharedPreferences{
 }
 
 func SetSharedPrf(group string, prfName string, val interface{}) error {
-	SavedSharedPreferencesCache.Lock()
+	SavedSharedPreferencesCache.RLock()
 	loaded := SavedSharedPreferencesCache.isLoad[group]
-	SavedSharedPreferencesCache.Unlock()
+	SavedSharedPreferencesCache.RUnlock()
 
 	if loaded{
-		SavedSharedPreferencesCache.Lock()
+		SavedSharedPreferencesCache.RLock()
 		sharedPrf := SavedSharedPreferencesCache.dbFields[group]
-		SavedSharedPreferencesCache.Unlock()
+		SavedSharedPreferencesCache.RUnlock()
 		//sharedPrf[prfName] = val
 		sharedPrf.setPreference(prfName, val)
 		SavedSharedPreferencesCache.Lock()
@@ -200,19 +202,21 @@ func SetSharedPrf(group string, prfName string, val interface{}) error {
 
 // Set runtime preferences values
 func loadRuntimePreferences(group string) error {
-	SavedSharedPreferencesCache.Lock()
+	SavedSharedPreferencesCache.RLock()
 	shrPrf := SavedSharedPreferencesCache.dbFields[group]
-	SavedSharedPreferencesCache.Unlock()
+	SavedSharedPreferencesCache.RUnlock()
 
 	// Set NotNullFilterList and NeedToFilter
 	filterMacsList := shrPrf.FilterMacsMap
 	if(len(filterMacsList) != 0){
-		RuntimeSharedPreferencesCache.Lock()
+		RuntimeSharedPreferencesCache.RLock()
 		runtimePreferences := RuntimeSharedPreferencesCache.runtimeFields[group]
+		RuntimeSharedPreferencesCache.RUnlock()
 
 		runtimePreferences.NeedToFilter = true
 		runtimePreferences.NotNullFilterList = true
 
+		RuntimeSharedPreferencesCache.Lock()
 		RuntimeSharedPreferencesCache.runtimeFields[group] = runtimePreferences
 		RuntimeSharedPreferencesCache.Unlock()
 	}
@@ -220,46 +224,46 @@ func loadRuntimePreferences(group string) error {
 }
 
 func GetRuntimePrf(group string) RawRuntimeSharedPreferences{
-	SavedSharedPreferencesCache.Lock()
+	SavedSharedPreferencesCache.RLock()
 	loaded := SavedSharedPreferencesCache.isLoad[group]
-	SavedSharedPreferencesCache.Unlock()
-	RuntimeSharedPreferencesCache.Lock()
+	SavedSharedPreferencesCache.RUnlock()
+	if !loaded{
+		GetSharedPrf(group) //load SavedSharedPreferences
+	}
+
+	RuntimeSharedPreferencesCache.RLock()
 	changedShrPrf := RuntimeSharedPreferencesCache.isChangedShrPrf[group]
-	RuntimeSharedPreferencesCache.Unlock()
+	RuntimeSharedPreferencesCache.RUnlock()
 
-	if loaded{
-		if changedShrPrf {
-			err := loadRuntimePreferences(group)
-			if err != nil {
-				panic("Problem in loadRuntimePreferences")
-				// glb.Error.Println("Problem in loadRuntimePreferences")
-				return NewRuntimeSharedPreferences()
-			}
-			RuntimeSharedPreferencesCache.Lock()
-			RuntimeSharedPreferencesCache.isChangedShrPrf[group] = false
-			RuntimeSharedPreferencesCache.Unlock()
+	if changedShrPrf {
+		err := loadRuntimePreferences(group)
+		if err != nil {
+			panic("Problem in loadRuntimePreferences")
+			// glb.Error.Println("Problem in loadRuntimePreferences")
+			return NewRuntimeSharedPreferences()
 		}
-
 		RuntimeSharedPreferencesCache.Lock()
+		RuntimeSharedPreferencesCache.isChangedShrPrf[group] = false
 		runtimePreferences := RuntimeSharedPreferencesCache.runtimeFields[group]
 		RuntimeSharedPreferencesCache.Unlock()
 		return runtimePreferences
 	}else{
-		glb.Debug.Println("is not Loaded")
-		GetSharedPrf(group) //load SavedSharedPreferences
-		return RuntimeSharedPreferencesCache.runtimeFields[group]
+		RuntimeSharedPreferencesCache.RLock()
+		runtimePreferences := RuntimeSharedPreferencesCache.runtimeFields[group]
+		RuntimeSharedPreferencesCache.RUnlock()
+		return runtimePreferences
 	}
+
 }
 
-
 func SetRuntimePrf(group string, prfName string, val interface{}) error {
-	SavedSharedPreferencesCache.Lock()
+	SavedSharedPreferencesCache.RLock()
 	loaded := SavedSharedPreferencesCache.isLoad[group]
-	SavedSharedPreferencesCache.Unlock()
+	SavedSharedPreferencesCache.RUnlock()
 	if loaded{
-		RuntimeSharedPreferencesCache.Lock()
+		RuntimeSharedPreferencesCache.RLock()
 		runtimePrf := RuntimeSharedPreferencesCache.runtimeFields[group]
-		RuntimeSharedPreferencesCache.Unlock()
+		RuntimeSharedPreferencesCache.RUnlock()
 		//sharedPrf[prfName] = val
 		err := runtimePrf.setPreference(prfName,val)
 		if err != nil{
@@ -277,9 +281,9 @@ func SetRuntimePrf(group string, prfName string, val interface{}) error {
 		//	return errors.New("Problem to GetSharedPrf")
 		//}
 
-		RuntimeSharedPreferencesCache.Lock()
+		RuntimeSharedPreferencesCache.RLock()
 		runtimePrf := RuntimeSharedPreferencesCache.runtimeFields[group]
-		RuntimeSharedPreferencesCache.Unlock()
+		RuntimeSharedPreferencesCache.RUnlock()
 		//sharedPrf[prfName] = val
 		err := runtimePrf.setPreference(prfName,val)
 		if err != nil{

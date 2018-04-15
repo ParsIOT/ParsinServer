@@ -89,7 +89,7 @@ func BulkLearnFingerprintPOST(c *gin.Context) {
 	var returnMessage string
 	var returnSuccess string
 	if glb.BindJSON(&bulkJsonFingerprint, c) == nil {
-		glb.Debug.Println("@@@@@@@@@@@  BulkFingerPrints:")
+		glb.Debug.Println("BulkFingerPrints:")
 		glb.Debug.Println(bulkJsonFingerprint)
 		for i, jsonFingerprint := range bulkJsonFingerprint.Fingerprints {
 			message, success := LearnFingerprint(jsonFingerprint)
@@ -129,7 +129,7 @@ func LearnFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool) {
 // call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
 func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, string, map[string]float64, string, map[string]float64, string, map[string]string) {
 	// Classify with filter fingerprint
-	fullFingerprint := jsonFingerprint
+	//fullFingerprint := jsonFingerprint
 	dbm.FilterFingerprint(&jsonFingerprint)
 
 	bayesGuess := ""
@@ -168,7 +168,7 @@ func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, str
 		}
 	}
 	glb.Info.Println(jsonFingerprint)
-	bayesGuess, bayesData = bayes.CalculatePosterior(jsonFingerprint, *parameters.NewFullParameters())
+	//bayesGuess, bayesData = bayes.CalculatePosterior(jsonFingerprint, nil)
 	percentBayesGuess := float64(0)
 	total := float64(0)
 	for _, locBayes := range bayesData {
@@ -183,23 +183,23 @@ func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, str
 	jsonFingerprint.Location = bayesGuess
 
 	// Insert full fingerprint
-	dbm.PutFingerprintIntoDatabase(fullFingerprint, "fingerprints-track")
+	//go dbm.PutFingerprintIntoDatabase(fullFingerprint, "fingerprints-track")
 
 	message := ""
 	glb.Debug.Println("Tracking fingerprint containing " + strconv.Itoa(len(jsonFingerprint.WifiFingerprint)) + " APs for " + jsonFingerprint.Username + " (" + jsonFingerprint.Group + ") at " + jsonFingerprint.Location + " (guess)")
 	message += " BayesGuess: " + bayesGuess //+ " (" + strconv.Itoa(int(percentGuess1)) + "% confidence)"
 
 	// Process SVM if needed
-	if glb.RuntimeArgs.Svm {
-		svmGuess, svmData := SvmClassify(jsonFingerprint)
-		percentSvmGuess := int(100 * math.Exp(svmData[svmGuess]))
-		if percentSvmGuess > 100 {
-			//todo: wtf? \/ \/ why is could be more than 100
-			percentSvmGuess = percentSvmGuess / 10
-		}
-		message += " svmGuess: " + svmGuess
-		//message = "NB: " + locationGuess1 + " (" + strconv.Itoa(int(percentGuess1)) + "%)" + ", SVM: " + locationGuess2 + " (" + strconv.Itoa(int(percentGuess2)) + "%)"
-	}
+	//if glb.RuntimeArgs.Svm {
+	//	svmGuess, svmData := SvmClassify(jsonFingerprint)
+	//	percentSvmGuess := int(100 * math.Exp(svmData[svmGuess]))
+	//	if percentSvmGuess > 100 {
+	//		//todo: wtf? \/ \/ why is could be more than 100
+	//		percentSvmGuess = percentSvmGuess / 10
+	//	}
+	//	message += " svmGuess: " + svmGuess
+	//	//message = "NB: " + locationGuess1 + " (" + strconv.Itoa(int(percentGuess1)) + "%)" + ", SVM: " + locationGuess2 + " (" + strconv.Itoa(int(percentGuess2)) + "%)"
+	//}
 
 	// Calculating KNN
 	err, knnGuess := TrackKnn(jsonFingerprint)
@@ -229,7 +229,7 @@ func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, str
 	userJSON.ScikitData = scikitData
 	userJSON.KnnGuess = knnGuess
 
-	go dbm.SetUserPositionCache(strings.ToLower(jsonFingerprint.Group)+strings.ToLower(jsonFingerprint.Username), userJSON)
+	//go dbm.SetUserPositionCache(strings.ToLower(jsonFingerprint.Group)+strings.ToLower(jsonFingerprint.Username), userJSON)
 
 	// Send MQTT if needed
 	if glb.RuntimeArgs.Mqtt {

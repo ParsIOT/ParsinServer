@@ -38,7 +38,7 @@ func gettestdbName() string{
 	testCount := getTestCount()
 	initRaw(testCount)
 	testdbName := "testdb"+strconv.Itoa(testCount)
-	initializeSharedPreferences(testdbName)
+	//initializeSharedPreferences(testdbName)
 	return testdbName
 }
 
@@ -167,11 +167,11 @@ func TestGetUniqueMacs(t *testing.T){
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
-	//var uniqueMacs []string
+	//var UniqueMacs []string
 	//defer glb.TimeTrack(time.Now(), "getUniqueMacs1")
 	//if true{
 	//	defer glb.TimeTrack(time.Now(), "getUniqueMacs2")
-	//	uniqueMacs = GetUniqueMacs(testdb)
+	//	UniqueMacs = GetUniqueMacs(testdb)
 	//}
 
 	uniqueMacs := GetUniqueMacs(testdb)
@@ -195,7 +195,7 @@ func TestGetUniqueMacs(t *testing.T){
 	}
 
 	if (!listEqual){
-		glb.Debug.Println("uniqueMacs: ")
+		glb.Debug.Println("UniqueMacs: ")
 		glb.Debug.Println(uniqueMacs)
 		glb.Debug.Println("responseList: ")
 		glb.Debug.Println(responseList)
@@ -227,7 +227,7 @@ func TestGetUniqueLocations(t *testing.T){
 	}
 
 	if (!listEqual){
-		glb.Debug.Println("uniqueLocs: ")
+		glb.Debug.Println("UniqueLocs: ")
 		glb.Debug.Println(uniqueLocs)
 		glb.Debug.Println("responseList: ")
 		glb.Debug.Println(responseList)
@@ -427,6 +427,65 @@ func TestGetLearnFingerPrints(t *testing.T){
 
 }
 
+func TestLoadSharedPreferences(t *testing.T){
+	testdb := gettestdbName()
+	defer freedb(testdb)
+
+	shrPrf,err := loadSharedPreferences(testdb)
+	assert.Equal(t, err, nil)
+
+
+	shrPrfRes := RawSharedPreferences{
+		Mixin:     			float64(0.1),
+		Cutoff:    			float64(0.01),
+		KnnK:      			int(30),
+		MinRss:    			int(-110),
+		MinRssOpt: 			int(-100),
+		FilterMacsMap: 		[]string{"b4:52:7d:26:e3:f3","50:67:f0:7b:02:c7"},
+	}
+	//glb.Debug.Println(shrPrf)
+	//glb.Debug.Println(shrPrfRes)
+	assert.Equal(t, shrPrf, shrPrfRes)
+}
+
+func TestPutSharedPreferences(t *testing.T){
+	testdb := gettestdbName()
+	defer freedb(testdb)
+
+	shrPrf := RawSharedPreferences{
+		Mixin:     			float64(0.01),
+		Cutoff:    			float64(0.001),
+		KnnK:      			int(20),
+		MinRss:    			int(-130),
+		MinRssOpt: 			int(-110),
+		FilterMacsMap: 		[]string{"b4:52:7d:26:e2:c3","50:67:f0:7c:01:a1"},
+	}
+	err := putSharedPreferences(testdb, shrPrf)
+	assert.Equal(t, err, nil)
+
+	shrPrfRes,err := loadSharedPreferences(testdb)
+	assert.Equal(t, err, nil)
+
+	//glb.Debug.Println(shrPrf)
+	//glb.Debug.Println(shrPrfRes)
+	assert.Equal(t, shrPrfRes, shrPrf)
+}
+
+func TestInitializeSharedPreferences(t *testing.T){
+	testdb := gettestdbName()
+	defer freedb(testdb)
+
+	initializeSharedPreferences(testdb)
+
+	shrPrf,err := loadSharedPreferences(testdb)
+	assert.Equal(t, err, nil)
+
+	shrPrfRes := NewRawSharedPreferences()
+	//glb.Debug.Println(shrPrf)
+	//glb.Debug.Println(shrPrfRes)
+	assert.Equal(t, shrPrf, shrPrfRes)
+}
+
 func BenchmarkGetUniqueLocations(b *testing.B){
 	testdb := gettestdbName()
 	defer freedb(testdb)
@@ -437,6 +496,32 @@ func BenchmarkGetUniqueLocations(b *testing.B){
 		glb.Debug.Println(uniqueLocs)
 	}
 }
+
+//func BenchmarkTrackFingerprintPOST(b *testing.B){
+//	//testdb := gettestdbName()
+//	//defer freedb(testdb)
+//
+//
+//	router := gin.New()
+//	router.POST("/foo", algorithms.TrackFingerprintPOST)
+//	jsonStr := []byte("{\"group\":\""+testdb+"\",\"macs\":[\"6c:19:8f:50:c6:a5\",\"b4:52:7d:26:e3:f3\"]}")
+//	req, _ := http.NewRequest("POST", "/foo", bytes.NewBuffer(jsonStr))
+//	resp := httptest.NewRecorder()
+//	router.ServeHTTP(resp, req)
+//	response := "{\"message\":\"MacFilter set successfully\",\"success\":true}"
+//
+//	assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
+//}
+//
+//
+//router := gin.New()
+//router.PUT("/foo", PutMixinOverride)
+//
+//req, _ := http.NewRequest("PUT", "/foo?group="+testdb+"&mixin=100", nil)
+//resp := httptest.NewRecorder()
+//router.ServeHTTP(resp, req)
+//response := `{"message":"mixin must be between 0 and 1","success":false}`
+//assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
 
 //func BenchmarkPutFingerprintInDatabase(b *testing.B) {
 //	jsonTest := `{"username": "zack", "group": "testdbfoo", "wifi-fingerprint": [{"rssi": -45, "mac": "80:37:73:ba:f7:d8"}, {"rssi": -58, "mac": "80:37:73:ba:f7:dc"}, {"rssi": -61, "mac": "a0:63:91:2b:9e:65"}, {"rssi": -68, "mac": "a0:63:91:2b:9e:64"}, {"rssi": -70, "mac": "70:73:cb:bd:9f:b5"}, {"rssi": -75, "mac": "d4:05:98:57:b3:10"}, {"rssi": -75, "mac": "00:23:69:d4:47:9f"}, {"rssi": -76, "mac": "30:46:9a:a0:28:c4"}, {"rssi": -81, "mac": "2c:b0:5d:36:e3:b8"}, {"rssi": -82, "mac": "00:1a:1e:46:cd:10"}, {"rssi": -82, "mac": "20:aa:4b:b8:31:c8"}, {"rssi": -83, "mac": "e8:ed:05:55:21:10"}, {"rssi": -83, "mac": "ec:1a:59:4a:9c:ed"}, {"rssi": -88, "mac": "b8:3e:59:78:35:99"}, {"rssi": -84, "mac": "e0:46:9a:6d:02:ea"}, {"rssi": -84, "mac": "00:1a:1e:46:cd:11"}, {"rssi": -84, "mac": "f8:35:dd:0a:da:be"}, {"rssi": -84, "mac": "b4:75:0e:03:cd:69"}], "location": "zakhome floor 2 office", "time": 1439596533831, "password": "frusciante_0128"}`
@@ -468,3 +553,4 @@ func BenchmarkGetUniqueLocations(b *testing.B){
 //	}
 //}
 //
+

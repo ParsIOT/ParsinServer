@@ -24,21 +24,6 @@ import (
 )
 
 
-
-// Todo: Must redefined, add a function that convert name(string) to struct property
-//// NewFullParameters generates a blank FullParameters
-//func NewSharedPreferences() map[string]interface{} {
-//	return map[string]interface{}{
-//		"Mixin" : float64(glb.DefaultMixin),
-//		"Cutoff" : float64(glb.DefaultCutoff),
-//		"KnnK" : int(glb.DefaultKnnK),
-//		"MinRss" : int(glb.MinRssi),
-//		"MinRssOpt" : int(glb.RuntimeArgs.MinRssOpt),
-//	}
-//}
-
-
-
 func boltOpen(path string, mode os.FileMode, options *bolt.Options) (*bolt.DB, error) {
 	// Works before db open
 	//file := filepath.Base(path)
@@ -61,15 +46,17 @@ func RenameNetwork(group string, oldName string, newName string) error {
 	//todo: It's better to regenerate ps from the modified fingerprints bucket than modifying the current ps
 	//glb.Debug.Println("Opening parameters")
 	var err error
-	ps, _ := OpenParameters(group)
+	//ps, _ := OpenParameters(group)
+	gp := GM.GetGroup(group)
+
 	//glb.Debug.Println("Opening persistent parameters")
 	persistentPs, _ := OpenPersistentParameters(group)
 	//glb.Debug.Println("Looping network macs")
-	for n := range ps.NetworkMacs {
+	for n := range gp.Get_NetworkMacs() {
 		if n == oldName {
 			macs := []string{}
 			glb.Debug.Println("Looping macs for ", n)
-			for mac := range ps.NetworkMacs[n] {
+			for mac := range gp.Get_NetworkMacs()[n] {
 				macs = append(macs, mac)
 			}
 			glb.Debug.Println("Adding to persistentPs")
@@ -140,24 +127,6 @@ func GetUniqueMacs(group string) []string {
 
 // returns all locations in a fingerprints bucket
 func GetUniqueLocations(group string) []string {
-	//var uniqueLocs []string
-	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//defer db.Close()
-	//db.View(func(tx *bolt.Tx) error {
-	//	// Assume bucket exists and has keys
-	//	b := tx.Bucket([]byte("fingerprints"))
-	//	c := b.Cursor()
-	//	for k, v := c.First(); k != nil; k, v = c.Next() {
-	//		v2 := LoadFingerprint(v, true)
-	//		if !glb.StringInSlice(v2.Location, uniqueLocs) {
-	//			uniqueLocs = append(uniqueLocs, v2.Location)
-	//		}
-	//	}
-	//	return nil
-	//})
 
 	var uniqueLocs []string
 	_,fingerprintInMemory,err := GetLearnFingerPrints(group,true)
@@ -175,26 +144,6 @@ func GetUniqueLocations(group string) []string {
 // returns count of each MAC in a fingerprints bucket
 func GetMacCount(group string) (macCount map[string]int) {
 	macCount = make(map[string]int)
-	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//defer db.Close()
-	//db.View(func(tx *bolt.Tx) error {
-	//	// Assume bucket exists and has keys
-	//	b := tx.Bucket([]byte("fingerprints"))
-	//	c := b.Cursor()
-	//	for k, v := c.First(); k != nil; k, v = c.Next() {
-	//		v2 := LoadFingerprint(v, true)
-	//		for _, router := range v2.WifiFingerprint {
-	//			if _, ok := macCount[router.Mac]; !ok {
-	//				macCount[router.Mac] = 0
-	//			}
-	//			macCount[router.Mac]++
-	//		}
-	//	}
-	//	return nil
-	//})
 
 	_,fingerprintInMemory,err := GetLearnFingerPrints(group,true)
 	if err!=nil{
@@ -214,30 +163,6 @@ func GetMacCount(group string) (macCount map[string]int) {
 // returns count of each MAC in a location
 func GetMacCountByLoc(group string) (macCountByLoc map[string]map[string]int) {
 	macCountByLoc = make(map[string]map[string]int)
-	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//defer db.Close()
-	//db.View(func(tx *bolt.Tx) error {
-	//	// Assume bucket exists and has keys
-	//	b := tx.Bucket([]byte("fingerprints"))
-	//	c := b.Cursor()
-	//	for k, v := c.First(); k != nil; k, v = c.Next() {
-	//		v2 := LoadFingerprint(v, true)
-	//		if _, ok := macCountByLoc[v2.Location]; !ok {
-	//			macCountByLoc[v2.Location] = make(map[string]int)
-	//		}
-	//		for _, router := range v2.WifiFingerprint {
-	//			if _, ok := macCountByLoc[v2.Location][router.Mac]; !ok {
-	//				macCountByLoc[v2.Location][router.Mac] = 0
-	//			}
-	//			macCountByLoc[v2.Location][router.Mac]++
-	//		}
-	//	}
-	//	return nil
-	//})
-
 
 	_,fingerprintInMemory,err := GetLearnFingerPrints(group,true)
 	if err!=nil{
@@ -350,327 +275,6 @@ func GetMacCountByLoc(group string) (macCountByLoc map[string]map[string]int) {
 //	return err
 //}
 
-// Set macs that to be filtered
-//func SetFilterMacDB(group string, FilterMacs []string) error {
-//	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-//	defer db.Close()
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	glb.Debug.Println(FilterMacs)
-//	// Create filtermacs bucket if doesn't exist & set filtermacs
-//	err = db.Update(func(tx *bolt.Tx) error {
-//		bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
-//
-//		if err2 != nil {
-//			return fmt.Errorf("create bucket: %s", err2)
-//		}
-//		//Warning.Println(FilterMacs)
-//		marshalledFilterMacList, _ := json.Marshal(FilterMacs)
-//		err2 = bucket.Put([]byte("filterMacList"), marshalledFilterMacList)
-//		//Warning.Println("bucket creation problem :",err2)
-//		if err2 != nil {
-//			return fmt.Errorf("could add to bucket: %s", err2)
-//		}
-//		//Warning.Println("setFilterMacDB successfully")
-//		return err2
-//	})
-//
-//	return err
-//}
-
-// Get macs that to be filtered
-//func GetFilterMacDB(group string) (error, []string) {
-//	var FilterMacs []string
-//	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	defer db.Close()
-//
-//	err = db.View(func(tx *bolt.Tx) error {
-//		// Assume bucket exists and has keys
-//		b := tx.Bucket([]byte("resources"))
-//		if b == nil {
-//			glb.Error.Println("Resources dont exist")
-//			return errors.New("")
-//		}
-//		v := b.Get([]byte("filterMacList"))
-//		if len(v) == 0 {
-//			fmt.Errorf("filterMacList list is empty")
-//			return nil
-//		} else {
-//			err := json.Unmarshal(v, &FilterMacs)
-//			if err != nil {
-//				log.Fatal(err)
-//				fmt.Println("hi")
-//			}
-//			return err
-//		}
-//	})
-//
-//	return err, FilterMacs
-//}
-
-
-//// return mixinOverride value from resources bucket in db
-//func GetMixinOverride(group string) (float64, error) {
-//	//group = strings.ToLower(group)
-//	//override := float64(-1)
-//	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-//	//defer db.Close()
-//	//if err != nil {
-//	//	glb.Error.Println(err)
-//	//}
-//	//
-//	//err = db.View(func(tx *bolt.Tx) error {
-//	//	// Assume bucket exists and has keys
-//	//	b := tx.Bucket([]byte("resources"))
-//	//	if b == nil {
-//	//		glb.Error.Println("Resources dont exist")
-//	//		return errors.New("")
-//	//	}
-//	//	v := b.Get([]byte("mixinOverride"))
-//	//	if len(v) == 0 {
-//	//		return fmt.Errorf("No mixin override")
-//	//	}
-//	//	override, err = strconv.ParseFloat(string(v), 64)
-//	//	return err
-//	//})
-//	// Todo: Must delete err from GetSharePref
-//	sharedPrf:= GetSharedPrf(group)
-//
-//	//if err != nil{
-//	//	glb.Error.Println(err)
-//	//	return glb.DefaultMixin,nil
-//	//}
-//	//mixin := sharedPrf["Mixin"].(float64)
-//	mixin := sharedPrf.Mixin
-//	return mixin, nil
-//}
-//
-//// return cutoffOverride value from resources bucket in db
-//func GetCutoffOverride(group string) (float64, error) {
-//	//group = strings.ToLower(group)
-//	//override := float64(-1)
-//	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-//	//defer db.Close()
-//	//if err != nil {
-//	//	glb.Error.Println(err)
-//	//}
-//	//
-//	//err = db.View(func(tx *bolt.Tx) error {
-//	//	// Assume bucket exists and has keys
-//	//	b := tx.Bucket([]byte("resources"))
-//	//	if b == nil {
-//	//		glb.Error.Println("Resources dont exist")
-//	//		return errors.New("")
-//	//	}
-//	//	v := b.Get([]byte("cutoffOverride"))
-//	//	if len(v) == 0 {
-//	//		return fmt.Errorf("No mixin override")
-//	//	}
-//	//	override, err = strconv.ParseFloat(string(v), 64)
-//	//	return err
-//	//})
-//	sharedPrf:= GetSharedPrf(group)
-//	//if err != nil{
-//	//	glb.Error.Println(err)
-//	//	return glb.DefaultCutoff,nil
-//	//}
-//	//cutoff := sharedPrf["Cutoff"].(float64)
-//	cutoff := sharedPrf.Cutoff
-//	return cutoff, nil
-//}
-//
-//// return KNN K Override value from resources bucket in db
-//func GetKnnKOverride(group string) (int, error) {
-//	group = strings.ToLower(group)
-//	//override := int(-1)
-//	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-//	//defer db.Close()
-//	//if err != nil {
-//	//	glb.Error.Println(err)
-//	//}
-//	//
-//	//err = db.View(func(tx *bolt.Tx) error {
-//	//	// Assume bucket exists and has keys
-//	//	b := tx.Bucket([]byte("resources"))
-//	//	if b == nil {
-//	//		glb.Error.Println("Resources dont exist")
-//	//		return errors.New("")
-//	//	}
-//	//	v := b.Get([]byte("knnKOverride"))
-//	//	if len(v) == 0 {
-//	//		return fmt.Errorf("No mixin override")
-//	//	}
-//	//	override, err = strconv.Atoi(string(v))
-//	//	return err
-//	//})
-//	//if (override == 0) {
-//	//	err := errors.New("invalid knnOverride")
-//	//	return glb.DefaultKnnK, err
-//	//}
-//	sharedPrf := GetSharedPrf(group)
-//	//if err != nil{
-//	//	glb.Error.Println(err)
-//	//	return glb.DefaultKnnK,nil
-//	//}
-//	//knnK := sharedPrf["KnnK"].(int)
-//	knnK := sharedPrf.KnnK
-//	return knnK, nil
-//}
-//
-//// return KNN K Override value from resources bucket in db
-//func GetMinRSSOverride(group string) (int, error) {
-//	//group = strings.ToLower(group)
-//	//override := int(-1)
-//	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-//	//defer db.Close()
-//	//if err != nil {
-//	//	glb.Error.Println(err)
-//	//}
-//	//
-//	//err = db.View(func(tx *bolt.Tx) error {
-//	//	// Assume bucket exists and has keys
-//	//	b := tx.Bucket([]byte("resources"))
-//	//	if b == nil {
-//	//		glb.Error.Println("Resources dont exist")
-//	//		return errors.New("")
-//	//	}
-//	//	v := b.Get([]byte("minRSSOverride"))
-//	//	if len(v) == 0 {
-//	//		return fmt.Errorf("No mixin override")
-//	//	}
-//	//	override, err = strconv.Atoi(string(v))
-//	//	return err
-//	//})
-//	//return override, err
-//	sharedPrf := GetSharedPrf(group)
-//	//if err != nil{
-//	//	glb.Error.Println(err)
-//	//	return glb.MinRssi,nil
-//	//}
-//	//minrssi := sharedPrf["MinRss"].(int)
-//	minrssi := sharedPrf.MinRss
-//	return minrssi, nil
-//}
-//
-//// Set mixinOverride value to resources bucket in db
-//func SetMixinOverride(group string, mixin float64) error {
-//	if (mixin < 0 || mixin > 1) && mixin != -1 {
-//		return fmt.Errorf("mixin must be between 0 and 1")
-//	}
-//	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-//	//defer db.Close()
-//	//if err != nil {
-//	//	glb.Error.Println(err)
-//	//}
-//	//
-//	//err = db.Update(func(tx *bolt.Tx) error {
-//	//	bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
-//	//	if err2 != nil {
-//	//		return fmt.Errorf("create bucket: %s", err2)
-//	//	}
-//	//
-//	//	err2 = bucket.Put([]byte("mixinOverride"), []byte(strconv.FormatFloat(mixin, 'E', -1, 64)))
-//	//	if err2 != nil {
-//	//		return fmt.Errorf("could add to bucket: %s", err2)
-//	//	}
-//	//	return err2
-//	//})
-//
-//	err := SetSharedPrf(group,"Mixin",mixin)
-//	return err
-//}
-//
-//// Set cutoffOverride value to resources bucket in db
-//func SetCutoffOverride(group string, cutoff float64) error {
-//	if (cutoff < 0 || cutoff > 1) && cutoff != -1 {
-//		return fmt.Errorf("cutoff must be between 0 and 1")
-//	}
-//	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-//	//defer db.Close()
-//	//if err != nil {
-//	//	glb.Error.Println(err)
-//	//}
-//	//
-//	//err = db.Update(func(tx *bolt.Tx) error {
-//	//	bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
-//	//	if err2 != nil {
-//	//		return fmt.Errorf("create bucket: %s", err2)
-//	//	}
-//	//
-//	//	err2 = bucket.Put([]byte("cutoffOverride"), []byte(strconv.FormatFloat(cutoff, 'E', -1, 64)))
-//	//	if err2 != nil {
-//	//		return fmt.Errorf("could add to bucket: %s", err2)
-//	//	}
-//	//	return err2
-//	//})
-//	//return err
-//
-//	err := SetSharedPrf(group,"Cutoff",cutoff)
-//	return err
-//}
-//
-//// Set KNN K Override value to resources bucket in db
-//func SetKnnKOverride(group string, knnk int) error {
-//	if knnk <= 0 && knnk != -1 {
-//		return fmt.Errorf("knnk must be greater than 0")
-//	}
-//	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-//	//defer db.Close()
-//	//if err != nil {
-//	//	glb.Error.Println(err)
-//	//}
-//	//
-//	//err = db.Update(func(tx *bolt.Tx) error {
-//	//	bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
-//	//	if err2 != nil {
-//	//		return fmt.Errorf("create bucket: %s", err2)
-//	//	}
-//	//
-//	//	err2 = bucket.Put([]byte("knnKOverride"), []byte(strconv.Itoa(knnk)))
-//	//	if err2 != nil {
-//	//		return fmt.Errorf("could add to bucket: %s", err2)
-//	//	}
-//	//	return err2
-//	//})
-//	//return err
-//	err := SetSharedPrf(group,"KnnK",knnk)
-//	return err
-//
-//}
-//
-//// Set KNN K Override value to resources bucket in db
-//func SetMinRSSOverride(group string, minRss int) error {
-//	if minRss > glb.MaxRssi || minRss < glb.MinRssi {
-//		return fmt.Errorf("minRss must be greater than "+strconv.Itoa(glb.MinRssi)+"(dbm) and lower than "+strconv.Itoa(glb.MaxRssi)+"(dbm) ")
-//	}
-//	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-//	//defer db.Close()
-//	//if err != nil {
-//	//	glb.Error.Println(err)
-//	//}
-//	//
-//	//err = db.Update(func(tx *bolt.Tx) error {
-//	//	bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
-//	//	if err2 != nil {
-//	//		return fmt.Errorf("create bucket: %s", err2)
-//	//	}
-//	//
-//	//	err2 = bucket.Put([]byte("minRSSOverride"), []byte(strconv.Itoa(minRss)))
-//	//	if err2 != nil {
-//	//		return fmt.Errorf("could add to bucket: %s", err2)
-//	//	}
-//	//	return err2
-//	//})
-//	//return err
-//
-//	err := SetSharedPrf(group,"MinRss",minRss)
-//	return err
-//}
-
 
 func GetLearnFingerPrints(group string,doFilter bool)([]string,map[string]parameters.Fingerprint,error){
 	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
@@ -691,6 +295,7 @@ func GetLearnFingerPrints(group string,doFilter bool)([]string,map[string]parame
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			fingerprintsInMemory[string(k)] = LoadFingerprint(v,doFilter)
+
 			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
 		}
 		return nil

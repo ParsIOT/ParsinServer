@@ -11,7 +11,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"ParsinServer/algorithms/parameters"
 	"ParsinServer/glb"
 )
 
@@ -22,35 +21,35 @@ var CacheResetFastPeriod time.Duration = 30 //second
 var CacheResetPeriod time.Duration = 600 //second
 
 
-//Containing a map: key=group name, value= a FullParameters instance
+//Containing a map: key=group Name, value= a FullParameters instance
 // if there is psCache in memory, ps isn't got from db
-var psCache = struct {
-	sync.RWMutex
-	m map[string]parameters.FullParameters
-}{m: make(map[string]parameters.FullParameters)}
+//var psCache = struct {
+//	sync.RWMutex
+//	m map[string]parameters.FullParameters
+//}{m: make(map[string]parameters.FullParameters)}
 
 
-var knnFPCache = struct {
-	sync.RWMutex
-	m map[string]parameters.KnnFingerprints
-}{m: make(map[string]parameters.KnnFingerprints)}
+//var knnFPCache = struct {
+//	sync.RWMutex
+//	m map[string]parameters.KnnFingerprints
+//}{m: make(map[string]parameters.KnnFingerprints)}
 
 //List of users that is tracked.
-//Containing a map : key= group name, value= users list
+//Containing a map : key= group Name, value= users list
 var usersCache = struct {
 	sync.RWMutex
 	m map[string][]string
 }{m: make(map[string][]string)}
 
 //Containing a user position:
-// key= concatenation of group name and user name, value= a UserPositionJSON instance
+// key= concatenation of group Name and user Name, value= a UserPositionJSON instance
 var userPositionCache = struct {
 	sync.RWMutex
 	m map[string]glb.UserPositionJSON
 }{m: make(map[string]glb.UserPositionJSON)}
 
 //It's used to understand that new Fingerprint was added to db.
-//Containing a map : key= group name, value= is new fingerprint added to db?
+//Containing a map : key= group Name, value= is new fingerprint added to db?
 var isLearning = struct {
 	sync.RWMutex
 	m map[string]bool
@@ -92,18 +91,18 @@ func ResetCache(cache string) {
 		userPositionCache.Lock()
 		userPositionCache.m = make(map[string]glb.UserPositionJSON)
 		userPositionCache.Unlock()
-	} else if cache == "psCache" {
-		psCache.Lock()
-		psCache.m = make(map[string]parameters.FullParameters)
-		psCache.Unlock()
+	//} else if cache == "psCache" {
+	//	psCache.Lock()
+	//	psCache.m = make(map[string]parameters.FullParameters)
+	//	psCache.Unlock()
 	} else if cache == "isLearning" {
 		isLearning.Lock()
 		isLearning.m = make(map[string]bool)
 		isLearning.Unlock()
-	} else if cache == "knnFPCache" {
-		knnFPCache.Lock()
-		knnFPCache.m = make(map[string]parameters.KnnFingerprints)
-		knnFPCache.Unlock()
+	//} else if cache == "knnFPCache" {
+	//	knnFPCache.Lock()
+	//	knnFPCache.m = make(map[string]parameters.KnnFingerprints)
+	//	knnFPCache.Unlock()
 	}
 }
 
@@ -150,42 +149,42 @@ func AppendUserCache(group string, user string) {
 	usersCache.Unlock()
 }
 
+////psCache variable getter function
+//func GetPsCache(group string) (parameters.FullParameters, bool) {
+//	//Debug.Println("Getting pscache")
+//	psCache.RLock()
+//	psCached, ok := psCache.m[group]
+//	psCache.RUnlock()
+//	return psCached, ok
+//}
+//
+////psCache variable setter function
+//func SetPsCache(group string, ps parameters.FullParameters) {
+//	//Debug.Println("Setting pscache")
+//	psCache.Lock()
+//	psCache.m[group] = ps
+//	psCache.Unlock()
+//	return
+//}
+
+
 //psCache variable getter function
-func GetPsCache(group string) (parameters.FullParameters, bool) {
-	//Debug.Println("Getting pscache")
-	psCache.RLock()
-	psCached, ok := psCache.m[group]
-	psCache.RUnlock()
-	return psCached, ok
-}
-
-//psCache variable setter function
-func SetPsCache(group string, ps parameters.FullParameters) {
-	//Debug.Println("Setting pscache")
-	psCache.Lock()
-	psCache.m[group] = ps
-	psCache.Unlock()
-	return
-}
-
-
-//psCache variable getter function
-func GetKnnFPCache(group string) (parameters.KnnFingerprints, bool) {
-	//Debug.Println("Getting pscache")
-	knnFPCache.RLock()
-	knnFPCached, ok := knnFPCache.m[group]
-	knnFPCache.RUnlock()
-	return knnFPCached, ok
-}
-
-//psCache variable setter function
-func SetKnnFPCache(group string, knnFP parameters.KnnFingerprints) {
-	//Debug.Println("Setting pscache")
-	knnFPCache.Lock()
-	knnFPCache.m[group] = knnFP
-	knnFPCache.Unlock()
-	return
-}
+//func GetKnnFPCache(group string) (parameters.KnnFingerprints, bool) {
+//	//Debug.Println("Getting pscache")
+//	knnFPCache.RLock()
+//	knnFPCached, ok := knnFPCache.m[group]
+//	knnFPCache.RUnlock()
+//	return knnFPCached, ok
+//}
+//
+////psCache variable setter function
+//func SetKnnFPCache(group string, knnFP parameters.KnnFingerprints) {
+//	//Debug.Println("Setting pscache")
+//	knnFPCache.Lock()
+//	knnFPCache.m[group] = knnFP
+//	knnFPCache.Unlock()
+//	return
+//}
 
 //userPositionCache variable getter function
 func GetUserPositionCache(group_user string) (glb.UserPositionJSON, bool) {

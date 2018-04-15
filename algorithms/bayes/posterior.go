@@ -15,27 +15,34 @@ import (
 )
 
 // calculatePosterior takes a parameters.Fingerprint and a Parameter set and returns the noramlized Bayes probabilities of possible locations
-func CalculatePosterior(res parameters.Fingerprint, ps parameters.FullParameters) (string, map[string]float64) {
-	if !ps.Loaded {
-		ps, _ = dbm.OpenParameters(res.Group)
+func CalculatePosterior(res parameters.Fingerprint, gp *dbm.Group) (string, map[string]float64) {
+	//if !ps.Loaded {
+	//	ps, _ = dbm.OpenParameters(res.Group)
+	//}
+	if gp == nil{
+		gp = dbm.GM.GetGroup(res.Group).Get()
+		//glb.Debug.Println(gp)
+		//defer dbm.GM.GetGroup(res.Group).Set(gp)
+		// No need to write back
 	}
+
 	macs := []string{}
 	W := make(map[string]int)
 	for v2 := range res.WifiFingerprint {
 		macs = append(macs, res.WifiFingerprint[v2].Mac)
 		W[res.WifiFingerprint[v2].Mac] = res.WifiFingerprint[v2].Rssi
 	}
-	n, inNetworkAlready := clustring.HasNetwork(ps.NetworkMacs, macs)
+	n, inNetworkAlready := clustring.HasNetwork(gp.NetworkMacs, macs)
 	//Debug.Println(ps.NetworkMacs)
 	//Debug.Println(macs)
 	//Debug.Println(n, inNetworkAlready, ps.NetworkLocs[n])
 	if !inNetworkAlready {
 		glb.Warning.Println("Not in network")
-		glb.Debug.Println(n, inNetworkAlready, ps.NetworkLocs[n], res)
+		glb.Debug.Println(n, inNetworkAlready, gp.NetworkLocs[n], res)
 	}
 
-	if len(ps.NetworkLocs[n]) == 1 {
-		for key := range ps.NetworkLocs[n] {
+	if len(gp.NetworkLocs[n]) == 1 {
+		for key := range gp.NetworkLocs[n] {
 			PBayesMix := make(map[string]float64)
 			PBayesMix[key] = 1
 			return key, PBayesMix
@@ -44,30 +51,30 @@ func CalculatePosterior(res parameters.Fingerprint, ps parameters.FullParameters
 
 	PBayes1 := make(map[string]float64)
 	PBayes2 := make(map[string]float64)
-	PA := 1.0 / float64(len(ps.NetworkLocs[n]))
-	PnA := (float64(len(ps.NetworkLocs[n])) - 1.0) / float64(len(ps.NetworkLocs[n]))
-	for loc := range ps.NetworkLocs[n] {
+	PA := 1.0 / float64(len(gp.NetworkLocs[n]))
+	PnA := (float64(len(gp.NetworkLocs[n])) - 1.0) / float64(len(gp.NetworkLocs[n]))
+	for loc := range gp.NetworkLocs[n] {
 		PBayes1[loc] = float64(0)
 		PBayes2[loc] = float64(0)
 		for mac := range W {
 			weight := float64(0)
 			nweight := float64(0)
-			if _, ok := ps.Priors[n].MacFreq[loc][mac]; ok {
-				weight = float64(ps.Priors[n].MacFreq[loc][mac])
+			if _, ok := gp.Priors[n].MacFreq[loc][mac]; ok {
+				weight = float64(gp.Priors[n].MacFreq[loc][mac])
 			} else {
-				weight = float64(ps.Priors[n].Special["MacFreqMin"])
+				weight = float64(gp.Priors[n].Special["MacFreqMin"])
 			}
-			if _, ok := ps.Priors[n].NMacFreq[loc][mac]; ok {
-				nweight = float64(ps.Priors[n].NMacFreq[loc][mac])
+			if _, ok := gp.Priors[n].NMacFreq[loc][mac]; ok {
+				nweight = float64(gp.Priors[n].NMacFreq[loc][mac])
 			} else {
-				nweight = float64(ps.Priors[n].Special["NMacFreqMin"])
+				nweight = float64(gp.Priors[n].Special["NMacFreqMin"])
 			}
 			PBayes1[loc] += math.Log(weight*PA) - math.Log(weight*PA+PnA*nweight)
 
-			if float64(ps.MacVariability[mac]) >= ps.Priors[n].Special["VarabilityCutoff"] && W[mac] > glb.MinRssiOpt {
+			if float64(gp.MacVariability[mac]) >= gp.Priors[n].Special["VarabilityCutoff"] && W[mac] > glb.MinRssiOpt {
 				ind := int(W[mac] - glb.MinRssi)
-				if len(ps.Priors[n].P[loc][mac]) > 0 {
-					PBA := float64(ps.Priors[n].P[loc][mac][ind])
+				if len(gp.Priors[n].P[loc][mac]) > 0 {
+					PBA := float64(gp.Priors[n].P[loc][mac][ind])
 					//PBnA := float64(ps.Priors[n].NP[loc][mac][ind])
 					if PBA > 0 {
 						//PBayes2[loc] += (math.Log(PBA*PA) - math.Log(PBA*PA+PBnA*PnA))
@@ -85,7 +92,7 @@ func CalculatePosterior(res parameters.Fingerprint, ps parameters.FullParameters
 	bestLocation := ""
 	maxVal := float64(-100)
 	for key := range PBayes1 { //key = loc
-		PBayesMix[key] = ps.Priors[n].Special["MixIn"]*PBayes1[key] + (1-ps.Priors[n].Special["MixIn"])*PBayes2[key]
+		PBayesMix[key] = gp.Priors[n].Special["MixIn"]*PBayes1[key] + (1-gp.Priors[n].Special["MixIn"])*PBayes2[key]
 		if PBayesMix[key] > maxVal {
 			maxVal = PBayesMix[key]
 			bestLocation = key
@@ -96,10 +103,13 @@ func CalculatePosterior(res parameters.Fingerprint, ps parameters.FullParameters
 
 // calculatePosteriorThreadSafe is exactly the same as calculatePosterior except it does not do the mixin calculation
 // as it is used for optimizing priors.
-func CalculatePosteriorThreadSafe(res parameters.Fingerprint, ps parameters.FullParameters, cutoff float64) (map[string]float64, map[string]float64) {
-	if !ps.Loaded {
-		ps, _ = dbm.OpenParameters(res.Group)
-	}
+func CalculatePosteriorThreadSafe(groupName string,gp *dbm.Group, res parameters.Fingerprint, cutoff float64) (map[string]float64, map[string]float64) {
+	//#cache
+	//gp := dbm.GM.GetGroup(groupName).Get()
+
+	//if !ps.Loaded {
+	//	ps, _ = dbm.OpenParameters(res.Group)
+	//}
 	macs := []string{}
 	//Done: rename W
 	resRoutes := make(map[string]int) //a map from mac to rssi
@@ -107,18 +117,30 @@ func CalculatePosteriorThreadSafe(res parameters.Fingerprint, ps parameters.Full
 		macs = append(macs, res.WifiFingerprint[v2].Mac)
 		resRoutes[res.WifiFingerprint[v2].Mac] = res.WifiFingerprint[v2].Rssi
 	}
-	n, inNetworkAlready := clustring.HasNetwork(ps.NetworkMacs, macs)
+	//n, inNetworkAlready := clustring.HasNetwork(ps.NetworkMacs, macs)
+	//#cache
+	n, inNetworkAlready := clustring.HasNetwork(gp.NetworkMacs, macs)
+
 	// Debug.Println(n, inNetworkAlready, ps.NetworkLocs[n])
 	if !inNetworkAlready {
 		glb.Warning.Println("Not in network")
-		glb.Debug.Println(n, inNetworkAlready, ps.NetworkLocs[n], res)
+		//glb.Debug.Println(n, inNetworkAlready, ps.NetworkLocs[n], res)
+		//#cache
+		glb.Debug.Println(n, inNetworkAlready, gp.NetworkLocs[n], res)
+
 	}
 
 	PBayes1 := make(map[string]float64)
 	PBayes2 := make(map[string]float64)
-	PA := 1.0 / float64(len(ps.NetworkLocs[n]))//the real prior !
-	PnA := (float64(len(ps.NetworkLocs[n])) - 1.0) / float64(len(ps.NetworkLocs[n])) // 1.0 - PA
-	for loc := range ps.NetworkLocs[n] {
+	//PA := 1.0 / float64(len(ps.NetworkLocs[n]))//the real prior !
+	//PnA := (float64(len(ps.NetworkLocs[n])) - 1.0) / float64(len(ps.NetworkLocs[n])) // 1.0 - PA
+	//#cache
+	PA := 1.0 / float64(len(gp.NetworkLocs[n]))//the real prior !
+	PnA := (float64(len(gp.NetworkLocs[n])) - 1.0) / float64(len(gp.NetworkLocs[n])) // 1.0 - PA
+
+	//for loc := range ps.NetworkLocs[n] {
+	//#cache
+	for loc := range gp.NetworkLocs[n] {
 		PBayes1[loc] = float64(0)
 		PBayes2[loc] = float64(0)
 		for mac := range resRoutes {
@@ -126,18 +148,20 @@ func CalculatePosteriorThreadSafe(res parameters.Fingerprint, ps parameters.Full
 			nweight := float64(0)
 
 			// todo: The condition should be like this: ok && ps.Priors[n].MacFreq[loc][mac]!=0
-			if _, ok := ps.Priors[n].MacFreq[loc][mac]; ok {
+			//if _, ok := ps.Priors[n].MacFreq[loc][mac]; ok {
+			//#cache
+			if _, ok := gp.Priors[n].MacFreq[loc][mac]; ok {
 				//if the MacFreq (or weight) of a Mac in a location is high, it means that the location is near the AP(Mac).
-				weight = float64(ps.Priors[n].MacFreq[loc][mac])
+				weight = float64(gp.Priors[n].MacFreq[loc][mac])
 			} else {
 				//todo:why not using 0 instead of ps.Priors[n].Special["MacFreqMin"]?
-				weight = float64(ps.Priors[n].Special["MacFreqMin"])
+				weight = float64(gp.Priors[n].Special["MacFreqMin"])
 			}
-			if _, ok := ps.Priors[n].NMacFreq[loc][mac]; ok {
+			if _, ok := gp.Priors[n].NMacFreq[loc][mac]; ok {
 				// nweight determines presence of the AP signals in other locations
-				nweight = float64(ps.Priors[n].NMacFreq[loc][mac])
+				nweight = float64(gp.Priors[n].NMacFreq[loc][mac])
 			} else {
-				nweight = float64(ps.Priors[n].Special["NMacFreqMin"])
+				nweight = float64(gp.Priors[n].Special["NMacFreqMin"])
 			}
 			//fmt.Println("bayes", (weight*PA)/(weight*PA+PnA*nweight))
 			//PBayes1 is used for proximity purposes.
@@ -146,11 +170,11 @@ func CalculatePosteriorThreadSafe(res parameters.Fingerprint, ps parameters.Full
 			// todo: why not verifying the (resRoutes[mac] > MinRssi) & (ps.MacVariability[mac]) >= cutoff) conditions while calculation PBayes1?
 			// cutoffs is a number which is compared with the standard deviation of a specific AP in all locations(MacVariability)
 			// if macVariability is lower than cutoff it is ignored in PBayes2 calculation.
-			if float64(ps.MacVariability[mac]) >= cutoff && resRoutes[mac] > glb.MinRssiOpt { //TODO: why calculating the mac variability of a mac not a location?
+			if float64(gp.MacVariability[mac]) >= cutoff && resRoutes[mac] > glb.MinRssiOpt { //TODO: why calculating the mac variability of a mac not a location?
 				ind := int(resRoutes[mac] - glb.MinRssi) //same as what is done in P calculation
-				if len(ps.Priors[n].P[loc][mac]) > 0 {
-					PBA := float64(ps.Priors[n].P[loc][mac][ind])
-					PBnA := float64(ps.Priors[n].NP[loc][mac][ind])
+				if len(gp.Priors[n].P[loc][mac]) > 0 {
+					PBA := float64(gp.Priors[n].P[loc][mac][ind])
+					PBnA := float64(gp.Priors[n].NP[loc][mac][ind])
 					if PBA > 0 {
 						//todo: replace the PBayes2 calculation with the standard bayesian calculation
 						PBayes2[loc] += (math.Log(PBA*PA) - math.Log(PBA*PA+PBnA*PnA)) //todo: what is this?

@@ -44,6 +44,9 @@ func init() {
 // deprecated
 func optimizePriors(group string) {
 	// generate the fingerprintsInMemory
+	var gp = dbm.NewGroup(group)
+	defer dbm.GM.GetGroup(group).Set(gp)
+
 	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
 	var fingerprintsOrdering []string
 	var err error
@@ -53,19 +56,19 @@ func optimizePriors(group string) {
 		return
 	}
 
-	var ps = *parameters.NewFullParameters()
-	GetParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	//var ps = *parameters.NewFullParameters()
+	GetParameters(group, gp, fingerprintsInMemory, fingerprintsOrdering)
 	if glb.RuntimeArgs.GaussianDist {
-		calculateGaussianPriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+		calculateGaussianPriors(group, gp, fingerprintsInMemory, fingerprintsOrdering)
 	} else {
-		calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+		calculatePriors(group, gp, fingerprintsInMemory, fingerprintsOrdering)
 	}
 
 	// fmt.Println(string(dumpParameters(ps)))
 	// ps, _ = openParameters("findtest")
 	var results = *parameters.NewResultsParameters()
-	for n := range ps.Priors {
-		ps.Results[n] = results
+	for n := range gp.Priors {
+		gp.Results[n] = results
 	}
 	// fmt.Println(ps.Results)
 	// ps.Priors["0"].Special["MixIn"] = 1.0
@@ -76,15 +79,15 @@ func optimizePriors(group string) {
 	mixins := []float64{0.1, 0.3, 0.5, 0.7, 0.9}
 	cutoffs := []float64{0.005}
 
-	for n := range ps.Priors {
+	for n := range gp.Priors {
 		bestResult := float64(0)
 		bestMixin := float64(0)
 		bestCutoff := float64(0)
 		for _, cutoff := range cutoffs {
 			for _, mixin := range mixins {
-				ps.Priors[n].Special["MixIn"] = mixin
-				ps.Priors[n].Special["VarabilityCutoff"] = cutoff
-				avgAccuracy := crossValidation(group, n, &ps, fingerprintsInMemory, fingerprintsOrdering)
+				gp.Priors[n].Special["MixIn"] = mixin
+				gp.Priors[n].Special["VarabilityCutoff"] = cutoff
+				avgAccuracy := crossValidation(group, n, gp, fingerprintsInMemory, fingerprintsOrdering)
 				// avgAccuracy := crossValidation(group, n, &ps)
 				if avgAccuracy > bestResult {
 					bestResult = avgAccuracy
@@ -93,19 +96,22 @@ func optimizePriors(group string) {
 				}
 			}
 		}
-		ps.Priors[n].Special["MixIn"] = bestMixin
-		ps.Priors[n].Special["VarabilityCutoff"] = bestCutoff
+		gp.Priors[n].Special["MixIn"] = bestMixin
+		gp.Priors[n].Special["VarabilityCutoff"] = bestCutoff
 		// Final validation
-		crossValidation(group, n, &ps, fingerprintsInMemory, fingerprintsOrdering)
+		crossValidation(group, n, gp, fingerprintsInMemory, fingerprintsOrdering)
 		// crossValidation(group, n, &ps)
 	}
 
-	go dbm.SaveParameters(group, ps)
-	go dbm.SetPsCache(group, ps)
+	//go dbm.SaveParameters(group, ps)
+	//go dbm.SetPsCache(group, ps)
 }
 
 func regenerateEverything(group string) {
 	// generate the fingerprintsInMemory
+	var gp = dbm.GM.GetGroup(group).Get()
+	defer dbm.GM.GetGroup(group).Set(gp)
+
 	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
 	var fingerprintsOrdering []string
 	var err error
@@ -115,31 +121,35 @@ func regenerateEverything(group string) {
 		return
 	}
 
-	var ps = *parameters.NewFullParameters()
-	ps, _ = dbm.OpenParameters(group)
-	GetParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)//openParameters is only called here.
+	//var ps = *parameters.NewFullParameters()
+	//ps, _ = dbm.OpenParameters(group)
+	GetParameters(group, gp, fingerprintsInMemory, fingerprintsOrdering)//openParameters is only called here.
 	if glb.RuntimeArgs.GaussianDist {
-		calculateGaussianPriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+		calculateGaussianPriors(group, gp, fingerprintsInMemory, fingerprintsOrdering)
 	} else {
-		calculatePriors(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+		calculatePriors(group, gp, fingerprintsInMemory, fingerprintsOrdering)
 	}
 	var results = *parameters.NewResultsParameters()
-	for n := range ps.Priors {
-		ps.Results[n] = results
+	for n := range gp.Priors {
+		gp.Results[n] = results
 	}
-	for n := range ps.Priors {
-		crossValidation(group, n, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	for n := range gp.Priors {
+		crossValidation(group, n, gp, fingerprintsInMemory, fingerprintsOrdering)
 	}
-	dbm.SaveParameters(group, ps)
+	//dbm.SaveParameters(group, ps)
 }
 
 // (1/FoldCrossValidation) of the learned fingerprints are predicted with ps data, then results are wrote in ps.Results
-func crossValidation(group string, n string, ps *parameters.FullParameters, fingerprintsInMemory map[string]parameters.Fingerprint, fingerprintsOrdering []string) float64 {
-	for loc := range ps.NetworkLocs[n] {
-		ps.Results[n].TotalLocations[loc] = 0
-		ps.Results[n].CorrectLocations[loc] = 0
-		ps.Results[n].Accuracy[loc] = 0
-		ps.Results[n].Guess[loc] = make(map[string]int)
+func crossValidation(group string, n string,gp *dbm.Group, fingerprintsInMemory map[string]parameters.Fingerprint, fingerprintsOrdering []string) float64 {
+	//mainGp := dbm.GM.GetGroup(group)
+	//gp := dbm.GM.GetGroup(group).Get()
+	//defer mainGp
+
+	for loc := range gp.Get_NetworkLocs()[n] {
+		gp.Results[n].TotalLocations[loc] = 0
+		gp.Results[n].CorrectLocations[loc] = 0
+		gp.Results[n].Accuracy[loc] = 0
+		gp.Results[n].Guess[loc] = make(map[string]int)
 	}
 
 	for _, v1 := range fingerprintsOrdering {
@@ -148,60 +158,60 @@ func crossValidation(group string, n string, ps *parameters.FullParameters, fing
 		if len(v2.WifiFingerprint) == 0 {
 			continue
 		}
-		if _, ok := ps.NetworkLocs[n][v2.Location]; ok {
-			locationGuess, _ := CalculatePosterior(v2, *ps)
-			ps.Results[n].TotalLocations[v2.Location]++ //set TotalLocations
+		if _, ok := gp.NetworkLocs[n][v2.Location]; ok {
+			locationGuess, _ := CalculatePosterior(v2, gp)
+			gp.Results[n].TotalLocations[v2.Location]++ //set TotalLocations
 			if locationGuess == v2.Location {
-				ps.Results[n].CorrectLocations[v2.Location]++ //set CorrectLocations
+				gp.Results[n].CorrectLocations[v2.Location]++ //set CorrectLocations
 			}
-			if _, ok := ps.Results[n].Guess[v2.Location]; !ok {
-				ps.Results[n].Guess[v2.Location] = make(map[string]int)
+			if _, ok := gp.Results[n].Guess[v2.Location]; !ok {
+				gp.Results[n].Guess[v2.Location] = make(map[string]int)
 			}
-			if _, ok := ps.Results[n].Guess[v2.Location][locationGuess]; !ok {
-				ps.Results[n].Guess[v2.Location][locationGuess] = 0
+			if _, ok := gp.Results[n].Guess[v2.Location][locationGuess]; !ok {
+				gp.Results[n].Guess[v2.Location][locationGuess] = 0
 			}
-			ps.Results[n].Guess[v2.Location][locationGuess]++ //set Guess
+			gp.Results[n].Guess[v2.Location][locationGuess]++ //set Guess
 		}
 
 	}
 
 	average := float64(0)
-	for loc := range ps.NetworkLocs[n] {
-		if ps.Results[n].TotalLocations[loc] > 0 {
+	for loc := range gp.NetworkLocs[n] {
+		if gp.Results[n].TotalLocations[loc] > 0 {
 			// fmt.Println(ps.Results[n].CorrectLocations[loc], ps.Results[n].TotalLocations[loc])
 			// set Accuracy
-			ps.Results[n].Accuracy[loc] = int(100.0 * ps.Results[n].CorrectLocations[loc] / ps.Results[n].TotalLocations[loc])
-			average += float64(ps.Results[n].Accuracy[loc])
+			gp.Results[n].Accuracy[loc] = int(100.0 * gp.Results[n].CorrectLocations[loc] / gp.Results[n].TotalLocations[loc])
+			average += float64(gp.Results[n].Accuracy[loc])
 		}
 	}
-	average = average / float64(len(ps.NetworkLocs[n]))
+	average = average / float64(len(gp.NetworkLocs[n]))
 
 	return average
 }
 
 // calculatePriors generates the ps.Prior(P,NP,MacFreq,NMacFreq) data and ps.MacVariability for Naive-Bayes classification. Now deprecated, use calculatePriorsThreaded instead.
 //todo: write calculatePriorsThreaded function
-func calculatePriors(group string, ps *parameters.FullParameters, fingerprintsInMemory map[string]parameters.Fingerprint, fingerprintsOrdering []string) {
+func calculatePriors(group string, gp *dbm.Group, fingerprintsInMemory map[string]parameters.Fingerprint, fingerprintsOrdering []string) {
 	// defer timeTrack(time.Now(), "calculatePriors")
-	ps.Priors = make(map[string]parameters.PriorParameters)
-	for n := range ps.NetworkLocs {
+	gp.Priors = make(map[string]parameters.PriorParameters)
+	for n := range gp.NetworkLocs {
 		var newPrior = *parameters.NewPriorParameters()
-		ps.Priors[n] = newPrior
+		gp.Priors[n] = newPrior
 	}
 
 	// Initialization
-	ps.MacVariability = make(map[string]float32)
-	for n := range ps.Priors {
-		ps.Priors[n].Special["MacFreqMin"] = float64(100)
-		ps.Priors[n].Special["NMacFreqMin"] = float64(100)
-		for loc := range ps.NetworkLocs[n] {
-			ps.Priors[n].P[loc] = make(map[string][]float32)
-			ps.Priors[n].NP[loc] = make(map[string][]float32)
-			ps.Priors[n].MacFreq[loc] = make(map[string]float32)
-			ps.Priors[n].NMacFreq[loc] = make(map[string]float32)
-			for mac := range ps.NetworkMacs[n] {
-				ps.Priors[n].P[loc][mac] = make([]float32, RssiPartitions)
-				ps.Priors[n].NP[loc][mac] = make([]float32, RssiPartitions)
+	gp.MacVariability = make(map[string]float32)
+	for n := range gp.Priors {
+		gp.Priors[n].Special["MacFreqMin"] = float64(100)
+		gp.Priors[n].Special["NMacFreqMin"] = float64(100)
+		for loc := range gp.NetworkLocs[n] {
+			gp.Priors[n].P[loc] = make(map[string][]float32)
+			gp.Priors[n].NP[loc] = make(map[string][]float32)
+			gp.Priors[n].MacFreq[loc] = make(map[string]float32)
+			gp.Priors[n].NMacFreq[loc] = make(map[string]float32)
+			for mac := range gp.NetworkMacs[n] {
+				gp.Priors[n].P[loc][mac] = make([]float32, RssiPartitions)
+				gp.Priors[n].NP[loc][mac] = make([]float32, RssiPartitions)
 			}
 		}
 	}
@@ -216,13 +226,13 @@ func calculatePriors(group string, ps *parameters.FullParameters, fingerprintsIn
 			macs = append(macs, router.Mac)
 		}
 
-		// todo: ps is set in the getParameters function (getParameters is called before calculatePriors), so calling the hasNetwork function returns true
-		networkName, inNetwork := clustring.HasNetwork(ps.NetworkMacs, macs)
+		// todo: gp is set in the getParameters function (getParameters is called before calculatePriors), so calling the hasNetwork function returns true
+		networkName, inNetwork := clustring.HasNetwork(gp.NetworkMacs, macs)
 		if inNetwork {
 			for _, router := range v2.WifiFingerprint {
 				if router.Rssi > glb.MinRssiOpt {
 					//fmt.Println(router.Rssi)
-					ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-glb.MinRssi] += PdfType[0]
+					gp.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-glb.MinRssi] += PdfType[0]
 					//make the real probability of the rssi distribution
 					for i, val := range PdfType {
 						if i > 0 {
@@ -232,8 +242,8 @@ func calculatePriors(group string, ps *parameters.FullParameters, fingerprintsIn
 							//	fmt.Println("router.rssi-MinRSSi-i=", router.Rssi-MinRssi-i)
 							//}
 							if (router.Rssi-glb.MinRssi-i > 0 && router.Rssi-glb.MinRssi+i < RssiPartitions) {
-								ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-glb.MinRssi-i] += val
-								ps.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-glb.MinRssi+i] += val
+								gp.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-glb.MinRssi-i] += val
+								gp.Priors[networkName].P[v2.Location][router.Mac][router.Rssi-glb.MinRssi+i] += val
 							}
 
 						}
@@ -247,15 +257,15 @@ func calculatePriors(group string, ps *parameters.FullParameters, fingerprintsIn
 	}
 
 	// Calculate the nP
-	for n := range ps.Priors {
-		for locN := range ps.NetworkLocs[n] {
-			for loc := range ps.NetworkLocs[n] {
+	for n := range gp.Priors {
+		for locN := range gp.NetworkLocs[n] {
+			for loc := range gp.NetworkLocs[n] {
 				if loc != locN {
-					for mac := range ps.NetworkMacs[n] {
-						for i := range ps.Priors[n].P[locN][mac] {
+					for mac := range gp.NetworkMacs[n] {
+						for i := range gp.Priors[n].P[locN][mac] {
 							//i is rssi
-							if ps.Priors[n].P[loc][mac][i] > 0 {
-								ps.Priors[n].NP[locN][mac][i] += ps.Priors[n].P[loc][mac][i]
+							if gp.Priors[n].P[loc][mac][i] > 0 {
+								gp.Priors[n].NP[locN][mac][i] += gp.Priors[n].P[loc][mac][i]
 							}
 						}
 					}
@@ -266,25 +276,25 @@ func calculatePriors(group string, ps *parameters.FullParameters, fingerprintsIn
 
 	// Add in absentee, normalize P and nP and determine MacVariability
 
-	for n := range ps.Priors {
+	for n := range gp.Priors {
 		macAverages := make(map[string][]float32)
 
-		for loc := range ps.NetworkLocs[n] {
-			for mac := range ps.NetworkMacs[n] {
-				for i := range ps.Priors[n].P[loc][mac] { //i is rssi
+		for loc := range gp.NetworkLocs[n] {
+			for mac := range gp.NetworkMacs[n] {
+				for i := range gp.Priors[n].P[loc][mac] { //i is rssi
 					//why using Absentee instead of 0
-					ps.Priors[n].P[loc][mac][i] += Absentee
-					ps.Priors[n].NP[loc][mac][i] += Absentee
+					gp.Priors[n].P[loc][mac][i] += Absentee
+					gp.Priors[n].NP[loc][mac][i] += Absentee
 				}
 				total := float32(0) //total = sum of probabilities(P) of all rssi for a specific mac and location
-				for _, val := range ps.Priors[n].P[loc][mac] {
+				for _, val := range gp.Priors[n].P[loc][mac] {
 					total += val
 				}
 				averageMac := float32(0)
-				for i, val := range ps.Priors[n].P[loc][mac] {
+				for i, val := range gp.Priors[n].P[loc][mac] {
 					if val > float32(0) { //val is always => Absentee >0 --> it is required in normalization
-						ps.Priors[n].P[loc][mac][i] = val / total                //normalizing P
-						averageMac += glb.RssiRange[i] * ps.Priors[n].P[loc][mac][i] // RssiRange[i] equals to rssi.
+						gp.Priors[n].P[loc][mac][i] = val / total                    //normalizing P
+						averageMac += glb.RssiRange[i] * gp.Priors[n].P[loc][mac][i] // RssiRange[i] equals to rssi.
 						//todo: average mac is not valid if the probability distribution (P) is not a standard gaussian function,e.g. has two peaks
 					}
 				}
@@ -298,12 +308,12 @@ func calculatePriors(group string, ps *parameters.FullParameters, fingerprintsIn
 
 				//normalizing NP
 				total = float32(0)
-				for i := range ps.Priors[n].NP[loc][mac] {
-					total += ps.Priors[n].NP[loc][mac][i]
+				for i := range gp.Priors[n].NP[loc][mac] {
+					total += gp.Priors[n].NP[loc][mac][i]
 				}
 				if total > 0 {
-					for i := range ps.Priors[n].NP[loc][mac] {
-						ps.Priors[n].NP[loc][mac][i] = ps.Priors[n].NP[loc][mac][i] / total
+					for i := range gp.Priors[n].NP[loc][mac] {
+						gp.Priors[n].NP[loc][mac][i] = gp.Priors[n].NP[loc][mac][i] / total
 					}
 				}
 			}
@@ -313,7 +323,7 @@ func calculatePriors(group string, ps *parameters.FullParameters, fingerprintsIn
 		for mac := range macAverages {
 			//todo: why 2?
 			if len(macAverages[mac]) <= 2 {
-				ps.MacVariability[mac] = float32(1)
+				gp.MacVariability[mac] = float32(1)
 			} else {
 				maxVal := float32(-10000)
 				for _, val := range macAverages[mac] {
@@ -326,73 +336,80 @@ func calculatePriors(group string, ps *parameters.FullParameters, fingerprintsIn
 					macAverages[mac][i] = maxVal / val // normalization(because val is < 0, we use maxVal/val instead of val /maxVal)
 				}
 				// MacVariability shows the standard deviation of a specific AP in all locations
-				ps.MacVariability[mac] = glb.StandardDeviation(macAverages[mac]) //refer to line 300 todo
+				gp.MacVariability[mac] = glb.StandardDeviation(macAverages[mac]) //refer to line 300 todo
 			}
 		}
 	}
 
 	// Determine mac frequencies and normalize
-	for n := range ps.Priors {
-		for loc := range ps.NetworkLocs[n] {
+	for n := range gp.Priors {
+		for loc := range gp.NetworkLocs[n] {
 			maxCount := 0
-			for mac := range ps.MacCountByLoc[loc] {
-				if ps.MacCountByLoc[loc][mac] > maxCount {
-					maxCount = ps.MacCountByLoc[loc][mac] //maxCount:repeat number of the most seen mac in a location
+			for mac := range gp.MacCountByLoc[loc] {
+				if gp.MacCountByLoc[loc][mac] > maxCount {
+					maxCount = gp.MacCountByLoc[loc][mac] //maxCount:repeat number of the most seen mac in a location
 
 				}
 			}
 			//fmt.Println("MAX COUNT:", maxCount)
-			for mac := range ps.MacCountByLoc[loc] {
-				//if a mac is not seen in a location, the macFreq of that mac equals to 0 (ps.MacCountByLoc[loc][mac]).
+			for mac := range gp.MacCountByLoc[loc] {
+				//if a mac is not seen in a location, the macFreq of that mac equals to 0 (gp.MacCountByLoc[loc][mac]).
 				//todo: Does the above mentioned 0 value make some error in the bayesian function?
-				ps.Priors[n].MacFreq[loc][mac] = float32(ps.MacCountByLoc[loc][mac]) / float32(maxCount)
-				//fmt.Println("mac freq:", ps.Priors[n].MacFreq[loc][mac])
-				if float64(ps.Priors[n].MacFreq[loc][mac]) < ps.Priors[n].Special["MacFreqMin"] {
-					ps.Priors[n].Special["MacFreqMin"] = float64(ps.Priors[n].MacFreq[loc][mac])
+				gp.Priors[n].MacFreq[loc][mac] = float32(gp.MacCountByLoc[loc][mac]) / float32(maxCount)
+				//fmt.Println("mac freq:", gp.Priors[n].MacFreq[loc][mac])
+				if float64(gp.Priors[n].MacFreq[loc][mac]) < gp.Priors[n].Special["MacFreqMin"] {
+					gp.Priors[n].Special["MacFreqMin"] = float64(gp.Priors[n].MacFreq[loc][mac])
 				}
 			}
 		}
 	}
 
 	// Determine negative mac frequencies and normalize
-	for n := range ps.Priors {
-		for loc1 := range ps.Priors[n].MacFreq {
+	for n := range gp.Priors {
+		for loc1 := range gp.Priors[n].MacFreq {
 			sum := float32(0)
-			for loc2 := range ps.Priors[n].MacFreq {
+			for loc2 := range gp.Priors[n].MacFreq {
 				if loc2 != loc1 {
-					for mac := range ps.Priors[n].MacFreq[loc2] {
-						ps.Priors[n].NMacFreq[loc1][mac] += ps.Priors[n].MacFreq[loc2][mac]
+					for mac := range gp.Priors[n].MacFreq[loc2] {
+						gp.Priors[n].NMacFreq[loc1][mac] += gp.Priors[n].MacFreq[loc2][mac]
 					}
 					sum++
 				}
 			}
-			// sum = i(i-1); i = ps.NetworkLocs[n]
+			// sum = i(i-1); i = gp.NetworkLocs[n]
 			// Normalize
 			//Done: it seems that sum is not calculated correctly. It should be equals to "number of locations-1"
 			if sum > 0 {
-				for mac := range ps.Priors[n].MacFreq[loc1] {
-					ps.Priors[n].NMacFreq[loc1][mac] = ps.Priors[n].NMacFreq[loc1][mac] / sum
-					if float64(ps.Priors[n].NMacFreq[loc1][mac]) < ps.Priors[n].Special["NMacFreqMin"] {
-						ps.Priors[n].Special["NMacFreqMin"] = float64(ps.Priors[n].NMacFreq[loc1][mac])
+				for mac := range gp.Priors[n].MacFreq[loc1] {
+					gp.Priors[n].NMacFreq[loc1][mac] = gp.Priors[n].NMacFreq[loc1][mac] / sum
+					if float64(gp.Priors[n].NMacFreq[loc1][mac]) < gp.Priors[n].Special["NMacFreqMin"] {
+						gp.Priors[n].Special["NMacFreqMin"] = float64(gp.Priors[n].NMacFreq[loc1][mac])
 					}
 				}
 			}
 		}
 	}
 	//todo: the default values for MixIn and Cutoff should be set as initial values not hardcoded values
-	for n := range ps.Priors {
-		ps.Priors[n].Special["MixIn"] = 0.5
+	for n := range gp.Priors {
+		gp.Priors[n].Special["MixIn"] = 0.5
 		//todo: spell check for Varability!
-		ps.Priors[n].Special["VarabilityCutoff"] = 0
+		gp.Priors[n].Special["VarabilityCutoff"] = 0
 	}
+
+
+	////#cache
+	//gp := dbm.GM.GetGroup(group)
+	//
+	//gp.Set_Priors(gp.Priors)
+	//gp.Set_MacVariability(gp.MacVariability)
 }
 
-func calculateGaussianPriors(group string, ps *parameters.FullParameters, fingerprintsInMemory map[string]parameters.Fingerprint, fingerprintsOrdering []string) {
+func calculateGaussianPriors(group string, gp *dbm.Group, fingerprintsInMemory map[string]parameters.Fingerprint, fingerprintsOrdering []string) {
 	// defer timeTrack(time.Now(), "calculatePriors")
-	ps.Priors = make(map[string]parameters.PriorParameters)
-	for n := range ps.NetworkLocs {
+	gp.Priors = make(map[string]parameters.PriorParameters)
+	for n := range gp.NetworkLocs {
 		var newPrior = *parameters.NewPriorParameters()
-		ps.Priors[n] = newPrior
+		gp.Priors[n] = newPrior
 	}
 
 	// Initialization
@@ -400,28 +417,28 @@ func calculateGaussianPriors(group string, ps *parameters.FullParameters, finger
 	RssiesVariance := make(map[string]map[string]float64)
 	RssiesAvg := make(map[string]map[string]float64)
 
-	ps.MacVariability = make(map[string]float32)
-	for n := range ps.Priors {
-		ps.Priors[n].Special["MacFreqMin"] = float64(100)
-		ps.Priors[n].Special["NMacFreqMin"] = float64(100)
-		for loc := range ps.NetworkLocs[n] {
-			ps.Priors[n].P[loc] = make(map[string][]float32)
+	gp.MacVariability = make(map[string]float32)
+	for n := range gp.Priors {
+		gp.Priors[n].Special["MacFreqMin"] = float64(100)
+		gp.Priors[n].Special["NMacFreqMin"] = float64(100)
+		for loc := range gp.NetworkLocs[n] {
+			gp.Priors[n].P[loc] = make(map[string][]float32)
 
 			Rssies[loc] = make(map[string][]float64)
 			RssiesVariance[loc] = make(map[string]float64)
 			RssiesAvg[loc] = make(map[string]float64)
 
-			ps.Priors[n].NP[loc] = make(map[string][]float32)
-			ps.Priors[n].MacFreq[loc] = make(map[string]float32)
-			ps.Priors[n].NMacFreq[loc] = make(map[string]float32)
-			for mac := range ps.NetworkMacs[n] {
-				ps.Priors[n].P[loc][mac] = make([]float32, RssiPartitions)
+			gp.Priors[n].NP[loc] = make(map[string][]float32)
+			gp.Priors[n].MacFreq[loc] = make(map[string]float32)
+			gp.Priors[n].NMacFreq[loc] = make(map[string]float32)
+			for mac := range gp.NetworkMacs[n] {
+				gp.Priors[n].P[loc][mac] = make([]float32, RssiPartitions)
 
 				Rssies[loc][mac] = make([]float64, 0)
 				RssiesVariance[loc][mac] = float64(0)
 				RssiesAvg[loc][mac] = float64(0)
 
-				ps.Priors[n].NP[loc][mac] = make([]float32, RssiPartitions)
+				gp.Priors[n].NP[loc][mac] = make([]float32, RssiPartitions)
 			}
 		}
 	}
@@ -435,7 +452,7 @@ func calculateGaussianPriors(group string, ps *parameters.FullParameters, finger
 		for _, router := range v2.WifiFingerprint {
 			macs = append(macs, router.Mac)
 		}
-		_, inNetwork := clustring.HasNetwork(ps.NetworkMacs, macs)
+		_, inNetwork := clustring.HasNetwork(gp.NetworkMacs, macs)
 		if inNetwork {
 			for _, router := range v2.WifiFingerprint {
 				if router.Rssi > glb.MinRssiOpt {
@@ -463,9 +480,9 @@ func calculateGaussianPriors(group string, ps *parameters.FullParameters, finger
 	g := NewGaussian(0, 1)
 
 	// Create gaussian distribution; set probability for each rssi of each mac in each location
-	for n := range ps.Priors {
-		for loc := range ps.NetworkLocs[n] {
-			for mac := range ps.NetworkMacs[n] {
+	for n := range gp.Priors {
+		for loc := range gp.NetworkLocs[n] {
+			for mac := range gp.NetworkMacs[n] {
 				for rssi := 0; rssi < len(glb.RssiRange); rssi++ {
 					if (RssiesVariance[loc][mac] == 0) {
 						g = NewGaussian(RssiesAvg[loc][mac], 1)
@@ -476,22 +493,22 @@ func calculateGaussianPriors(group string, ps *parameters.FullParameters, finger
 					//fmt.Println(loc)
 					//fmt.Println(mac)
 					//fmt.Println(rssi)
-					ps.Priors[n].P[loc][mac][rssi] = float32(g.Pdf(float64(rssi)))
+					gp.Priors[n].P[loc][mac][rssi] = float32(g.Pdf(float64(rssi)))
 				}
 			}
 		}
 	}
 
 	// Calculate the nP
-	for n := range ps.Priors {
-		for locN := range ps.NetworkLocs[n] {
-			for loc := range ps.NetworkLocs[n] {
+	for n := range gp.Priors {
+		for locN := range gp.NetworkLocs[n] {
+			for loc := range gp.NetworkLocs[n] {
 				if loc != locN {
-					for mac := range ps.NetworkMacs[n] {
-						for i := range ps.Priors[n].P[locN][mac] {
+					for mac := range gp.NetworkMacs[n] {
+						for i := range gp.Priors[n].P[locN][mac] {
 							//i is rssi
-							if ps.Priors[n].P[loc][mac][i] > 0 {
-								ps.Priors[n].NP[locN][mac][i] += ps.Priors[n].P[loc][mac][i]
+							if gp.Priors[n].P[loc][mac][i] > 0 {
+								gp.Priors[n].NP[locN][mac][i] += gp.Priors[n].P[loc][mac][i]
 							}
 						}
 					}
@@ -502,25 +519,25 @@ func calculateGaussianPriors(group string, ps *parameters.FullParameters, finger
 
 	// Add in absentee, normalize P and nP and determine MacVariability
 
-	for n := range ps.Priors {
+	for n := range gp.Priors {
 		macAverages := make(map[string][]float32)
 
-		for loc := range ps.NetworkLocs[n] {
-			for mac := range ps.NetworkMacs[n] {
-				for i := range ps.Priors[n].P[loc][mac] { //i is rssi
+		for loc := range gp.NetworkLocs[n] {
+			for mac := range gp.NetworkMacs[n] {
+				for i := range gp.Priors[n].P[loc][mac] { //i is rssi
 					//why using Absentee instead of 0
-					ps.Priors[n].P[loc][mac][i] += Absentee
-					ps.Priors[n].NP[loc][mac][i] += Absentee
+					gp.Priors[n].P[loc][mac][i] += Absentee
+					gp.Priors[n].NP[loc][mac][i] += Absentee
 				}
 				total := float32(0) //total = sum of probabilities(P) of all rssi for a specific mac and location
-				for _, val := range ps.Priors[n].P[loc][mac] {
+				for _, val := range gp.Priors[n].P[loc][mac] {
 					total += val
 				}
 				averageMac := float32(0)
-				for i, val := range ps.Priors[n].P[loc][mac] {
+				for i, val := range gp.Priors[n].P[loc][mac] {
 					if val > float32(0) { //val is always => Absentee >0 --> it is required in normalization
-						ps.Priors[n].P[loc][mac][i] = val / total                //normalizing P
-						averageMac += glb.RssiRange[i] * ps.Priors[n].P[loc][mac][i] // RssiRange[i] equals to rssi.
+						gp.Priors[n].P[loc][mac][i] = val / total                //normalizing P
+						averageMac += glb.RssiRange[i] * gp.Priors[n].P[loc][mac][i] // RssiRange[i] equals to rssi.
 						//todo: average mac is not valid if the probability distribution (P) is not a standard gaussian function,e.g. has two peaks
 					}
 				}
@@ -534,12 +551,12 @@ func calculateGaussianPriors(group string, ps *parameters.FullParameters, finger
 
 				//normalizing NP
 				total = float32(0)
-				for i := range ps.Priors[n].NP[loc][mac] {
-					total += ps.Priors[n].NP[loc][mac][i]
+				for i := range gp.Priors[n].NP[loc][mac] {
+					total += gp.Priors[n].NP[loc][mac][i]
 				}
 				if total > 0 {
-					for i := range ps.Priors[n].NP[loc][mac] {
-						ps.Priors[n].NP[loc][mac][i] = ps.Priors[n].NP[loc][mac][i] / total
+					for i := range gp.Priors[n].NP[loc][mac] {
+						gp.Priors[n].NP[loc][mac][i] = gp.Priors[n].NP[loc][mac][i] / total
 					}
 				}
 			}
@@ -549,7 +566,7 @@ func calculateGaussianPriors(group string, ps *parameters.FullParameters, finger
 		for mac := range macAverages {
 			//todo: why 2?
 			if len(macAverages[mac]) <= 2 {
-				ps.MacVariability[mac] = float32(1)
+				gp.MacVariability[mac] = float32(1)
 			} else {
 				maxVal := float32(-10000)
 				for _, val := range macAverages[mac] {
@@ -562,42 +579,42 @@ func calculateGaussianPriors(group string, ps *parameters.FullParameters, finger
 					macAverages[mac][i] = maxVal / val // normalization(because val is < 0, we use maxVal/val instead of val /maxVal)
 				}
 				// MacVariability shows the standard deviation of a specific AP in all locations
-				ps.MacVariability[mac] = glb.StandardDeviation(macAverages[mac]) //refer to line 300 todo
+				gp.MacVariability[mac] = glb.StandardDeviation(macAverages[mac]) //refer to line 300 todo
 			}
 		}
 	}
 
 	// Determine mac frequencies and normalize
-	for n := range ps.Priors {
-		for loc := range ps.NetworkLocs[n] {
+	for n := range gp.Priors {
+		for loc := range gp.NetworkLocs[n] {
 			maxCount := 0
-			for mac := range ps.MacCountByLoc[loc] {
-				if ps.MacCountByLoc[loc][mac] > maxCount {
-					maxCount = ps.MacCountByLoc[loc][mac] //maxCount:repeat number of the most seen mac in a location
+			for mac := range gp.MacCountByLoc[loc] {
+				if gp.MacCountByLoc[loc][mac] > maxCount {
+					maxCount = gp.MacCountByLoc[loc][mac] //maxCount:repeat number of the most seen mac in a location
 
 				}
 			}
 			//fmt.Println("MAX COUNT:", maxCount)
-			for mac := range ps.MacCountByLoc[loc] {
+			for mac := range gp.MacCountByLoc[loc] {
 				//if a mac is not seen in a location, the macFreq of that mac equals to 0 (ps.MacCountByLoc[loc][mac]).
 				//todo: Does the above mentioned 0 value make some error in the bayesian function?
-				ps.Priors[n].MacFreq[loc][mac] = float32(ps.MacCountByLoc[loc][mac]) / float32(maxCount)
+				gp.Priors[n].MacFreq[loc][mac] = float32(gp.MacCountByLoc[loc][mac]) / float32(maxCount)
 				//fmt.Println("mac freq:", ps.Priors[n].MacFreq[loc][mac])
-				if float64(ps.Priors[n].MacFreq[loc][mac]) < ps.Priors[n].Special["MacFreqMin"] {
-					ps.Priors[n].Special["MacFreqMin"] = float64(ps.Priors[n].MacFreq[loc][mac])
+				if float64(gp.Priors[n].MacFreq[loc][mac]) < gp.Priors[n].Special["MacFreqMin"] {
+					gp.Priors[n].Special["MacFreqMin"] = float64(gp.Priors[n].MacFreq[loc][mac])
 				}
 			}
 		}
 	}
 
 	// Determine negative mac frequencies and normalize
-	for n := range ps.Priors {
-		for loc1 := range ps.Priors[n].MacFreq {
+	for n := range gp.Priors {
+		for loc1 := range gp.Priors[n].MacFreq {
 			sum := float32(0)
-			for loc2 := range ps.Priors[n].MacFreq {
+			for loc2 := range gp.Priors[n].MacFreq {
 				if loc2 != loc1 {
-					for mac := range ps.Priors[n].MacFreq[loc2] {
-						ps.Priors[n].NMacFreq[loc1][mac] += ps.Priors[n].MacFreq[loc2][mac]
+					for mac := range gp.Priors[n].MacFreq[loc2] {
+						gp.Priors[n].NMacFreq[loc1][mac] += gp.Priors[n].MacFreq[loc2][mac]
 					}
 					sum++
 				}
@@ -606,20 +623,20 @@ func calculateGaussianPriors(group string, ps *parameters.FullParameters, finger
 			// Normalize
 			//Done: it seems that sum is not calculated correctly. It should be equals to "number of locations-1"
 			if sum > 0 {
-				for mac := range ps.Priors[n].MacFreq[loc1] {
-					ps.Priors[n].NMacFreq[loc1][mac] = ps.Priors[n].NMacFreq[loc1][mac] / sum
-					if float64(ps.Priors[n].NMacFreq[loc1][mac]) < ps.Priors[n].Special["NMacFreqMin"] {
-						ps.Priors[n].Special["NMacFreqMin"] = float64(ps.Priors[n].NMacFreq[loc1][mac])
+				for mac := range gp.Priors[n].MacFreq[loc1] {
+					gp.Priors[n].NMacFreq[loc1][mac] = gp.Priors[n].NMacFreq[loc1][mac] / sum
+					if float64(gp.Priors[n].NMacFreq[loc1][mac]) < gp.Priors[n].Special["NMacFreqMin"] {
+						gp.Priors[n].Special["NMacFreqMin"] = float64(gp.Priors[n].NMacFreq[loc1][mac])
 					}
 				}
 			}
 		}
 	}
 	//todo: the default values for MixIn and Cutoff should be set as initial values not hardcoded values
-	for n := range ps.Priors {
-		ps.Priors[n].Special["MixIn"] = 0.5
+	for n := range gp.Priors {
+		gp.Priors[n].Special["MixIn"] = 0.5
 		//todo: spell check for Varability!
-		ps.Priors[n].Special["VarabilityCutoff"] = 0
+		gp.Priors[n].Special["VarabilityCutoff"] = 0
 	}
 
 }
@@ -631,21 +648,24 @@ func calculateGaussianPriors(group string, ps *parameters.FullParameters, finger
 //fingerprintsOrdering:
 //updates ps with the new fingerprint.
 //(The Parameters which are manipulated: NetworkMacs,NetworkLocs,UniqueMacs,UniqueLocs,MacCount,MacCountByLoc and Loaded)
-func GetParameters(group string, ps *parameters.FullParameters, fingerprintsInMemory map[string]parameters.Fingerprint, fingerprintsOrdering []string) {
+func GetParameters(group string, gp *dbm.Group, fingerprintsInMemory map[string]parameters.Fingerprint, fingerprintsOrdering []string) {
 
 	persistentPs, err := dbm.OpenPersistentParameters(group) //persistentPs is just like ps but with renamed network name; e.g.: "0" -> "1"
 	if err != nil {
 		//log.Fatal(err)
 		glb.Error.Println(err)
 	}
+
+
+
 	//glb.Error.Println("d")
-	ps.NetworkMacs = make(map[string]map[string]bool)
-	ps.NetworkLocs = make(map[string]map[string]bool)
-	ps.UniqueMacs = []string{}
-	ps.UniqueLocs = []string{}
-	ps.MacCount = make(map[string]int)
-	ps.MacCountByLoc = make(map[string]map[string]int)
-	ps.Loaded = true
+	gp.NetworkMacs = make(map[string]map[string]bool)
+	gp.NetworkLocs = make(map[string]map[string]bool)
+	gp.UniqueMacs = []string{}
+	gp.UniqueLocs = []string{}
+	gp.MacCount = make(map[string]int)
+	gp.MacCountByLoc = make(map[string]map[string]int)
+	//gp.Loaded = true
 	//opening the db
 	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	//defer db.Close()
@@ -663,13 +683,13 @@ func GetParameters(group string, ps *parameters.FullParameters, fingerprintsInMe
 		v2 := fingerprintsInMemory[v1]
 
 		// append the fingerprint location to UniqueLocs array if doesn't exist in it.
-		if !glb.StringInSlice(v2.Location, ps.UniqueLocs) {
-			ps.UniqueLocs = append(ps.UniqueLocs, v2.Location)
+		if !glb.StringInSlice(v2.Location, gp.UniqueLocs) {
+			gp.UniqueLocs = append(gp.UniqueLocs, v2.Location)
 		}
 
 		// MacCountByLoc initialization for new location
-		if _, ok := ps.MacCountByLoc[v2.Location]; !ok {
-			ps.MacCountByLoc[v2.Location] = make(map[string]int)
+		if _, ok := gp.MacCountByLoc[v2.Location]; !ok {
+			gp.MacCountByLoc[v2.Location] = make(map[string]int)
 		}
 
 		//// building network
@@ -680,29 +700,29 @@ func GetParameters(group string, ps *parameters.FullParameters, fingerprintsInMe
 			macs = append(macs, router.Mac)
 
 			// append the fingerprint mac to UniqueMacs array if doesn't exist in it.
-			if !glb.StringInSlice(router.Mac, ps.UniqueMacs) {
-				ps.UniqueMacs = append(ps.UniqueMacs, router.Mac)
+			if !glb.StringInSlice(router.Mac, gp.UniqueMacs) {
+				gp.UniqueMacs = append(gp.UniqueMacs, router.Mac)
 			}
 
 			// mac count
-			if _, ok := ps.MacCount[router.Mac]; !ok {
-				ps.MacCount[router.Mac] = 0
+			if _, ok := gp.MacCount[router.Mac]; !ok {
+				gp.MacCount[router.Mac] = 0
 			}
-			ps.MacCount[router.Mac]++
+			gp.MacCount[router.Mac]++
 
 			// mac by location count
-			if _, ok := ps.MacCountByLoc[v2.Location][router.Mac]; !ok {
-				ps.MacCountByLoc[v2.Location][router.Mac] = 0
+			if _, ok := gp.MacCountByLoc[v2.Location][router.Mac]; !ok {
+				gp.MacCountByLoc[v2.Location][router.Mac] = 0
 			}
-			ps.MacCountByLoc[v2.Location][router.Mac]++
+			gp.MacCountByLoc[v2.Location][router.Mac]++
 		}
 
 		// building network
 		//ps.NetworkMacs = buildNetwork(ps.NetworkMacs, macs)
 	}
 	// todo: network definition and buildNetwork() must be redefined
-	ps.NetworkMacs = clustring.BuildNetwork(ps.NetworkMacs, macs)
-	ps.NetworkMacs = clustring.MergeNetwork(ps.NetworkMacs)
+	gp.NetworkMacs = clustring.BuildNetwork(gp.NetworkMacs, macs)
+	gp.NetworkMacs = clustring.MergeNetwork(gp.NetworkMacs)
 
 	//Error.Println("ps.Networkmacs", ps.NetworkMacs)
 	// Rename the NetworkMacs
@@ -713,16 +733,16 @@ func GetParameters(group string, ps *parameters.FullParameters, fingerprintsInMe
 
 		}
 		//todo: \/ wtf? Rename procedure could be redefined better.
-		for n := range ps.NetworkMacs {
+		for n := range gp.NetworkMacs {
 			renamed := false
-			for mac := range ps.NetworkMacs[n] {
+			for mac := range gp.NetworkMacs[n] {
 				for renamedN := range persistentPs.NetworkRenamed {
 					if glb.StringInSlice(mac, persistentPs.NetworkRenamed[renamedN]) && !glb.StringInSlice(n, newNames) {
-						ps.NetworkMacs[renamedN] = make(map[string]bool)
-						for k, v := range ps.NetworkMacs[n] {
-							ps.NetworkMacs[renamedN][k] = v //copy ps.NetworkMacs[n] to ps.NetworkMacs[renamedN]
+						gp.NetworkMacs[renamedN] = make(map[string]bool)
+						for k, v := range gp.NetworkMacs[n] {
+							gp.NetworkMacs[renamedN][k] = v //copy ps.NetworkMacs[n] to ps.NetworkMacs[renamedN]
 						}
-						delete(ps.NetworkMacs, n)
+						delete(gp.NetworkMacs, n)
 						renamed = true
 					}
 					if renamed {
@@ -748,15 +768,25 @@ func GetParameters(group string, ps *parameters.FullParameters, fingerprintsInMe
 			macs = append(macs, router.Mac)
 		}
 		//todo: ps.NetworkMacs is created from mac array; so it seems that hasNetwork function doesn't do anything useful!
-		networkName, inNetwork := clustring.HasNetwork(ps.NetworkMacs, macs)
+		networkName, inNetwork := clustring.HasNetwork(gp.NetworkMacs, macs)
 		if inNetwork {
-			if _, ok := ps.NetworkLocs[networkName]; !ok {
-				ps.NetworkLocs[networkName] = make(map[string]bool)
+			if _, ok := gp.NetworkLocs[networkName]; !ok {
+				gp.NetworkLocs[networkName] = make(map[string]bool)
 			}
-			if _, ok := ps.NetworkLocs[networkName][v2.Location]; !ok {
-				ps.NetworkLocs[networkName][v2.Location] = true
+			if _, ok := gp.NetworkLocs[networkName][v2.Location]; !ok {
+				gp.NetworkLocs[networkName][v2.Location] = true
 			}
 		}
 	}
+
+	////#cache
+	//gp := dbm.GM.GetGroup(group)
+	//
+	//gp.Set_NetworkMacs(ps.NetworkMacs)
+	//gp.Set_NetworkLocs(ps.NetworkLocs)
+	//gp.Set_UniqueLocs(ps.UniqueLocs)
+	//gp.Set_UniqueMacs(ps.UniqueMacs)
+	//gp.Set_MacCount(ps.MacCount)
+	//gp.Set_MacCountByLoc(ps.MacCountByLoc)
 
 }

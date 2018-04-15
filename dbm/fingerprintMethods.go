@@ -13,7 +13,7 @@ import (
 )
 
 
-// make a db according to group name
+// make a db according to group Name
 func PutFingerprintIntoDatabase(res parameters.Fingerprint, database string) error {
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, res.Group+".db"), 0600, nil)
 	if err != nil {
@@ -39,7 +39,6 @@ func PutFingerprintIntoDatabase(res parameters.Fingerprint, database string) err
 	return err
 }
 
-
 //returns the filtered macs from macs.json file and remove the other macs from fingerprint
 func FilterFingerprint(res *parameters.Fingerprint) {
 
@@ -50,11 +49,19 @@ func FilterFingerprint(res *parameters.Fingerprint) {
 	//
 	//ok2, ok1 := glb.RuntimeArgs.NeedToFilter[res.Group] //check need for filtering
 	//ok3, ok4 := glb.RuntimeArgs.NotNullFilterList[res.Group] //check that filterMap is null
+
+	//t := GetRuntimePrf(res.Group)
+	//glb.Debug.Println(t)
+	//
+	//t1 := GetRuntimePrf(res.Group)
+	//glb.Debug.Println(t1)
+
 	ok1 := GetRuntimePrf(res.Group).NeedToFilter      //check need for filtering
 	ok2 := GetRuntimePrf(res.Group).NotNullFilterList //check that filterMap is null
-	//
+
 	//glb.Debug.Println(ok1)
 	//glb.Debug.Println(ok2)
+	//glb.Debug.Println(GetSharedPrf(res.Group).FilterMacsMap)
 	//glb.Debug.Println(ok3)
 	//glb.Debug.Println(ok4)
 

@@ -49,7 +49,7 @@ type jobW struct {
 
 
 
-func LearnKnn(group string) error {
+func LearnKnn(groupName string) error {
 	//Debug.Println(Cosine([]float64{1,2,3},[]float64{1,2,4}))
 	//jsonFingerprint = calcMacRate(jsonFingerprint,false)
 
@@ -69,7 +69,7 @@ func LearnKnn(group string) error {
 	clusters := make(map[string][]string)
 	var err error
 
-	fingerprintsOrdering,fingerprintsInMemory,err = dbm.GetLearnFingerPrints(group,true)
+	fingerprintsOrdering,fingerprintsInMemory,err = dbm.GetLearnFingerPrints(groupName,true)
 	if err!=nil {
 		return err
 	}
@@ -98,14 +98,15 @@ func LearnKnn(group string) error {
 	tempKnnFingerprints.FingerprintsOrdering = fingerprintsOrdering
 	tempKnnFingerprints.Clusters = clusters
 
-	err = dbm.SetKnnFingerprints(tempKnnFingerprints,group)
-	if err != nil {
-		glb.Error.Println(err)
-		return err
-	}
-
-	// Set in cache
-	go dbm.SetKnnFPCache(group,tempKnnFingerprints)
+	dbm.GM.GetGroup(groupName).Set_KnnFPs(tempKnnFingerprints)
+	//err = dbm.SetKnnFingerprints(tempKnnFingerprints, groupName)
+	//if err != nil {
+	//	glb.Error.Println(err)
+	//	return err
+	//}
+	//
+	//// Set in cache
+	//go dbm.SetKnnFPCache(groupName,tempKnnFingerprints)
 	return nil
 }
 func TrackKnn(jsonFingerprint parameters.Fingerprint) (error, string) {
@@ -114,26 +115,32 @@ func TrackKnn(jsonFingerprint parameters.Fingerprint) (error, string) {
 	var mainFingerprintsOrdering []string
 	var fingerprintsOrdering []string
 	clusters := make(map[string][]string)
+	//
+	//tempKnnFingerprints, ok := dbm.GetKnnFPCache(jsonFingerprint.Group)
+	//if ok {
+	//	//Debug.Println(tempKnnFingerprints)
+	//	fingerprintsInMemory = tempKnnFingerprints.FingerprintsInMemory
+	//	mainFingerprintsOrdering = tempKnnFingerprints.FingerprintsOrdering
+	//	clusters = tempKnnFingerprints.Clusters
+	//
+	//}else{
+	//	// get knnFp from db
+	//	var tempKnnFingerprints parameters.KnnFingerprints
+	//	var err error
+	//
+	//	tempKnnFingerprints,err = dbm.GetKnnFingerprints(jsonFingerprint.Group)
+	//	if err!=nil{
+	//		glb.Error.Println(err)
+	//	}
+	//	fingerprintsInMemory = tempKnnFingerprints.FingerprintsInMemory
+	//	mainFingerprintsOrdering = tempKnnFingerprints.FingerprintsOrdering
+	//	clusters = tempKnnFingerprints.Clusters
+	//}
 
-	tempKnnFingerprints, ok := dbm.GetKnnFPCache(jsonFingerprint.Group)
-	if ok {
-		//Debug.Println(tempKnnFingerprints)
-		fingerprintsInMemory = tempKnnFingerprints.FingerprintsInMemory
-		mainFingerprintsOrdering = tempKnnFingerprints.FingerprintsOrdering
-		clusters = tempKnnFingerprints.Clusters
-
-	}else{
-		// get knnFp from db
-		var tempKnnFingerprints parameters.KnnFingerprints
-		var err error
-
-		tempKnnFingerprints,err = dbm.GetKnnFingerprints(jsonFingerprint.Group)
-		glb.Error.Println(err)
-		fingerprintsInMemory = tempKnnFingerprints.FingerprintsInMemory
-		mainFingerprintsOrdering = tempKnnFingerprints.FingerprintsOrdering
-		clusters = tempKnnFingerprints.Clusters
-	}
-
+	tempKnnFingerprints := dbm.GM.GetGroup(jsonFingerprint.Group).Get_KnnFPs()
+	fingerprintsInMemory = tempKnnFingerprints.FingerprintsInMemory
+	mainFingerprintsOrdering = tempKnnFingerprints.FingerprintsOrdering
+	clusters = tempKnnFingerprints.Clusters
 
 	// fingerprintOrdering Creation according to clusters and rss rates
 	highRateRssExist := false

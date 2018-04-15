@@ -6,9 +6,6 @@
 
 package parameters
 
-import (
-	"ParsinServer/glb"
-)
 
 // PersistentParameters are not reloaded each time
 type PersistentParameters struct {
@@ -20,6 +17,14 @@ type KnnFingerprints struct {
 	FingerprintsInMemory map[string]Fingerprint `json:"FingerprintsInMemory"`
 	FingerprintsOrdering []string `json:"FingerprintsOrdering"`
 	Clusters map[string][]string `json:"Clusters"`
+}
+
+func NewKnnFingerprints() KnnFingerprints {
+	return KnnFingerprints{
+		FingerprintsInMemory:		make(map[string]Fingerprint),
+		FingerprintsOrdering:		[]string{},
+		Clusters:					make(map[string][]string),
+	}
 }
 
 
@@ -42,39 +47,39 @@ type ResultsParameters struct {
 	CorrectLocations map[string]int            // number of times guessed correctly
 	Guess            map[string]map[string]int // correct(real location) -> guess -> times
 }
-
-// FullParameters is the full parameter set for a given group
-type FullParameters struct {
-	NetworkMacs    map[string]map[string]bool   // map of networks and then the associated macs in each
-	NetworkLocs    map[string]map[string]bool   // map of the networks, and then the associated locations in each
-	MacVariability map[string]float32           // variability of macs
-	MacCount       map[string]int               // number of fingerprints of a AP in all data, regardless of the location; e.g. 10 of AP1, 12 of AP2, ...
-	MacCountByLoc  map[string]map[string]int    // number of fingerprints of a AP in a location; e.g. in location A, 10 of AP1, 12 of AP2, ...
-	UniqueLocs     []string                     // a list of all unique locations e.g. {P1,P2,P3}
-	UniqueMacs     []string                     // a list of all unique APs
-	Priors         map[string]PriorParameters   // generate priors for each network
-	Results        map[string]ResultsParameters // generate results for each network
-	Loaded         bool                         // flag to determine if parameters have been loaded
-}
-
-// NewFullParameters generates a blank FullParameters
-func NewFullParameters() *FullParameters {
-	return &FullParameters{
-		//todo: networkMacs difference with UniqueMacs
-		//todo: NetworkLocs difference with UniqueLocs
-		//todo: in networkMacs and networkLocs what is the purpose of true values? Could it be false?
-		NetworkMacs:    make(map[string]map[string]bool), //e.g.: {"0":["MAC1":true,"MAC2":true,...]}
-		NetworkLocs:    make(map[string]map[string]bool), //e.g.: {"0":["P1":true,"P2":true,...]}
-		MacCount:       make(map[string]int),             //number of fingerprints of an AP(mac) in all locations; e.g. : {"MAC1":10,"Mac2":15,...}
-		MacCountByLoc:  make(map[string]map[string]int),  //e.g.: {"P1":{"MAC1":10,"MAC2":14},"P2":{MacCount2},}
-		UniqueMacs:     []string{},                       //UniqueMacs is an array of AP's macs
-		UniqueLocs:     []string{},                       //UniqueLocs is an array of map's locations e.g.: ["P1","P2","P3",...]
-		Priors:         make(map[string]PriorParameters),
-		MacVariability: make(map[string]float32), //the standard deviation of rssi of each mac
-		Results:        make(map[string]ResultsParameters),
-		Loaded:         false, //is true if ps was created and save in resources
-	}
-}
+//
+//// FullParameters is the full parameter set for a given group
+//type FullParameters struct {
+//	NetworkMacs    map[string]map[string]bool   // map of networks and then the associated macs in each
+//	NetworkLocs    map[string]map[string]bool   // map of the networks, and then the associated locations in each
+//	MacVariability map[string]float32           // variability of macs
+//	MacCount       map[string]int               // number of fingerprints of a AP in all data, regardless of the location; e.g. 10 of AP1, 12 of AP2, ...
+//	MacCountByLoc  map[string]map[string]int    // number of fingerprints of a AP in a location; e.g. in location A, 10 of AP1, 12 of AP2, ...
+//	UniqueLocs     []string                     // a list of all unique locations e.g. {P1,P2,P3}
+//	UniqueMacs     []string                     // a list of all unique APs
+//	Priors         map[string]PriorParameters   // generate priors for each network
+//	Results        map[string]ResultsParameters // generate results for each network
+//	Loaded         bool                         // flag to determine if parameters have been loaded
+//}
+//
+//// NewFullParameters generates a blank FullParameters
+//func NewFullParameters() *FullParameters {
+//	return &FullParameters{
+//		//todo: networkMacs difference with UniqueMacs
+//		//todo: NetworkLocs difference with UniqueLocs
+//		//todo: in networkMacs and networkLocs what is the purpose of true values? Could it be false?
+//		NetworkMacs:    make(map[string]map[string]bool), //e.g.: {"0":["MAC1":true,"MAC2":true,...]}
+//		NetworkLocs:    make(map[string]map[string]bool), //e.g.: {"0":["P1":true,"P2":true,...]}
+//		MacCount:       make(map[string]int),             //number of fingerprints of an AP(mac) in all locations; e.g. : {"MAC1":10,"Mac2":15,...}
+//		MacCountByLoc:  make(map[string]map[string]int),  //e.g.: {"P1":{"MAC1":10,"MAC2":14},"P2":{MacCount2},}
+//		UniqueMacs:     []string{},                       //UniqueMacs is an array of AP's macs
+//		UniqueLocs:     []string{},                       //UniqueLocs is an array of map's locations e.g.: ["P1","P2","P3",...]
+//		Priors:         make(map[string]PriorParameters),
+//		MacVariability: make(map[string]float32), //the standard deviation of rssi of each mac
+//		Results:        make(map[string]ResultsParameters),
+//		Loaded:         false, //is true if ps was created and save in resources
+//	}
+//}
 
 // NewPriorParameters generates a blank PriorParameters
 func NewPriorParameters() *PriorParameters {
@@ -105,17 +110,17 @@ func NewPersistentParameters() *PersistentParameters {
 }
 
 // returns compress state of res.MarshalJSON
-func DumpParameters(res FullParameters) []byte {
-	jsonByte, _ := res.MarshalJSON()
-	return glb.CompressByte(jsonByte)
-}
+//func DumpParameters(res FullParameters) []byte {
+//	jsonByte, _ := res.MarshalJSON()
+//	return glb.CompressByte(jsonByte)
+//}
 
-// UnmarshalJson a FullParameters
-func LoadParameters(jsonByte []byte) FullParameters {
-	var res2 FullParameters
-	res2.UnmarshalJSON(glb.DecompressByte(jsonByte))
-	return res2
-}
+//// UnmarshalJson a FullParameters
+//func LoadParameters(jsonByte []byte) FullParameters {
+//	var res2 FullParameters
+//	res2.UnmarshalJSON(glb.DecompressByte(jsonByte))
+//	return res2
+//}
 
 
 

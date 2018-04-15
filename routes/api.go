@@ -86,27 +86,28 @@ func GetLocationList(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
-	if group == "noneasdf" {
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	if groupName == "noneasdf" {
 		c.JSON(http.StatusOK, gin.H{"message": "You need to specify group", "success": false})
 		return
 	}
-	if !dbm.GroupExists(group) {
+	if !dbm.GroupExists(groupName) {
 		c.JSON(http.StatusOK, gin.H{"message": "You should insert a fingerprint first, see documentation", "success": false})
 		return
 	}
-	ps, _ := dbm.OpenParameters(group)
+	//ps, _ := dbm.OpenParameters(group)
+	gp := dbm.GM.GetGroup(groupName).Get()
 	locationCount := make(map[string]map[string]int)
-	for n := range ps.NetworkLocs {
-		for loc := range ps.NetworkLocs[n] {
+	for n := range gp.NetworkLocs {
+		for loc := range gp.NetworkLocs[n] {
 			locationCount[loc] = make(map[string]int)
-			locationCount[loc]["count"] = ps.Results[n].TotalLocations[loc]
-			locationCount[loc]["accuracy"] = ps.Results[n].Accuracy[loc]
+			locationCount[loc]["count"] = gp.Results[n].TotalLocations[loc]
+			locationCount[loc]["accuracy"] = gp.Results[n].Accuracy[loc]
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":   fmt.Sprintf("Found %d unique locations in group %s", len(ps.UniqueLocs), group),
+		"message":   fmt.Sprintf("Found %d unique locations in group %s", len(gp.UniqueLocs), groupName),
 		"locations": locationCount,
 		"success":   true})
 }
@@ -172,7 +173,7 @@ func GetHistoricalUserPositions(group string, user string, n int) []glb.UserPosi
 		var userJSON glb.UserPositionJSON
 		UTCfromUnixNano := time.Unix(0, fingerprint.Timestamp)
 		userJSON.Time = UTCfromUnixNano.String()
-		bayesGuess, bayesData := bayes.CalculatePosterior(fingerprint, *parameters.NewFullParameters())
+		bayesGuess, bayesData := bayes.CalculatePosterior(fingerprint, nil)
 		userJSON.BayesGuess = bayesGuess
 		userJSON.BayesData = bayesData
 		// Process SVM if needed
@@ -201,7 +202,7 @@ func GetCurrentPositionOfAllUsers(group string) map[string]glb.UserPositionJSON 
 	}
 
 	for user := range userPositions {
-		bayesGuess, bayesData := bayes.CalculatePosterior(userFingerprints[user], *parameters.NewFullParameters())
+		bayesGuess, bayesData := bayes.CalculatePosterior(userFingerprints[user], nil)
 		foo := userPositions[user]
 		foo.BayesGuess = bayesGuess
 		foo.BayesData = bayesData
@@ -236,7 +237,7 @@ func GetCurrentPositionOfUser(group string, user string) glb.UserPositionJSON {
 		return userJSON
 	}
 
-	bayesGuess, bayesData := bayes.CalculatePosterior(userFingerprint, *parameters.NewFullParameters())
+	bayesGuess, bayesData := bayes.CalculatePosterior(userFingerprint,nil)
 	userJSON.BayesGuess = bayesGuess
 	userJSON.BayesData = bayesData
 	// Process SVM if needed
@@ -702,18 +703,16 @@ func Setfiltermacs(c *gin.Context) {
 		}
 
 
-		err := dbm.SetFilterMacDB(filterMacs.Group, filterMacs.Macs)
+		//err := dbm.SetFilterMacDB(filterMacs.Group, filterMacs.Macs)
+		err := dbm.SetSharedPrf(filterMacs.Group,"FilterMacsMap",filterMacs.Macs)
 		if err == nil {
 			//glb.RuntimeArgs.FilterMacsMap[filterMacs.Group] = filterMacs.Macs
-			dbm.SetSharedPrf(filterMacs.Group,"FilterMacsMap",filterMacs.Macs)
-
 			glb.Debug.Println("MacFilter set successfully ")
 			if len(filterMacs.Macs) == 0 {
 				c.JSON(http.StatusOK, gin.H{"message": "MacFilter Cleared.", "success": true})
 			} else {
 				c.JSON(http.StatusOK, gin.H{"message": "MacFilter set successfully", "success": true})
 			}
-
 		} else {
 			glb.Warning.Println(err)
 			c.JSON(http.StatusOK, gin.H{"message": "setFilterMacDB problem", "success": false})

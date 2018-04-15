@@ -49,6 +49,12 @@ func init() {
 func main() {
 	fmt.Println("-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----")
 
+
+	dbm.Wg.Add(1)
+	defer dbm.Wg.Wait()
+	go dbm.GM.Flusher()
+
+
 	// _, executableFile, _, _ := runtime.Caller(0) // get full path of this file
 	if len(Build) == 0 {
 		Build = "devdevdevdevdevdevdev"
@@ -294,6 +300,7 @@ func main() {
 		fmt.Println("-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----")
 		r.Run(glb.RuntimeArgs.Port)
 	}
+
 }
 
 // // putMessage usage: curl -G -X PUT "http://localhost:8003/message" --data-urlencode "text=hello world"
