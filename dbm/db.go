@@ -46,27 +46,27 @@ func RenameNetwork(group string, oldName string, newName string) error {
 	//todo: It's better to regenerate ps from the modified fingerprints bucket than modifying the current ps
 	//glb.Debug.Println("Opening parameters")
 	var err error
-	//ps, _ := OpenParameters(group)
-	gp := GM.GetGroup(group)
-
-	//glb.Debug.Println("Opening persistent parameters")
-	persistentPs, _ := OpenPersistentParameters(group)
-	//glb.Debug.Println("Looping network macs")
-	for n := range gp.Get_NetworkMacs() {
-		if n == oldName {
-			macs := []string{}
-			glb.Debug.Println("Looping macs for ", n)
-			for mac := range gp.Get_NetworkMacs()[n] {
-				macs = append(macs, mac)
-			}
-			glb.Debug.Println("Adding to persistentPs")
-			persistentPs.NetworkRenamed[newName] = macs
-			delete(persistentPs.NetworkRenamed, oldName)
-			break
-		}
-	}
+	////ps, _ := OpenParameters(group)
+	//gp := GM.GetGroup(group)
+	//
+	////glb.Debug.Println("Opening persistent parameters")
+	//persistentPs, _ := OpenPersistentParameters(group)
+	////glb.Debug.Println("Looping network macs")
+	//for n := range gp.Get_NetworkMacs() {
+	//	if n == oldName {
+	//		macs := []string{}
+	//		glb.Debug.Println("Looping macs for ", n)
+	//		for mac := range gp.Get_NetworkMacs()[n] {
+	//			macs = append(macs, mac)
+	//		}
+	//		glb.Debug.Println("Adding to persistentPs")
+	//		persistentPs.NetworkRenamed[newName] = macs
+	//		delete(persistentPs.NetworkRenamed, oldName)
+	//		break
+	//	}
+	//}
 	//glb.Debug.Println("Saving persistentPs")
-	err = SavePersistentParameters(group, persistentPs)
+	//err = SavePersistentParameters(group, persistentPs)
 	return err
 }
 

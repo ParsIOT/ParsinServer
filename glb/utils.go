@@ -25,6 +25,8 @@ import (
 	"runtime"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"errors"
+	"strconv"
 )
 
 var (
@@ -499,4 +501,38 @@ func MapLike(obj1in interface{},obj2in  interface{}) bool {
 	return false
 
 
+}
+
+func RoundLocationDim(loc string) string{
+	x_y := strings.Split(loc, ",")
+	if len(x_y) < 2 {
+		err := errors.New("Location names aren't in the format of x,y")
+		Debug.Println(err)
+	}
+	locXstr := x_y[0]
+	locYstr := x_y[1]
+	locX, _ := strconv.ParseFloat(locXstr, 64)
+	locY, _ := strconv.ParseFloat(locYstr, 64)
+	locX =  math.Floor(locX)
+	locY =  math.Floor(locY)
+	return FloatToString(locX) + "," + FloatToString(locY)
+}
+
+func FloatToString(input_num float64) string {
+	// to convert a float number to a string
+	return strconv.FormatFloat(input_num, 'f', 6, 64)
+}
+func IntToString(input_num int) string {
+	// to convert a float number to a string
+	return strconv.Itoa(input_num)
+}
+
+
+func Round(num float64) int {
+	return int(num + math.Copysign(0.5, num))
+}
+
+func ToFixed(num float64, precision int) float64 {
+	output := math.Pow(10, float64(precision))
+	return float64(Round(num * output)) / output
 }

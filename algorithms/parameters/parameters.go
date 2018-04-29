@@ -8,22 +8,26 @@ package parameters
 
 
 // PersistentParameters are not reloaded each time
-type PersistentParameters struct {
-	NetworkRenamed map[string][]string // key:networkName, value:mac list; e.g.: {"1":["mac1","mac2"]}
-}
+//type PersistentParameters struct {
+//	NetworkRenamed map[string][]string // key:networkName, value:mac list; e.g.: {"1":["mac1","mac2"]}
+//}
 
 
 type KnnFingerprints struct {
 	FingerprintsInMemory map[string]Fingerprint `json:"FingerprintsInMemory"`
-	FingerprintsOrdering []string `json:"FingerprintsOrdering"`
-	Clusters map[string][]string `json:"Clusters"`
+	FingerprintsOrdering []string               `json:"FingerprintsOrdering"`
+	Clusters             map[string][]string    `json:"Clusters"`
+	K                    int                    `json:"K"`
+	MinClusterRss        int                    `json:"MinClusterRss"`
 }
 
 func NewKnnFingerprints() KnnFingerprints {
 	return KnnFingerprints{
-		FingerprintsInMemory:		make(map[string]Fingerprint),
-		FingerprintsOrdering:		[]string{},
-		Clusters:					make(map[string][]string),
+		FingerprintsInMemory: make(map[string]Fingerprint),
+		FingerprintsOrdering: []string{},
+		Clusters:             make(map[string][]string),
+		K:                    10,
+		MinClusterRss:        -70,
 	}
 }
 
@@ -57,8 +61,8 @@ type ResultsParameters struct {
 //	MacCountByLoc  map[string]map[string]int    // number of fingerprints of a AP in a location; e.g. in location A, 10 of AP1, 12 of AP2, ...
 //	UniqueLocs     []string                     // a list of all unique locations e.g. {P1,P2,P3}
 //	UniqueMacs     []string                     // a list of all unique APs
-//	Priors         map[string]PriorParameters   // generate priors for each network
-//	Results        map[string]ResultsParameters // generate results for each network
+//	BayesPriors         map[string]PriorParameters   // generate priors for each network
+//	BayesResults        map[string]ResultsParameters // generate results for each network
 //	Loaded         bool                         // flag to determine if parameters have been loaded
 //}
 //
@@ -74,9 +78,9 @@ type ResultsParameters struct {
 //		MacCountByLoc:  make(map[string]map[string]int),  //e.g.: {"P1":{"MAC1":10,"MAC2":14},"P2":{MacCount2},}
 //		UniqueMacs:     []string{},                       //UniqueMacs is an array of AP's macs
 //		UniqueLocs:     []string{},                       //UniqueLocs is an array of map's locations e.g.: ["P1","P2","P3",...]
-//		Priors:         make(map[string]PriorParameters),
+//		BayesPriors:         make(map[string]PriorParameters),
 //		MacVariability: make(map[string]float32), //the standard deviation of rssi of each mac
-//		Results:        make(map[string]ResultsParameters),
+//		BayesResults:        make(map[string]ResultsParameters),
 //		Loaded:         false, //is true if ps was created and save in resources
 //	}
 //}
@@ -102,12 +106,12 @@ func NewResultsParameters() *ResultsParameters {
 	}
 }
 
-// NewPersistentParameters returns the peristent parameters initialization
-func NewPersistentParameters() *PersistentParameters {
-	return &PersistentParameters{
-		NetworkRenamed: make(map[string][]string),
-	}
-}
+//// NewPersistentParameters returns the peristent parameters initialization
+//func NewPersistentParameters() *PersistentParameters {
+//	return &PersistentParameters{
+//		NetworkRenamed: make(map[string][]string),
+//	}
+//}
 
 // returns compress state of res.MarshalJSON
 //func DumpParameters(res FullParameters) []byte {

@@ -65,56 +65,56 @@ import (
 //	})
 //	return err
 //}
-
-// Get persistentParameters from resources bucket in db
-func OpenPersistentParameters(group string) (parameters.PersistentParameters, error) {
-	var persistentPs = *parameters.NewPersistentParameters()
-	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-	defer db.Close()
-	if err != nil {
-		glb.Error.Println(err)
-	}
-
-
-	err = db.View(func(tx *bolt.Tx) error {
-		// Assume bucket exists and has keys
-		b := tx.Bucket([]byte("resources"))
-		if b == nil {
-			glb.Error.Println("Resources dont exist")
-			return errors.New("")
-		}
-		v := b.Get([]byte("persistentParameters"))
-		json.Unmarshal(v, &persistentPs)
-		return nil
-	})
-	return persistentPs, err
-}
+//
+//// Get persistentParameters from resources bucket in db
+//func OpenPersistentParameters(group string) (parameters.PersistentParameters, error) {
+//	var persistentPs = *parameters.NewPersistentParameters()
+//	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+//	defer db.Close()
+//	if err != nil {
+//		glb.Error.Println(err)
+//	}
+//
+//
+//	err = db.View(func(tx *bolt.Tx) error {
+//		// Assume bucket exists and has keys
+//		b := tx.Bucket([]byte("resources"))
+//		if b == nil {
+//			glb.Error.Println("Resources dont exist")
+//			return errors.New("")
+//		}
+//		v := b.Get([]byte("persistentParameters"))
+//		json.Unmarshal(v, &persistentPs)
+//		return nil
+//	})
+//	return persistentPs, err
+//}
 
 // Set persistentParameters to resources bucket in db (it's used in remednetwork() function)
-func SavePersistentParameters(group string, res parameters.PersistentParameters) error {
-	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-	defer db.Close()
-	if err != nil {
-		glb.Error.Println(err)
-	}
-
-
-	err = db.Update(func(tx *bolt.Tx) error {
-		bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
-		if err2 != nil {
-			return fmt.Errorf("create bucket: %s", err)
-		}
-
-		jsonByte, _ := json.Marshal(res)
-		err2 = bucket.Put([]byte("persistentParameters"), jsonByte)
-		if err2 != nil {
-			return fmt.Errorf("could add to bucket: %s", err)
-		}
-		return err2
-	})
-	glb.Debug.Println("Saved")
-	return err
-}
+//func SavePersistentParameters(group string, res parameters.PersistentParameters) error {
+//	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+//	defer db.Close()
+//	if err != nil {
+//		glb.Error.Println(err)
+//	}
+//
+//
+//	err = db.Update(func(tx *bolt.Tx) error {
+//		bucket, err2 := tx.CreateBucketIfNotExists([]byte("resources"))
+//		if err2 != nil {
+//			return fmt.Errorf("create bucket: %s", err)
+//		}
+//
+//		jsonByte, _ := json.Marshal(res)
+//		err2 = bucket.Put([]byte("persistentParameters"), jsonByte)
+//		if err2 != nil {
+//			return fmt.Errorf("could add to bucket: %s", err)
+//		}
+//		return err2
+//	})
+//	glb.Debug.Println("Saved")
+//	return err
+//}
 
 func SetKnnFingerprints(tempKnnFingerprints parameters.KnnFingerprints, group string) error {
 	// Set KnnFingerprints to db
@@ -276,6 +276,8 @@ func SetByteResourceInBucket(input []byte,keyName string,bucketName string,group
 	})
 	return err
 }
+
+
 
 func GetBytejsonResourceInBucket(keyName string,bucketName string,groupName string) ([]byte, error) {
 	output := []byte{}

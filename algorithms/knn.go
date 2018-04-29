@@ -9,6 +9,7 @@ import (
 	"errors"
 	"ParsinServer/algorithms/parameters"
 	"ParsinServer/dbm"
+	"sort"
 )
 
 
@@ -19,11 +20,15 @@ var minkowskyQ float64
 
 var maxDist float64
 
+
 var maxrssInNormal,minrssInNormal float64
 
 //var topRssList []int
 
 var distAlgo string
+
+var validKs []int=[]int{}
+var validMinClusterRSSs []int=[]int{}
 
 func init() {
 
@@ -34,6 +39,15 @@ func init() {
 	//topRssList = []int{-60,-79,-90}
 	maxrssInNormal = -55.0
 	minrssInNormal = float64(glb.MinRssi) - 5.0
+
+	for i:=1;i<=30;i++{
+		validKs = append(validKs,i)
+	}
+
+	for i:=-60;i>=-90;i--{
+		validMinClusterRSSs = append(validMinClusterRSSs,i)
+	}
+
 }
 
 type resultW struct {
@@ -49,10 +63,13 @@ type jobW struct {
 
 
 
-func LearnKnn(groupName string) error {
+func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []interface{}) (parameters.KnnFingerprints,error) {
 	//Debug.Println(Cosine([]float64{1,2,3},[]float64{1,2,4}))
 	//jsonFingerprint = calcMacRate(jsonFingerprint,false)
 
+	//K := hyperParameters[0].(int)
+	MinClusterRSS := hyperParameters[1].(int)
+	//glb.Debug.Printf("Knn is running (K:%d, MinClusterRss:%d)\n",K,MinClusterRSS)
 	//jsonFingerprint = calcMacJustRate(jsonFingerprint,false)
 
 	//Debug.Println(jsonFingerprint)
@@ -64,19 +81,22 @@ func LearnKnn(groupName string) error {
 	//glb.RuntimeArgs.NeedToFilter[jsonFingerprint.Group] = true
 
 
-	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
-	var fingerprintsOrdering []string
+	//fingerprints := make(map[string]parameters.Fingerprint)
+	//var fingerprintsOrdering []string
 	clusters := make(map[string][]string)
-	var err error
+	//var err error
 
-	fingerprintsOrdering,fingerprintsInMemory,err = dbm.GetLearnFingerPrints(groupName,true)
-	if err!=nil {
-		return err
-	}
+	fingerprints := rd.Fingerprints
+	fingerprintsOrdering := rd.FingerprintsOrdering
 
-	for fpTime,fp := range fingerprintsInMemory{
+	//fingerprintsOrdering,fingerprints,err = dbm.GetLearnFingerPrints(groupName,true)
+	//if err!=nil {
+	//	return err
+	//}
+
+	for fpTime,fp := range fingerprints {
 		for _,rt := range fp.WifiFingerprint{
-			if (rt.Rssi >= glb.MinClusterRss){
+			if (rt.Rssi >= MinClusterRSS){
 				clusters[rt.Mac] = append(clusters[rt.Mac],fpTime)
 			}
 		}
@@ -86,7 +106,7 @@ func LearnKnn(groupName string) error {
 	//for key,val := range clusters{
 	//	fmt.Println("mac: "+key+" ")
 	//	for _,fp:=range val{
-	//		fmt.Println(fingerprintsInMemory[fp])
+	//		fmt.Println(fingerprints[fp])
 	//	}
 	//	fmt.Println("---------------------------------")
 	//}
@@ -94,11 +114,12 @@ func LearnKnn(groupName string) error {
 	// Add to knnData in db
 
 	var tempKnnFingerprints parameters.KnnFingerprints
-	tempKnnFingerprints.FingerprintsInMemory = fingerprintsInMemory
+	tempKnnFingerprints.FingerprintsInMemory = fingerprints
 	tempKnnFingerprints.FingerprintsOrdering = fingerprintsOrdering
 	tempKnnFingerprints.Clusters = clusters
 
-	dbm.GM.GetGroup(groupName).Set_KnnFPs(tempKnnFingerprints)
+	//dbm.GM.GetGroup(groupName).Get_AlgoData().Set_KnnFPs(tempKnnFingerprints)
+
 	//err = dbm.SetKnnFingerprints(tempKnnFingerprints, groupName)
 	//if err != nil {
 	//	glb.Error.Println(err)
@@ -107,9 +128,13 @@ func LearnKnn(groupName string) error {
 	//
 	//// Set in cache
 	//go dbm.SetKnnFPCache(groupName,tempKnnFingerprints)
-	return nil
+	return tempKnnFingerprints,nil
 }
-func TrackKnn(jsonFingerprint parameters.Fingerprint) (error, string) {
+func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, string) {
+
+	//rd := gp.Get_RawData()
+	//md := gp.Get_MiddleData()
+	tempKnnFingerprints := gp.Get_AlgoData().Get_KnnFPs()
 
 	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
 	var mainFingerprintsOrdering []string
@@ -137,23 +162,71 @@ func TrackKnn(jsonFingerprint parameters.Fingerprint) (error, string) {
 	//	clusters = tempKnnFingerprints.Clusters
 	//}
 
-	tempKnnFingerprints := dbm.GM.GetGroup(jsonFingerprint.Group).Get_KnnFPs()
+	//if strconv.Itoa(int(jsonFingerprint.Timestamp)) == "1516796888995082812"{
+	//	glb.Error.Println("!")
+	//}
+	//tempKnnFingerprints := dbm.GM.GetGroup(jsonFingerprint.Group).Get_AlgoData().Get_KnnFPs()
 	fingerprintsInMemory = tempKnnFingerprints.FingerprintsInMemory
 	mainFingerprintsOrdering = tempKnnFingerprints.FingerprintsOrdering
 	clusters = tempKnnFingerprints.Clusters
 
+	//tempList := []string{}
+	//tempList = append(tempList,mainFingerprintsOrdering...)
+	//sort.Sort(sort.StringSlice(tempList))
+	//
+	//sum := int64(0)
+	//for _,i := range tempList{
+	//	num,_:=strconv.ParseInt(i, 10, 64)
+	//	num = num % 100000
+	//	sum += num
+	//
+	//}
+	//glb.Debug.Println(sum/int64(len(tempList)))
+
+	//if jsonFingerprint.Location=="-165.000000,-1295.000000"{
+	//	for key,val := range fingerprintsInMemory{
+	//		if val.Location == jsonFingerprint.Location{
+	//			glb.Warning.Println(jsonFingerprint.Timestamp)
+	//			glb.Warning.Println(key)
+	//		}
+	//	}
+	//}
+	//show := false
+	//if jsonFingerprint.Location == ""{
+	//		for _,fp := range jsonFingerprint.WifiFingerprint{
+	//			if fp.Mac == "01:17:C5:97:1B:44" && fp.Rssi == -72{
+	//				//glb.Debug.Println(jsonFingerprint)
+	//				show = true
+	//			}
+	//		}
+	//}
+
 	// fingerprintOrdering Creation according to clusters and rss rates
 	highRateRssExist := false
 	for _,rt := range jsonFingerprint.WifiFingerprint{
-		if(rt.Rssi>=glb.MinClusterRss){
-			highRateRssExist = true
-			fingerprintsOrdering = append(fingerprintsOrdering,clusters[rt.Mac]...)
+		if(rt.Rssi>=tempKnnFingerprints.MinClusterRss){
+			if cluster, ok := clusters[rt.Mac]; ok {
+				highRateRssExist = true
+				fingerprintsOrdering = append(fingerprintsOrdering,cluster...)
+			}
 		}
 	}
 	if (!highRateRssExist){
 		fingerprintsOrdering = mainFingerprintsOrdering
 	}
 
+	//tempList := []string{}
+	//tempList = append(tempList,fingerprintsOrdering...)
+	sort.Sort(sort.StringSlice(fingerprintsOrdering))
+	//
+	//sum := int64(0)
+	//for _,i := range tempList{
+	//	num,_:=strconv.ParseInt(i, 10, 64)
+	//	num = num % 100000
+	//	sum += num
+	//
+	//}
+	//glb.Debug.Println(sum/int64(len(tempList)))
 
 	//glb.Debug.Println(len(fingerprintsOrdering))
 	//glb.Debug.Println(len(mainFingerprintsOrdering))
@@ -165,10 +238,16 @@ func TrackKnn(jsonFingerprint parameters.Fingerprint) (error, string) {
 	//	glb.Error.Println("Nums of AP must be greater than 3")
 	//}
 
-	knnK := dbm.GetSharedPrf(jsonFingerprint.Group).KnnK
+
+	knnK := tempKnnFingerprints.K
+
+	//knnK := dbm.GetSharedPrf(jsonFingerprint.Group).KnnK
 
 	// calculating knn
 	W := make(map[string]float64)
+
+
+	//var wgKnn sync.WaitGroup
 
 	numJobs := len(fingerprintsOrdering)
 	runtime.GOMAXPROCS(glb.MaxParallelism())
@@ -176,6 +255,7 @@ func TrackKnn(jsonFingerprint parameters.Fingerprint) (error, string) {
 	chanResults := make(chan resultW, 1+numJobs)
 	if(distAlgo=="Euclidean"){
 		for id := 1; id <= glb.MaxParallelism(); id++ {
+			//wgKnn.Add(1)
 			go calcWeight(id, chanJobs, chanResults)
 		}
 	}else if(distAlgo=="Cosine"){
@@ -200,14 +280,18 @@ func TrackKnn(jsonFingerprint parameters.Fingerprint) (error, string) {
 			mac2RssFP: mac2RssFP}
 
 	}
+	close(chanJobs)
+
 	for i := 1; i <= numJobs; i++ {
 		res := <-chanResults
 		W[res.fpTime] = res.weight
 	}
 
-	var currentX, currentY float64
+	close(chanResults)
+	var currentX, currentY int
 	currentX = 0
 	currentY = 0
+
 
 	fingerprintSorted := glb.SortDictByVal(W)
 	//fmt.Println(fingerprintSorted)
@@ -223,10 +307,11 @@ func TrackKnn(jsonFingerprint parameters.Fingerprint) (error, string) {
 				}
 				locXstr := x_y[0]
 				locYstr := x_y[1]
-				locX, _ := strconv.ParseFloat(locXstr, 64)
-				locY, _ := strconv.ParseFloat(locYstr, 64)
-				currentX = currentX + W[fpTime]*locX
-				currentY = currentY + W[fpTime]*locY
+				locX, _ := strconv.ParseFloat(locXstr,64)
+				locY, _ := strconv.ParseFloat(locYstr,64)
+
+				currentX = currentX + int(W[fpTime]*locX)
+				currentY = currentY + int(W[fpTime]*locY)
 				//Debug.Println(W[fpTime]*locX)
 				sumW = sumW + W[fpTime]
 			} else {
@@ -234,10 +319,16 @@ func TrackKnn(jsonFingerprint parameters.Fingerprint) (error, string) {
 			}
 		}
 
-		currentX = currentX / sumW
-		currentY = currentY / sumW
+		//if show{
+		//	glb.Error.Println(sumW)
+		//	glb.Error.Println(jsonFingerprint)
+		//}
+		//glb.Debug.Println(sumW)
+		currentXint := int(float64(currentX) / sumW)
+		currentYint := int(float64(currentY) / sumW)
+		//glb.Debug.Println(floatToString(currentX) + "," + floatToString(currentY))
 		//Debug.Println(currentX)
-		return nil, floatToString(currentX) + "," + floatToString(currentY)
+		return nil, glb.IntToString(currentXint) + ".000000," + glb.IntToString(currentYint)+".000000"
 	} else {
 		KNNList := make(map[string]float64)
 		for K, fpTime := range fingerprintSorted {
@@ -253,6 +344,7 @@ func TrackKnn(jsonFingerprint parameters.Fingerprint) (error, string) {
 			}
 		}
 		sortedKNNList := glb.SortDictByVal(KNNList)
+		//glb.Debug.Println(sortedKNNList[0])
 		return nil, sortedKNNList[0]
 	}
 }
@@ -273,9 +365,14 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 				//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)
 			}
 		}
-		distance = math.Pow(distance, float64(1)/minkowskyQ)+ float64(0.0000001)
-		weight := float64(1) / distance
- 		//Debug.Println("weight: ",weight)
+		//if(distance==float64(0)){
+		//	glb.Error.Println("###@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+		//}
+		distance = glb.ToFixed(math.Pow(distance, float64(1)/minkowskyQ),6)+ float64(0.00000000000000001)
+		weight := glb.ToFixed(float64(1) / distance * 1000,6)
+
+		//glb.Debug.Println("distance: ",distance)
+ 		//glb.Debug.Println("weight: ",weight)
 		results <- resultW{fpTime: job.fpTime,
 			weight: weight}
 	}
@@ -334,10 +431,6 @@ func calcWeightCosine(id int, jobs <-chan jobW, results chan<- resultW) {
 	}
 }
 
-func floatToString(input_num float64) string {
-	// to convert a float number to a string
-	return strconv.FormatFloat(input_num, 'f', 6, 64)
-}
 
 func getMac2Rss(routeList []parameters.Router) map[string]int {
 	mac2Rss := make(map[string]int)

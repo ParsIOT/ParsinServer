@@ -21,6 +21,8 @@ import (
 	"github.com/MA-Heshmatkhah/SimpleAuth" // Authentication middleware lib
 	"ParsinServer/algorithms"
 	"ParsinServer/dbm"
+	"time"
+	"runtime/debug"
 )
 
 
@@ -49,6 +51,14 @@ func init() {
 func main() {
 	fmt.Println("-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----")
 
+	go func(){
+		for {
+			time.Sleep(20 * time.Second)
+			fmt.Println("Free up memory...")
+			debug.FreeOSMemory()
+		}
+
+	}()
 
 	dbm.Wg.Add(1)
 	defer dbm.Wg.Wait()
@@ -99,12 +109,12 @@ func main() {
 	// Check whether all the MQTT variables are passed to initiate the MQTT routines
 	if len(glb.RuntimeArgs.MqttServer) > 0 && len(glb.RuntimeArgs.MqttAdmin) > 0 && len(glb.RuntimeArgs.MosquittoPID) > 0 {
 		glb.RuntimeArgs.Mqtt = true
-		routes.SetupMqtt()
+		//routes.SetupMqtt()
 	} else {
 		if len(glb.RuntimeArgs.MqttServer) > 0 {
 			glb.RuntimeArgs.Mqtt = true
 			glb.RuntimeArgs.MqttExisting = true
-			routes.SetupMqtt()
+			//routes.SetupMqtt()
 		} else {
 			glb.RuntimeArgs.Mqtt = false
 		}
@@ -225,7 +235,7 @@ func main() {
 			LiveLocationMap(context)
 		})
 		*/
-		privateRoutes.PUT("/mqtt", routes.PutMQTT) // Routes for MQTT (mqtt.go)
+		//privateRoutes.PUT("/mqtt", routes.PutMQTT) // Routes for MQTT (mqtt.go)
 
 		// Routes for API access (api.go)
 		//privateRoutes.GET("/location", routes.GetUserLocations)
@@ -238,25 +248,29 @@ func main() {
 		{
 			//Todo: Url must be same format to mention group name (now, group can be url param or be GET param)
 			needToLoadSettings.GET("/dashboard/:group", routes.SlashDashboard)
-			needToLoadSettings.GET("/explore/:group/:network/:location", routes.SlashExplore2)
-			needToLoadSettings.GET("/pie/:group/:network/:location", routes.SlashPie)
+			//needToLoadSettings.GET("/explore/:group/:network/:location", routes.SlashExplore2)
+			//needToLoadSettings.GET("/pie/:group/:network/:location", routes.SlashPie)
 			needToLoadSettings.GET("/livemap/:group", routes.LiveLocationMap)
-			needToLoadSettings.GET("/location", routes.GetUserLocations)
+			//needToLoadSettings.GET("/location", routes.GetUserLocations)
 			needToLoadSettings.GET("/locationsmap/:group", routes.LocationsOnMap)
-			needToLoadSettings.GET("/locations", routes.GetLocationList)
-			needToLoadSettings.GET("/editname", routes.EditName)
-			needToLoadSettings.GET("/editMac", routes.EditMac)
-			needToLoadSettings.GET("/editusername", routes.EditUserName)
-			needToLoadSettings.GET("/editnetworkname", routes.EditNetworkName)
-			needToLoadSettings.DELETE("/location", routes.DeleteLocation)
-			needToLoadSettings.DELETE("/locations", routes.DeleteLocations)
+			//needToLoadSettings.GET("/locations", routes.GetLocationList)
+			//needToLoadSettings.GET("/editname", routes.EditName)
+			//needToLoadSettings.GET("/editMac", routes.EditMac)
+			//needToLoadSettings.GET("/editusername", routes.EditUserName)
+			//needToLoadSettings.GET("/editnetworkname", routes.EditNetworkName)
+			//needToLoadSettings.DELETE("/location", routes.DeleteLocation)
+			//needToLoadSettings.DELETE("/locations", routes.DeleteLocations)
 			needToLoadSettings.DELETE("/user", routes.DeleteUser)
 			needToLoadSettings.DELETE("/database", routes.DeleteDatabase)
 			needToLoadSettings.GET("/calculate", routes.Calculate)
-			needToLoadSettings.PUT("/mixin", routes.PutMixinOverride)
-			needToLoadSettings.PUT("/cutoff", routes.PutCutoffOverride)
+			needToLoadSettings.GET("/cvresults", routes.CVResults)
+			needToLoadSettings.GET("/calcLevel", routes.CalcCompletionLevel)
+
+			needToLoadSettings.GET("/renew", routes.RenewStruct)
+			//needToLoadSettings.PUT("/mixin", routes.PutMixinOverride)
+			//needToLoadSettings.PUT("/cutoff", routes.PutCutoffOverride)
 			needToLoadSettings.PUT("/database", routes.MigrateDatabase)
-			needToLoadSettings.PUT("/k_knn", routes.PutKnnK)
+			//needToLoadSettings.PUT("/k_knn", routes.PutKnnK)
 			needToLoadSettings.PUT("/minrss", routes.PutMinRss)
 			needToLoadSettings.GET("/lastfingerprint", routes.GetLastFingerprint)
 			needToLoadSettings.GET("/reformdb", routes.ReformDB)
@@ -272,10 +286,10 @@ func main() {
 	r.POST("/bulklearn", algorithms.BulkLearnFingerprintPOST)
 	//r.POST("/track", algorithms.TrackFingerprintPOST)
 
-	needToLoadSettings := r.Group("/",routes.PreLoadSettings)
-	{
-		needToLoadSettings.POST("/track", algorithms.TrackFingerprintPOST)
-	}
+	//needToLoadSettings := r.Group("/",routes.PreLoadSettings)
+	//{
+	//	needToLoadSettings.POST("/track", algorithms.TrackFingerprintPOST)
+	//}
 	// Authentication
 	auth := r.Group("/")
 	{

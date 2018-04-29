@@ -7,19 +7,14 @@
 package routes
 
 import (
-	"encoding/json"
 	"fmt"
-	"html/template"
 	"net/http"
 	"os"
 	"path"
-	"sort"
-	"strconv"
 	"strings"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"ParsinServer/glb"
-	"ParsinServer/dbm"
 )
 
 
@@ -131,20 +126,20 @@ func SlashDashboard(c *gin.Context) {
 	}
 
 	//ps, _ := dbm.OpenParameters(group)
-	gp := dbm.GM.GetGroup(groupName)
+	//gp := dbm.GM.GetGroup(groupName)
 
 	var users []string
 	for user := range filterUserMap {
 		users = append(users, user)
 	}
 	people := make(map[string]glb.UserPositionJSON)
-	if len(users) == 0 {
-		people = GetCurrentPositionOfAllUsers(groupName)
-	} else {
-		for _, user := range users {
-			people[user] = GetCurrentPositionOfUser(groupName, user)
-		}
-	}
+	//if len(users) == 0 {
+	//	people = GetCurrentPositionOfAllUsers(groupName)
+	//} else {
+	//	for _, user := range users {
+	//		people[user] = GetCurrentPositionOfUser(groupName, user)
+	//	}
+	//}
 	//glb.Debug.Println("3333333333")
 
 
@@ -165,18 +160,18 @@ func SlashDashboard(c *gin.Context) {
 	dash.Mixin = make(map[string]float64)
 	dash.VarabilityCutoff = make(map[string]float64)
 
-	for n := range gp.Get_NetworkLocs() {
-		dash.Mixin[n] = gp.Get_Priors()[n].Special["MixIn"]
-		dash.VarabilityCutoff[n] = gp.Get_Priors()[n].Special["VarabilityCutoff"]
-		dash.Networks = append(dash.Networks, n)
-		dash.Locations[n] = []string{}
-		for loc := range gp.Get_NetworkLocs()[n] {
-			dash.Locations[n] = append(dash.Locations[n], loc)
-			dash.LocationAccuracy[loc] = gp.Get_Results()[n].Accuracy[loc]
-			//glb.Debug.Println(ps.Results[n].TotalLocations[loc])
-			dash.LocationCount[loc] = gp.Get_Results()[n].TotalLocations[loc]
-		}
-	}
+	//for n := range gp.Get_NetworkLocs() {
+	//	dash.Mixin[n] = gp.Get_Priors()[n].Special["MixIn"]
+	//	dash.VarabilityCutoff[n] = gp.Get_Priors()[n].Special["VarabilityCutoff"]
+	//	dash.Networks = append(dash.Networks, n)
+	//	dash.Locations[n] = []string{}
+	//	for loc := range gp.Get_NetworkLocs()[n] {
+	//		dash.Locations[n] = append(dash.Locations[n], loc)
+	//		dash.LocationAccuracy[loc] = gp.Get_Results()[n].Accuracy[loc]
+	//		//glb.Debug.Println(ps.BayesResults[n].TotalLocations[loc])
+	//		dash.LocationCount[loc] = gp.Get_Results()[n].TotalLocations[loc]
+	//	}
+	//}
 	c.HTML(http.StatusOK, "dashboard.tmpl", gin.H{
 		"Message": glb.RuntimeArgs.Message,
 		"Group":   groupName,
@@ -213,159 +208,159 @@ func LocationsOnMap(c *gin.Context) {
 }
 
 // slash Location returns location (to be deprecated)
-func SlashLocation(c *gin.Context) {
-	groupName := c.Param("group")
-	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
-		c.JSON(http.StatusOK, gin.H{"success": "false", "message": "First download the app or CLI program to insert some fingerprints."})
-		return
-	}
-	user := c.Param("user")
-	userJSON := GetCurrentPositionOfUser(groupName, user)
-	c.JSON(http.StatusOK, userJSON)
-}
+//func SlashLocation(c *gin.Context) {
+//	groupName := c.Param("group")
+//	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+//		c.JSON(http.StatusOK, gin.H{"success": "false", "message": "First download the app or CLI program to insert some fingerprints."})
+//		return
+//	}
+//	user := c.Param("user")
+//	userJSON := GetCurrentPositionOfUser(groupName, user)
+//	c.JSON(http.StatusOK, userJSON)
+//}
 
 // slashExplore returns a chart of the data
-// todo: Use it
-func SlashExplore(c *gin.Context) {
-	groupName := c.Param("group")
-	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
-		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
-			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
-		})
-		return
-	}
-	network := c.Param("network")
-	location := c.Param("location")
-	//ps, _ := dbm.OpenParameters(group)
-	gp := dbm.GM.GetGroup(groupName)
+//// todo: Use it
+//func SlashExplore(c *gin.Context) {
+//	groupName := c.Param("group")
+//	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+//		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+//			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+//		})
+//		return
+//	}
+//	network := c.Param("network")
+//	location := c.Param("location")
+//	//ps, _ := dbm.OpenParameters(group)
+//	gp := dbm.GM.GetGroup(groupName)
+//
+//	// TODO: check if network and location exists in the ps, if not return 404
+//	datas := []template.JS{}
+//	names := []template.JS{}
+//	indexNames := []template.JS{}
+//	// Sort locations
+//	macs := []string{}
+//	for m := range gp.Get_Priors()[network].P[location] {
+//		if float64(gp.Get_MacVariability()[m]) > gp.Get_Priors()[network].Special["VarabilityCutoff"] {
+//			macs = append(macs, m)
+//		}
+//	}
+//	sort.Strings(macs)
+//	it := 0
+//	for _, m := range macs {
+//		n := gp.Get_Priors()[network].P[location][m]
+//		names = append(names, template.JS(string(m)))
+//		jsonByte, _ := json.Marshal(n)
+//		datas = append(datas, template.JS(string(jsonByte)))
+//		indexNames = append(indexNames, template.JS(strconv.Itoa(it)))
+//		it++
+//	}
+//	rsiRange, _ := json.Marshal(glb.RssiRange)
+//	c.HTML(http.StatusOK, "plot.tmpl", gin.H{
+//		"RssiRange":  template.JS(string(rsiRange)),
+//		"Datas":      datas,
+//		"Names":      names,
+//		"IndexNames": indexNames,
+//	})
+//}
 
-	// TODO: check if network and location exists in the ps, if not return 404
-	datas := []template.JS{}
-	names := []template.JS{}
-	indexNames := []template.JS{}
-	// Sort locations
-	macs := []string{}
-	for m := range gp.Get_Priors()[network].P[location] {
-		if float64(gp.Get_MacVariability()[m]) > gp.Get_Priors()[network].Special["VarabilityCutoff"] {
-			macs = append(macs, m)
-		}
-	}
-	sort.Strings(macs)
-	it := 0
-	for _, m := range macs {
-		n := gp.Get_Priors()[network].P[location][m]
-		names = append(names, template.JS(string(m)))
-		jsonByte, _ := json.Marshal(n)
-		datas = append(datas, template.JS(string(jsonByte)))
-		indexNames = append(indexNames, template.JS(strconv.Itoa(it)))
-		it++
-	}
-	rsiRange, _ := json.Marshal(glb.RssiRange)
-	c.HTML(http.StatusOK, "plot.tmpl", gin.H{
-		"RssiRange":  template.JS(string(rsiRange)),
-		"Datas":      datas,
-		"Names":      names,
-		"IndexNames": indexNames,
-	})
-}
+//// slashExplore returns a chart of the data (canvas.js)
+//func SlashExplore2(c *gin.Context) {
+//	groupName := c.Param("group")
+//	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+//		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+//			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+//		})
+//		return
+//	}
+//
+//	network := c.Param("network")
+//	location := c.Param("location")
+//	//ps, _ := dbm.OpenParameters(group)
+//	gp := dbm.GM.GetGroup(groupName)
+//
+//	fmt.Println(gp.Get_UniqueLocs())
+//	lookUpLocation := false
+//
+//	for _, loc := range gp.Get_UniqueLocs() {
+//		if location == loc {
+//			lookUpLocation = true
+//		}
+//	}
+//
+//	type macDatum struct {
+//		Name   string    `json:"name"`
+//		Points []float32 `json:"data"`
+//	}
+//
+//	type macDatas struct {
+//		Macs []macDatum `json:"macs"`
+//	}
+//
+//	var data macDatas
+//	data.Macs = []macDatum{}
+//
+//	if lookUpLocation {
+//		// Sort locations
+//		macs := []string{}
+//		for m := range gp.Get_Priors()[network].P[location] {
+//			if float64(gp.Get_MacVariability()[m]) > gp.Get_Priors()[network].Special["VarabilityCutoff"] {
+//				macs = append(macs, m)
+//			}
+//		}
+//		sort.Strings(macs)
+//
+//		for _, m := range macs {
+//			n := gp.Get_Priors()[network].P[location][m]
+//			data.Macs = append(data.Macs, macDatum{Name: m, Points: n})
+//		}
+//	} else {
+//		m := location
+//		for loc := range gp.Get_Priors()[network].P {
+//			n := gp.Get_Priors()[network].P[loc][m]
+//			data.Macs = append(data.Macs, macDatum{Name: strings.Replace(loc, " ", "%20", -1), Points: n})
+//		}
+//	}
+//
+//	c.HTML(http.StatusOK, "plot2.tmpl", gin.H{
+//		"Data":    data,
+//		"Rssi":    glb.RssiRange,
+//		"Title":   groupName + "/" + network + "/" + location,
+//		"Group":   strings.Replace(groupName, " ", "%20", -1),
+//		"Network": strings.Replace(network, " ", "%20", -1),
+//		"Legend":  !lookUpLocation,
+//	})
+//}
 
-// slashExplore returns a chart of the data (canvas.js)
-func SlashExplore2(c *gin.Context) {
-	groupName := c.Param("group")
-	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
-		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
-			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
-		})
-		return
-	}
-
-	network := c.Param("network")
-	location := c.Param("location")
-	//ps, _ := dbm.OpenParameters(group)
-	gp := dbm.GM.GetGroup(groupName)
-
-	fmt.Println(gp.Get_UniqueLocs())
-	lookUpLocation := false
-
-	for _, loc := range gp.Get_UniqueLocs() {
-		if location == loc {
-			lookUpLocation = true
-		}
-	}
-
-	type macDatum struct {
-		Name   string    `json:"name"`
-		Points []float32 `json:"data"`
-	}
-
-	type macDatas struct {
-		Macs []macDatum `json:"macs"`
-	}
-
-	var data macDatas
-	data.Macs = []macDatum{}
-
-	if lookUpLocation {
-		// Sort locations
-		macs := []string{}
-		for m := range gp.Get_Priors()[network].P[location] {
-			if float64(gp.Get_MacVariability()[m]) > gp.Get_Priors()[network].Special["VarabilityCutoff"] {
-				macs = append(macs, m)
-			}
-		}
-		sort.Strings(macs)
-
-		for _, m := range macs {
-			n := gp.Get_Priors()[network].P[location][m]
-			data.Macs = append(data.Macs, macDatum{Name: m, Points: n})
-		}
-	} else {
-		m := location
-		for loc := range gp.Get_Priors()[network].P {
-			n := gp.Get_Priors()[network].P[loc][m]
-			data.Macs = append(data.Macs, macDatum{Name: strings.Replace(loc, " ", "%20", -1), Points: n})
-		}
-	}
-
-	c.HTML(http.StatusOK, "plot2.tmpl", gin.H{
-		"Data":    data,
-		"Rssi":    glb.RssiRange,
-		"Title":   groupName + "/" + network + "/" + location,
-		"Group":   strings.Replace(groupName, " ", "%20", -1),
-		"Network": strings.Replace(network, " ", "%20", -1),
-		"Legend":  !lookUpLocation,
-	})
-}
-
-// slashPie returns a Pie chart
-func SlashPie(c *gin.Context) {
-	groupName := c.Param("group")
-	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
-		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
-			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
-		})
-		return
-	}
-
-	network := c.Param("network")
-	location := c.Param("location")
-	gp := dbm.GM.GetGroup(groupName)
-
-	//ps, _ := dbm.OpenParameters(group)
-	vals := []int{}
-	names := []string{}
-	fmt.Println(gp.Get_Results()[network].Guess[location])
-	for guessloc, val := range gp.Get_Results()[network].Guess[location] {
-		names = append(names, guessloc)
-		vals = append(vals, val)
-	}
-	namesJSON, _ := json.Marshal(names)
-	valsJSON, _ := json.Marshal(vals)
-	c.HTML(http.StatusOK, "pie.tmpl", gin.H{
-		"Names": template.JS(namesJSON),
-		"Vals":  template.JS(valsJSON),
-	})
-}
+//// slashPie returns a Pie chart
+//func SlashPie(c *gin.Context) {
+//	groupName := c.Param("group")
+//	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+//		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+//			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+//		})
+//		return
+//	}
+//
+//	network := c.Param("network")
+//	location := c.Param("location")
+//	gp := dbm.GM.GetGroup(groupName)
+//
+//	//ps, _ := dbm.OpenParameters(group)
+//	vals := []int{}
+//	names := []string{}
+//	fmt.Println(gp.Get_Results()[network].Guess[location])
+//	for guessloc, val := range gp.Get_Results()[network].Guess[location] {
+//		names = append(names, guessloc)
+//		vals = append(vals, val)
+//	}
+//	namesJSON, _ := json.Marshal(names)
+//	valsJSON, _ := json.Marshal(vals)
+//	c.HTML(http.StatusOK, "pie.tmpl", gin.H{
+//		"Names": template.JS(namesJSON),
+//		"Vals":  template.JS(valsJSON),
+//	})
+//}
 
 // show mac filter form
 func Macfilterform(c *gin.Context) {

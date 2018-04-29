@@ -15,8 +15,10 @@ var RssiRange []float32
 var DefaultCutoff,DefaultMixin float64
 var MinApNum int
 
+var ProgressBarLength,ProgressBarCurLevel int
+
 // Default K in KNN algorithm
-var DefaultKnnK,MinClusterRss int
+var DefaultKnnK int
 
 func init() {
 	DefaultMixin = float64(0.1)
@@ -25,5 +27,7 @@ func init() {
 	MinRssi = -110
 	MaxRssi = 5
 	DefaultKnnK = 10
-	MinClusterRss = -70
+	ProgressBarLength = 0
+	ProgressBarCurLevel = 0
+	//MinClusterRss = -75
 }

@@ -55,38 +55,33 @@ func worker(id int, jobs <-chan jobA, results chan<- resultA) {
 }
 
 // optimizePriorsThreaded generates the optimized prior data for Naive-Bayes classification.
-func OptimizePriorsThreaded(group string) error {
+func OptimizePriorsThreaded(groupName string, rd dbm.RawDataStruct, md *dbm.MiddleDataStruct) error {
 	// generate the fingerprintsInMemory
-
 	//var psMain = *parameters.NewFullParameters()
-	var gpMain = dbm.NewGroup(group)
-	defer dbm.GM.GetGroup(group).Set(gpMain)
-
+	//var gpMain = dbm.NewGroup(groupName)
+	//defer dbm.GM.GetGroup(groupName).Set(gpMain)
+	bayerPriors := make(map[string]parameters.PriorParameters)
 	// Get real PS from raw fingerprint data
-	fingerprintsInMemoryMain := make(map[string]parameters.Fingerprint)
-	var fingerprintsOrderingMain []string
-	var err error
-	//opening the db
-	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-	//defer db.Close()
-	// if err != nil {
-	//	log.Fatal(err)
+	//fingerprintsInMemoryMain := make(map[string]parameters.Fingerprint)
+	//var fingerprintsOrderingMain []string
+	//var err error
+
+	//fingerprintsOrderingMain,fingerprintsInMemoryMain,err = dbm.GetLearnFingerPrints(groupName,true)
+
+	//if err != nil {
 	//	return err
 	//}
 
-	fingerprintsOrderingMain,fingerprintsInMemoryMain,err = dbm.GetLearnFingerPrints(group,true)
-	if err != nil {
-		return err
-	}
-
-	GetParameters(group, gpMain, fingerprintsInMemoryMain, fingerprintsOrderingMain)
-
+	//GetParameters(groupName, gpMain, fingerprintsInMemoryMain, fingerprintsOrderingMain)
+	//
+	//fingerprintsInMemoryMain := rd.Fingerprints
+	//fingerprintsOrderingMain := rd.FingerprintsOrdering
 	//glb.Debug.Println(fingerprintsInMemory)
 	//Info.Println("Running calculatePriors")
 	if glb.RuntimeArgs.GaussianDist {
-		calculateGaussianPriors(group, gpMain, fingerprintsInMemoryMain, fingerprintsOrderingMain)
+		calculateGaussianPriors(rd.Fingerprints, rd.FingerprintsOrdering, md, &bayerPriors)
 	} else {
-		calculatePriors(group, gpMain, fingerprintsInMemoryMain, fingerprintsOrderingMain)
+		calculatePriors(rd.Fingerprints, rd.FingerprintsOrdering, md, &bayerPriors)
 	}
 
 	//fmt.Println(ps1)
@@ -117,26 +112,26 @@ func OptimizePriorsThreaded(group string) error {
 
 
 	//var ps = *parameters.NewFullParameters()
-	var gpCross = dbm.NewGroup(group)
+	//var gpCross = dbm.NewGroup(groupName)
 
-	//GetParameters(group, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	//GetParameters(groupName, &ps, fingerprintsInMemory, fingerprintsOrdering)
 	//#cache
-	GetParameters(group, gpCross, fpInMemoryCrossTrain, fpOrderingCrossTrain)
+	GetParameters(groupName, gpCross, fpInMemoryCrossTrain, fpOrderingCrossTrain)
 
 	//Info.Println("Running calculatePriors")
 	if glb.RuntimeArgs.GaussianDist {
-		calculateGaussianPriors(group, gpCross, fpInMemoryCrossTrain, fpOrderingCrossTrain)
+		calculateGaussianPriors(groupName, gpCross, fpInMemoryCrossTrain, fpOrderingCrossTrain)
 	} else {
-		calculatePriors(group, gpCross, fpInMemoryCrossTrain, fpOrderingCrossTrain)
+		calculatePriors(groupName, gpCross, fpInMemoryCrossTrain, fpOrderingCrossTrain)
 	}
 
 	var results = *parameters.NewResultsParameters()
-	for n := range gpCross.Priors {
-		gpCross.Results[n] = results //Results is shared between all networks
+	for n := range gpCross.BayesPriors {
+		gpCross.BayesResults[n] = results //BayesResults is shared between all networks
 	}
 
 	//glb.Debug.Println("########################################")
-	//glb.Debug.Println(group)
+	//glb.Debug.Println(groupName)
 	//glb.Debug.Println(len(fingerprintsInMemoryMain))
 	//glb.Debug.Println(len(fingerprintsInMemoryCross))
 	//glb.Debug.Println(len(fingerprintsInMemory))
@@ -145,8 +140,8 @@ func OptimizePriorsThreaded(group string) error {
 
 	// Mixin is ration of pbayes1(proximity to AP) to pbayes2(normal bayesian classifier result)
 	mixins := []float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9}
-	//mixinOverride, _ := dbm.GetMixinOverride(group)
-	mixinOverride := dbm.GetSharedPrf(group).Mixin
+	//mixinOverride, _ := dbm.GetMixinOverride(groupName)
+	mixinOverride := dbm.GetSharedPrf(groupName).Mixin
 	if mixinOverride >= 0 && mixinOverride <= 1 {
 		mixins = []float64{mixinOverride}
 	}
@@ -154,8 +149,8 @@ func OptimizePriorsThreaded(group string) error {
 	// cutoffs is a number which is compared with the standard deviation of a specific AP in all locations(MacVariability)
 	// if macVariability is lower than cutoff it is ignored in PBayes2 calculation.
 	cutoffs := []float64{0.005, 0.05, 0.1}
-	//cutoffOverride, _ := dbm.GetCutoffOverride(group)
-	cutoffOverride := dbm.GetSharedPrf(group).Cutoff
+	//cutoffOverride, _ := dbm.GetCutoffOverride(groupName)
+	cutoffOverride := dbm.GetSharedPrf(groupName).Cutoff
 	if cutoffOverride >= 0 && cutoffOverride <= 1 {
 		cutoffs = []float64{cutoffOverride}
 	}
@@ -163,7 +158,7 @@ func OptimizePriorsThreaded(group string) error {
 	bestMixin := make(map[string]float64)
 	bestResult := make(map[string]float64)
 	bestCutoff := make(map[string]float64)
-	for n := range gpCross.Priors {
+	for n := range gpCross.BayesPriors {
 		bestResult[n] = 0
 		bestMixin[n] = 0
 		bestCutoff[n] = 0
@@ -175,7 +170,7 @@ func OptimizePriorsThreaded(group string) error {
 		PBayes1 := make(map[string]map[string]map[string]float64)
 		PBayes2 := make(map[string]map[string]map[string]float64)
 		totalJobs := 0
-		for n := range gpCross.Priors {
+		for n := range gpCross.BayesPriors {
 			it := float64(-1)
 			PBayes1[n] = make(map[string]map[string]float64)
 			PBayes2[n] = make(map[string]map[string]float64)
@@ -194,7 +189,7 @@ func OptimizePriorsThreaded(group string) error {
 					totalJobs++
 					//todo: in the following line, fingerprintsInMemory[v1] is included in ps; so the test set(fingerprintsInMemory[v1]) is included in the training set(ps)
 					//
-				PBayes1[n][v1], PBayes2[n][v1] = CalculatePosteriorThreadSafe(group,gpCross,fpInMemoryCrossTest[v1], cutoff)
+				PBayes1[n][v1], PBayes2[n][v1] = CalculatePosteriorThreadSafe(groupName,gpCross,fpInMemoryCrossTest[v1], cutoff)
 				//}
 			}
 		}
@@ -246,7 +241,7 @@ func OptimizePriorsThreaded(group string) error {
 
 		for a := 1; a <= numJobs; a++ {
 			t := <-chanResults
-			// ps.Results isn't set here(finalResults is a temporary struct), it is set in crossValidation() function
+			// ps.BayesResults isn't set here(finalResults is a temporary struct), it is set in crossValidation() function
 			finalResults[t.n][t.mixin].TotalLocations[t.locationTrue]++ //num of location estimations
 			if t.locationGuess == t.locationTrue {
 				finalResults[t.n][t.mixin].CorrectLocations[t.locationTrue]++ // num of correct estimations
@@ -262,7 +257,7 @@ func OptimizePriorsThreaded(group string) error {
 			finalResults[t.n][t.mixin].Guess[t.locationTrue][t.locationGuess]++
 		}
 
-		for n := range gpCross.Priors {
+		for n := range gpCross.BayesPriors {
 			for mixin := range finalResults[n] {
 				average := float64(0)
 				it := 0
@@ -289,31 +284,274 @@ func OptimizePriorsThreaded(group string) error {
 	}
 
 	// Load new priors and calculate new cross Validation
-	for n := range gpCross.Priors {
-		gpCross.Priors[n].Special["MixIn"] = bestMixin[n]
-		gpCross.Priors[n].Special["VarabilityCutoff"] = bestCutoff[n]
+	for n := range gpCross.BayesPriors {
+		gpCross.BayesPriors[n].Special["MixIn"] = bestMixin[n]
+		gpCross.BayesPriors[n].Special["VarabilityCutoff"] = bestCutoff[n]
 		// (1-1/FoldCrossValidation) of the learned fingerprints are used to set the best mixin and cutoff,
-		// 	then (1/FoldCrossValidation) of remained fingerprints are used to set ps.Results(Accuracy,TotalLocations,CorrectLocations,Guess)
-		crossValidation(group, n, gpCross, fpInMemoryCrossTest, fpOrderingCrossTest)
+		// 	then (1/FoldCrossValidation) of remained fingerprints are used to set ps.BayesResults(Accuracy,TotalLocations,CorrectLocations,Guess)
+		crossValidation(groupName, n, gpCross, fpInMemoryCrossTest, fpOrderingCrossTest)
 	}
 
 	//fmt.Println(ps)
 
-	for n := range gpMain.Priors {
-		gpMain.Priors[n].Special["MixIn"] = bestMixin[n]
-		gpMain.Priors[n].Special["VarabilityCutoff"] = bestCutoff[n]
+	for n := range gpMain.BayesPriors {
+		gpMain.BayesPriors[n].Special["MixIn"] = bestMixin[n]
+		gpMain.BayesPriors[n].Special["VarabilityCutoff"] = bestCutoff[n]
 	}
 
-	gpMain.Results = gpCross.Results
+	gpMain.BayesResults = gpCross.BayesResults
 
-	// Debug.Println(getUsers(group))
+	// Debug.Println(getUsers(groupName))
 	go dbm.ResetCache("usersCache")
 
-	//go dbm.SaveParameters(group, psMain)
-	//go dbm.SetPsCache(group, psMain)
+	//go dbm.SaveParameters(groupName, psMain)
+	//go dbm.SetPsCache(groupName, psMain)
 
 	return nil
 }
+
+
+
+func BayesLearn(groupName string, rd dbm.RawDataStruct, md *dbm.MiddleDataStruct) (map[string]parameters.PriorParameters,error) {
+	// generate the fingerprintsInMemory
+	//var psMain = *parameters.NewFullParameters()
+	//var gpMain = dbm.NewGroup(groupName)
+	//defer dbm.GM.GetGroup(groupName).Set(gpMain)
+	bayerPriors := make(map[string]parameters.PriorParameters)
+	// Get real PS from raw fingerprint data
+	//fingerprintsInMemoryMain := make(map[string]parameters.Fingerprint)
+	//var fingerprintsOrderingMain []string
+	//var err error
+
+	//fingerprintsOrderingMain,fingerprintsInMemoryMain,err = dbm.GetLearnFingerPrints(groupName,true)
+
+	//if err != nil {
+	//	return err
+	//}
+
+	//GetParameters(groupName, gpMain, fingerprintsInMemoryMain, fingerprintsOrderingMain)
+	//
+	//fingerprintsInMemoryMain := rd.Fingerprints
+	//fingerprintsOrderingMain := rd.FingerprintsOrdering
+	//glb.Debug.Println(fingerprintsInMemory)
+	//Info.Println("Running calculatePriors")
+	if glb.RuntimeArgs.GaussianDist {
+		calculateGaussianPriors(rd.Fingerprints, rd.FingerprintsOrdering, md, &bayerPriors)
+	} else {
+		calculatePriors(rd.Fingerprints, rd.FingerprintsOrdering, md, &bayerPriors)
+	}
+
+	//fmt.Println(ps1)
+
+	//fpInMemoryCrossTest := make(map[string]parameters.Fingerprint)
+	//fpInMemoryCrossTrain := make(map[string]parameters.Fingerprint)
+
+	//var fpOrderingCrossTest []string
+	//var fpOrderingCrossTrain []string
+
+
+	it := float64(-1)
+	//for fpTime,fp := range rd.Fingerprints{
+	//	it++
+	//	if math.Mod(it, FoldCrossValidation) == 0 {
+	//		fpInMemoryCrossTest[fpTime] = fp
+	//		//fingerprintsOrdering is an array of fingerprintsInMemory keys
+	//		fpOrderingCrossTest = append(fpOrderingCrossTest, fpTime)
+	//	} else {
+	//		//if fpCounter*((FoldCrossValidation-float64(1))/FoldCrossValidation) >= it {
+	//		fpInMemoryCrossTrain[fpTime] = fp
+	//		//fingerprintsOrdering is an array of fingerprintsInMemory keys
+	//		fpOrderingCrossTrain = append(fpOrderingCrossTrain, fpTime)
+	//
+	//	}
+	//}
+
+
+	//var ps = *parameters.NewFullParameters()
+	//var gpCross = dbm.NewGroup(groupName)
+
+	//GetParameters(groupName, &ps, fingerprintsInMemory, fingerprintsOrdering)
+	//#cache
+	//GetParameters(groupName, gpCross, fpInMemoryCrossTrain, fpOrderingCrossTrain)
+	//
+	////Info.Println("Running calculatePriors")
+	//if glb.RuntimeArgs.GaussianDist {
+	//	calculateGaussianPriors(groupName, gpCross, fpInMemoryCrossTrain, fpOrderingCrossTrain)
+	//} else {
+	//	calculatePriors(groupName, gpCross, fpInMemoryCrossTrain, fpOrderingCrossTrain)
+	//}
+
+	var results = *parameters.NewResultsParameters()
+	for n := range gpCross.BayesPriors {
+		gpCross.BayesResults[n] = results //BayesResults is shared between all networks
+	}
+
+	//glb.Debug.Println("########################################")
+	//glb.Debug.Println(groupName)
+	//glb.Debug.Println(len(fingerprintsInMemoryMain))
+	//glb.Debug.Println(len(fingerprintsInMemoryCross))
+	//glb.Debug.Println(len(fingerprintsInMemory))
+	//glb.Debug.Println("########################################")
+
+
+	// Mixin is ration of pbayes1(proximity to AP) to pbayes2(normal bayesian classifier result)
+
+
+	// cutoffs is a number which is compared with the standard deviation of a specific AP in all locations(MacVariability)
+	// if macVariability is lower than cutoff it is ignored in PBayes2 calculation.
+
+
+
+	for n := range gpCross.BayesPriors {
+		bestResult[n] = 0
+		bestMixin[n] = 0
+		bestCutoff[n] = 0
+	}
+
+		//                  network    id         loc    value
+		PBayes1 := make(map[string]map[string]map[string]float64)
+		PBayes2 := make(map[string]map[string]map[string]float64)
+		totalJobs := 0
+		for n := range gpCross.BayesPriors {
+			it := float64(-1)
+			PBayes1[n] = make(map[string]map[string]float64)
+			PBayes2[n] = make(map[string]map[string]float64)
+
+			for _, v1 := range fpOrderingCrossTest {
+				it++
+				// call calculatePosteriorThreadSafe function every 3 times in 4 times
+				//if math.Mod(it, FoldCrossValidation) != 0 {
+				//_, ok := ps.NetworkLocs[n][fingerprintsInMemoryCross[v1].Location]
+				_, ok := gpCross.NetworkLocs[n][fpInMemoryCrossTest[v1].Location]
+				// Check if the fingerprint's location exists in ps
+				// todo: ps is made from the fingerprintsInMemory; so there is no need for bellow if!
+				if len(fpInMemoryCrossTest[v1].WifiFingerprint) == 0 || !ok {
+					continue
+				}
+				totalJobs++
+				//todo: in the following line, fingerprintsInMemory[v1] is included in ps; so the test set(fingerprintsInMemory[v1]) is included in the training set(ps)
+				//
+				PBayes1[n][v1], PBayes2[n][v1] = CalculatePosteriorThreadSafe(groupName,gpCross,fpInMemoryCrossTest[v1], cutoff)
+				//}
+			}
+		}
+
+		numJobs := len(mixins) * totalJobs
+		runtime.GOMAXPROCS(glb.MaxParallelism())
+		chanJobs := make(chan jobA, 1+numJobs)
+		chanResults := make(chan resultA, 1+numJobs)
+		for w := 1; w <= glb.MaxParallelism(); w++ {
+			go worker(w, chanJobs, chanResults)
+		}
+
+		finalResults := make(map[string]map[float64]parameters.ResultsParameters)
+
+		// Fill chanJobs with Jobs
+		for n := range gpCross.Get_Priors() {
+			finalResults[n] = make(map[float64]parameters.ResultsParameters)
+			for _, mixin := range mixins {
+
+				finalResults[n][mixin] = *parameters.NewResultsParameters()
+				for loc := range gpCross.NetworkLocs[n] {
+					finalResults[n][mixin].TotalLocations[loc] = 0
+					finalResults[n][mixin].CorrectLocations[loc] = 0
+					finalResults[n][mixin].Accuracy[loc] = 0
+					finalResults[n][mixin].Guess[loc] = make(map[string]int)
+				}
+				// Loop through fingerprints which their posterior is included in PBayes1
+
+				for id := range PBayes1[n] { //id = FG timestamps = fingerprint ordering members
+					locs := []string{}
+					bayes1 := []float64{}
+					bayes2 := []float64{}
+					for key := range PBayes1[n][id] { //key = locations
+						locs = append(locs, key)
+						bayes1 = append(bayes1, PBayes1[n][id][key])
+						bayes2 = append(bayes2, PBayes2[n][id][key]) //length of PBayes1 array equals to length of PBayes2
+					}
+					trueLoc := fpInMemoryCrossTest[id].Location
+					chanJobs <- jobA{n: n,
+						mixin: mixin,
+						locs: locs,
+						locationTrue: trueLoc,
+						bayes1: bayes1,
+						bayes2: bayes2}
+				}
+			}
+		}
+		close(chanJobs)
+
+		for a := 1; a <= numJobs; a++ {
+			t := <-chanResults
+			// ps.BayesResults isn't set here(finalResults is a temporary struct), it is set in crossValidation() function
+			finalResults[t.n][t.mixin].TotalLocations[t.locationTrue]++ //num of location estimations
+			if t.locationGuess == t.locationTrue {
+				finalResults[t.n][t.mixin].CorrectLocations[t.locationTrue]++ // num of correct estimations
+			}
+			//init
+			if _, ok := finalResults[t.n][t.mixin].Guess[t.locationTrue]; !ok {
+				finalResults[t.n][t.mixin].Guess[t.locationTrue] = make(map[string]int)
+			}
+			//init
+			if _, ok := finalResults[t.n][t.mixin].Guess[t.locationTrue][t.locationGuess]; !ok {
+				finalResults[t.n][t.mixin].Guess[t.locationTrue][t.locationGuess] = 0
+			}
+			finalResults[t.n][t.mixin].Guess[t.locationTrue][t.locationGuess]++
+		}
+
+		for n := range gpCross.BayesPriors {
+			for mixin := range finalResults[n] {
+				average := float64(0)
+				it := 0
+				for loc := range finalResults[n][mixin].TotalLocations {
+					if finalResults[n][mixin].TotalLocations[loc] > 0 { //todo: finalResults[n][mixin].TotalLocations[loc] is always greater than 0
+						finalResults[n][mixin].Accuracy[loc] = int(100.0 * finalResults[n][mixin].CorrectLocations[loc] / finalResults[n][mixin].TotalLocations[loc])
+						// Debug.Println(n, mixin, cutoff, loc, finalResults[n][mixin].Accuracy[loc])
+						average += float64(finalResults[n][mixin].Accuracy[loc])
+						it++
+					}
+				}
+				average = average / float64(it)
+				// fmt.Println(mixin, average)
+
+				// todo: choose a better algorithm to select the best MixIn rather than average
+				if average > bestResult[n] {
+					bestResult[n] = average
+					bestMixin[n] = mixin
+					bestCutoff[n] = cutoff
+				}
+			}
+		}
+
+	// Load new priors and calculate new cross Validation
+	for n := range gpCross.BayesPriors {
+		gpCross.BayesPriors[n].Special["MixIn"] = bestMixin[n]
+		gpCross.BayesPriors[n].Special["VarabilityCutoff"] = bestCutoff[n]
+		// (1-1/FoldCrossValidation) of the learned fingerprints are used to set the best mixin and cutoff,
+		// 	then (1/FoldCrossValidation) of remained fingerprints are used to set ps.BayesResults(Accuracy,TotalLocations,CorrectLocations,Guess)
+		crossValidation(groupName, n, gpCross, fpInMemoryCrossTest, fpOrderingCrossTest)
+	}
+
+	//fmt.Println(ps)
+
+	for n := range gpMain.BayesPriors {
+		gpMain.BayesPriors[n].Special["MixIn"] = bestMixin[n]
+		gpMain.BayesPriors[n].Special["VarabilityCutoff"] = bestCutoff[n]
+	}
+
+	gpMain.BayesResults = gpCross.BayesResults
+
+	// Debug.Println(getUsers(groupName))
+	go dbm.ResetCache("usersCache")
+
+	//go dbm.SaveParameters(groupName, psMain)
+	//go dbm.SetPsCache(groupName, psMain)
+
+	return nil
+}
+
+
+
 
 // Not threaded version of optimizePriorsThreaded() function
 func OptimizePriorsThreadedNot(group string) {
@@ -342,8 +580,8 @@ func OptimizePriorsThreadedNot(group string) {
 	}
 
 	var results = *parameters.NewResultsParameters()
-	for n := range gp.Priors {
-		gp.Results[n] = results
+	for n := range gp.BayesPriors {
+		gp.BayesResults[n] = results
 	}
 
 	// loop through these parameters
@@ -353,7 +591,7 @@ func OptimizePriorsThreadedNot(group string) {
 	bestMixin := make(map[string]float64)
 	bestResult := make(map[string]float64)
 	bestCutoff := make(map[string]float64)
-	for n := range gp.Priors {
+	for n := range gp.BayesPriors {
 		bestResult[n] = 0
 		bestMixin[n] = 0
 		bestCutoff[n] = 0
@@ -365,7 +603,7 @@ func OptimizePriorsThreadedNot(group string) {
 		PBayes1 := make(map[string]map[string]map[string]float64)
 		PBayes2 := make(map[string]map[string]map[string]float64)
 		totalJobs := 0
-		for n := range gp.Priors {
+		for n := range gp.BayesPriors {
 			it := float64(-1)
 			PBayes1[n] = make(map[string]map[string]float64)
 			PBayes2[n] = make(map[string]map[string]float64)
@@ -386,7 +624,7 @@ func OptimizePriorsThreadedNot(group string) {
 		finalResults := make(map[string]map[float64]parameters.ResultsParameters)
 		bestMixin := make(map[string]float64)
 		bestResult := make(map[string]float64)
-		for n := range gp.Priors {
+		for n := range gp.BayesPriors {
 			bestResult[n] = 0
 			bestMixin[n] = 0
 			finalResults[n] = make(map[float64]parameters.ResultsParameters)
@@ -444,9 +682,9 @@ func OptimizePriorsThreadedNot(group string) {
 	}
 
 	// Load new priors and calculate new cross Validation
-	for n := range gp.Priors {
-		gp.Priors[n].Special["MixIn"] = bestMixin[n]
-		gp.Priors[n].Special["VarabilityCutoff"] = bestCutoff[n]
+	for n := range gp.BayesPriors {
+		gp.BayesPriors[n].Special["MixIn"] = bestMixin[n]
+		gp.BayesPriors[n].Special["VarabilityCutoff"] = bestCutoff[n]
 		crossValidation(group, n, gp, fingerprintsInMemory, fingerprintsOrdering)
 	}
 	//go dbm.SaveParameters(group, ps)

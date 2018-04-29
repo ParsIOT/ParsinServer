@@ -631,3 +631,30 @@ func ReformDBDB(group string)int{
 	numChanges += len(toUpdate)
 	return numChanges
 }
+
+func GetCVResults(groupName string) map[string]int{
+	gp := GM.GetGroup(groupName)
+	glb.Debug.Println(gp.Get_Name())
+	return gp.Get_ResultData().Get_AlgoAccuracy()
+}
+
+func GetCalcCompletionLevel() float64{
+	level := float64(glb.ProgressBarCurLevel) / float64(glb.ProgressBarLength)
+	return level
+}
+
+func RenewStructDB(groupName string){
+	fingerprintOrdering,fingerprintInMemoryRaw,_ := GetLearnFingerPrints(groupName,false)
+	fingerprintInMemory := make(map[string]parameters.Fingerprint)
+	for key,fp := range fingerprintInMemoryRaw{
+		fp.Location = glb.RoundLocationDim(fp.Location)
+		fingerprintInMemory[key] = fp
+	}
+	glb.Debug.Println(fingerprintOrdering)
+	gp := GM.GetGroup(groupName)
+	rd := gp.Get_RawData()
+	rd.Set_Fingerprints(fingerprintInMemory)
+	rd.Set_FingerprintsOrdering(fingerprintOrdering)
+	glb.Debug.Println(rd.Get_FingerprintsOrdering())
+}
+
