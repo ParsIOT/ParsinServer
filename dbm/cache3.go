@@ -866,10 +866,25 @@ func (gp *Group) Get_RawData() *RawDataStruct {
 	gp.RUnlock()
 	return item
 }
+
 func (gp *Group) Get_RawData_Val() RawDataStruct {
 	gp.RLock()
 	item := *gp.RawData
 	gp.RUnlock()
+	return item
+}
+
+func (gp *Group) Get_RawData_Filtered_Val() RawDataStruct {
+	gp.RLock()
+	item := *gp.RawData
+	gp.RUnlock()
+
+	for _,fpIndex := range item.FingerprintsOrdering{
+		fp := item.Fingerprints[fpIndex]
+		FilterFingerprint(&fp)
+		item.Fingerprints[fpIndex] = fp
+	}
+
 	return item
 }
 

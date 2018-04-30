@@ -18,7 +18,7 @@ var MinApNum int
 var ProgressBarLength,ProgressBarCurLevel int
 
 // Default K in KNN algorithm
-var DefaultKnnK int
+var DefaultKnnMinCRssRange,DefaultKnnKRange []int
 
 func init() {
 	DefaultMixin = float64(0.1)
@@ -26,8 +26,9 @@ func init() {
 	MinApNum = 3
 	MinRssi = -110
 	MaxRssi = 5
-	DefaultKnnK = 10
 	ProgressBarLength = 0
 	ProgressBarCurLevel = 0
+	DefaultKnnKRange = []int{1,30}
+	DefaultKnnMinCRssRange = []int{-60,-90}
 	//MinClusterRss = -75
 }

@@ -27,8 +27,26 @@ var maxrssInNormal,minrssInNormal float64
 
 var distAlgo string
 
-var validKs []int=[]int{}
-var validMinClusterRSSs []int=[]int{}
+//var ValidKs []int = defaultValidKs()
+//var ValidMinClusterRSSs []int = defaultValidMinClusterRSSs()
+//
+//
+//
+//func defaultValidKs() []int {
+//	validKs := []int{}
+//	for i:=glb.DefaultKnnKRange[0];i<=glb.DefaultKnnKRange[1];i++{
+//		validKs = append(validKs,i)
+//	}
+//	return validKs
+//}
+//
+//func defaultValidMinClusterRSSs() []int {
+//	validMinClusterRSSs := []int{}
+//	for i:=-60;i>=-90;i--{
+//		validMinClusterRSSs = append(validMinClusterRSSs,i)
+//	}
+//	return validMinClusterRSSs
+//}
 
 func init() {
 
@@ -39,14 +57,6 @@ func init() {
 	//topRssList = []int{-60,-79,-90}
 	maxrssInNormal = -55.0
 	minrssInNormal = float64(glb.MinRssi) - 5.0
-
-	for i:=1;i<=30;i++{
-		validKs = append(validKs,i)
-	}
-
-	for i:=-60;i>=-90;i--{
-		validMinClusterRSSs = append(validMinClusterRSSs,i)
-	}
 
 }
 

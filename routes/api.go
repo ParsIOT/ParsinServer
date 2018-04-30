@@ -462,6 +462,101 @@ func DeleteDatabase(c *gin.Context) {
 //	}
 //}
 
+func PutKnnKRange(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	kRangeRawStr := c.DefaultQuery("range", "none")
+	glb.Debug.Println(group)
+	glb.Debug.Println(kRangeRawStr)
+
+	if group != "noneasdf" {
+		// convert string to int slice
+		kRangeRawStr = strings.TrimSpace(kRangeRawStr)
+		kRangeRawStr = kRangeRawStr[1:][:len(kRangeRawStr)-2]
+		kRangeListStr := strings.Split(kRangeRawStr, ",")
+		kRange := []int{}
+
+		for _,numStr := range kRangeListStr{
+			num,_ := strconv.Atoi(numStr)
+			kRange = append(kRange,num)
+		}
+
+		// check kRange length
+		if len(kRange) == 1 || len(kRange) == 2 {
+			//validKs := glb.MakeRange(kRange[0],kRange[0])
+			err := dbm.SetSharedPrf(group,"KnnKRange", kRange)
+			if err == nil {
+				//optimizePriorsThreaded(strings.ToLower(group))
+				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K range for " + group + ", now set to " + kRangeRawStr})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			}
+		//}else if( len(kRange) == 2){
+		//	algorithms.ValidKs = glb.MakeRange(kRange[0],kRange[1])
+		}else{
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Knn K range length must be 2 at the maximum value "})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
+	}
+}
+
+func PutKnnMinClusterRSSRange(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	rssRangeRawStr := c.DefaultQuery("range", "none")
+	glb.Debug.Println(group)
+	glb.Debug.Println(rssRangeRawStr)
+
+	if group != "noneasdf" {
+		// convert string to int slice
+		rssRangeRawStr = strings.TrimSpace(rssRangeRawStr)
+		rssRangeRawStr = rssRangeRawStr[1:][:len(rssRangeRawStr)-2]
+		rssRangeListStr := strings.Split(rssRangeRawStr, ",")
+		minCRssRange := []int{}
+
+		for _,numStr := range rssRangeListStr{
+			num,err := strconv.Atoi(numStr)
+			if err != nil{
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
+			}
+			minCRssRange = append(minCRssRange,num)
+		}
+
+		// check kRange length
+		if len(minCRssRange) == 1 || len(minCRssRange) == 2 {
+			//validKs := glb.MakeRange(kRange[0],kRange[0])
+			err := dbm.SetSharedPrf(group,"KnnMinCRssRange", minCRssRange)
+			if err == nil {
+				//optimizePriorsThreaded(strings.ToLower(group))
+				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K range for " + group + ", now set to " + rssRangeRawStr})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			}
+			//}else if( len(kRange) == 2){
+			//	algorithms.ValidKs = glb.MakeRange(kRange[0],kRange[1])
+		}else{
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Knn K range length must be 2 at the maximum value "})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
+	}
+}
+
+
 // Calls setCutoffOverride() and then calls optimizePriorsThreaded()
 // GET parameters: group, cutoff
 func PutMinRss(c *gin.Context) {

@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"ParsinServer/glb"
+	"ParsinServer/dbm"
 )
 
 
@@ -160,6 +161,9 @@ func SlashDashboard(c *gin.Context) {
 	dash.Mixin = make(map[string]float64)
 	dash.VarabilityCutoff = make(map[string]float64)
 
+
+	kRange := dbm.GetSharedPrf(groupName).KnnKRange
+	knnMinCRssRange := dbm.GetSharedPrf(groupName).KnnMinCRssRange
 	//for n := range gp.Get_NetworkLocs() {
 	//	dash.Mixin[n] = gp.Get_Priors()[n].Special["MixIn"]
 	//	dash.VarabilityCutoff[n] = gp.Get_Priors()[n].Special["VarabilityCutoff"]
@@ -177,6 +181,8 @@ func SlashDashboard(c *gin.Context) {
 		"Group":   groupName,
 		"Dash":    dash,
 		"Users":   people,
+		"kRange":	kRange,
+		"knnMinCRssRange": knnMinCRssRange,
 	})
 }
 

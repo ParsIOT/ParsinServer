@@ -13,6 +13,8 @@ import (
 	"ParsinServer/algorithms/clustering"
 	"sort"
 	"runtime"
+	"ParsinServer/algorithms/bayes"
+	"time"
 )
 
 var threadedCross bool = false
@@ -30,43 +32,43 @@ type KnnJobResult struct{
 }
 
 
-//// track api that calls trackFingerprint() function
-//func TrackFingerprintPOST(c *gin.Context) {
-//	c.Writer.Header().Set("Content-Type", "application/json")
-//	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-//	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-//	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
-//	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
-//	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-//	var jsonFingerprint parameters.Fingerprint
-//	//glb.Info.Println(jsonFingerprint)
-//
-//	if glb.BindJSON(&jsonFingerprint, c) == nil {
-//		if (len(jsonFingerprint.WifiFingerprint) >= glb.MinApNum) {
-//			glb.Debug.Println("Track json: ",jsonFingerprint)
-//			message, success, bayesGuess, _, svmGuess, _, knnGuess, scikitData  := TrackFingerprint(jsonFingerprint)
-//			if success {
-//				scikitDataStr := glb.StringMap2String(scikitData)
-//				resJsonMap := gin.H{"message": message, "success": true, "bayes": bayesGuess, "svm": svmGuess, "knn": knnGuess}
-//				for algorithm, valXY := range scikitData{
-//					resJsonMap[algorithm]=valXY
-//				}
-//
-//				glb.Debug.Println("message", message, " success", true, " bayes", bayesGuess, " svm", svmGuess, scikitDataStr, " knn", knnGuess)
-//				c.JSON(http.StatusOK, resJsonMap)
-//			} else {
-//				glb.Debug.Println(message)
-//				c.JSON(http.StatusOK, gin.H{"message": message, "success": false})
-//			}
-//		} else {
-//			glb.Warning.Println("Nums of AP must be greater than 3")
-//			c.JSON(http.StatusOK, gin.H{"message": "Nums of AP must be greater than 3", "success": false})
-//		}
-//	} else {
-//		glb.Warning.Println("Could not bind JSON")
-//		c.JSON(http.StatusOK, gin.H{"message": "Could not bind JSON", "success": false})
-//	}
-//}
+// track api that calls trackFingerprint() function
+func TrackFingerprintPOST(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	var jsonFingerprint parameters.Fingerprint
+	//glb.Info.Println(jsonFingerprint)
+
+	if glb.BindJSON(&jsonFingerprint, c) == nil {
+		if (len(jsonFingerprint.WifiFingerprint) >= glb.MinApNum) {
+			glb.Debug.Println("Track json: ",jsonFingerprint)
+			message, success, bayesGuess, _, svmGuess, _, knnGuess, scikitData  := TrackFingerprint(jsonFingerprint)
+			if success {
+				scikitDataStr := glb.StringMap2String(scikitData)
+				resJsonMap := gin.H{"message": message, "success": true, "bayes": bayesGuess, "svm": svmGuess, "knn": knnGuess}
+				for algorithm, valXY := range scikitData{
+					resJsonMap[algorithm]=valXY
+				}
+
+				glb.Debug.Println("message", message, " success", true, " bayes", bayesGuess, " svm", svmGuess, scikitDataStr, " knn", knnGuess)
+				c.JSON(http.StatusOK, resJsonMap)
+			} else {
+				glb.Debug.Println(message)
+				c.JSON(http.StatusOK, gin.H{"message": message, "success": false})
+			}
+		} else {
+			glb.Warning.Println("Nums of AP must be greater than 3")
+			c.JSON(http.StatusOK, gin.H{"message": "Nums of AP must be greater than 3", "success": false})
+		}
+	} else {
+		glb.Warning.Println("Could not bind JSON")
+		c.JSON(http.StatusOK, gin.H{"message": "Could not bind JSON", "success": false})
+	}
+}
 
 // call leanFingerprint() function
 func LearnFingerprintPOST(c *gin.Context) {
@@ -140,8 +142,8 @@ func LearnFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool) {
 	message := "Inserted fingerprint containing " + strconv.Itoa(len(jsonFingerprint.WifiFingerprint)) + " APs for " + jsonFingerprint.Username + " (" + jsonFingerprint.Group + ") at " + jsonFingerprint.Location
 	return message, true
 }
-
-// call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
+//
+//// call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
 //func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, string, map[string]float64, string, map[string]float64, string, map[string]string) {
 //	// Classify with filter fingerprint
 //	fullFingerprint := jsonFingerprint
@@ -274,7 +276,6 @@ func LearnFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool) {
 func CalculateLearn(groupName string) {
 	// Now performance isn't important in learning, just care about performance on track (it helps to code easily!)
 
-	glb.ProgressBarLength = len(validMinClusterRSSs) * len(validKs)
 
 
 	groupName = strings.ToLower(groupName)
@@ -282,7 +283,7 @@ func CalculateLearn(groupName string) {
 	//defer dbm.GM.GetGroup(groupName).Set(gpMain)
 	gp := dbm.GM.GetGroup(groupName)
 	gp.Set_Permanent(false) //for crossvalidation
-	rd := gp.Get_RawData_Val()
+	rd := gp.Get_RawData_Filtered_Val()
 
 
 	//glb.Debug.Println(1)
@@ -306,6 +307,36 @@ func CalculateLearn(groupName string) {
 	bestK := 1
 	bestMinClusterRss:= 1
 	bestResult := -1
+
+
+	//Set algorithm parameters range:
+
+		// KNN:
+		// 1.K
+	validKs := glb.MakeRange(glb.DefaultKnnKRange[0],glb.DefaultKnnKRange[1])
+	knnKRange := dbm.GetSharedPrf(gp.Get_Name()).KnnKRange
+	if len(knnKRange) == 1{
+		validKs = glb.MakeRange(knnKRange[0],knnKRange[0])
+	}else if len(knnKRange) == 2{
+		validKs = glb.MakeRange(knnKRange[0],knnKRange[1])
+	}else{
+		glb.Error.Println("Can't set valid Knn K values")
+	}
+		//2.MinClusterRSS
+	validMinClusterRSSs := glb.MakeRange(glb.DefaultKnnMinCRssRange[0],glb.DefaultKnnMinCRssRange[1])
+
+	minClusterRSSRange := dbm.GetSharedPrf(gp.Get_Name()).KnnMinCRssRange
+	if len(minClusterRSSRange) == 1{
+		validMinClusterRSSs = glb.MakeRange(minClusterRSSRange[0],minClusterRSSRange[0])
+	}else if len(knnKRange) == 2{
+		validMinClusterRSSs = glb.MakeRange(minClusterRSSRange[0],minClusterRSSRange[1])
+	}else{
+		glb.Error.Println("Can't set valid Knn K values")
+	}
+
+
+	// Set length of calculation progress bar
+	glb.ProgressBarLength = len(validMinClusterRSSs) * len(validKs)
 
 
 	if threadedCross{
@@ -343,9 +374,10 @@ func CalculateLearn(groupName string) {
 
 	}else{
 		adTemp := gp.NewAlgoDataStruct()
-		for i, minClusterRss := range validMinClusterRSSs{ // for over minClusterRss
+
+		for i, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
 			//glb.Debug.Println("KNN minClusterRss :", minClusterRss)
-			for j,K := range validKs{   // for over K
+			for j,K := range validKs { // for over K
 				glb.ProgressBarCurLevel = i*len(validKs)+j
 				totalDistError := 0
 

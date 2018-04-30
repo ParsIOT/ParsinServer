@@ -536,3 +536,20 @@ func ToFixed(num float64, precision int) float64 {
 	output := math.Pow(10, float64(precision))
 	return float64(Round(num * output)) / output
 }
+
+func MakeRange(min, max int) []int {
+	if min < max{
+		a := make([]int, max-min+1)
+		for i := range a {
+			a[i] = min + i
+		}
+		return a
+	}else{
+		a := make([]int, min-max+1)
+		for i := range a {
+			a[i] = min - i
+		}
+		return a
+	}
+
+}

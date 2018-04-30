@@ -271,6 +271,8 @@ func main() {
 			//needToLoadSettings.PUT("/cutoff", routes.PutCutoffOverride)
 			needToLoadSettings.PUT("/database", routes.MigrateDatabase)
 			//needToLoadSettings.PUT("/k_knn", routes.PutKnnK)
+			needToLoadSettings.PUT("/KnnKRange", routes.PutKnnKRange)
+			needToLoadSettings.PUT("/KnnMinClusterRSSRange", routes.PutKnnMinClusterRSSRange)
 			needToLoadSettings.PUT("/minrss", routes.PutMinRss)
 			needToLoadSettings.GET("/lastfingerprint", routes.GetLastFingerprint)
 			needToLoadSettings.GET("/reformdb", routes.ReformDB)
@@ -284,7 +286,7 @@ func main() {
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", algorithms.LearnFingerprintPOST)
 	r.POST("/bulklearn", algorithms.BulkLearnFingerprintPOST)
-	//r.POST("/track", algorithms.TrackFingerprintPOST)
+	r.POST("/track", algorithms.TrackFingerprintPOST)
 
 	//needToLoadSettings := r.Group("/",routes.PreLoadSettings)
 	//{

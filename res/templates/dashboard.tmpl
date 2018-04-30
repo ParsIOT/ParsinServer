@@ -179,9 +179,18 @@
       </div>
     </div>
 
-
     <div class="well" id="volume-stats-well">
+            KNN:
 
+           <div class="panel panel-primary " id="volume-fees-panel">
+                 <div class="panel-body ">
+                 K range = {{ $.kRange }}
+                 <br>
+                 Min cluster rss range = {{ $.knnMinCRssRange }}
+                 </div>
+           </div>
+       </div>
+    <div class="well" id="volume-stats-well">
       <div class="panel panel-primary" id="volume-fees-panel">
           <div class="panel-body">
             <div class="row">
@@ -195,11 +204,10 @@
               <button type="submit" class="btn btn-danger btn-block" id="setMixin" title="Set Mixin for parameters.">Set Mixin</button>
             </div>
                 <div class="col-sm-2 col-xs-6">
-              <button type="submit" class="btn btn-danger btn-block" id="setCutoff" title="Set Cutoff for parameters.">Set Cutoff</button>
+              <button type="submit" class="btn btn-danger btn-block" id="setKnnMinRss" title="Set Knn MinClusterRSS Range for parameters.">Set Knn rss range</button>
             </div>
                 <div class="col-sm-2 col-xs-6">
-                    <button type="submit" class="btn btn-primary btn-block" id="setK" title="Set K for KNN.">Set K
-                    </button>
+                    <button type="submit" class="btn btn-primary btn-block" id="setKRange" title="Set K range for KNN.">Set K range</button>
                 </div>
                 <div class="col-sm-2 col-xs-6">
                     <button type="submit" class="btn btn-warning btn-block" id="setMinRss" title="Set K for KNN.">Set
@@ -864,15 +872,15 @@ $('#setMixin').click(function() {
       });
   });
 
-$('#setCutoff').click(function() {
+$('#setKnnMinRss').click(function() {
     swal({
-        title: "Set Cutoff",
-        text: "Enter the new cutoff (between 0 and 1, or -1 to set automatically):",
+        title: "Set Knn MinClusterRSS range",
+        text: "Enter the new Knn MinClusterRSS range :",
         type: "input",
         showCancelButton: true,
         closeOnConfirm: false,
         animation: "slide-from-top",
-        inputPlaceholder: "newlocation"
+        inputPlaceholder: "[begin,end] or [specific rss]; example:[-60,-90]"
       },
       function(inputValue) {
         if (inputValue === false || inputValue === "") {
@@ -881,7 +889,7 @@ $('#setCutoff').click(function() {
         }
 
         $.ajax({
-          url:"/cutoff?group={{ .Group }}&cutoff="+inputValue,
+          url:"/KnnMinClusterRSSRange?group={{ .Group }}&range="+inputValue,
           type: "PUT",
           success: function(data) {
             console.log(data);
@@ -902,15 +910,15 @@ $('#setCutoff').click(function() {
       });
   });
 
-  $('#setK').click(function () {
+  $('#setKRange').click(function () {
       swal({
-              title: "Set K",
-              text: "Enter the new K for KNN:",
+              title: "Set K range",
+              text: "Enter the K range for KNN:",
               type: "input",
               showCancelButton: true,
               closeOnConfirm: false,
               animation: "slide-from-top",
-              inputPlaceholder: "newlocation"
+              inputPlaceholder: "[begin,end] or [specific K]; example:[1,30]"
           },
           function (inputValue) {
               if (inputValue === false || inputValue === "") {
@@ -919,7 +927,7 @@ $('#setCutoff').click(function() {
               }
 
               $.ajax({
-                  url: "/k_knn?group={{ .Group }}&knnK=" + inputValue,
+                  url: "/KnnKRange?group={{ .Group }}&range=" + inputValue,
                   type: "PUT",
                   success: function (data) {
                       console.log(data);

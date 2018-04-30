@@ -11,7 +11,8 @@ import (
 type RawSharedPreferences struct {
 	Mixin			  float64 				`json:"Mixin"`
 	Cutoff			  float64 				`json:"Cutoff"`
-	KnnK			  int 					`json:"KnnK"`
+	KnnKRange		  []int					`json:"KnnKRange"`
+	KnnMinCRssRange	  []int					`json:"KnnMinCRssRange"`
 	MinRss			  int 					`json:"MinRss"`
 	MinRssOpt		  int					`json:"MinRssOpt"`
 	FilterMacsMap     []string				`json:"FilterMacsMap"`
@@ -23,8 +24,10 @@ func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}
 		shPrf.Mixin = val.(float64)
 	case "Cutoff":
 		shPrf.Cutoff = val.(float64)
-	case "KnnK":
-		shPrf.KnnK = val.(int)
+	case "KnnKRange":
+		shPrf.KnnKRange = val.([]int)
+	case "KnnMinCRssRange":
+		shPrf.KnnMinCRssRange = val.([]int)
 	case "MinRss":
 		shPrf.MinRss = val.(int)
 	case "MinRssOpt":
@@ -59,7 +62,8 @@ func NewRawSharedPreferences() RawSharedPreferences {
 	return RawSharedPreferences{
 		Mixin:     			float64(glb.DefaultMixin),
 		Cutoff:    			float64(glb.DefaultCutoff),
-		KnnK:      			int(glb.DefaultKnnK),
+		KnnKRange:      	glb.DefaultKnnKRange,
+		KnnMinCRssRange:	glb.DefaultKnnMinCRssRange,
 		MinRss:    			int(glb.MinRssi),
 		MinRssOpt: 			int(glb.RuntimeArgs.MinRssOpt),
 		FilterMacsMap: 		[]string{},
