@@ -56,6 +56,7 @@ func FilterFingerprint(res *parameters.Fingerprint) {
 	//t1 := GetRuntimePrf(res.Group)
 	//glb.Debug.Println(t1)
 
+
 	ok1 := GetRuntimePrf(res.Group).NeedToFilter      //check need for filtering
 	ok2 := GetRuntimePrf(res.Group).NotNullFilterList //check that filterMap is null
 
@@ -104,6 +105,11 @@ func FilterFingerprint(res *parameters.Fingerprint) {
 func LoadFingerprint(jsonByte []byte, doFilter bool) parameters.Fingerprint{
 	var fp parameters.Fingerprint
 	fp = parameters.LoadRawFingerprint(jsonByte)
+	//glb.Debug.Println(fp)
+	if len(fp.Group)==0{
+		glb.Error.Println("fingerprint doesn't have group name!")
+		return fp
+	}
 	//t1 := len(fp.WifiFingerprint)
 	if(doFilter){
 		FilterFingerprint(&fp)
@@ -160,7 +166,7 @@ func DumpFingerprints(group string) error {
 	}
 	// glb.Debug.Println("Writing fingerprints to file")
 	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("fingerprints-track"))
+		b := tx.Bucket([]byte("results"))
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			if _, err = f.WriteString(string(glb.DecompressByte(v)) + "\n"); err != nil {

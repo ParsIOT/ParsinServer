@@ -211,6 +211,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	//		}
 	//}
 
+
 	// fingerprintOrdering Creation according to clusters and rss rates
 	highRateRssExist := false
 	for _,rt := range jsonFingerprint.WifiFingerprint{
@@ -274,12 +275,15 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 		}
 	}
 
+	NumofMinAPNum := 0
 	for _, fpTime := range fingerprintsOrdering {
 		fp := fingerprintsInMemory[fpTime]
 
 		if (len(fp.WifiFingerprint) < glb.MinApNum) { // todo:
 			numJobs -= 1
 			continue
+		}else{
+			NumofMinAPNum++
 		}
 		//Debug.Println(fp.WifiFingerprint)
 		mac2RssFP := getMac2Rss(fp.WifiFingerprint)
@@ -290,6 +294,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 			mac2RssFP: mac2RssFP}
 
 	}
+
 	close(chanJobs)
 
 	for i := 1; i <= numJobs; i++ {
@@ -302,6 +307,10 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	currentX = 0
 	currentY = 0
 
+	if NumofMinAPNum == 0 {
+		glb.Error.Println("There is no fingerprint that its number of APs be more than ",glb.MinApNum,"MinApNum")
+		return errors.New("NumofAP_lowerThan_MinApNum"),","
+	}
 
 	fingerprintSorted := glb.SortDictByVal(W)
 	//fmt.Println(fingerprintSorted)

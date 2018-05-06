@@ -7,6 +7,7 @@ import (
 	"ParsinServer/algorithms/parameters"
 	"ParsinServer/glb"
 	"reflect"
+	"strconv"
 )
 
 var GM GroupManger
@@ -36,7 +37,7 @@ type MiddleDataStruct struct{
 	MacCountByLoc 			map[string]map[string]int               // number of fingerprints of a AP in a location; e.g. in location A, 10 of AP1, 12 of AP2, ...
 	UniqueLocs    			[]string                                // a list of all unique locations e.g. {P1,P2,P3}
 	UniqueMacs    			[]string                                // a list of all unique APs
-
+	LocCount				map[string]int							// number of fp that its Location equals to loc
 }
 
 // Assume learned model not to be changed or improved (if there is one algorithm that need it, add new struct near rawdata,middledata and ...)
@@ -56,9 +57,10 @@ type AlgoDataStruct struct{
 
 type ResultDataStruct struct{
 	sync.RWMutex
-	group		*Group
-	results		map[string]parameters.Fingerprint
-	algoAccuracy  map[string]int
+	group           *Group
+	Results         map[string]parameters.Fingerprint
+	AlgoAccuracy    map[string]int
+	AlgoAccuracyLoc map[string]map[string]int
 }
 
 //parameters Name must be lowercase that can't be access out of cachelib(must provide set&get func for each and provide locking mutex for each one)
@@ -251,11 +253,11 @@ func (gm *GroupManger) LoadGroup(groupName string){
 		}
 
 
+
 		if err4 != nil {
 			//log.Fatal(err1)
 			glb.Error.Println(err4.Error())
 		}else{
-			//jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(bytes,&gp)
 			resultData.UnmarshalJSON(resultDataBytes)
 		}
 		//bytes,err1 := GetBytejsonResourceInBucket("parameters","resources",groupName)
@@ -270,20 +272,25 @@ func (gm *GroupManger) LoadGroup(groupName string){
 		//dblock.Unlock()
 		//dblock.dbUnlock()
 		//GM.DBUnlock(groupName)
-		glb.Debug.Println(err1!=nil)
-		glb.Debug.Println(err2!=nil)
-		glb.Debug.Println(err3!=nil)
-		glb.Debug.Println(err4!=nil)
+		//glb.Debug.Println(err1!=nil)
+		//glb.Debug.Println(err2!=nil)
+		//glb.Debug.Println(err3!=nil)
+		//glb.Debug.Println(err4!=nil)
 		if err1!=nil && err2!=nil && err3!=nil && err4!=nil{
 			gp = GM.NewGroup(groupName)
 			glb.Debug.Println("Raw group created")
 			glb.Debug.Println(gp)
 		}else{
+			//glb.Error.Println(err1)
+			//glb.Error.Println(err2)
+			//glb.Error.Println(err3)
+			//glb.Error.Println(err4)
 			gp.Lock()
 			gp.RawData = rawData
 			gp.MiddleData = middleData
 			gp.AlgoData = algoData
 			gp.ResultData = resultData
+			gp.ResultData.Results = make(map[string]parameters.Fingerprint)
 			gp.Unlock()
 		}
 
@@ -395,13 +402,15 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group){
 
 
 				//
-				//resultData.RLock()
-				resultDataList = resultData.results
-				//resultData.RUnlock()
-				resultData.Lock()
-				resultData.results = make(map[string]parameters.Fingerprint)  // delete trackresults data
-				resultData.Unlock()
 				resultData.RLock()
+				resultDataList = resultData.Results
+				resultData.RUnlock()
+				resultData.Lock()
+				resultData.Results = make(map[string]parameters.Fingerprint)  // delete trackresults data
+				resultData.Unlock()
+				//glb.Error.Println(resultData)
+				resultData.RLock()
+
 				v, err := resultData.MarshalJSON()
 				resultData.RUnlock()
 				if err != nil {
@@ -409,7 +418,7 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group){
 				}
 
 				dbData["resultData"] = v
-				dbData["results"] = []byte{}
+				dbData["Results"] = []byte{}
 
 				gp.Lock()
 				gp.ResultDataChanged = false
@@ -444,9 +453,10 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group){
 				//}
 
 				for key,val := range dbData{
-					if(key == "results"){
+					if(key == "Results"){
+						glb.Debug.Println(resultDataList)
 						for timeStamp,fp := range resultDataList{ // must put the list to db instantly
-							err1 := SetByteResourceInBucket(parameters.DumpFingerprint(fp),timeStamp,"results",groupName)
+							err1 := SetByteResourceInBucket(parameters.DumpFingerprint(fp),timeStamp,"Results",groupName)
 							if err1 != nil{
 								fmt.Errorf(err1.Error())
 							}
@@ -494,7 +504,6 @@ func (gm *GroupManger) Flusher(){
 		GM.RUnlock()
 		for groupName,gp := range groups{
 			if gp.Permanent {
-				//glb.Debug.Println(groupName)
 				GM.FlushDB(groupName,gp)
 			}
 		}
@@ -583,10 +592,10 @@ func (gm *GroupManger) InstantFlushDB(groupName string){
 
 				//
 				//resultData.RLock()
-				resultDataList = resultData.results
+				resultDataList = resultData.Results
 				//resultData.RUnlock()
 				resultData.Lock()
-				resultData.results = make(map[string]parameters.Fingerprint)  // delete trackresults data
+				resultData.Results = make(map[string]parameters.Fingerprint) // delete trackresults data
 				resultData.Unlock()
 				resultData.RLock()
 				v, err := resultData.MarshalJSON()
@@ -596,7 +605,7 @@ func (gm *GroupManger) InstantFlushDB(groupName string){
 				}
 
 				dbData["resultData"] = v
-				dbData["results"] = []byte{}
+				dbData["Results"] = []byte{}
 
 				gp.Lock()
 				gp.ResultDataChanged = false
@@ -631,8 +640,8 @@ func (gm *GroupManger) InstantFlushDB(groupName string){
 				//}
 
 				for key,val := range dbData{
-					if(key == "results"){
-						err1 := SetByteResourceInBucket(val,key,"results",groupName)
+					if(key == "Results"){
+						err1 := SetByteResourceInBucket(val,key,"Results",groupName)
 						if err1 != nil{
 							fmt.Errorf(err1.Error())
 						}
@@ -735,6 +744,7 @@ func (gp *Group) NewMiddleDataStruct() *MiddleDataStruct {
 		MacCountByLoc:  		make(map[string]map[string]int),
 		UniqueLocs:     		[]string{},
 		UniqueMacs:     		[]string{},
+		LocCount:				make(map[string]int),
 	}
 }
 
@@ -749,9 +759,10 @@ func (gp *Group) NewAlgoDataStruct() *AlgoDataStruct {
 
 func (gp *Group) NewResultDataStruct() *ResultDataStruct {
 	return &ResultDataStruct{
-		group: 		gp,
-		results: 	make(map[string]parameters.Fingerprint),
-		algoAccuracy:  make(map[string]int),
+		group:           gp,
+		Results:         make(map[string]parameters.Fingerprint),
+		AlgoAccuracy:    make(map[string]int),
+		AlgoAccuracyLoc: make(map[string]map[string]int),
 	}
 }
 
@@ -789,7 +800,7 @@ func (gp *Group) NewResultDataStruct() *ResultDataStruct {
 //	GM.SetDirtyBit(gp.Get_Name())
 //}
 // Return a copy of group
-// Use it when many fields are needed (use Get_<property>() functions instead)
+//x Use it when many fields are needed (use Get_<property>() functions instead)
 func (gp *Group) Get() *Group {
 	newGp := &Group{}
 	gp.RLock()
@@ -1132,11 +1143,11 @@ func (gp *Group) Set_AlgoData_Val(newItemRaw AlgoDataStruct) {
 	GM.SetDirtyBit(gp.Get_Name())
 }
 
-func (rd *ResultDataStruct) SetDirtyBit(){
-	rd.group.Lock()
-	gpName := rd.group.Name
-	rd.group.ResultDataChanged = true
-	rd.group.Unlock()
+func (rs *ResultDataStruct) SetDirtyBit(){
+	rs.group.Lock()
+	gpName := rs.group.Name
+	rs.group.ResultDataChanged = true
+	rs.group.Unlock()
 	GM.SetDirtyBit(gpName)
 }
 func (gp *Group) Get_ResultData() *ResultDataStruct {
@@ -1162,6 +1173,7 @@ func (rd *RawDataStruct) Get_Fingerprints() map[string]parameters.Fingerprint {
 	rd.RLock()
 	item := rd.Fingerprints
 	rd.RUnlock()
+
 	return item
 }
 func (rd *RawDataStruct) Set_Fingerprints(new_item map[string]parameters.Fingerprint){
@@ -1285,6 +1297,21 @@ func (md *MiddleDataStruct) Set_UniqueMacs(new_item []string ){
 	md.UniqueMacs = new_item
 	md.Unlock()
 }
+
+func (md *MiddleDataStruct) Get_LocCount() map[string]int {
+	md.RLock()
+	item := md.LocCount
+	md.RUnlock()
+	return item
+}
+func (md *MiddleDataStruct) Set_LocCount(new_item map[string]int ){
+	defer md.SetDirtyBit()
+
+	md.Lock()
+	md.LocCount = new_item
+	md.Unlock()
+}
+
 //
 //func (ad *AlgoDataStruct) Get_BayesPriors() map[string]parameters.PriorParameters {
 //	ad.RLock()
@@ -1328,25 +1355,44 @@ func (ad *AlgoDataStruct) Set_KnnFPs(new_item  parameters.KnnFingerprints){
 	ad.Unlock()
 }
 
-func (rs *ResultDataStruct) Append(timeStamp string, fp parameters.Fingerprint){
+func (rs *ResultDataStruct) Append(fp parameters.Fingerprint){
 	defer rs.SetDirtyBit()
 
 	rs.Lock()
-	rs.results[timeStamp] = fp
+	rs.Results[strconv.FormatInt(fp.Timestamp, 10)] = fp
 	rs.Unlock()
 }
 
-func (rs *ResultDataStruct) Get_AlgoAccuracy() map[string]int  {
+func (rs *ResultDataStruct) Get_AlgoAccuracy() map[string]int {
 	rs.RLock()
-	item := rs.algoAccuracy
+	item := rs.AlgoAccuracy
 	rs.RUnlock()
 	return item
 }
-
 func (rs *ResultDataStruct) Set_AlgoAccuracy(algoName string, distError int){
 	defer rs.SetDirtyBit()
 
 	rs.Lock()
-	rs.algoAccuracy[algoName] = distError
+	rs.AlgoAccuracy[algoName] = distError
+	rs.Unlock()
+}
+
+func (rs *ResultDataStruct) Get_AlgoLocAccuracy() map[string]map[string]int  {
+	rs.RLock()
+	item := rs.AlgoAccuracyLoc
+	rs.RUnlock()
+	return item
+}
+func (rs *ResultDataStruct) Set_AlgoLocAccuracy(algoName string,loc string, distError int){
+	defer rs.SetDirtyBit()
+
+	//glb.Error.Println(algoName," ",loc," ",distError)
+	rs.Lock()
+	if _,ok := rs.AlgoAccuracyLoc[algoName];ok{
+		rs.AlgoAccuracyLoc[algoName][loc] = distError
+	}else{
+		rs.AlgoAccuracyLoc[algoName] = make(map[string]int)
+		rs.AlgoAccuracyLoc[algoName][loc] = distError
+	}
 	rs.Unlock()
 }

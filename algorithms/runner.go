@@ -13,7 +13,6 @@ import (
 	"ParsinServer/algorithms/clustering"
 	"sort"
 	"runtime"
-	"ParsinServer/algorithms/bayes"
 	"time"
 )
 
@@ -142,136 +141,148 @@ func LearnFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool) {
 	message := "Inserted fingerprint containing " + strconv.Itoa(len(jsonFingerprint.WifiFingerprint)) + " APs for " + jsonFingerprint.Username + " (" + jsonFingerprint.Group + ") at " + jsonFingerprint.Location
 	return message, true
 }
-//
-//// call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
-//func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, string, map[string]float64, string, map[string]float64, string, map[string]string) {
-//	// Classify with filter fingerprint
-//	fullFingerprint := jsonFingerprint
-//	dbm.FilterFingerprint(&jsonFingerprint)
-//
-//	bayesGuess := ""
-//	bayesData := make(map[string]float64)
-//	svmGuess := ""
-//	svmData := make(map[string]float64)
-//	scikitData := make(map[string]string)
-//	knnGuess := ""
-//
-//	parameters.CleanFingerprint(&jsonFingerprint)
-//	if !dbm.GroupExists(jsonFingerprint.Group) || len(jsonFingerprint.Group) == 0 {
-//		return "You should insert fingerprints before tracking", false, "", bayesData, "", make(map[string]float64), "", make(map[string]string)
-//	}
-//	if len(jsonFingerprint.WifiFingerprint) == 0 {
-//		return "No fingerprints found to track, see API", false, "", bayesData, "", make(map[string]float64), "", make(map[string]string)
-//	}
-//	if len(jsonFingerprint.Username) == 0 {
-//		return "No username defined, see API", false, "", bayesData, "", make(map[string]float64), "", make(map[string]string)
-//	}
-//	wasLearning, ok := dbm.GetLearningCache(strings.ToLower(jsonFingerprint.Group))
-//	if ok {
-//		if wasLearning {
-//			glb.Debug.Println("Was learning, calculating priors")
-//			group := strings.ToLower(jsonFingerprint.Group)
-//			go dbm.SetLearningCache(group, false)
-//			bayes.OptimizePriorsThreaded(group)
-//			if glb.RuntimeArgs.Svm {
-//				DumpFingerprintsSVM(group)
-//				CalculateSVM(group)
-//			}
-//			if glb.RuntimeArgs.Scikit {
-//				ScikitLearn(group)
-//			}
-//			LearnKnn(group)
-//			go dbm.AppendUserCache(group, jsonFingerprint.Username)
-//		}
-//	}
-//	glb.Info.Println(jsonFingerprint)
-//	bayesGuess, bayesData = bayes.CalculatePosterior(jsonFingerprint, nil)
-//	percentBayesGuess := float64(0)
-//	total := float64(0)
-//	for _, locBayes := range bayesData {
-//		total += math.Exp(locBayes)
-//		if locBayes > percentBayesGuess {
-//			percentBayesGuess = locBayes
-//		}
-//	}
-//	percentBayesGuess = math.Exp(bayesData[bayesGuess]) / total * 100.0
-//
-//	// todo: add abitlity to save rf, knn, svm guess
-//	jsonFingerprint.Location = bayesGuess
-//
-//	// Insert full fingerprint
-//	go dbm.PutFingerprintIntoDatabase(fullFingerprint, "fingerprints-track")
-//
-//	message := ""
-//	glb.Debug.Println("Tracking fingerprint containing " + strconv.Itoa(len(jsonFingerprint.WifiFingerprint)) + " APs for " + jsonFingerprint.Username + " (" + jsonFingerprint.Group + ") at " + jsonFingerprint.Location + " (guess)")
-//	message += " BayesGuess: " + bayesGuess //+ " (" + strconv.Itoa(int(percentGuess1)) + "% confidence)"
-//
-//	// Process SVM if needed
-//	if glb.RuntimeArgs.Svm {
-//		svmGuess, svmData := SvmClassify(jsonFingerprint)
-//		percentSvmGuess := int(100 * math.Exp(svmData[svmGuess]))
-//		if percentSvmGuess > 100 {
-//			//todo: wtf? \/ \/ why is could be more than 100
-//			percentSvmGuess = percentSvmGuess / 10
-//		}
-//		message += " svmGuess: " + svmGuess
-//		//message = "NB: " + locationGuess1 + " (" + strconv.Itoa(int(percentGuess1)) + "%)" + ", SVM: " + locationGuess2 + " (" + strconv.Itoa(int(percentGuess2)) + "%)"
-//	}
-//
-//	// Calculating KNN
-//	err, knnGuess := TrackKnn(jsonFingerprint)
-//	if err != nil {
-//		glb.Error.Println(err)
-//	}
-//	message += " knnGuess: " + knnGuess
-//
-//	// Calculating RF
-//
-//	if glb.RuntimeArgs.Scikit {
-//		scikitData = ScikitClassify(strings.ToLower(jsonFingerprint.Group), jsonFingerprint)
-//		glb.Debug.Println(scikitData)
-//		for algorithm, valueXY := range scikitData{
-//			message += " "+algorithm+":v" + valueXY
-//		}
-//
-//	}
-//
-//	// Send out the final responses
-//	var userJSON glb.UserPositionJSON
-//	userJSON.Time = time.Now().String()
-//	userJSON.BayesGuess = bayesGuess
-//	userJSON.BayesData = bayesData
-//	userJSON.SvmGuess = svmGuess
-//	userJSON.SvmData = svmData
-//	userJSON.ScikitData = scikitData
-//	userJSON.KnnGuess = knnGuess
-//
-//	go dbm.SetUserPositionCache(strings.ToLower(jsonFingerprint.Group)+strings.ToLower(jsonFingerprint.Username), userJSON)
-//
-//	// Send MQTT if needed
-//	if glb.RuntimeArgs.Mqtt {
-//		type FingerprintResponse struct {
-//			Timestamp  int64  `json:"time"`
-//			BayesGuess string `json:"bayesguess"`
-//			SvmGuess   string `json:"svmguess"`
-//			ScikitData    map[string]string `json:"scikitdata"`
-//			KnnGuess   string `json:"knnguess"`
-//		}
-//		//mqttMessage, _ := json.Marshal(FingerprintResponse{
-//		//	Timestamp:  time.Now().UnixNano(),
-//		//	BayesGuess: bayesGuess,
-//		//	SvmGuess:   svmGuess,
-//		//	ScikitData:    scikitData,
-//		//	KnnGuess:   knnGuess,
-//		//})
-//		//go routes.SendMQTTLocation(string(mqttMessage), jsonFingerprint.Group, jsonFingerprint.Username)
-//	}
-//
-//
-//
-//	return message, true, bayesGuess, bayesData, svmGuess, svmData, knnGuess, scikitData
-//
-//}
+
+// call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
+func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, string, map[string]float64, string, map[string]float64, string, map[string]string) {
+	// Classify with filter fingerprint
+	//fullFingerprint := jsonFingerprint
+
+	dbm.FilterFingerprint(&jsonFingerprint)
+
+	groupName := strings.ToLower(jsonFingerprint.Group)
+
+	bayesGuess := ""
+	bayesData := make(map[string]float64)
+	svmGuess := ""
+	svmData := make(map[string]float64)
+	scikitData := make(map[string]string)
+	knnGuess := ""
+	message := ""
+
+	parameters.CleanFingerprint(&jsonFingerprint)
+	if !dbm.GroupExists(jsonFingerprint.Group) || len(jsonFingerprint.Group) == 0 {
+		return "You should insert fingerprints before tracking", false, "", bayesData, "", make(map[string]float64), "", make(map[string]string)
+	}
+	if len(jsonFingerprint.WifiFingerprint) == 0 {
+		return "No fingerprints found to track, see API", false, "", bayesData, "", make(map[string]float64), "", make(map[string]string)
+	}
+	if len(jsonFingerprint.Username) == 0 {
+		return "No username defined, see API", false, "", bayesData, "", make(map[string]float64), "", make(map[string]string)
+	}
+
+	wasLearning, ok := dbm.GetLearningCache(strings.ToLower(jsonFingerprint.Group))
+	if ok {
+		if wasLearning {
+			glb.Debug.Println("Was learning, calculating priors")
+
+			go dbm.SetLearningCache(groupName, false)
+			//bayes.OptimizePriorsThreaded(groupName)
+			//if glb.RuntimeArgs.Svm {
+			//	DumpFingerprintsSVM(groupName)
+			//	CalculateSVM(groupName)
+			//}
+			//if glb.RuntimeArgs.Scikit {
+			//	ScikitLearn(groupName)
+			//}
+			//LearnKnn(groupName)
+			CalculateLearn(groupName)
+			go dbm.AppendUserCache(groupName, jsonFingerprint.Username)
+		}
+	}
+	glb.Info.Println(jsonFingerprint)
+	//bayesGuess, bayesData = bayes.CalculatePosterior(jsonFingerprint, nil)
+	//percentBayesGuess := float64(0)
+	//total := float64(0)
+	//for _, locBayes := range bayesData {
+	//	total += math.Exp(locBayes)
+	//	if locBayes > percentBayesGuess {
+	//		percentBayesGuess = locBayes
+	//	}
+	//}
+	//percentBayesGuess = math.Exp(bayesData[bayesGuess]) / total * 100.0
+
+	//// todo: add abitlity to save rf, knn, svm guess
+	//jsonFingerprint.Location = bayesGuess
+
+	//message := ""
+	//glb.Debug.Println("Tracking fingerprint containing " + strconv.Itoa(len(jsonFingerprint.WifiFingerprint)) + " APs for " + jsonFingerprint.Username + " (" + jsonFingerprint.Group + ") at " + jsonFingerprint.Location + " (guess)")
+	//message += " BayesGuess: " + bayesGuess //+ " (" + strconv.Itoa(int(percentGuess1)) + "% confidence)"
+	//
+	//// Process SVM if needed
+	//if glb.RuntimeArgs.Svm {
+	//	svmGuess, svmData := SvmClassify(jsonFingerprint)
+	//	percentSvmGuess := int(100 * math.Exp(svmData[svmGuess]))
+	//	if percentSvmGuess > 100 {
+	//		//todo: wtf? \/ \/ why is could be more than 100
+	//		percentSvmGuess = percentSvmGuess / 10
+	//	}
+	//	message += " svmGuess: " + svmGuess
+	//	//message = "NB: " + locationGuess1 + " (" + strconv.Itoa(int(percentGuess1)) + "%)" + ", SVM: " + locationGuess2 + " (" + strconv.Itoa(int(percentGuess2)) + "%)"
+	//}
+
+	gp := dbm.GM.GetGroup(groupName)
+	// Calculating KNN
+	glb.Debug.Println(jsonFingerprint)
+	err, knnGuess := TrackKnn(gp,jsonFingerprint)
+	if err != nil {
+		glb.Error.Println(err)
+	}
+	message += " knnGuess: " + knnGuess
+
+	jsonFingerprint.Location = knnGuess
+	// Insert full fingerprint
+	//glb.Debug.Println(jsonFingerprint)
+	gp.Get_ResultData().Append(jsonFingerprint)
+	//go dbm.PutFingerprintIntoDatabase(fullFingerprint, "fingerprints-track")
+
+
+	// Calculating Scikit
+	//
+	//if glb.RuntimeArgs.Scikit {
+	//	scikitData = ScikitClassify(strings.ToLower(jsonFingerprint.Group), jsonFingerprint)
+	//	glb.Debug.Println(scikitData)
+	//	for algorithm, valueXY := range scikitData{
+	//		message += " "+algorithm+":v" + valueXY
+	//	}
+	//
+	//}
+
+	// Send out the final responses
+	var userJSON glb.UserPositionJSON
+	userJSON.Time = time.Now().String()
+	userJSON.BayesGuess = bayesGuess
+	userJSON.BayesData = bayesData
+	userJSON.SvmGuess = svmGuess
+	userJSON.SvmData = svmData
+	userJSON.ScikitData = scikitData
+	userJSON.KnnGuess = knnGuess
+
+	go dbm.SetUserPositionCache(strings.ToLower(jsonFingerprint.Group)+strings.ToLower(jsonFingerprint.Username), userJSON)
+
+	// Send MQTT if needed
+	if glb.RuntimeArgs.Mqtt {
+		type FingerprintResponse struct {
+			Timestamp  int64  `json:"time"`
+			BayesGuess string `json:"bayesguess"`
+			SvmGuess   string `json:"svmguess"`
+			ScikitData    map[string]string `json:"scikitdata"`
+			KnnGuess   string `json:"knnguess"`
+		}
+		//mqttMessage, _ := json.Marshal(FingerprintResponse{
+		//	Timestamp:  time.Now().UnixNano(),
+		//	BayesGuess: bayesGuess,
+		//	SvmGuess:   svmGuess,
+		//	ScikitData:    scikitData,
+		//	KnnGuess:   knnGuess,
+		//})
+		//go routes.SendMQTTLocation(string(mqttMessage), jsonFingerprint.Group, jsonFingerprint.Username)
+	}
+
+
+
+	return message, true, bayesGuess, bayesData, svmGuess, svmData, knnGuess, scikitData
+
+}
 
 func CalculateLearn(groupName string) {
 	// Now performance isn't important in learning, just care about performance on track (it helps to code easily!)
@@ -288,7 +299,7 @@ func CalculateLearn(groupName string) {
 
 	//glb.Debug.Println(1)
 	var crossValidationPartsList []crossValidationParts
-	glb.Debug.Println(rd)
+	//glb.Debug.Println(rd)
 	crossValidationPartsList = GetCrossValidationParts(gp,rd)
 	//glb.Debug.Println(2)
 	// ToDo: Need to learn algorithms concurrently
@@ -338,6 +349,7 @@ func CalculateLearn(groupName string) {
 	// Set length of calculation progress bar
 	glb.ProgressBarLength = len(validMinClusterRSSs) * len(validKs)
 
+	knnLocAccuracy := make(map[string]int)
 
 	if threadedCross{
 		numKnnJobs := len(validMinClusterRSSs) * len(validKs)
@@ -406,6 +418,8 @@ func CalculateLearn(groupName string) {
 					distError := 0
 					//FPtEMP := parameters.Fingerprint{}
 
+					trackedPointsNum := 0
+					testLocation := testFPs[testFPsOrdering[0]].Location
 					for _,index := range testFPsOrdering{
 						fp := testFPs[index]
 
@@ -413,14 +427,22 @@ func CalculateLearn(groupName string) {
 						//if(fp.Location =="-165.000000,-1295.000000"){
 						//glb.Warning.Println(index)
 						resultDot := ""
-						_,resultDot = TrackKnn(gp, fp)
+						var err error
+						err,resultDot = TrackKnn(gp, fp)
 
+						if err != nil{
+							if err.Error() == "NumofAP_lowerThan_MinApNum"{
+								continue
+							}
+						}else{
+							trackedPointsNum++
+						}
 
 						//glb.Debug.Println(fp.Location," ==== ",resultDot)
 						//glb.Debug.Println(fp)
 
 						resx,resy := getDotFromString(resultDot)
-						x,y := getDotFromString(fp.Location)
+						x,y := getDotFromString(testLocation)
 						distError += int(calcDist(x,y,resx,resy))
 						if distError < 0{
 							glb.Error.Println(fp)
@@ -431,8 +453,12 @@ func CalculateLearn(groupName string) {
 						}
 						//}
 					}
-
-					totalDistError += distError
+					if trackedPointsNum==0{
+						glb.Error.Println("For loc:",testLocation," there is no fingerprint that its number of APs be more than",glb.MinApNum)
+					}else{
+						distError = distError/trackedPointsNum
+						totalDistError += distError
+					}
 					//glb.Debug.Println(distError)
 					//if totalDistError >0{
 					//	glb.Debug.Println(totalDistError)
@@ -494,6 +520,7 @@ func CalculateLearn(groupName string) {
 				}
 
 				glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d) = %d \n", minClusterRss,K,totalDistError)
+
 				//if(bestResult==-1 || totalDistError<bestResult){
 				//	bestResult = totalDistError
 				//	bestK = K
@@ -516,6 +543,84 @@ func CalculateLearn(groupName string) {
 	glb.Debug.Println("Best K : ",bestK)
 	glb.Debug.Println("Best MinClusterRss : ",bestMinClusterRss)
 	glb.Debug.Println("Minimum error = ",bestResult)
+
+
+
+
+	//glb.Debug.Println("KNN K :",K)
+	//temptemptemp := make(map[string]float64)
+	//glb.Debug.Println(len(crossValidationPartsList))
+
+	// Calculating each location detection accuracy :
+	for _,CVParts := range crossValidationPartsList{
+		//glb.Debug.Println(CVNum)
+		mdTemp := gp.NewMiddleDataStruct()
+		adTemp := gp.NewAlgoDataStruct()
+		rdTemp := CVParts.GetTrainSet(gp)
+		testFPs := CVParts.testSet.Fingerprints
+
+
+		testFPsOrdering := CVParts.testSet.FingerprintsOrdering
+		GetParameters(mdTemp, rdTemp)
+		tempHyperParameters := []interface{}{bestK,bestMinClusterRss}
+		learnedKnnData,_:= LearnKnn(mdTemp,rdTemp,tempHyperParameters)
+
+		// Set hyper parameters
+		learnedKnnData.K = bestK
+		learnedKnnData.MinClusterRss = bestMinClusterRss
+
+		adTemp.Set_KnnFPs(learnedKnnData)
+		gp.Set_AlgoData(adTemp)
+
+		distError := 0
+		//FPtEMP := parameters.Fingerprint{}
+		trackedPointsNum := 0
+		testLocation := testFPs[testFPsOrdering[0]].Location
+		for _,index := range testFPsOrdering{
+
+			fp := testFPs[index]
+
+			//FPtEMP = fp
+			//if(fp.Location =="-165.000000,-1295.000000"){
+			//glb.Warning.Println(index)
+			resultDot := ""
+			var err error
+			err,resultDot = TrackKnn(gp, fp)
+
+			if err != nil {
+				if err.Error() == "NumofAP_lowerThan_MinApNum" {
+					continue
+				}
+			}else{
+				trackedPointsNum++
+			}
+			//glb.Debug.Println(fp.Location," ==== ",resultDot)
+			//glb.Debug.Println(fp)
+
+			resx,resy := getDotFromString(resultDot)
+			x,y := getDotFromString(testLocation) // testLocation is fp.Location
+			distError += int(calcDist(x,y,resx,resy))
+			if distError < 0{
+				glb.Error.Println(fp)
+				glb.Error.Println(resultDot)
+				_,resultDot = TrackKnn(gp, fp)
+				glb.Error.Println(x,y)
+				glb.Error.Println(resx,resy)
+			}
+			//}
+		}
+		if trackedPointsNum==0{
+			glb.Error.Println("For loc:",testLocation," there is no fingerprint that its number of APs be more than",glb.MinApNum)
+			knnLocAccuracy[testLocation] = -1
+		}else{
+			distError = distError/trackedPointsNum
+			knnLocAccuracy[testLocation] = distError
+		}
+
+
+
+	}
+
 	//glb.Debug.Println(temptemptemp)
 
 	//glb.Debug.Println(crossValidationPartsList)
@@ -536,6 +641,9 @@ func CalculateLearn(groupName string) {
 	rs := gp.Get_ResultData()
 	glb.Debug.Println(gp.Get_Name())
 	rs.Set_AlgoAccuracy("knn",bestResult)
+	for loc,accuracy := range knnLocAccuracy{
+		rs.Set_AlgoLocAccuracy("knn",loc,accuracy)
+	}
 	glb.Debug.Println(dbm.GetCVResults(gp.Get_Name()))
 
 	// set main parameters
@@ -860,5 +968,13 @@ func GetParameters(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct) {
 			}
 		}
 	}
+
+	//calculate locCount
+	locations := []string{}
+	for _, fpIndex:= range fingerprintsOrdering {
+		fp := fingerprints[fpIndex]
+		locations = append(locations,fp.Location)
+	}
+	md.LocCount = glb.DuplicateCount(locations)
 
 }

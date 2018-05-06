@@ -88,7 +88,7 @@ func GetUsers(group string) []string {
 
 	db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
-		b := tx.Bucket([]byte("fingerprints-track"))
+		b := tx.Bucket([]byte("Results"))
 		if b == nil {
 			return nil
 		}
@@ -336,6 +336,7 @@ func PutDataIntoDatabase(res parameters.Fingerprint, database string) error {
 
 
 func loadSharedPreferences(group string) (RawSharedPreferences,error) {
+	//glb.Debug.Println(group)
 	tempSharedPreferences := NewRawSharedPreferences()
 	//glb.Debug.Println(path.Join(glb.RuntimeArgs.SourcePath, group+".db"))
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0755, nil)

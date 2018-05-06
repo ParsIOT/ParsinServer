@@ -27,7 +27,7 @@ func TrackFingerprintsEmptyPosition(group string)(map[string]glb.UserPositionJSO
 	numUsersFound := 0
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
-		b := tx.Bucket([]byte("fingerprints-track"))
+		b := tx.Bucket([]byte("Results"))
 		if b == nil {
 			return fmt.Errorf("Database not found")
 		}
@@ -69,7 +69,7 @@ func TrackFingeprintEmptyPosition(user string, group string)(glb.UserPositionJSO
 
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
-		b := tx.Bucket([]byte("fingerprints-track"))
+		b := tx.Bucket([]byte("Results"))
 		if b == nil {
 			return nil
 		}
@@ -102,6 +102,7 @@ func TrackFingeprintEmptyPosition(user string, group string)(glb.UserPositionJSO
 
 
 func TrackFingerprints(user string,n int, group string) ([]parameters.Fingerprint,error){
+
 	var fingerprints []parameters.Fingerprint
 
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
@@ -110,10 +111,9 @@ func TrackFingerprints(user string,n int, group string) ([]parameters.Fingerprin
 		glb.Error.Println(err)
 		return fingerprints,err
 	}
-
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
-		b := tx.Bucket([]byte("fingerprints-track"))
+		b := tx.Bucket([]byte("Results"))
 		if b == nil {
 			return nil
 		}
@@ -121,6 +121,9 @@ func TrackFingerprints(user string,n int, group string) ([]parameters.Fingerprin
 		numFound := 0
 		for k, v := c.Last(); k != nil; k, v = c.Prev() {
 			v2 := LoadFingerprint(v, true)
+
+			//glb.Debug.Println(v2)
+			//glb.Debug.Println(user,v2.Username)
 			if v2.Username == user {
 				timestampString := string(k)
 				timestampUnixNano, _ := strconv.ParseInt(timestampString, 10, 64)
@@ -133,7 +136,11 @@ func TrackFingerprints(user string,n int, group string) ([]parameters.Fingerprin
 				}
 			}
 		}
-		return fmt.Errorf("User " + user + " not found")
+		if numFound == 0{
+			return fmt.Errorf("User " + user + " not found")
+		}else{
+			return nil
+		}
 	})
 	if err != nil {
 		glb.Error.Println(err)
@@ -159,7 +166,7 @@ func LastFingerprint(group string, user string) string {
 
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
-		b := tx.Bucket([]byte("fingerprints-track"))
+		b := tx.Bucket([]byte("Results"))
 		if b == nil {
 			return nil
 		}
@@ -234,13 +241,13 @@ func MigrateDatabaseDB(fromDB string,toDB string){
 	})
 
 	db2.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints-track"))
+		bucket, err := tx.CreateBucketIfNotExists([]byte("Results"))
 		if err != nil {
 			return fmt.Errorf("create bucket: %s", err)
 		}
 
 		db.View(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte("fingerprints-track"))
+			b := tx.Bucket([]byte("Results"))
 			c := b.Cursor()
 			for k, v := c.First(); k != nil; k, v = c.Next() {
 				bucket.Put(k, v)
@@ -252,53 +259,62 @@ func MigrateDatabaseDB(fromDB string,toDB string){
 }
 
 
-func EditNameDB(location string, newname string, group string) int{
-	toUpdate := make(map[string]string)
+func EditLocDB(oldloc string, newloc string, groupName string) int{
+	toUpdate := make(map[string]parameters.Fingerprint)
 	numChanges := 0
-	//glb.Debug.Println(group)
-	_,fingerprintInMemory,err := GetLearnFingerPrints(group,false)
-	if err!= nil{
-		return 0
-	}
+	//glb.Debug.Println(groupName)
+	rd := GM.GetGroup(groupName).Get_RawData()
+	fingerprintInMemory := rd.Get_Fingerprints()
+	//if err!= nil{
+	//	return 0
+	//}
 	for fpTime,fp := range fingerprintInMemory{
-		if fp.Location == location {
+		if fp.Location == oldloc {
 			tempFp := fp
-			tempFp.Location = newname
-			toUpdate[fpTime] = string(parameters.DumpFingerprint(tempFp))
+			tempFp.Location = newloc
+			toUpdate[fpTime] = tempFp
 		}
 	}
 	//glb.Debug.Println(fingerprintInMemory)
+	for fpTime,fp := range toUpdate{
+		fingerprintInMemory[fpTime] = fp
+	}
 
-	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	numChanges += len(toUpdate)
+
+	rd.SetDirtyBit()
+	GM.InstantFlushDB(groupName)
+
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
 	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
-		if err != nil {
-			return fmt.Errorf("create bucket: %s", err)
-		}
+	//db.Update(func(tx *bolt.Tx) error {
+	//	bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
+	//	if err != nil {
+	//		return fmt.Errorf("create bucket: %s", err)
+	//	}
+	//
+	//	for k, v := range toUpdate {
+	//		bucket.Put([]byte(k), []byte(v))
+	//	}
+	//	return nil
+	//})
 
-		for k, v := range toUpdate {
-			bucket.Put([]byte(k), []byte(v))
-		}
-		return nil
-	})
 
-	numChanges += len(toUpdate)
 
-	toUpdate = make(map[string]string)
+	toUpdateRes := make(map[string]string)
 
 	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("fingerprints-track"))
+		b := tx.Bucket([]byte("Results"))
 		if b != nil {
 			c := b.Cursor()
 			for k, v := c.Last(); k != nil; k, v = c.Prev() {
 				v2 := LoadFingerprint(v, false)
-				if v2.Location == location {
-					v2.Location = newname
-					toUpdate[string(k)] = string(parameters.DumpFingerprint(v2))
+				if v2.Location == oldloc {
+					v2.Location = newloc
+					toUpdateRes[string(k)] = string(parameters.DumpFingerprint(v2))
 				}
 			}
 		}
@@ -306,64 +322,76 @@ func EditNameDB(location string, newname string, group string) int{
 	})
 
 	db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints-track"))
+		bucket, err := tx.CreateBucketIfNotExists([]byte("Results"))
 		if err != nil {
 			return fmt.Errorf("create bucket: %s", err)
 		}
 
-		for k, v := range toUpdate {
+		for k, v := range toUpdateRes {
 			bucket.Put([]byte(k), []byte(v))
 		}
 		return nil
 	})
-	numChanges += len(toUpdate)
+	numChanges += len(toUpdateRes)
 
 	//return numChanges,toUpdate
 	return numChanges
 }
 
 
-func EditMacDB(oldmac string, newmac string, group string) int{
-	toUpdate := make(map[string]string)
+// Direct access to db to change Mac names in fingerprints
+func EditMacDB(oldmac string, newmac string, groupName string) int{
+	toUpdate := make(map[string]parameters.Fingerprint)
 	numChanges := 0
-	_,fingerprintInMemory,err := GetLearnFingerPrints(group,false)
-	if err!= nil{
-		return 0
-	}
+	//_,fingerprintInMemory,err := GetLearnFingerPrints(groupName,false)
+	rd := GM.GetGroup(groupName).Get_RawData()
+	fingerprintInMemory := rd.Get_Fingerprints()
+	//if err!= nil{
+	//	return 0
+	//}
 	for fpTime,fp := range fingerprintInMemory{
 		for i, rt := range fp.WifiFingerprint {
 			if rt.Mac == oldmac {
 				tempFp := fp
 				tempFp.WifiFingerprint[i].Mac = newmac
-				toUpdate[fpTime] = string(parameters.DumpFingerprint(tempFp))
+				toUpdate[fpTime] = tempFp
 			}
 		}
 	}
 
-	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	for fpTime,fp := range toUpdate{
+		fingerprintInMemory[fpTime] = fp
+	}
+
+	numChanges += len(toUpdate)
+
+	//fingerprintInMemory is map(pointer and no need to save)
+	rd.SetDirtyBit()
+	GM.InstantFlushDB(groupName)
+
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
 	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
+	//
+	//db.Update(func(tx *bolt.Tx) error {
+	//	bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
+	//	if err != nil {
+	//		return fmt.Errorf("create bucket: %s", err)
+	//	}
+	//
+	//	for k, v := range toUpdate {
+	//		bucket.Put([]byte(k), []byte(v))
+	//	}
+	//	return nil
+	//})
 
-	db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
-		if err != nil {
-			return fmt.Errorf("create bucket: %s", err)
-		}
 
-		for k, v := range toUpdate {
-			bucket.Put([]byte(k), []byte(v))
-		}
-		return nil
-	})
-
-	numChanges += len(toUpdate)
-
-	toUpdate = make(map[string]string)
+	toUpdateRes := make(map[string]string)
 
 	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("fingerprints-track"))
+		b := tx.Bucket([]byte("Results"))
 		if b != nil {
 			c := b.Cursor()
 			for k, v := c.Last(); k != nil; k, v = c.Prev() {
@@ -371,7 +399,7 @@ func EditMacDB(oldmac string, newmac string, group string) int{
 				for i, rt := range v2.WifiFingerprint {
 					if rt.Mac == oldmac {
 						v2.WifiFingerprint[i].Mac = newmac
-						toUpdate[string(k)] = string(parameters.DumpFingerprint(v2))
+						toUpdateRes[string(k)] = string(parameters.DumpFingerprint(v2))
 					}
 				}
 			}
@@ -380,69 +408,80 @@ func EditMacDB(oldmac string, newmac string, group string) int{
 	})
 
 	db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints-track"))
+		bucket, err := tx.CreateBucketIfNotExists([]byte("Results"))
 		if err != nil {
 			return fmt.Errorf("create bucket: %s", err)
 		}
 
-		for k, v := range toUpdate {
+		for k, v := range toUpdateRes {
 			bucket.Put([]byte(k), []byte(v))
 		}
 		return nil
 	})
 
-	numChanges += len(toUpdate)
+	numChanges += len(toUpdateRes)
 
 	return numChanges
 }
 
-func EditUserNameDB(user string, newname string, group string) int{
-	toUpdate := make(map[string]string)
+func EditUserNameDB(user string, newname string, groupName string) int{
+	toUpdate := make(map[string]parameters.Fingerprint)
 	numChanges := 0
 
-	_,fingerprintInMemory,err := GetLearnFingerPrints(group,false)
-	if err!= nil{
-		return 0
-	}
+	rd := GM.GetGroup(groupName).Get_RawData()
+	fingerprintInMemory := rd.Get_Fingerprints()
+	//_,fingerprintInMemory,err := GetLearnFingerPrints(groupName,false)
+	//if err!= nil{
+	//	return 0
+	//}
 	for fpTime,fp := range fingerprintInMemory{
 		if fp.Username == user {
 			tempFp := fp
 			tempFp.Username = newname
-			toUpdate[fpTime] = string(parameters.DumpFingerprint(tempFp))
+			toUpdate[fpTime] = tempFp
 		}
 	}
 
+	for fpTime,fp := range toUpdate{
+		fingerprintInMemory[fpTime] = fp
+	}
 
-	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	numChanges += len(toUpdate)
+
+	rd.SetDirtyBit()
+	GM.InstantFlushDB(groupName)
+
+
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
 	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
-		if err != nil {
-			return fmt.Errorf("create bucket: %s", err)
-		}
+	//db.Update(func(tx *bolt.Tx) error {
+	//	bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
+	//	if err != nil {
+	//		return fmt.Errorf("create bucket: %s", err)
+	//	}
+	//
+	//	for k, v := range toUpdate {
+	//		bucket.Put([]byte(k), []byte(v))
+	//	}
+	//	return nil
+	//})
 
-		for k, v := range toUpdate {
-			bucket.Put([]byte(k), []byte(v))
-		}
-		return nil
-	})
 
-	numChanges += len(toUpdate)
 
-	toUpdate = make(map[string]string)
+	toUpdateRes := make(map[string]string)
 
 	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("fingerprints-track"))
+		b := tx.Bucket([]byte("Results"))
 		if b != nil {
 			c := b.Cursor()
 			for k, v := c.Last(); k != nil; k, v = c.Prev() {
 				v2 := LoadFingerprint(v, false)
 				if v2.Username == user {
 					v2.Username = newname
-					toUpdate[string(k)] = string(parameters.DumpFingerprint(v2))
+					toUpdateRes[string(k)] = string(parameters.DumpFingerprint(v2))
 				}
 			}
 		}
@@ -450,12 +489,12 @@ func EditUserNameDB(user string, newname string, group string) int{
 	})
 
 	db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints-track"))
+		bucket, err := tx.CreateBucketIfNotExists([]byte("Results"))
 		if err != nil {
 			return fmt.Errorf("create bucket: %s", err)
 		}
 
-		for k, v := range toUpdate {
+		for k, v := range toUpdateRes {
 			bucket.Put([]byte(k), []byte(v))
 		}
 		return nil
@@ -467,70 +506,133 @@ func EditUserNameDB(user string, newname string, group string) int{
 	return numChanges
 }
 
-func DeleteLocationDB(location string,group string)int {
+func DeleteLocationDB(location string, groupName string)int {
 	numChanges := 0
 
-	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-	defer db.Close()
-	if err != nil {
-		glb.Error.Println(err)
-	}
 
-	err = db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("fingerprints"))
-		if b == nil {
-			return errors.New("fingerprints dont exist")
+	rd := GM.GetGroup(groupName).Get_RawData_Val()
+
+	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
+	//defer db.Close()
+	//if err != nil {
+	//	glb.Error.Println(err)
+	//}
+
+	for fpTime,fp := range rd.Fingerprints{
+		if fp.Location == location{
+			delete(rd.Fingerprints,fpTime)
+			rd.FingerprintsOrdering = glb.DeleteSliceItemStr(rd.FingerprintsOrdering, fpTime)
+			numChanges++
 		}
-		c := b.Cursor()
-		for k, v := c.Last(); k != nil; k, v = c.Prev() {
-			v2 := LoadFingerprint(v, false)
-			if v2.Location == location {
-				b.Delete(k)
+	}
+	rd.SetDirtyBit()
+	glb.Debug.Println(numChanges)
+	GM.InstantFlushDB(groupName)
+	//GM.InstantFlushDB(groupName)
+	//err = db.Update(func(tx *bolt.Tx) error {
+	//	b := tx.Bucket([]byte("fingerprints"))
+	//	if b == nil {
+	//		return errors.New("fingerprints dont exist")
+	//	}
+	//	c := b.Cursor()
+	//	for k, v := c.Last(); k != nil; k, v = c.Prev() {
+	//		v2 := LoadFingerprint(v, false)
+	//		if v2.Location == location {
+	//			b.Delete(k)
+	//			numChanges++
+	//		}
+	//	}
+	//	return nil
+	//})
+	//
+	//if err != nil{
+	//	glb.Error.Println(err)
+	//}
+	return numChanges
+}
+
+func DeleteLocationsDB(locations []string, groupName string)int {
+	numChanges := 0
+
+
+	rd := GM.GetGroup(groupName).Get_RawData_Val()
+
+	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
+	//defer db.Close()
+	//if err != nil {
+	//	glb.Error.Println(err)
+	//}
+
+	for _,location := range locations{
+		for fpTime,fp := range rd.Fingerprints{
+			if fp.Location == location{
+				delete(rd.Fingerprints,fpTime)
+				rd.FingerprintsOrdering = glb.DeleteSliceItemStr(rd.FingerprintsOrdering, fpTime)
 				numChanges++
 			}
 		}
-		return nil
-	})
-
-	if err != nil{
-		glb.Error.Println(err)
 	}
+
+	rd.SetDirtyBit()
+	glb.Debug.Println(numChanges)
+	GM.InstantFlushDB(groupName)
+	//GM.InstantFlushDB(groupName)
+	//err = db.Update(func(tx *bolt.Tx) error {
+	//	b := tx.Bucket([]byte("fingerprints"))
+	//	if b == nil {
+	//		return errors.New("fingerprints dont exist")
+	//	}
+	//	c := b.Cursor()
+	//	for k, v := c.Last(); k != nil; k, v = c.Prev() {
+	//		v2 := LoadFingerprint(v, false)
+	//		if v2.Location == location {
+	//			b.Delete(k)
+	//			numChanges++
+	//		}
+	//	}
+	//	return nil
+	//})
+	//
+	//if err != nil{
+	//	glb.Error.Println(err)
+	//}
 	return numChanges
 }
 
 
-func DeleteLocationsDB(locations []string,group string) int{
-	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
-	defer db.Close()
-	if err != nil {
-		glb.Error.Println(err)
-	}
-	numChanges := 0
-	err = db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("fingerprints"))
-		if b == nil {
-			return errors.New("fingerprints dont exist")
-		}
-		c := b.Cursor()
-		for k, v := c.Last(); k != nil; k, v = c.Prev() {
-			v2 := LoadFingerprint(v, false)
-			for _, location := range locations {
-				if v2.Location == location {
-					b.Delete(k)
-					numChanges++
-					break
-				}
-			}
-		}
 
-		return nil
-	})
-
-	if err != nil{
-		glb.Error.Println(err)
-	}
-	return numChanges
-}
+//func DeleteLocationsDB(locations []string,group string) int{
+//	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+//	defer db.Close()
+//	if err != nil {
+//		glb.Error.Println(err)
+//	}
+//	numChanges := 0
+//	err = db.Update(func(tx *bolt.Tx) error {
+//		b := tx.Bucket([]byte("fingerprints"))
+//		if b == nil {
+//			return errors.New("fingerprints dont exist")
+//		}
+//		c := b.Cursor()
+//		for k, v := c.Last(); k != nil; k, v = c.Prev() {
+//			v2 := LoadFingerprint(v, false)
+//			for _, location := range locations {
+//				if v2.Location == location {
+//					b.Delete(k)
+//					numChanges++
+//					break
+//				}
+//			}
+//		}
+//
+//		return nil
+//	})
+//
+//	if err != nil{
+//		glb.Error.Println(err)
+//	}
+//	return numChanges
+//}
 
 func DeleteUser(user string, group string)int{
 	numChanges := 0
@@ -541,7 +643,7 @@ func DeleteUser(user string, group string)int{
 		glb.Error.Println(err)
 	}
 	err = db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("fingerprints-track"))
+		b := tx.Bucket([]byte("Results"))
 		if b == nil {
 			return errors.New("fingerprints-track dont exist")
 		}
@@ -602,7 +704,7 @@ func ReformDBDB(group string)int{
 	toUpdate = make(map[string]string)
 
 	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("fingerprints-track"))
+		b := tx.Bucket([]byte("Results"))
 		if b != nil {
 			c := b.Cursor()
 			for k, v := c.Last(); k != nil; k, v = c.Prev() {
@@ -617,7 +719,7 @@ func ReformDBDB(group string)int{
 	})
 
 	db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints-track"))
+		bucket, err := tx.CreateBucketIfNotExists([]byte("Results"))
 		if err != nil {
 			return fmt.Errorf("create bucket: %s", err)
 		}
@@ -643,7 +745,7 @@ func GetCalcCompletionLevel() float64{
 	return level
 }
 
-func RenewStructDB(groupName string){
+func BuildGroupDB(groupName string){
 	fingerprintOrdering,fingerprintInMemoryRaw,_ := GetLearnFingerPrints(groupName,false)
 	fingerprintInMemory := make(map[string]parameters.Fingerprint)
 	for key,fp := range fingerprintInMemoryRaw{
@@ -651,10 +753,14 @@ func RenewStructDB(groupName string){
 		fingerprintInMemory[key] = fp
 	}
 	glb.Debug.Println(fingerprintOrdering)
+	//glb.Debug.Println(fingerprintInMemory[fingerprintOrdering[0]])
+	//glb.Debug.Println(groupName)
 	gp := GM.GetGroup(groupName)
 	rd := gp.Get_RawData()
 	rd.Set_Fingerprints(fingerprintInMemory)
 	rd.Set_FingerprintsOrdering(fingerprintOrdering)
-	glb.Debug.Println(rd.Get_FingerprintsOrdering())
+	glb.Debug.Println(GM.isLoad[groupName])
+	//GM.InstantFlushDB(groupName)
+	glb.Debug.Println(gp.Get_RawData_Val().FingerprintsOrdering)
 }
 

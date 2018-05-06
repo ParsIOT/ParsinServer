@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"ParsinServer/glb"
 	"ParsinServer/dbm"
+	"sort"
 )
 
 
@@ -164,18 +165,33 @@ func SlashDashboard(c *gin.Context) {
 
 	kRange := dbm.GetSharedPrf(groupName).KnnKRange
 	knnMinCRssRange := dbm.GetSharedPrf(groupName).KnnMinCRssRange
-	//for n := range gp.Get_NetworkLocs() {
-	//	dash.Mixin[n] = gp.Get_Priors()[n].Special["MixIn"]
-	//	dash.VarabilityCutoff[n] = gp.Get_Priors()[n].Special["VarabilityCutoff"]
-	//	dash.Networks = append(dash.Networks, n)
-	//	dash.Locations[n] = []string{}
-	//	for loc := range gp.Get_NetworkLocs()[n] {
-	//		dash.Locations[n] = append(dash.Locations[n], loc)
-	//		dash.LocationAccuracy[loc] = gp.Get_Results()[n].Accuracy[loc]
-	//		//glb.Debug.Println(ps.BayesResults[n].TotalLocations[loc])
-	//		dash.LocationCount[loc] = gp.Get_Results()[n].TotalLocations[loc]
-	//	}
-	//}
+
+	gp := dbm.GM.GetGroup(groupName)
+	md := gp.Get_MiddleData_Val()
+
+	knnAlgo := gp.Get_AlgoData().Get_KnnFPs()
+	bestK := knnAlgo.K
+	bestMinClusterRss := knnAlgo.MinClusterRss
+
+	for n := range md.NetworkLocs {
+		//dash.Mixin[n] = gp.Get_Priors()[n].Special["MixIn"]
+		//dash.VarabilityCutoff[n] = gp.Get_Priors()[n].Special["VarabilityCutoff"]
+		dash.Networks = append(dash.Networks, n)
+		dash.Locations[n] = []string{}
+		uniqueLocs := md.UniqueLocs
+		sort.Sort(sort.StringSlice(uniqueLocs))
+		for _,loc := range uniqueLocs {
+			dash.Locations[n] = append(dash.Locations[n], loc)
+			algoAccuracy := gp.Get_ResultData().Get_AlgoLocAccuracy()
+			for loc,accuracy := range algoAccuracy["knn"]{
+				dash.LocationAccuracy[loc] = accuracy
+			}
+			//dash.LocationAccuracy[loc] = gp.Get_Results()[n].Accuracy[loc]
+			//glb.Debug.Println(ps.BayesResults[n].TotalLocations[loc])
+			dash.LocationCount = md.LocCount
+		}
+	}
+	//glb.Debug.Println(dash)
 	c.HTML(http.StatusOK, "dashboard.tmpl", gin.H{
 		"Message": glb.RuntimeArgs.Message,
 		"Group":   groupName,
@@ -183,6 +199,8 @@ func SlashDashboard(c *gin.Context) {
 		"Users":   people,
 		"kRange":	kRange,
 		"knnMinCRssRange": knnMinCRssRange,
+		"bestK": bestK,
+		"bestMinClusterRss": bestMinClusterRss,
 	})
 }
 

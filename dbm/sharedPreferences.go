@@ -130,6 +130,7 @@ func GetSharedPrf(group string) RawSharedPreferences{
 		tempSharedPreferences,err := loadSharedPreferences(group)
 		if err != nil{
 			glb.Error.Println(err.Error())
+			glb.Error.Println(group)
 			//panic(err.Error())
 			return NewRawSharedPreferences()
 

@@ -305,13 +305,13 @@ func TestEditNetworkName(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
 }
 
-func TestEditName(t *testing.T) {
+func TestEditLoc(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
 	router := gin.New()
-	router.GET("/foo", EditName)
-	req, _ := http.NewRequest("GET", "/foo?group="+testdb+"&location=p1&newname=p2", nil)
+	router.GET("/foo", EditLoc)
+	req, _ := http.NewRequest("GET", "/foo?group="+testdb+"&oldloc=p1&newloc=p2", nil)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
 	response := "{\"message\":\"Changed name of 50 things\",\"success\":true}"

@@ -184,9 +184,14 @@
 
            <div class="panel panel-primary " id="volume-fees-panel">
                  <div class="panel-body ">
-                 K range = {{ $.kRange }}
+                    K range = {{ $.kRange }}
                  <br>
-                 Min cluster rss range = {{ $.knnMinCRssRange }}
+                    Min cluster rss range = {{ $.knnMinCRssRange }}
+                 <br>
+                 <br>
+                    bestK:{{ $.bestK }}
+                 <br>
+                    bestMinClusterRss:{{ $.bestMinClusterRss }}
                  </div>
            </div>
        </div>
@@ -195,10 +200,14 @@
           <div class="panel-body">
             <div class="row">
                 <div class="col-sm-2 col-xs-6">
-              <button type="submit" class="btn btn-info btn-block" id="recalculateAll" title="Reclaculate the machine learning parameters and update your statistics.">Update</button>
-            </div>
+              <button type="submit" class="btn btn-info btn-block" id="recalculateAll" title="Reclaculate the machine learning parameters and update your statistics.">Recalculate</button>
+            <!--</div>
                 <div class="col-sm-2 col-xs-6">
               <button type="submit" class="btn btn-success btn-block" id="getMQTT" title="Get MQTT password.">Get MQTT</button>
+            </div>-->
+            </div>
+                <div class="col-sm-2 col-xs-6">
+                <button type="submit" class="btn btn-success btn-block" id="buildGroup" title="Build and recalculate group from learned data.">Build group</button>
             </div>
                 <div class="col-sm-2 col-xs-6">
               <button type="submit" class="btn btn-danger btn-block" id="setMixin" title="Set Mixin for parameters.">Set Mixin</button>
@@ -244,7 +253,7 @@
                   <a id="{{ $loc }}" class="editloc" title="Click to change name of '{{ $loc }}'"><span class="fa fa-pencil-square-o"></span></a>&nbsp;<a id="{{ $loc }}" class="deleteloc"  title="Click to delete '{{ $loc }}'"><i class="fa fa-trash"></i></a>&nbsp;</dt>
                   <dd><span title="Number of learned fingerprints">({{ index $.Dash.LocationCount $loc }})</span>
                       &nbsp;
-                  <span class="bg-success"><a title="Click to open pie chart depicting frequency of classification for '{{ $loc }}'" href="#" onClick="window.open('/pie/{{ $.Group }}/{{ $element }}/{{ $loc }}','pagename','resizable,height=380,width=480'); return false;">{{ index $.Dash.LocationAccuracy $loc }}%</a>  </span>
+                  <span class="bg-success"><a title="Click to open pie chart depicting frequency of classification for '{{ $loc }}'" href="#" onClick="window.open('/pie/{{ $.Group }}/{{ $element }}/{{ $loc }}','pagename','resizable,height=380,width=480'); return false;">{{ index $.Dash.LocationAccuracy $loc }}</a>  </span>
                 </dd>
               </dl>
               {{ end }}
@@ -577,10 +586,10 @@ function userLocPolling() {
                           "location": place,
                           "newname": inputValue
                         })
-                        $.get("/editname", {
+                        $.get("/editloc", {
                             "group": "{{ .Group }}",
-                            "location": place,
-                            "newname": inputValue
+                            "oldloc": place,
+                            "newloc": inputValue
                           },
                           function(data) {
                             console.log(data);
@@ -814,26 +823,49 @@ function userLocPolling() {
             });
 
 
+//$('#getMQTT').click(function() {
+//  $.ajax({
+//    url:"/mqtt?group={{ .Group }}",
+//    type: "PUT",
+//    success: function(data) {
+//      console.log(data);
+//      if (data['success']) {
+//        swal({
+//          title: "MQTT is setup!",
+//          text: "Your password is: " + data['password'] + "\nYou can listen on topic '{{ .Group }}/location/USER'",
+//          timer: 5000,
+//          showConfirmButton: true
+//        });
+//      } else {
+//        swal("Something went wrong.", data['message'], "error");
+//      }
+//    }
+//  });
+//});
 
-$('#getMQTT').click(function() {
-  $.ajax({
-    url:"/mqtt?group={{ .Group }}",
-    type: "PUT",
-    success: function(data) {
-      console.log(data);
-      if (data['success']) {
-        swal({
-          title: "MQTT is setup!",
-          text: "Your password is: " + data['password'] + "\nYou can listen on topic '{{ .Group }}/location/USER'",
-          timer: 5000,
-          showConfirmButton: true
+    $('#buildGroup').click(function() {
+      swal({
+          title: "Build and recalculate group from raw learned data",
+          text: "Transfer fingerprints from raw db to group cache or build the group, the recalculate it",
+          type: "info",
+          showCancelButton: true,
+          closeOnConfirm: false,
+          showLoaderOnConfirm: true,
+        },
+        function() {
+          $.get("/buildgroup", {
+              "group": "{{ .Group }}",
+            },
+            function(data) {
+              console.log(data);
+              if (data['success']) {
+                swal("building is successful!");
+                location.reload();
+              }
+            }
+          );
         });
-      } else {
-        swal("Something went wrong.", data['message'], "error");
-      }
-    }
-  });
-});
+    });
 
 $('#setMixin').click(function() {
     swal({
