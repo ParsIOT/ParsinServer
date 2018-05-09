@@ -43,15 +43,36 @@ func PreLoadSettings(c *gin.Context){
 	glb.Debug.Println("PreloadSettings")
 	group1 := c.Param("group")
 	group2 := c.DefaultQuery("group", "noneasdf")
+	groupExists := false
 	//glb.Debug.Println(c)
 	if len(group1)!=0 {
 		glb.Debug.Println(group1)
 		//glb.Debug.Println(dbm.GetSharedPrf(group1))
-		dbm.GetSharedPrf(group1)
+		groupExists = dbm.GroupExists(group1)
+		if groupExists{
+			dbm.GetSharedPrf(group1)
+		}else{
+			glb.Error.Println("Group isn't Exists")
+			//c.JSON(http.StatusOK, gin.H{
+			//	"message":   fmt.Sprintf("There is no group with this group name: ",group1),
+			//	"success":   false})
+			c.Redirect(302, "/change-db?error=groupNotExists")
+		}
+
 	}else if group2 != "noneasdf"{
 		glb.Debug.Println(group2)
 		//glb.Debug.Println(dbm.GetSharedPrf(group2))
-		dbm.GetSharedPrf(group2)
+		groupExists = dbm.GroupExists(group2)
+		if groupExists{
+			dbm.GetSharedPrf(group2)
+		}else{
+			glb.Error.Println("Group isn't Exists")
+			//c.JSON(http.StatusOK, gin.H{
+			//	"message":   fmt.Sprintf("There is no group with this group name: ",group2),
+			//	"success":   false})
+			c.Redirect(302, "/change-db?error=groupNotExists")
+		}
+
 	}else{
 		glb.Error.Println("Group name not mentioned in url")
 		c.JSON(http.StatusOK, gin.H{
@@ -317,6 +338,7 @@ func GetUserLocations(c *gin.Context) {
 		}
 		if users[0] == "noneasdf" {
 			users = dbm.GetUsers(groupName)
+			glb.Error.Println(users)
 		}
 		for _, user := range users {
 			if _, ok := people[user]; !ok {
@@ -939,10 +961,11 @@ func CalcCompletionLevel(c *gin.Context) {
 	if groupName != "noneasdf" {
 		cmpLevel := dbm.GetCalcCompletionLevel()
 		if (cmpLevel>0 && cmpLevel<=1){
-			glb.Debug.Println("Calculation level: %d%\n",cmpLevel)
-			c.JSON(http.StatusOK, gin.H{"Level":cmpLevel,})
+			//cmpLevel = float64(int(cmpLevel*10000000))/100000
+			glb.Debug.Printf("Calculation level: %f % \n",cmpLevel)
+			c.JSON(http.StatusOK, gin.H{"success": true, "message": cmpLevel,})
 		}else{
-			c.JSON(http.StatusOK, gin.H{"success": true, "message": "No calculation is running"})
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "No calculation is running"})
 		}
 
 	} else {

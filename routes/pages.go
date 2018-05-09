@@ -79,6 +79,17 @@ func SlashChangeDb(c *gin.Context) {
 	loginGroup := sessions.Default(c)
 	groupCookie := loginGroup.Get("group")
 	groupName = c.DefaultQuery("group", "noneasdf")
+	errorMessage := c.DefaultQuery("error", "noneasdf")
+
+	if errorMessage != "noneasdf"{
+		if errorMessage == "groupNotExists"{
+			c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+				"ErrorMessage": "There is no group with this name.",
+			})
+			return
+		}
+	}
+
 	if groupCookie == nil {
 		if groupName == "noneasdf" {
 			c.HTML(http.StatusOK, "changedb.tmpl", gin.H{})
