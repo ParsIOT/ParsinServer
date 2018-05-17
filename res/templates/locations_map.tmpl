@@ -21,6 +21,8 @@
 
     <link href="/static/css/leaflet.css" rel="stylesheet">
     <link href="/static/css/leaflet.usermarker.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
+    <script src="/static/js/sweetalert.min.js"></script>
     <script src='/static/js/leaflet.js'></script>
     <script src='/static/js/leaflet.usermarker.js'></script>
     <script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
@@ -108,12 +110,12 @@
         minZoom: -100,
 //        maxZoom: 4
     });
-     var bounds = [[-1700, -1800], [1700, 1800]];
+    var bounds = [[-1700, -1800], [1700, 1800]];
     //    var bounds = [[-400, -300], [400, 300]];
     var image = L.imageOverlay('/static/img/MapFull.png', bounds).addTo(map);
     map.setView([0, 0], -2);
 
-    var markers = {};
+    markers = L.featureGroup();
     var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
 
     /*
@@ -154,18 +156,53 @@
             if (match) {
                 items.push("<tr><td>" + match[1] + "</td><td>" + match[2] + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
 
-                markers[key] = L.userMarker([match[1], match[2]], {
+                L.userMarker([match[1], match[2]], {
 //                    pulsing: true,
 //                    accuracy: 200,
                     title: key,
+                    draggable: true,
                     smallIcon: true
-                }).bindPopup("<b>x = " + match[1] + "</b><br><b>y = " + match[2] + "</b>").addTo(map);
+                }).bindPopup("<b>x = " + match[1] + "</b><br><b>y = " + match[2] + "</b>").addTo(markers);
             } else {
                 items.push("<tr><td colspan='2' class='text-center'>" + key + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
 
             }
         });
+        markers.addTo(map);
+        markers.eachLayer(function (marker) {
+            let dragStartPoint, dragEndPoint;
+            marker.on('dragstart', function (e) {
+                dragStartPoint = (e.target.getLatLng().lat).toString() + "," + (e.target.getLatLng().lng).toString();
+                console.log("START:");
+                console.log(dragStartPoint);
+            });
+            marker.on('dragend', function (e) {
+                dragEndPoint = (e.target.getLatLng().lat).toString() + "," + (e.target.getLatLng().lng).toString();
+                console.log("END:");
+                console.log(dragEndPoint);
 
+
+                $.get("/editloc", {
+                            "group": {{ .Group }},
+                            "oldloc": dragStartPoint,
+                            "newloc": dragEndPoint
+                        },
+                        function (data) {
+                            console.log(data);
+                            if (data['success']) {
+                                swal("Edited!", data['message'], "success");
+                                location.reload()
+                            } else {
+                                swal("Something went wrong.", data['message'], "error");
+                            }
+                        }
+                );
+            });
+
+        });
+
+
+        //table
         $("<tbody/>", {
             "class": "tab-content",
             html: items.join("")
