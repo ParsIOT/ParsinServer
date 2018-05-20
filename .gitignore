@@ -77,7 +77,10 @@ nohup.out
 # Databases
 *.db.*
 *.db
+
+!data/
 data/*
+!data/Settings.db
 
 # Data
 *.p
