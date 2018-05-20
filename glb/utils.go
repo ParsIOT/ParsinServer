@@ -513,9 +513,9 @@ func RoundLocationDim(loc string) string{
 	locYstr := x_y[1]
 	locX, _ := strconv.ParseFloat(locXstr, 64)
 	locY, _ := strconv.ParseFloat(locYstr, 64)
-	locX =  math.Floor(locX)
-	locY =  math.Floor(locY)
-	return FloatToString(locX) + "," + FloatToString(locY)
+	locXint :=  int(math.Floor(locX))
+	locYint :=  int(math.Floor(locY))
+	return IntToString(locXint) + ".0," + IntToString(locYint)+".0"
 }
 
 func FloatToString(input_num float64) string {

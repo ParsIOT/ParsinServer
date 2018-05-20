@@ -347,7 +347,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 		currentYint := int(float64(currentY) / sumW)
 		//glb.Debug.Println(floatToString(currentX) + "," + floatToString(currentY))
 		//Debug.Println(currentX)
-		return nil, glb.IntToString(currentXint) + ".000000," + glb.IntToString(currentYint)+".000000"
+		return nil, glb.IntToString(currentXint) + ".0," + glb.IntToString(currentYint)+".0"
 	} else {
 		KNNList := make(map[string]float64)
 		for K, fpTime := range fingerprintSorted {
