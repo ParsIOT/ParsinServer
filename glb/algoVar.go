@@ -23,7 +23,7 @@ var DefaultKnnMinCRssRange,DefaultKnnKRange []int
 func init() {
 	DefaultMixin = float64(0.1)
 	DefaultCutoff = float64(0.01)
-	MinApNum = 3
+	MinApNum = 1
 	MinRssi = -110
 	MaxRssi = 5
 	ProgressBarLength = 0
