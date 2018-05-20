@@ -747,6 +747,33 @@ func DeleteLocation(c *gin.Context) {
 	}
 }
 
+
+func DeleteLocationBaseDB(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "DELETE, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	//gp := dbm.GM.GetGroup(groupName)
+	location := strings.ToLower(c.DefaultQuery("location", "none"))
+	if groupName != "noneasdf" {
+		numChanges := dbm.DeleteLocationBaseDB(location, groupName)
+
+		// todo: can't calculateLearn( there is problem with goroutine)
+		//algorithms.CalculateLearn(groupName)
+		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
+
+		c.JSON(http.StatusOK, gin.H{"message": "Deleted " + strconv.Itoa(numChanges) + " locations", "success": true})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
+	}
+}
+
+
+
 // Is like deleteLocation(), deletes a list of locations instead.
 // GET parameters: group, names
 func DeleteLocations(c *gin.Context) {
@@ -992,5 +1019,94 @@ func BuildGroup(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "struct renewed"})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
+	}
+}
+
+
+
+func AddArbitLocations(c *gin.Context){
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	type st struct {
+		Locations  []string `json:"locations"`
+	}
+
+	var tempSt st
+	if groupName != "noneasdf" {
+		if err := c.ShouldBindJSON(&tempSt); err == nil {
+			locations := tempSt.Locations
+			glb.Debug.Println(locations)
+			err := dbm.AddArbitLocations(groupName,locations)
+			if err != nil{
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			}else{
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			}
+		}else {
+			glb.Warning.Println("Can't bind json")
+			glb.Error.Println(err)
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:"+err.Error()})
+			//c.JSON(http.StatusOK, gin.H{"message": "Nums of the FilterMacs are zero", "success": false})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
+	}
+}
+
+func DelArbitLocations(c *gin.Context){
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	type st struct {
+		Locations  []string `json:"locations"`
+	}
+	var tempSt st
+
+	if groupName != "noneasdf" {
+		if err := c.ShouldBindJSON(&tempSt); err == nil {
+			locations := tempSt.Locations
+			err := dbm.DelArbitLocations(groupName,locations)
+			if err != nil{
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			}else{
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			}
+		}else {
+			glb.Warning.Println("Can't bind json")
+			glb.Error.Println(err)
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:"+err.Error()})
+			//c.JSON(http.StatusOK, gin.H{"message": "Nums of the FilterMacs are zero", "success": false})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
+	}
+}
+
+func GetArbitLocations(c *gin.Context){
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+
+	if groupName != "noneasdf" {
+		locations := dbm.GetArbitLocations(groupName)
+		c.JSON(http.StatusOK, gin.H{"success": true, "locations": locations})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
 	}
 }

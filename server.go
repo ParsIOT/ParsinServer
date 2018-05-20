@@ -245,6 +245,7 @@ func main() {
 		privateRoutes.GET("/status", routes.GetStatus)
 
 		needToLoadSettings := privateRoutes.Group("/",routes.PreLoadSettings)
+		//needToLoadSettings := r
 		{
 			//Todo: Url must be same format to mention group name (now, group can be url param or be GET param)
 			needToLoadSettings.GET("/dashboard/:group", routes.SlashDashboard)
@@ -259,6 +260,7 @@ func main() {
 			needToLoadSettings.GET("/editusername", routes.EditUserName)
 			//needToLoadSettings.GET("/editnetworkname", routes.EditNetworkName)
 			needToLoadSettings.DELETE("/location", routes.DeleteLocation)
+			needToLoadSettings.DELETE("/locationBaseDB", routes.DeleteLocationBaseDB)
 			needToLoadSettings.DELETE("/locations", routes.DeleteLocations)
 			needToLoadSettings.DELETE("/user", routes.DeleteUser)
 			needToLoadSettings.DELETE("/database", routes.DeleteDatabase)
@@ -280,9 +282,18 @@ func main() {
 			needToLoadSettings.POST("/setfiltermacs", routes.Setfiltermacs)
 			needToLoadSettings.GET("/getfiltermacs", routes.Getfiltermacs)
 			needToLoadSettings.GET("/getuniquemacs", routes.GetUniqueMacs)
+
+			//Arbitrary locations
+			//needToLoadSettings.GET("/addArbitLocations", routes.AddArbitLocations)
+			//needToLoadSettings.GET("/delArbitLocations", routes.DelArbitLocations)
+			//needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
 		}
 
 	}
+
+	r.POST("/addArbitLocations", routes.AddArbitLocations)
+	r.POST("/delArbitLocations", routes.DelArbitLocations)
+	r.GET("/getArbitLocations", routes.GetArbitLocations)
 
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", algorithms.LearnFingerprintPOST)
