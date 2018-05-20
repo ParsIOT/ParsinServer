@@ -551,6 +551,38 @@ func DeleteLocationDB(location string, groupName string)int {
 	return numChanges
 }
 
+func DeleteLocationBaseDB(location string, group string) int {
+	numChanges := 0
+
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	defer db.Close()
+	if err != nil {
+		glb.Error.Println(err)
+	}
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("fingerprints"))
+		if b == nil {
+			return errors.New("fingerprints dont exist")
+		}
+		c := b.Cursor()
+		for k, v := c.Last(); k != nil; k, v = c.Prev() {
+			v2 := LoadFingerprint(v, false)
+			if v2.Location == location {
+				b.Delete(k)
+				numChanges++
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		glb.Error.Println(err)
+	}
+	return numChanges
+}
+
+
 func DeleteLocationsDB(locations []string, groupName string)int {
 	numChanges := 0
 
@@ -750,6 +782,7 @@ func BuildGroupDB(groupName string){
 	fingerprintInMemory := make(map[string]parameters.Fingerprint)
 	for key,fp := range fingerprintInMemoryRaw{
 		fp.Location = glb.RoundLocationDim(fp.Location)
+		glb.Debug.Println(fp.Location)
 		fingerprintInMemory[key] = fp
 	}
 	glb.Debug.Println(fingerprintOrdering)
