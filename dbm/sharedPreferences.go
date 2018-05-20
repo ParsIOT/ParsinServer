@@ -9,13 +9,14 @@ import (
 
 
 type RawSharedPreferences struct {
-	Mixin			  float64 				`json:"Mixin"`
-	Cutoff			  float64 				`json:"Cutoff"`
-	KnnKRange		  []int					`json:"KnnKRange"`
-	KnnMinCRssRange	  []int					`json:"KnnMinCRssRange"`
-	MinRss			  int 					`json:"MinRss"`
-	MinRssOpt		  int					`json:"MinRssOpt"`
-	FilterMacsMap     []string				`json:"FilterMacsMap"`
+	Mixin           float64  `json:"Mixin"`
+	Cutoff          float64  `json:"Cutoff"`
+	KnnKRange       []int    `json:"KnnKRange"`
+	KnnMinCRssRange []int    `json:"KnnMinCRssRange"`
+	MinRss          int      `json:"MinRss"`
+	MinRssOpt       int      `json:"MinRssOpt"`
+	FilterMacsMap   []string `json:"FilterMacsMap"`
+	ArbitLocations  []string `json:"ArbitLocations"`
 }
 
 func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}) error{
@@ -34,6 +35,8 @@ func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}
 		shPrf.MinRssOpt = val.(int)
 	case "FilterMacsMap":
 		shPrf.FilterMacsMap = val.([]string)
+	case "ArbitLocations":
+		shPrf.ArbitLocations = val.([]string)
 	default:
 		return errors.New("Invalid RawSharedPreferences field")
 	}
@@ -60,13 +63,14 @@ func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}
 
 func NewRawSharedPreferences() RawSharedPreferences {
 	return RawSharedPreferences{
-		Mixin:     			float64(glb.DefaultMixin),
-		Cutoff:    			float64(glb.DefaultCutoff),
-		KnnKRange:      	glb.DefaultKnnKRange,
-		KnnMinCRssRange:	glb.DefaultKnnMinCRssRange,
-		MinRss:    			int(glb.MinRssi),
-		MinRssOpt: 			int(glb.RuntimeArgs.MinRssOpt),
-		FilterMacsMap: 		[]string{},
+		Mixin:           float64(glb.DefaultMixin),
+		Cutoff:          float64(glb.DefaultCutoff),
+		KnnKRange:       glb.DefaultKnnKRange,
+		KnnMinCRssRange: glb.DefaultKnnMinCRssRange,
+		MinRss:          int(glb.MinRssi),
+		MinRssOpt:       int(glb.RuntimeArgs.MinRssOpt),
+		FilterMacsMap:   []string{},
+		ArbitLocations:  []string{},
 	}
 }
 

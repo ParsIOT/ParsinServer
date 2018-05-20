@@ -1,13 +1,12 @@
 package dbm
 
 import (
-	"ParsinServer1/dbm"
 	"ParsinServer/glb"
 	"errors"
 )
 
 func AddArbitLocations(groupName string, addLocList []string) error {
-	shrPrf := dbm.GetSharedPrf(groupName)
+	shrPrf := GetSharedPrf(groupName)
 	allLocations := shrPrf.ArbitLocations
 	tempLocationList := []string{}
 
@@ -19,7 +18,7 @@ func AddArbitLocations(groupName string, addLocList []string) error {
 		}
 	}
 
-	err := dbm.SetSharedPrf(groupName,"ArbitLocations",tempLocationList)
+	err := SetSharedPrf(groupName, "ArbitLocations", tempLocationList)
 
 	if err != nil{
 		glb.Error.Println("Can't add Arbitrary locations")
@@ -30,7 +29,7 @@ func AddArbitLocations(groupName string, addLocList []string) error {
 }
 
 func DelArbitLocations(groupName string, delLocList []string) error {
-	shrPrf := dbm.GetSharedPrf(groupName)
+	shrPrf := GetSharedPrf(groupName)
 	allLocations := shrPrf.ArbitLocations
 
 	tempLocationList := []string{}
@@ -41,7 +40,7 @@ func DelArbitLocations(groupName string, delLocList []string) error {
 		}
 	}
 
-	err := dbm.SetSharedPrf(groupName,"ArbitLocations",tempLocationList)
+	err := SetSharedPrf(groupName, "ArbitLocations", tempLocationList)
 
 	if err != nil{
 		glb.Error.Println("Can't add Arbitrary locations")
@@ -52,5 +51,5 @@ func DelArbitLocations(groupName string, delLocList []string) error {
 }
 
 func GetArbitLocations(groupName string) []string{
-	return dbm.GetSharedPrf(groupName).ArbitLocations
+	return GetSharedPrf(groupName).ArbitLocations
 }
