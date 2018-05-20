@@ -172,12 +172,12 @@
         markers.eachLayer(function (marker) {
             let dragStartPoint, dragEndPoint;
             marker.on('dragstart', function (e) {
-                dragStartPoint = (e.target.getLatLng().lat).toString() + "," + (e.target.getLatLng().lng).toString();
+                dragStartPoint = (e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0";
                 console.log("START:");
                 console.log(dragStartPoint);
             });
             marker.on('dragend', function (e) {
-                dragEndPoint = (e.target.getLatLng().lat).toString() + "," + (e.target.getLatLng().lng).toString();
+                dragEndPoint = (e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0";
                 console.log("END:");
                 console.log(dragEndPoint);
 
