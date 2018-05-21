@@ -28,7 +28,7 @@ func init() {
 	MaxRssi = 5
 	ProgressBarLength = 0
 	ProgressBarCurLevel = 0
-	DefaultKnnKRange = []int{1,30}
-	DefaultKnnMinCRssRange = []int{-60,-90}
+	DefaultKnnKRange = []int{25, 26}         //{10,30}
+	DefaultKnnMinCRssRange = []int{-75, -76} //{-60,-90}
 	//MinClusterRss = -75
 }

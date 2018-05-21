@@ -659,13 +659,14 @@ func EditLoc(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	groupName := c.DefaultQuery("group", "noneasdf")
-	oldloc := c.DefaultQuery("oldloc", "none")
-	newloc := c.DefaultQuery("newloc", "none")
+	oldloc := strings.TrimSpace(c.DefaultQuery("oldloc", "none"))
+	newloc := strings.TrimSpace(c.DefaultQuery("newloc", "none"))
 	if groupName != "noneasdf" {
 		numChanges := dbm.EditLocDB(oldloc, newloc, groupName)
+		glb.Debug.Println("Changed location of " + strconv.Itoa(numChanges) + " fingerprints")
 		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
 		algorithms.CalculateLearn(groupName)
-		c.JSON(http.StatusOK, gin.H{"message": "Changed name of " + strconv.Itoa(numChanges) + " things", "success": true})
+		c.JSON(http.StatusOK, gin.H{"message": "Changed location of " + strconv.Itoa(numChanges) + " fingerprints", "success": true})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
@@ -686,10 +687,11 @@ func EditMac(c *gin.Context) {
 	newmac := c.DefaultQuery("newmac", "none")
 	if groupName != "noneasdf" {
 		numChanges := dbm.EditMacDB(oldmac, newmac, groupName)
+		glb.Debug.Println("Changed mac of " + strconv.Itoa(numChanges) + " fingerprints")
 		algorithms.CalculateLearn(groupName)
 		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
 
-		c.JSON(http.StatusOK, gin.H{"message": "Changed name of " + strconv.Itoa(numChanges) + " things", "success": true})
+		c.JSON(http.StatusOK, gin.H{"message": "Changed mac of " + strconv.Itoa(numChanges) + " fingerprints", "success": true})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
