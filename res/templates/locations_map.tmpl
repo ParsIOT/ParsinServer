@@ -118,29 +118,7 @@
     markers = L.featureGroup();
     var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
 
-    /*
-        var defaults = {
-            '1': [-450, -620],
-            '2': [60, 100],
-            '3': [-180, 700],
-            '4': [0, -950],
-            '5': [-700, -1360],
-            '6': [170, -1500],
-            '7': [-30, 1350],
-            '8': [-830, 1350]
-        };
 
-            $.each(defaults, function (key, val) {
-
-                defaults[key] = L.userMarker(val, {
-                    title: key,
-                    smallIcon: true
-                }).bindPopup(key).addTo(map).on('popupopen', function (e) {
-                    defaults[key]._popup.setContent("<b>" + key + "</b><br>x = " + e.target._accMarker._latlng.lat
-                        + "<br>y = " + e.target._accMarker._latlng.lng);
-                });
-            });
-     */
 
     map.on('click', function (e) {
 //        console.log(e.latlng.lat + "," + e.latlng.lng);

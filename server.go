@@ -258,6 +258,7 @@ func main() {
 			needToLoadSettings.GET("/editloc", routes.EditLoc)
 			needToLoadSettings.GET("/editMac", routes.EditMac)
 			needToLoadSettings.GET("/editusername", routes.EditUserName)
+			needToLoadSettings.GET("/arbitraryLocations/:group", routes.ArbitraryLocations)
 			//needToLoadSettings.GET("/editnetworkname", routes.EditNetworkName)
 			needToLoadSettings.DELETE("/location", routes.DeleteLocation)
 			needToLoadSettings.DELETE("/locationBaseDB", routes.DeleteLocationBaseDB)
