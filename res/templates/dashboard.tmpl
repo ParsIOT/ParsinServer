@@ -95,13 +95,18 @@
                 type: 'GET',
                 success: function (result) {
                     // console.log(result);
-                    var p = result['message'] ;
+                    var res = result['message']
+                    console.log(res);
+                    if(res !="No calculation is running"){
+                          var p = Math.round(res*100) ;
 
 
-                    var elem = document.getElementById("pb");
+                                        var elem = document.getElementById("pb");
 
-                    elem.style.width = p + '%';
-                    elem.innerHTML = p * 1 + '%';
+                                        elem.style.width = p + '%';
+                                        elem.innerHTML = p + '%';
+
+                    }
 
 
                 },
