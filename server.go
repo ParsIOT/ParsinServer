@@ -292,7 +292,7 @@ func main() {
 
 	}
 
-	r.POST("/addArbitLocations", routes.AddArbitLocations)
+	r.POST("/addArbitLocations/:group", routes.AddArbitLocations)
 	r.POST("/delArbitLocations", routes.DelArbitLocations)
 	r.GET("/getArbitLocations", routes.GetArbitLocations)
 

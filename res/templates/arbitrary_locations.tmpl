@@ -117,6 +117,24 @@
         }
     });
 
+    //get Arbitrary Locations from the server and put them on the map
+    $.get("/getArbitLocations", {
+                "group": {{ .Group }},
+            },
+            function (result) {
+                if (result['success']) {
+                    var locations = result["locations"];
+                    locations.forEach((location, index) => {
+
+                        marker_pos = location.split(',');
+                        [x, y] = [parseInt(marker_pos[0]), parseInt(marker_pos[1])];
+                        L.marker([x, y]).addTo(arbitrary_area_markers)
+                    });
+                } else {
+                    swal("Something went wrong.", data['message'], "error");
+                }
+            }
+    );
     map.addControl(drawControl);
 
     map.on('draw:created', function (e) {
@@ -159,15 +177,26 @@
                     for (var x = south_west_point[0]; x <= north_east_point[0]; x += x_step) {
                         for (var y = south_west_point[1]; y <= north_east_point[1]; y += y_step) {
                             // console.log(x, y);
-                            L.marker([x, y]).addTo(area_markers);
-                            data.push(x.toString() + ',' + y.toString())
+                            // L.marker([x, y]).addTo(area_markers);
+                            L.marker([parseInt(x), parseInt(y)]).addTo(arbitrary_area_markers);
+                            data.push(parseInt(x).toString() + '.0' + ',' + parseInt(y).toString() + '.0')
                         }
                     }
                     //send markers to server
-                    $.post("/addArbitLocations", {
-                        'locations': data
+                    $.ajax({
+                        method: "POST",
+                        url: "/addArbitLocations/{{ .Group }}",
+                        dataType: "application/json",
+                        data: JSON.stringify({
+                            "locations": data,
+                        {{/*"group": {{ .Group }},*/}}
+
+                        }),
+                        success: function (result) {
+                            console.log(result)
+                        },
                     });
-                    area_markers.addTo(map);
+                    // area_markers.addTo(map);
                     layer.addTo(arbitrary_area_markers);
                 }
             })
