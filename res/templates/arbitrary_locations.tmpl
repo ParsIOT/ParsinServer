@@ -10,7 +10,7 @@
     <!-- Custom CSS -->
     <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
     <link href="/static/css/custom.css" rel="stylesheet">
-    <link href="/static/css/plugins/leaflet/leaflet.css" rel="stylesheet">
+    <link href="/static/css/leaflet.css" rel="stylesheet">
     <link href="/static/css/plugins/leaflet/leaflet.draw.css" rel="stylesheet">
     <link href="/static/css/plugins/leaflet/leaflet.toolbar.css" rel="stylesheet">
     <link href="/static/css/plugins/leaflet/leaflet.draw-toolbar.css" rel="stylesheet">
@@ -92,7 +92,7 @@
 <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/EditToolbar.Delete.js"></script>
 
 <script type="application/javascript">
-    $('#map').css('height', $(window.top).height() - 275);
+    // $('#map').css('height', $(window.top).height() - 275);
     var map = L.map('map', {
         crs: L.CRS.Simple,
         minZoom: -100,
@@ -107,15 +107,21 @@
 
     var drawControl = new L.Control.Draw({
         position: 'topright',
-        edit: false,
+        edit: {
+            featureGroup: arbitrary_area_markers,
+            edit: false
+        },
         draw: {
             polygon: false,
             polyline: false,
-            marker: true,
+            marker: false,
             circle: false,
             circlemarker: false
         }
     });
+
+    map.addControl(drawControl);
+
 
     //get Arbitrary Locations from the server and put them on the map
     $.get("/getArbitLocations", {
@@ -125,7 +131,6 @@
                 if (result['success']) {
                     var locations = result["locations"];
                     locations.forEach((location, index) => {
-
                         marker_pos = location.split(',');
                         [x, y] = [parseInt(marker_pos[0]), parseInt(marker_pos[1])];
                         L.marker([x, y]).addTo(arbitrary_area_markers)
@@ -135,14 +140,14 @@
                 }
             }
     );
-    map.addControl(drawControl);
+
 
     map.on('draw:created', function (e) {
         var layer = e.layer;
         var layerType = e.layerType;
-        console.log('A');
+        // console.log('A');
         if (layerType === 'rectangle') {
-            console.log('B');
+            // console.log('B');
             north_east_point = [layer.getBounds()._northEast.lat, layer.getBounds()._northEast.lng];
             south_west_point = [layer.getBounds()._southWest.lat, layer.getBounds()._southWest.lng];
             swal({
@@ -170,14 +175,11 @@
                 if (result.value) {
                     var x_points_num = parseInt($('#x_points_num').val()) - 1;
                     var y_points_num = parseInt($('#y_points_num').val()) - 1;
-                    var area_markers = L.featureGroup();
                     var data = [];
-                    x_step = Math.abs((north_east_point[0] - south_west_point[0]) / x_points_num);
-                    y_step = Math.abs((north_east_point[1] - south_west_point[1]) / y_points_num);
+                    x_step = parseInt(Math.abs((north_east_point[0] - south_west_point[0]) / x_points_num));
+                    y_step = parseInt(Math.abs((north_east_point[1] - south_west_point[1]) / y_points_num));
                     for (var x = south_west_point[0]; x <= north_east_point[0]; x += x_step) {
                         for (var y = south_west_point[1]; y <= north_east_point[1]; y += y_step) {
-                            // console.log(x, y);
-                            // L.marker([x, y]).addTo(area_markers);
                             L.marker([parseInt(x), parseInt(y)]).addTo(arbitrary_area_markers);
                             data.push(parseInt(x).toString() + '.0' + ',' + parseInt(y).toString() + '.0')
                         }
@@ -185,28 +187,80 @@
                     //send markers to server
                     $.ajax({
                         method: "POST",
-                        url: "/addArbitLocations/{{ .Group }}",
-                        dataType: "application/json",
+                        url: "/addArbitLocations/?group={{ .Group }}",
+                        dataType: "json",
                         data: JSON.stringify({
                             "locations": data,
-                        {{/*"group": {{ .Group }},*/}}
-
                         }),
-                        success: function (result) {
-                            console.log(result)
+                        success: function (data, textStatus, jqXHR) {
+                            if (data['success']) {
+                                swal(
+                                        'Created!',
+                                        'The new markers have been created.',
+                                        'success'
+                                )
+                            }
+                            console.log(data)
                         },
+                        error: function (data, textStatus, jqXHR) {
+                            console.log(data)
+                        }
                     });
-                    // area_markers.addTo(map);
-                    layer.addTo(arbitrary_area_markers);
+                    arbitrary_area_markers.addLayer(layer)
                 }
             })
         }
-        else {
-            layer.addTo(arbitrary_area_markers);
-        }
-        // arbitrary_area_markers.addTo(map);
+        /*        else {
+                    arbitrary_area_markers.addLayer(layer)
+                }*/
     });
 
+    map.on('draw:deleted', function (e) {
+        var removed_layers = e.layers;
+        //https://stackoverflow.com/questions/18014907/leaflet-draw-retrieve-layer-type-on-drawedited-event
+        removed_markers = [];
+
+        removed_layers.eachLayer(function (layer) {
+            if (layer instanceof L.Rectangle) {
+                var north_east_vertex = [layer._bounds._northEast.lat, layer._bounds._northEast.lng];
+                var south_west_vertex = [layer._bounds._southWest.lat, layer._bounds._southWest.lng];
+                editedAreas.push({
+                    'area_id': layer.properties.area_id,
+                    'new_bounds': {'north_east': north_east_vertex, 'south_west': south_west_vertex}
+                });
+            }
+
+            if (layer instanceof L.Marker) {
+                marker_pos = (layer.getLatLng().lat).toString() + '.0' + ',' + (layer.getLatLng().lng) + '.0'
+                removed_markers.push(marker_pos)
+
+            }
+
+        });
+        //send removed markers to server
+        $.ajax({
+            method: "POST",
+            url: "/delArbitLocations?group={{ .Group }}",
+            dataType: "json",
+            data: JSON.stringify({
+                "locations": removed_markers,
+            }),
+            success: function (data, textStatus, jqXHR) {
+                if (data['success']) {
+                    swal(
+                            'Removed!',
+                            'The selected markers have been removed.',
+                            'success'
+                    )
+                }
+                console.log(data)
+            },
+            error: function (data, textStatus, jqXHR) {
+                console.log(data)
+            }
+        });
+
+    })
 
 </script>
 </body>

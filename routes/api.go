@@ -1019,9 +1019,7 @@ func AddArbitLocations(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	q := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
-	glb.Warning.Println(q)
-	groupName := c.Param("group")
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
 	type st struct {
 		Locations []string `json:"locations"`
 	}
