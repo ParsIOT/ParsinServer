@@ -509,7 +509,7 @@ func PutKnnKRange(c *gin.Context) {
 	glb.Debug.Println(group)
 	glb.Debug.Println(kRangeRawStr)
 
-	if group != "noneasdf" {
+	if group != "noneasdf" && kRangeRawStr != "none" {
 		// convert string to int slice
 		kRangeRawStr = strings.TrimSpace(kRangeRawStr)
 		kRangeRawStr = kRangeRawStr[1:][:len(kRangeRawStr)-2]
@@ -554,7 +554,7 @@ func PutKnnMinClusterRSSRange(c *gin.Context) {
 	glb.Debug.Println(group)
 	glb.Debug.Println(rssRangeRawStr)
 
-	if group != "noneasdf" {
+	if group != "noneasdf" && rssRangeRawStr != "none" {
 		// convert string to int slice
 		rssRangeRawStr = strings.TrimSpace(rssRangeRawStr)
 		rssRangeRawStr = rssRangeRawStr[1:][:len(rssRangeRawStr)-2]
@@ -605,7 +605,7 @@ func PutMinRss(c *gin.Context) {
 	minRss := c.DefaultQuery("minRss", "none")
 	glb.Debug.Println(group)
 	glb.Debug.Println(minRss)
-	if group != "noneasdf" {
+	if group != "noneasdf" && minRss != "none" {
 		newMinRss, err := strconv.Atoi(minRss)
 		if err == nil {
 			err2 := dbm.SetSharedPrf(group, "MinRss",newMinRss)
@@ -661,7 +661,7 @@ func EditLoc(c *gin.Context) {
 	groupName := c.DefaultQuery("group", "noneasdf")
 	oldloc := strings.TrimSpace(c.DefaultQuery("oldloc", "none"))
 	newloc := strings.TrimSpace(c.DefaultQuery("newloc", "none"))
-	if groupName != "noneasdf" {
+	if groupName != "noneasdf" && oldloc != "none" && newloc != "none" {
 		numChanges := dbm.EditLocDB(oldloc, newloc, groupName)
 		glb.Debug.Println("Changed location of " + strconv.Itoa(numChanges) + " fingerprints")
 		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
@@ -685,7 +685,7 @@ func EditMac(c *gin.Context) {
 	groupName := c.DefaultQuery("group", "noneasdf")
 	oldmac := c.DefaultQuery("oldmac", "none")
 	newmac := c.DefaultQuery("newmac", "none")
-	if groupName != "noneasdf" {
+	if groupName != "noneasdf" && oldmac != "none" && newmac != "none" {
 		numChanges := dbm.EditMacDB(oldmac, newmac, groupName)
 		glb.Debug.Println("Changed mac of " + strconv.Itoa(numChanges) + " fingerprints")
 		algorithms.CalculateLearn(groupName)
@@ -710,7 +710,7 @@ func EditUserName(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
 	user := strings.ToLower(c.DefaultQuery("user", "none"))
 	newname := strings.ToLower(c.DefaultQuery("newname", "none"))
-	if groupName != "noneasdf" {
+	if groupName != "noneasdf" && user != "none" && newname != "none" {
 		numChanges := dbm.EditUserNameDB(user, newname, groupName)
 
 		// reset the cache (cache.go)
@@ -736,7 +736,7 @@ func DeleteLocation(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
 	//gp := dbm.GM.GetGroup(groupName)
 	location := strings.ToLower(c.DefaultQuery("location", "none"))
-	if groupName != "noneasdf" {
+	if groupName != "noneasdf" && location != "none" {
 		numChanges := dbm.DeleteLocationDB(location, groupName)
 
 		// todo: can't calculateLearn( there is problem with goroutine)
@@ -761,7 +761,7 @@ func DeleteLocationBaseDB(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
 	//gp := dbm.GM.GetGroup(groupName)
 	location := strings.ToLower(c.DefaultQuery("location", "none"))
-	if groupName != "noneasdf" {
+	if groupName != "noneasdf" && location != "none" {
 		numChanges := dbm.DeleteLocationBaseDB(location, groupName)
 
 		// todo: can't calculateLearn( there is problem with goroutine)
