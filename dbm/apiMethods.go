@@ -265,7 +265,7 @@ func EditLocDB(oldloc string, newloc string, groupName string) int{
 	//glb.Debug.Println(groupName)
 	rd := GM.GetGroup(groupName).Get_RawData()
 	fingerprintInMemory := rd.Get_Fingerprints()
-	//if err!= nil{
+	//if err!= nil{r
 	//	return 0
 	//}
 	for fpTime,fp := range fingerprintInMemory{
@@ -710,6 +710,7 @@ func ReformDBDB(group string)int{
 	for fpTime,fp := range fingerprintInMemory{
 		tempFp := fp
 		tempFp.Group = group
+		tempFp.Location = glb.RoundLocationDim(tempFp.Location)
 		toUpdate[fpTime] = string(parameters.DumpFingerprint(tempFp))
 	}
 

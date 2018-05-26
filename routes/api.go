@@ -762,13 +762,16 @@ func DeleteLocationBaseDB(c *gin.Context) {
 	//gp := dbm.GM.GetGroup(groupName)
 	location := strings.ToLower(c.DefaultQuery("location", "none"))
 	if groupName != "noneasdf" && location != "none" {
-		numChanges := dbm.DeleteLocationBaseDB(location, groupName)
-
+		numChangesBaseDB := dbm.DeleteLocationBaseDB(location, groupName)
+		numChangesGpCache := dbm.DeleteLocationDB(location, groupName)
+		if (numChangesBaseDB != numChangesGpCache) {
+			glb.Error.Printf("number of deletation from (baseDB,groupCache) are not equal: (%d,%d)\n", numChangesBaseDB, numChangesGpCache)
+		}
 		// todo: can't calculateLearn( there is problem with goroutine)
 		//algorithms.CalculateLearn(groupName)
 		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
 
-		c.JSON(http.StatusOK, gin.H{"message": "Deleted " + strconv.Itoa(numChanges) + " locations", "success": true})
+		c.JSON(http.StatusOK, gin.H{"message": "Deleted " + strconv.Itoa(numChangesBaseDB) + " locations", "success": true})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
