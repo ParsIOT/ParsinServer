@@ -159,23 +159,23 @@ func DumpFingerprints(group string) error {
 	})
 	f.Close()
 
-	// glb.Debug.Println("Opening file for tracking fingerprints")
-	f, err = os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "tracking"), os.O_WRONLY|os.O_CREATE, 0664)
-	if err != nil {
-		return err
-	}
-	// glb.Debug.Println("Writing fingerprints to file")
-	db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("results"))
-		c := b.Cursor()
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			if _, err = f.WriteString(string(glb.DecompressByte(v)) + "\n"); err != nil {
-				panic(err)
-			}
-		}
-		return nil
-	})
-	f.Close()
+	//// glb.Debug.Println("Opening file for tracking fingerprints")
+	//f, err = os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "tracking"), os.O_WRONLY|os.O_CREATE, 0664)
+	//if err != nil {
+	//	return err
+	//}
+	//// glb.Debug.Println("Writing fingerprints to file")
+	//db.View(func(tx *bolt.Tx) error {
+	//	b := tx.Bucket([]byte("results"))
+	//	c := b.Cursor()
+	//	for k, v := c.First(); k != nil; k, v = c.Next() {
+	//		if _, err = f.WriteString(string(glb.DecompressByte(v)) + "\n"); err != nil {
+	//			panic(err)
+	//		}
+	//	}
+	//	return nil
+	//})
+	//f.Close()
 	// glb.Debug.Println("Returning")
 
 	return nil

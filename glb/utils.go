@@ -27,6 +27,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"errors"
 	"strconv"
+	"math/big"
 )
 
 var (
@@ -527,14 +528,13 @@ func IntToString(input_num int) string {
 	return strconv.Itoa(input_num)
 }
 
-
-func Round(num float64) int {
+func Float64toInt(num float64) int {
 	return int(num + math.Copysign(0.5, num))
 }
 
-func ToFixed(num float64, precision int) float64 {
+func Round(num float64, precision int) float64 {
 	output := math.Pow(10, float64(precision))
-	return float64(Round(num * output)) / output
+	return float64(Float64toInt(num*output)) / output
 }
 
 func MakeRange(min, max int) []int {
@@ -554,7 +554,7 @@ func MakeRange(min, max int) []int {
 
 }
 
-func DuplicateCount(list []string) map[string]int {
+func DuplicateCountString(list []string) map[string]int {
 
 	duplicate_frequency := make(map[string]int)
 
@@ -572,6 +572,41 @@ func DuplicateCount(list []string) map[string]int {
 	return duplicate_frequency
 }
 
+func DuplicateCountFloat64(list []float64) map[float64]int {
+
+	duplicate_frequency := make(map[float64]int)
+
+	for _, item := range list {
+		// check if the item/element exist in the duplicate_frequency map
+
+		_, exist := duplicate_frequency[item]
+
+		if exist {
+			duplicate_frequency[item] += 1 // increase counter by 1 if already in the map
+		} else {
+			duplicate_frequency[item] = 1 // else start counting from 1
+		}
+	}
+	return duplicate_frequency
+}
+
+func UniqueListFloat64(list []float64) []float64 {
+	resList := []float64{}
+	for _, l := range list {
+		Additem := true
+		for _, temp := range resList {
+			if (temp == l) {
+				Additem = false
+				break
+			}
+		}
+		if Additem {
+			resList = append(resList, l)
+		}
+	}
+	return resList
+}
+
 func DeleteSliceItemStr(slice []string, item string) []string {
 	resSlice := make([]string, len(slice))
 	for i, it := range slice {
@@ -580,4 +615,21 @@ func DeleteSliceItemStr(slice []string, item string) []string {
 		}
 	}
 	return resSlice
+}
+
+func PowBig(a, n int) *big.Int {
+	tmp := big.NewInt(int64(a))
+	res := big.NewInt(1)
+	for n > 0 {
+		temp := new(big.Int)
+		if n%2 == 1 {
+			temp.Mul(res, tmp)
+			res = temp
+		}
+		temp = new(big.Int)
+		temp.Mul(tmp, tmp)
+		tmp = temp
+		n /= 2
+	}
+	return res
 }

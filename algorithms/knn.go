@@ -228,7 +228,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 
 	//tempList := []string{}
 	//tempList = append(tempList,fingerprintsOrdering...)
-	sort.Sort(sort.StringSlice(fingerprintsOrdering))
+	//sort.Sort(sort.StringSlice(fingerprintsOrdering))
 	//
 	//sum := int64(0)
 	//for _,i := range tempList{
@@ -303,9 +303,25 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	}
 
 	close(chanResults)
-	var currentX, currentY int
+
+	//if jsonFingerprint.Timestamp==int64(1516794991872647445){
+	//	var keys []string
+	//	for k := range W {
+	//		keys = append(keys, k)
+	//	}
+	//	sort.Sort(sort.StringSlice(keys))
+	//	var vals []float64
+	//	for _,key := range keys{
+	//		vals = append(vals, W[key])
+	//	}
+	//	glb.Error.Println(keys)
+	//	glb.Error.Println(vals)
+	//}
+
+	var currentX, currentY int64
 	currentX = 0
 	currentY = 0
+
 
 	if NumofMinAPNum == 0 {
 		glb.Error.Println("There is no fingerprint that its number of APs be more than ",glb.MinApNum,"MinApNum")
@@ -313,12 +329,47 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	}
 
 	fingerprintSorted := glb.SortDictByVal(W)
-	//fmt.Println(fingerprintSorted)
 
+	ws := []float64{}
+	for _, w := range W {
+		ws = append(ws, w)
+	}
+
+	stopNum := 0 //used instead of knnK
+	countWs := glb.DuplicateCountFloat64(ws)
+	uniqueWs := glb.UniqueListFloat64(ws)
+
+	sort.Sort(sort.Reverse(sort.Float64Slice(uniqueWs)))
+
+	// instead of using knnK to stop knn algorithm, because there are some dots with same weight ,
+	//		stopNum is set to minimum number of weight (from high to low).
+	for _, w := range uniqueWs {
+		//if jsonFingerprint.Timestamp==int64(1516794991872647445) {
+		//	glb.Debug.Println(w)
+		//}
+		stopNum += countWs[w]
+		if stopNum >= knnK {
+			break
+		}
+	}
+
+	////fmt.Println(fingerprintSorted)
+	//if jsonFingerprint.Timestamp==int64(1516794991872647445) {
+	//	glb.Debug.Println(countWs)
+	//	glb.Debug.Println(uniqueWs)
+	//	glb.Debug.Println(stopNum)
+	//	glb.Error.Println()
+	//	glb.Error.Println(len(W))
+	//	glb.Error.Println(len(fingerprintSorted))
+	//	glb.Error.Println(fingerprintSorted)
+	//}
 	if knn_regression {
 		sumW := float64(0)
+		//var xHist []int64
+		//var xHistequ []string
+		//var xHistMap []string
 		for K, fpTime := range fingerprintSorted {
-			if (K < knnK) {
+			if (K < stopNum) {
 				x_y := strings.Split(fingerprintsInMemory[fpTime].Location, ",")
 				if len(x_y) < 2 {
 					err := errors.New("Location names aren't in the format of x,y")
@@ -328,24 +379,52 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 				locYstr := x_y[1]
 				locX, _ := strconv.ParseFloat(locXstr,64)
 				locY, _ := strconv.ParseFloat(locYstr,64)
+				locX = glb.Round(locX, 5)
+				locY = glb.Round(locY, 5)
+				//currentX = currentX + int(W[fpTime]*locX)
+				//currentY = currentY + int(W[fpTime]*locY)
 
-				currentX = currentX + int(W[fpTime]*locX)
-				currentY = currentY + int(W[fpTime]*locY)
+				//if jsonFingerprint.Timestamp==int64(1516794991872647445) {
+				//	xHist = append(xHist,int64(W[fpTime]*locX))
+				//	xHistequ = append(xHistequ,fmt.Sprint(W[fpTime],"*",locX))
+				//	xHistMap = append(xHistMap,fmt.Sprint(W[fpTime],"*",locX,":",int64(W[fpTime]*locX),":",fpTime))
+
+				//glb.Error.Println()
+				//glb.Error.Println(W[fpTime], "*",locX)
+				//glb.Error.Println(currentX)
+				//glb.Error.Println(W[fpTime], " * ",locY)
+				//glb.Error.Println(currentY)
+				//glb.Error.Println(currentX,"::",currentY)
+				//}
+				currentX = currentX + int64(W[fpTime]*locX)
+				currentY = currentY + int64(glb.Round(glb.Round(W[fpTime], 5)*locY, 5))
 				//Debug.Println(W[fpTime]*locX)
 				sumW = sumW + W[fpTime]
 			} else {
 				break;
 			}
 		}
-
+		//if jsonFingerprint.Timestamp==int64(1516794991872647445) {
+		//	glb.Error.Println(xHist)
+		//	sort.Sort(sort.StringSlice(xHistequ))
+		//	glb.Error.Println(xHistequ)
+		//	glb.Error.Println(xHistMap)
+		//}
+		//sumW = glb.Round(sumW,5)
+		//if jsonFingerprint.Timestamp==int64(1516794991872647445) {
+		//	glb.Error.Println(sumW)
+		//	glb.Error.Println(currentX,"::",currentY)
+		//}
 		//if show{
 		//	glb.Error.Println(sumW)
 		//	glb.Error.Println(jsonFingerprint)
 		//}
-		//glb.Debug.Println(sumW)
+
 		currentXint := int(float64(currentX) / sumW)
 		currentYint := int(float64(currentY) / sumW)
-		//glb.Debug.Println(floatToString(currentX) + "," + floatToString(currentY))
+		//glb.Debug.Println()
+		//glb.Debug.Println(jsonFingerprint.Location)
+		//glb.Debug.Println(glb.IntToString(currentXint) + ".0," + glb.IntToString(currentYint)+".0")
 		//Debug.Println(currentX)
 		return nil, glb.IntToString(currentXint) + ".0," + glb.IntToString(currentYint)+".0"
 	} else {
@@ -379,16 +458,25 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 				//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
 				//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
 			} else {
-				distance = distance + maxDist
+				distance = distance + math.Pow(float64(maxDist), minkowskyQ)
 				//distance = distance + 9
 				//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)
 			}
 		}
+		distance = distance / float64(len(job.mac2RssCur))
 		//if(distance==float64(0)){
 		//	glb.Error.Println("###@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 		//}
-		distance = glb.ToFixed(math.Pow(distance, float64(1)/minkowskyQ),6)+ float64(0.00000000000000001)
-		weight := glb.ToFixed(float64(1) / distance * 1000,6)
+		precision := 10
+		distance = glb.Round(math.Pow(distance, float64(1.0)/minkowskyQ), precision)
+		if distance == float64(0) {
+			glb.Error.Println("Distance zero")
+			glb.Error.Println(job.mac2RssCur)
+			glb.Error.Println(job.mac2RssFP)
+			distance = math.Pow(10, -1*float64(precision))
+			//distance = maxDist
+		}
+		weight := glb.Round(float64(1.0)/(float64(1.0)+distance), 2)
 
 		//glb.Debug.Println("distance: ",distance)
  		//glb.Debug.Println("weight: ",weight)

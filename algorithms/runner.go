@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var threadedCross bool = false
+var threadedCross bool = false //don't use, it's not safe now!
 
 type KnnJob struct{
 	gp							*dbm.Group
@@ -286,16 +286,15 @@ func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, str
 
 func CalculateLearn(groupName string) {
 	// Now performance isn't important in learning, just care about performance on track (it helps to code easily!)
-
-
-
+	//var runnerLock sync.Mutex
+	//runnerLock.Lock()
 	groupName = strings.ToLower(groupName)
 	//var gpMain = dbm.NewGroup(groupName)
 	//defer dbm.GM.GetGroup(groupName).Set(gpMain)
 	gp := dbm.GM.GetGroup(groupName)
+
 	gp.Set_Permanent(false) //for crossvalidation
 	rd := gp.Get_RawData_Filtered_Val()
-
 
 	//glb.Debug.Println(1)
 	var crossValidationPartsList []crossValidationParts
@@ -366,7 +365,7 @@ func CalculateLearn(groupName string) {
 
 		for _, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
 			//glb.Debug.Println("KNN minClusterRss :", minClusterRss)
-			for _, K := range validKs { // for over K
+			for _, K := range validKs { // for over KnnK
 				chanKnnJobs <- KnnJob{
 					gp:gp,
 					K: K,
@@ -389,7 +388,7 @@ func CalculateLearn(groupName string) {
 
 		for i, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
 			//glb.Debug.Println("KNN minClusterRss :", minClusterRss)
-			for j,K := range validKs { // for over K
+			for j, K := range validKs { // for over KnnK
 				glb.ProgressBarCurLevel = i*len(validKs)+j
 				totalDistError := 0
 
@@ -429,7 +428,6 @@ func CalculateLearn(groupName string) {
 						resultDot := ""
 						var err error
 						err,resultDot = TrackKnn(gp, fp)
-
 						if err != nil{
 							if err.Error() == "NumofAP_lowerThan_MinApNum"{
 								continue
@@ -443,6 +441,10 @@ func CalculateLearn(groupName string) {
 
 						resx,resy := getDotFromString(resultDot)
 						x,y := getDotFromString(testLocation)
+						//if fp.Timestamp==int64(1516794991872647445){
+						//	glb.Error.Println("ResultDot = ",resultDot)
+						//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
+						//}
 						distError += int(calcDist(x,y,resx,resy))
 						if distError < 0{
 							glb.Error.Println(fp)
@@ -533,7 +535,7 @@ func CalculateLearn(groupName string) {
 	}
 
 	glb.ProgressBarCurLevel = 0
-
+	glb.Debug.Println(totalErrorList)
 	sort.Ints(totalErrorList)
 	bestResult = totalErrorList[0]
 	bestErrHyperParameters := knnErrHyperParameters[bestResult]
@@ -678,6 +680,7 @@ func CalculateLearn(groupName string) {
 	//if glb.RuntimeArgs.Scikit {
 	//	ScikitLearn(groupName)
 	//}
+	//runnerLock.Unlock()
 }
 
 
@@ -975,6 +978,6 @@ func GetParameters(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct) {
 		fp := fingerprints[fpIndex]
 		locations = append(locations,fp.Location)
 	}
-	md.LocCount = glb.DuplicateCount(locations)
+	md.LocCount = glb.DuplicateCountString(locations)
 
 }
