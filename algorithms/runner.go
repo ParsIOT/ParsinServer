@@ -286,30 +286,17 @@ func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, str
 
 func CalculateLearn(groupName string) {
 	// Now performance isn't important in learning, just care about performance on track (it helps to code easily!)
-	//var runnerLock sync.Mutex
-	//runnerLock.Lock()
 	groupName = strings.ToLower(groupName)
-	//var gpMain = dbm.NewGroup(groupName)
-	//defer dbm.GM.GetGroup(groupName).Set(gpMain)
 	gp := dbm.GM.GetGroup(groupName)
 
 	gp.Set_Permanent(false) //for crossvalidation
 	rd := gp.Get_RawData_Filtered_Val()
 
-	//glb.Debug.Println(1)
 	var crossValidationPartsList []crossValidationParts
-	//glb.Debug.Println(rd)
 	crossValidationPartsList = GetCrossValidationParts(gp,rd)
-	//glb.Debug.Println(2)
 	// ToDo: Need to learn algorithms concurrently
 
-
-
 	// CrossValidation
-
-	//crossHistory := map[string]float64{"-1064.000000,-240.000000":9033.65681, "-18.000000,1408.000000":1207.539336, "-676.000000,-216.000000":1963.042125, "-140.000000,1660.000000":2708.496748, "11.000000,-432.000000":6478.9375660000005, "-11.000000,-164.000000":5596.867363, "-128.000000,1676.000000":2903.8254620000002, "-346.000000,-140.000000":3914.7535380000004, "-983.000000,-1543.000000":2686.4171349999997, "-72.000000,-1655.000000":2635.7918250000002, "426.000000,1697.000000":3777.554719, "-334.000000,-124.000000":4608.481008999999, "275.000000,-1564.000000":4734.017012, "41.000000,895.000000":5279.052433999999, "-7.000000,294.000000":2250.712678, "-10.000000,1416.000000":1276.908034, "-965.000000,1427.000000":4044.6845869999997, "71.000000,-844.000000":3105.23509, "265.000000,-1560.000000":2028.976247, "-997.000000,1331.000000":6004.292162000001, "-15.000000,809.000000":4580.49267, "-992.000000,-756.000000":4737.604829999999, "-636.000000,-1232.000000":2362.0894990000006, "67.000000,-428.000000":3094.2482190000005, "17.000000,899.000000":3153.974731, "-443.000000,-1151.000000":1570.7646770000001, "-472.000000,-832.000000":4996.788302999999, "-992.000000,-796.000000":3914.063738, "-391.000000,-1143.000000":3249.982455, "406.000000,1663.000000":2947.5144950000004, "-500.000000,-760.000000":2409.1792899999996, "141.000000,-1629.000000":1589.6683010000002, "37.000000,334.000000":5706.589000999999, "-82.000000,1650.000000":2304.5169760000003, "-258.000000,-128.000000":2463.538787, "-160.000000,-1140.000000":3955.944411, "398.000000,1379.000000":3133.744625, "-445.000000,1158.000000":2524.50515, "-1040.000000,-240.000000":3057.8319759999995, "-469.000000,1137.000000":2881.7311130000003, "-165.000000,-1295.000000":1508.556196, "-453.000000,1209.000000":2978.8128530000004, "13.000000,-132.000000":1793.5983840000001, "-652.000000,-208.000000":1950.6050560000003, "43.000000,-840.000000":5260.662135999999, "-155.000000,-1248.000000":1932.6672510000003, "-688.000000,-228.000000":3195.3973159999996, "-27.000000,-188.000000":3926.2190110000006, "352.000000,1389.000000":2747.951709, "-995.000000,-1519.000000":2474.1054220000005, "402.000000,1377.000000":2332.6383920000003, "7.000000,-784.000000":4342.899576999999, "-604.000000,-1360.000000":1489.126892, "-177.000000,-1355.000000":937.836732, "-492.000000,-820.000000":3778.0793289999997, "-208.000000,1128.000000":3530.605291, "420.000000,1671.000000":4577.632777, "-326.000000,-1142.000000":2502.278241, "307.000000,-1562.000000":3563.419985, "-165.000000,-1355.000000":609.349328, "-1005.000000,1383.000000":6216.601672000001, "-1011.000000,-1531.000000":5511.334352000001, "-988.000000,-776.000000":3556.838922, "-188.000000,1120.000000":2916.510908, "13.000000,302.000000":3158.929238, "-12.000000,1412.000000":1037.613669, "-204.000000,1228.000000":1258.8875859999998, "19.000000,-432.000000":4624.825684, "-623.000000,-1211.000000":1314.497231}
-	//CVResults := make(map[int]float64)
-	//glb.Debug.Println(3)
 
 	totalErrorList := []int{}
 	knnErrHyperParameters := make(map[int][]interface{})
@@ -321,7 +308,8 @@ func CalculateLearn(groupName string) {
 
 	//Set algorithm parameters range:
 
-		// KNN:
+	// KNN:
+	// Parameters list creation
 		// 1.K
 	validKs := glb.MakeRange(glb.DefaultKnnKRange[0],glb.DefaultKnnKRange[1])
 	knnKRange := dbm.GetSharedPrf(gp.Get_Name()).KnnKRange
@@ -346,6 +334,7 @@ func CalculateLearn(groupName string) {
 
 
 	// Set length of calculation progress bar
+	// This is shared between all threads, so it's invalid when two calculateLearn thread run
 	glb.ProgressBarLength = len(validMinClusterRSSs) * len(validKs)
 
 	knnLocAccuracy := make(map[string]int)
@@ -387,21 +376,19 @@ func CalculateLearn(groupName string) {
 		adTemp := gp.NewAlgoDataStruct()
 
 		for i, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
-			//glb.Debug.Println("KNN minClusterRss :", minClusterRss)
 			for j, K := range validKs { // for over KnnK
 				glb.ProgressBarCurLevel = i*len(validKs)+j
 				totalDistError := 0
 
-				//glb.Debug.Println("KNN K :",K)
-				//temptemptemp := make(map[string]float64)
-				//glb.Debug.Println(len(crossValidationPartsList))
+				// 1-foldCrossValidation (each round one location select as test set)
 				for _,CVParts := range crossValidationPartsList{
+
 					//glb.Debug.Println(CVNum)
+
+					// Learn:
 					mdTemp := gp.NewMiddleDataStruct()
 					rdTemp := CVParts.GetTrainSet(gp)
 					testFPs := CVParts.testSet.Fingerprints
-
-
 					testFPsOrdering := CVParts.testSet.FingerprintsOrdering
 					GetParameters(mdTemp, rdTemp)
 					tempHyperParameters := []interface{}{K,minClusterRss}
@@ -412,19 +399,18 @@ func CalculateLearn(groupName string) {
 					learnedKnnData.MinClusterRss = minClusterRss
 
 					adTemp.Set_KnnFPs(learnedKnnData)
+
+					// Set to main group
+					gp.GMutex.Lock() //For each group there's a lock to avoid race between concurrent calculateLearn s
 					gp.Set_AlgoData(adTemp)
 
+					// Error calculation for this round
 					distError := 0
-					//FPtEMP := parameters.Fingerprint{}
-
 					trackedPointsNum := 0
 					testLocation := testFPs[testFPsOrdering[0]].Location
 					for _,index := range testFPsOrdering{
 						fp := testFPs[index]
 
-						//FPtEMP = fp
-						//if(fp.Location =="-165.000000,-1295.000000"){
-						//glb.Warning.Println(index)
 						resultDot := ""
 						var err error
 						err,resultDot = TrackKnn(gp, fp)
@@ -436,9 +422,6 @@ func CalculateLearn(groupName string) {
 							trackedPointsNum++
 						}
 
-						//glb.Debug.Println(fp.Location," ==== ",resultDot)
-						//glb.Debug.Println(fp)
-
 						resx,resy := getDotFromString(resultDot)
 						x,y := getDotFromString(testLocation)
 						//if fp.Timestamp==int64(1516794991872647445){
@@ -446,14 +429,13 @@ func CalculateLearn(groupName string) {
 						//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
 						//}
 						distError += int(calcDist(x,y,resx,resy))
-						if distError < 0{
+						if distError < 0 { //print if distError is lower than zero(it's for error detection)
 							glb.Error.Println(fp)
 							glb.Error.Println(resultDot)
 							_,resultDot = TrackKnn(gp, fp)
 							glb.Error.Println(x,y)
 							glb.Error.Println(resx,resy)
 						}
-						//}
 					}
 					if trackedPointsNum==0{
 						glb.Error.Println("For loc:",testLocation," there is no fingerprint that its number of APs be more than",glb.MinApNum)
@@ -461,64 +443,8 @@ func CalculateLearn(groupName string) {
 						distError = distError/trackedPointsNum
 						totalDistError += distError
 					}
-					//glb.Debug.Println(distError)
-					//if totalDistError >0{
-					//	glb.Debug.Println(totalDistError)
-					//}else{
-					//	glb.Error.Println(totalDistError)
-					//}
 
-					//CVResults[CVNum] = distError
-					//if val,ok := crossHistory[FPtEMP.Location];ok{
-					//	if val != distError{
-					//		glb.Error.Println("Errrror!")
-					//
-					//		glb.Error.Println(FPtEMP.Location)
-					//
-					//		glb.Error.Println(val)
-					//
-					//		glb.Error.Println(len(learnedKnnData.FingerprintsOrdering))
-					//		glb.Error.Println(distError)
-					//
-					//		distError1 := float64(0)
-					//		glb.Debug.Println("1111111111111111111111111111111")
-					//		for _,index := range testFPsOrdering{
-					//			fp := testFPs[index]
-					//			//if(fp.Location =="-165.000000,-1295.000000"){
-					//			//glb.Warning.Println(index)
-					//			_,resultDot := TrackKnn(gp, fp)
-					//			glb.Debug.Println(fp.Location," ==== ",resultDot)
-					//			glb.Debug.Println(fp)
-					//
-					//			resx,resy := getDotFromString(resultDot)
-					//			x,y := getDotFromString(fp.Location)
-					//			distError1 += calcDist(x,y,resx,resy)
-					//			//}
-					//		}
-					//		glb.Debug.Println("2222222222222222222222222222222222222")
-					//		distError2 := float64(0)
-					//		for _,index := range testFPsOrdering{
-					//			fp := testFPs[index]
-					//
-					//			_,resultDot := TrackKnn(gp, fp)
-					//			glb.Debug.Println(fp.Location," ==== ",resultDot)
-					//			glb.Debug.Println(fp)
-					//
-					//			resx,resy := getDotFromString(resultDot)
-					//			x,y := getDotFromString(fp.Location)
-					//			distError2 += calcDist(x,y,resx,resy)
-					//			//}
-					//		}
-					//		glb.Error.Println(distError1)
-					//		glb.Error.Println(distError2)
-					//		glb.Debug.Println("3333333333333333333333333333333333333")
-					//	}
-					//}
-
-					//glb.Debug.Println(CVNum)
-					//glb.Debug.Println(distError)
-					//temptemptemp[FPtEMP.Location] = distError
-
+					gp.GMutex.Unlock()
 				}
 
 				glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d) = %d \n", minClusterRss,K,totalDistError)
@@ -534,7 +460,9 @@ func CalculateLearn(groupName string) {
 		}
 	}
 
-	glb.ProgressBarCurLevel = 0
+	glb.ProgressBarCurLevel = 0 // reset progressBar level
+
+	// Select best hyperParameters
 	glb.Debug.Println(totalErrorList)
 	sort.Ints(totalErrorList)
 	bestResult = totalErrorList[0]
@@ -546,22 +474,16 @@ func CalculateLearn(groupName string) {
 	glb.Debug.Println("Best MinClusterRss : ",bestMinClusterRss)
 	glb.Debug.Println("Minimum error = ",bestResult)
 
-
-
-
-	//glb.Debug.Println("KNN K :",K)
-	//temptemptemp := make(map[string]float64)
-	//glb.Debug.Println(len(crossValidationPartsList))
-
-	// Calculating each location detection accuracy :
+	// Calculating each location detection accuracy with best hyperParameters:
 	for _,CVParts := range crossValidationPartsList{
+
 		//glb.Debug.Println(CVNum)
 		mdTemp := gp.NewMiddleDataStruct()
 		adTemp := gp.NewAlgoDataStruct()
 		rdTemp := CVParts.GetTrainSet(gp)
 		testFPs := CVParts.testSet.Fingerprints
 
-
+		// Learn
 		testFPsOrdering := CVParts.testSet.FingerprintsOrdering
 		GetParameters(mdTemp, rdTemp)
 		tempHyperParameters := []interface{}{bestK,bestMinClusterRss}
@@ -572,19 +494,17 @@ func CalculateLearn(groupName string) {
 		learnedKnnData.MinClusterRss = bestMinClusterRss
 
 		adTemp.Set_KnnFPs(learnedKnnData)
+
+		gp.GMutex.Lock()
 		gp.Set_AlgoData(adTemp)
 
+		// Error calculation for each location with best hyperParameters
 		distError := 0
-		//FPtEMP := parameters.Fingerprint{}
 		trackedPointsNum := 0
 		testLocation := testFPs[testFPsOrdering[0]].Location
 		for _,index := range testFPsOrdering{
 
 			fp := testFPs[index]
-
-			//FPtEMP = fp
-			//if(fp.Location =="-165.000000,-1295.000000"){
-			//glb.Warning.Println(index)
 			resultDot := ""
 			var err error
 			err,resultDot = TrackKnn(gp, fp)
@@ -597,7 +517,6 @@ func CalculateLearn(groupName string) {
 				trackedPointsNum++
 			}
 			//glb.Debug.Println(fp.Location," ==== ",resultDot)
-			//glb.Debug.Println(fp)
 
 			resx,resy := getDotFromString(resultDot)
 			x,y := getDotFromString(testLocation) // testLocation is fp.Location
@@ -609,8 +528,9 @@ func CalculateLearn(groupName string) {
 				glb.Error.Println(x,y)
 				glb.Error.Println(resx,resy)
 			}
-			//}
 		}
+		gp.GMutex.Unlock()
+
 		if trackedPointsNum==0{
 			glb.Error.Println("For loc:",testLocation," there is no fingerprint that its number of APs be more than",glb.MinApNum)
 			knnLocAccuracy[testLocation] = -1
@@ -623,23 +543,7 @@ func CalculateLearn(groupName string) {
 
 	}
 
-	//glb.Debug.Println(temptemptemp)
-
-	//glb.Debug.Println(crossValidationPartsList)
-
-	//for _,c := range crossValidationPartsList{
-	//	glb.Debug.Println("######################### dot:")
-	//	for _,dot := range c.testSet.Fingerprints{
-	//		glb.Debug.Println(dot)
-	//	}
-	//	glb.Debug.Println("---------------------_")
-	//	//for _,ci := range c.trainSet{
-	//	//	glb.Debug.Println(ci)
-	//	//	glb.Debug.Println("%%%%%%%%%%")
-	//	//}
-	//	glb.Debug.Println("#########################")
-	//}
-	// set crossvalidation results
+	// Set CrossValidation results
 	rs := gp.Get_ResultData()
 	glb.Debug.Println(gp.Get_Name())
 	rs.Set_AlgoAccuracy("knn",bestResult)
@@ -648,10 +552,11 @@ func CalculateLearn(groupName string) {
 	}
 	glb.Debug.Println(dbm.GetCVResults(gp.Get_Name()))
 
-	// set main parameters
+	// Set main parameters
 	md := gp.NewMiddleDataStruct()
 	GetParameters(md, rd)
 
+	gp.GMutex.Lock()
 	gp.Set_MiddleData(md)
 	// select best algo config
 
@@ -668,7 +573,9 @@ func CalculateLearn(groupName string) {
 	ad.Set_KnnFPs(learnedKnnData)
 	gp.Set_AlgoData(ad)
 
+	gp.GMutex.Unlock()
 
+	glb.Debug.Println("Calculation finished.")
 	//if glb.RuntimeArgs.Svm {
 	//	DumpFingerprintsSVM(groupName)
 	//	err := CalculateSVM(groupName)

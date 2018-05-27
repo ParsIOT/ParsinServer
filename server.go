@@ -16,13 +16,12 @@ import (
 	"strings"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
-	//"github.com/appleboy/gin-jwt" // Authentication middleware lib
-	// installation : 1.go get github.com/gin-gonic/gin 2.Solve the miscellaneous lib problem 3. git get github.com/appleboy/gin-jwt
-	"github.com/MA-Heshmatkhah/SimpleAuth" // Authentication middleware lib
+
 	"ParsinServer/algorithms"
 	"ParsinServer/dbm"
 	"time"
 	"runtime/debug"
+	"github.com/MA-Heshmatkhah/SimpleAuth"
 )
 
 
@@ -39,6 +38,10 @@ func init() {
 	glb.RuntimeArgs.Cwd = cwd
 	glb.RuntimeArgs.SourcePath = path.Join(glb.RuntimeArgs.Cwd, "data")
 	glb.RuntimeArgs.Message = ""
+}
+
+func main() {
+	fmt.Println("-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----")
 
 	glb.SessionManager.Initialize(path.Join(glb.RuntimeArgs.SourcePath, "Settings.db"), &SimpleAuth.Options{
 		LoginURL:                   "/login",
@@ -46,10 +49,6 @@ func init() {
 		UnauthorizedURL:            "/change-db",
 		LoginSuccessfulRedirectURL: "/change-db",
 	})
-}
-
-func main() {
-	fmt.Println("-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----+-----")
 
 	go func(){
 		for {

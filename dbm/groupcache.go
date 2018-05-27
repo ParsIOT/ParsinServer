@@ -8,6 +8,7 @@ import (
 	"ParsinServer/glb"
 	"reflect"
 	"strconv"
+	"github.com/jinzhu/copier"
 )
 
 var GM GroupManger
@@ -19,16 +20,33 @@ var FlushDelay time.Duration = 20
 
 
 type RawDataStruct struct{
-	sync.RWMutex
-	group					*Group
+	mutex *sync.RWMutex
+	group *Group
 	//Learned data:
 	Fingerprints			map[string]parameters.Fingerprint
 	FingerprintsOrdering 	[]string
 }
 
+func (st *RawDataStruct) Lock() {
+	//glb.Debug.Println("RawDataStruct Lock")
+	st.mutex.Lock()
+}
+func (st *RawDataStruct) Unlock() {
+	//glb.Debug.Println("RawDataStruct UnLock")
+	st.mutex.Unlock()
+}
+func (st *RawDataStruct) RLock() {
+	//glb.Debug.Println("RawDataStruct RLock")
+	st.mutex.RLock()
+}
+func (st *RawDataStruct) RUnlock() {
+	//glb.Debug.Println("RawDataStruct RUnLock")
+	st.mutex.RUnlock()
+}
+
 type MiddleDataStruct struct{
-	sync.RWMutex
-	group					*Group
+	mutex *sync.RWMutex
+	group *Group
 	//Midlle data:
 	NetworkMacs    			map[string]map[string]bool             // map of networks and then the associated macs in each
 	NetworkLocs    			map[string]map[string]bool             // map of the networks, and then the associated locations in each
@@ -40,38 +58,90 @@ type MiddleDataStruct struct{
 	LocCount				map[string]int							// number of fp that its Location equals to loc
 }
 
+func (st *MiddleDataStruct) Lock() {
+	//glb.Debug.Println("MiddleDataStruct Lock")
+	st.mutex.Lock()
+}
+func (st *MiddleDataStruct) Unlock() {
+	//glb.Debug.Println("MiddleDataStruct UnLock")
+	st.mutex.Unlock()
+}
+func (st *MiddleDataStruct) RLock() {
+	//glb.Debug.Println("MiddleDataStruct RLock")
+	st.mutex.RLock()
+}
+func (st *MiddleDataStruct) RUnlock() {
+	//glb.Debug.Println("MiddleDataStruct RUnLock")
+	st.mutex.RUnlock()
+}
+
 // Assume learned model not to be changed or improved (if there is one algorithm that need it, add new struct near rawdata,middledata and ...)
 // this is because all AlgoDataStruct rewrite completely to db if it chanfluges.
 
 
 type AlgoDataStruct struct{
-	sync.RWMutex
-	group					*Group
+	mutex *sync.RWMutex
+	group *Group
 	////Algorithm Data:
 	//BayesPriors   			map[string]parameters.PriorParameters   // generate BayesPriors for each network
 	//BayesResults  			map[string]parameters.ResultsParameters // generate BayesResults for each network
 	KnnFPs        			parameters.KnnFingerprints
 }
 
+func (st *AlgoDataStruct) Lock() {
+	//glb.Debug.Println("AlgoDataStruct Lock")
+	st.mutex.Lock()
+}
+func (st *AlgoDataStruct) Unlock() {
+	//glb.Debug.Println("AlgoDataStruct ULock")
+	st.mutex.Unlock()
+}
+func (st *AlgoDataStruct) RLock() {
+	//glb.Debug.Println("AlgoDataStruct RLock")
+	st.mutex.RLock()
+}
+func (st *AlgoDataStruct) RUnlock() {
+	//glb.Debug.Println("AlgoDataStruct RUnLock")
+	st.mutex.RUnlock()
+}
+
 
 
 type ResultDataStruct struct{
-	sync.RWMutex
+	mutex           *sync.RWMutex
 	group           *Group
 	Results         map[string]parameters.Fingerprint
 	AlgoAccuracy    map[string]int
 	AlgoAccuracyLoc map[string]map[string]int
 }
 
+func (st *ResultDataStruct) Lock() {
+	//glb.Debug.Println("ResultDataStruct Lock")
+	st.mutex.Lock()
+}
+func (st *ResultDataStruct) Unlock() {
+	//glb.Debug.Println("ResultDataStruct UnLock")
+	st.mutex.Unlock()
+}
+func (st *ResultDataStruct) RLock() {
+	//glb.Debug.Println("ResultDataStruct RLock")
+	st.mutex.RLock()
+}
+func (st *ResultDataStruct) RUnlock() {
+	//glb.Debug.Println("ResultDataStruct RUnLock")
+	st.mutex.RUnlock()
+}
+
 //parameters Name must be lowercase that can't be access out of cachelib(must provide set&get func for each and provide locking mutex for each one)
 type Group struct {
-	sync.RWMutex
-	Name            string
-	Permanent	    bool 								  // Some group doesn't need to be saved
-	RawData			*RawDataStruct
-	MiddleData		*MiddleDataStruct
-	AlgoData		*AlgoDataStruct
-	ResultData		*ResultDataStruct
+	mutex      *sync.RWMutex
+	GMutex     *sync.RWMutex
+	Name       string
+	Permanent  bool // Some group doesn't need to be saved
+	RawData    *RawDataStruct
+	MiddleData *MiddleDataStruct
+	AlgoData   *AlgoDataStruct
+	ResultData *ResultDataStruct
 
 	RawDataChanged		bool
 	MiddleDataChanged	bool
@@ -80,14 +150,33 @@ type Group struct {
 	//learnDB	   map[string]map[string]{}interface	// group-->algorithm-->learnedData
 }
 
+func (st *Group) Lock() {
+	//glb.Debug.Println("Group Lock")
+	st.mutex.Lock()
+}
+func (st *Group) Unlock() {
+	//glb.Debug.Println("Group UnLock")
+	st.mutex.Unlock()
+}
+func (st *Group) RLock() {
+	//glb.Debug.Println("Group RLock")
+	st.mutex.RLock()
+}
+func (st *Group) RUnlock() {
+	//glb.Debug.Println("Group RUnLock")
+	st.mutex.RUnlock()
+}
+
 func NewGroup(groupName string) *Group {
 	gp := &Group{
-		Name:           		groupName,
-		Permanent:      		true,
-		RawDataChanged:			false,
-		MiddleDataChanged:		false,
-		AlgoDataChanged:		false,
-		ResultDataChanged:		false,
+		mutex:             &sync.RWMutex{},
+		GMutex:            &sync.RWMutex{},
+		Name:              groupName,
+		Permanent:         true,
+		RawDataChanged:    false,
+		MiddleDataChanged: false,
+		AlgoDataChanged:   false,
+		ResultDataChanged: false,
 	}
 	gp.Lock()
 	gp.RawData = gp.NewRawDataStruct()
@@ -115,20 +204,37 @@ func NewGroup(groupName string) *Group {
 
 //Access to db must be done over GM (for consistency issue)
 type GroupManger struct {
-	sync.RWMutex
-	isLoad map[string]bool
-	dbLock map[string]*sync.RWMutex
+	mutex    *sync.RWMutex
+	isLoad   map[string]bool
+	dbLock   map[string]*sync.RWMutex
 	dirtyBit map[string]bool
-	groups map[string]*Group
+	groups   map[string]*Group
 }
 
+func (st *GroupManger) Lock() {
+	//glb.Debug.Println("GroupManger Lock")
+	st.mutex.Lock()
+}
+func (st *GroupManger) Unlock() {
+	//glb.Debug.Println("GroupManger UnLock")
+	st.mutex.Unlock()
+}
+func (st *GroupManger) RLock() {
+	//glb.Debug.Println("GroupManger RLock")
+	st.mutex.RLock()
+}
+func (st *GroupManger) RUnlock() {
+	//glb.Debug.Println("GroupManger RUnLock")
+	st.mutex.RUnlock()
+}
 
 func init(){
 	GM = GroupManger{
-		isLoad:			make(map[string]bool),
-		dbLock:			make(map[string]*sync.RWMutex),
-		dirtyBit:       make(map[string]bool),
-		groups:         make(map[string]*Group),
+		mutex:    &sync.RWMutex{},
+		isLoad:   make(map[string]bool),
+		dbLock:   make(map[string]*sync.RWMutex),
+		dirtyBit: make(map[string]bool),
+		groups:   make(map[string]*Group),
 	}
 
 	//GM.NewGroup("t1")
@@ -287,9 +393,13 @@ func (gm *GroupManger) LoadGroup(groupName string){
 			//glb.Error.Println(err4)
 			gp.Lock()
 			gp.RawData = rawData
+			gp.RawData.mutex = &sync.RWMutex{}
 			gp.MiddleData = middleData
+			gp.MiddleData.mutex = &sync.RWMutex{}
 			gp.AlgoData = algoData
+			gp.AlgoData.mutex = &sync.RWMutex{}
 			gp.ResultData = resultData
+			gp.ResultData.mutex = &sync.RWMutex{}
 			gp.ResultData.Results = make(map[string]parameters.Fingerprint)
 			gp.Unlock()
 		}
@@ -499,11 +609,16 @@ func (gm *GroupManger) Flusher(){
 		//fmt.Println("Flushing DB ...")
 		time.Sleep(FlushDelay * time.Second)
 		glb.Debug.Println("Flushing DBs ...")
+		var groups map[string]*Group
+
 		GM.RLock()
-		groups := GM.groups
+		copier.Copy(groups, GM.groups)
 		GM.RUnlock()
 		for groupName,gp := range groups{
-			if gp.Permanent {
+			gp.RLock()
+			Permanent := gp.Permanent
+			gp.RUnlock()
+			if Permanent {
 				GM.FlushDB(groupName,gp)
 			}
 		}
@@ -728,29 +843,32 @@ func (gm *GroupManger) InstantFlushDB(groupName string){
 
 func (gp *Group) NewRawDataStruct() *RawDataStruct {
 	return &RawDataStruct{
-		group:					gp,
-		Fingerprints:			make(map[string]parameters.Fingerprint),
-		FingerprintsOrdering:	[]string{},
+		mutex:                &sync.RWMutex{},
+		group:                gp,
+		Fingerprints:         make(map[string]parameters.Fingerprint),
+		FingerprintsOrdering: []string{},
 	}
 }
 
 func (gp *Group) NewMiddleDataStruct() *MiddleDataStruct {
 	return &MiddleDataStruct{
-		group:					gp,
-		NetworkMacs:    		make(map[string]map[string]bool),
-		NetworkLocs:    		make(map[string]map[string]bool),
-		MacVariability: 		make(map[string]float32),
-		MacCount:       		make(map[string]int),
-		MacCountByLoc:  		make(map[string]map[string]int),
-		UniqueLocs:     		[]string{},
-		UniqueMacs:     		[]string{},
-		LocCount:				make(map[string]int),
+		mutex:          &sync.RWMutex{},
+		group:          gp,
+		NetworkMacs:    make(map[string]map[string]bool),
+		NetworkLocs:    make(map[string]map[string]bool),
+		MacVariability: make(map[string]float32),
+		MacCount:       make(map[string]int),
+		MacCountByLoc:  make(map[string]map[string]int),
+		UniqueLocs:     []string{},
+		UniqueMacs:     []string{},
+		LocCount:       make(map[string]int),
 	}
 }
 
 func (gp *Group) NewAlgoDataStruct() *AlgoDataStruct {
 	return &AlgoDataStruct{
-		group:					gp,
+		mutex: &sync.RWMutex{},
+		group: gp,
 		//BayesPriors:    		make(map[string]parameters.PriorParameters),
 		//BayesResults:   		make(map[string]parameters.ResultsParameters),
 		KnnFPs:         		parameters.NewKnnFingerprints(),
@@ -759,6 +877,7 @@ func (gp *Group) NewAlgoDataStruct() *AlgoDataStruct {
 
 func (gp *Group) NewResultDataStruct() *ResultDataStruct {
 	return &ResultDataStruct{
+		mutex:           &sync.RWMutex{},
 		group:           gp,
 		Results:         make(map[string]parameters.Fingerprint),
 		AlgoAccuracy:    make(map[string]int),
@@ -903,24 +1022,29 @@ func (gp *Group) Set_RawData(newItem *RawDataStruct) {
 	gp.RLock()
 	item := gp.RawData
 	gp.RUnlock()
-	item.Lock()
-	newItem.RLock()
+	//item.Lock()
+	//newItem.RLock()
 
 	elmNew := reflect.ValueOf(newItem).Elem()
 	elm := reflect.ValueOf(item).Elem()
 	itemType := elmNew.Type()
-	fmt.Println(elmNew.NumField())
+	//fmt.Println(elmNew.NumField())
 	for i := 0; i < elmNew.NumField(); i++ {
 		fieldNew := elmNew.Field(i)
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if(itemType.Field(i).Name!="RWMutex" && itemType.Field(i).Name!="group"){
-			field.Set(reflect.Value(fieldNew))
+		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+			//newItem.RLock()
+			val := reflect.Value(fieldNew)
+			//newItem.RUnlock()
+			item.Lock()
+			field.Set(val)
+			item.Unlock()
 		}
 	}
-	newItem.RUnlock()
-	item.Unlock()
+	//newItem.RUnlock()
+	//item.Unlock()
 	gp.Lock()
 	gp.RawDataChanged = true
 	gp.Unlock()
@@ -931,24 +1055,29 @@ func (gp *Group) Set_RawData_Val(newItem RawDataStruct) {
 	gp.RLock()
 	item := gp.RawData
 	gp.RUnlock()
-	item.Lock()
-	newItem.RLock()
+	//item.Lock()
+	//newItem.RLock()
 
 	elmNew := reflect.ValueOf(newItem).Elem()
 	elm := reflect.ValueOf(item).Elem()
 	itemType := elmNew.Type()
-	fmt.Println(elmNew.NumField())
+	//fmt.Println(elmNew.NumField())
 	for i := 0; i < elmNew.NumField(); i++ {
 		fieldNew := elmNew.Field(i)
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if(itemType.Field(i).Name!="RWMutex" && itemType.Field(i).Name!="group"){
-			field.Set(reflect.Value(fieldNew))
+		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+			//newItem.RLock()
+			val := reflect.Value(fieldNew)
+			//newItem.RUnlock()
+			item.Lock()
+			field.Set(val)
+			item.Unlock()
 		}
 	}
-	newItem.RUnlock()
-	item.Unlock()
+	//newItem.RUnlock()
+	//item.Unlock()
 	gp.Lock()
 	gp.RawDataChanged = true
 	gp.Unlock()
@@ -999,24 +1128,29 @@ func (gp *Group) Set_MiddleData(newItem *MiddleDataStruct) {
 	gp.RLock()
 	item := gp.MiddleData
 	gp.RUnlock()
-	item.Lock()
-	newItem.RLock()
+	//item.Lock()
+	//newItem.RLock()
 
 	elmNew := reflect.ValueOf(newItem).Elem()
 	elm := reflect.ValueOf(item).Elem()
 	itemType := elmNew.Type()
-	fmt.Println(elmNew.NumField())
+	//fmt.Println(elmNew.NumField())
 	for i := 0; i < elmNew.NumField(); i++ {
 		fieldNew := elmNew.Field(i)
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if(itemType.Field(i).Name!="RWMutex" && itemType.Field(i).Name!="group"){
-			field.Set(reflect.Value(fieldNew))
+		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+			//newItem.RLock()
+			val := reflect.Value(fieldNew)
+			//newItem.RUnlock()
+			item.Lock()
+			field.Set(val)
+			item.Unlock()
 		}
 	}
-	newItem.RUnlock()
-	item.Unlock()
+	//newItem.RUnlock()
+	//item.Unlock()
 	gp.Lock()
 	gp.MiddleDataChanged = true
 	gp.Unlock()
@@ -1027,24 +1161,29 @@ func (gp *Group) Set_MiddleData_Val(newItem MiddleDataStruct) {
 	gp.RLock()
 	item := gp.MiddleData
 	gp.RUnlock()
-	item.Lock()
-	newItem.RLock()
+	//item.Lock()
+	//newItem.RLock()
 
 	elmNew := reflect.ValueOf(newItem).Elem()
 	elm := reflect.ValueOf(item).Elem()
 	itemType := elmNew.Type()
-	fmt.Println(elmNew.NumField())
+	//fmt.Println(elmNew.NumField())
 	for i := 0; i < elmNew.NumField(); i++ {
 		fieldNew := elmNew.Field(i)
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if(itemType.Field(i).Name!="RWMutex" && itemType.Field(i).Name!="group"){
-			field.Set(reflect.Value(fieldNew))
+		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+			//newItem.RLock()
+			val := reflect.Value(fieldNew)
+			//newItem.RUnlock()
+			item.Lock()
+			field.Set(val)
+			item.Unlock()
 		}
 	}
-	newItem.RUnlock()
-	item.Unlock()
+	//newItem.RUnlock()
+	//item.Unlock()
 	gp.Lock()
 	gp.MiddleDataChanged = true
 	gp.Unlock()
@@ -1088,24 +1227,34 @@ func (gp *Group) Set_AlgoData(newItem *AlgoDataStruct) {
 	gp.RLock()
 	item := gp.AlgoData
 	gp.RUnlock()
-	//item.Lock()
-	newItem.RLock()
-	elmNew := reflect.ValueOf(newItem).Elem()
-	elm := reflect.ValueOf(item).Elem()
 
+	//newItem.RLock()
+	elmNew := reflect.ValueOf(newItem).Elem()
+	//item.Lock()
+	elm := reflect.ValueOf(item).Elem()
+	//item.Unlock()
 
 	itemType := elmNew.Type()
 	//fmt.Println(elmNew.NumField())
 
+	//item.Lock()
 	for i := 0; i < elmNew.NumField(); i++ {
 		fieldNew := elmNew.Field(i)
+		//item.Lock()
 		field := elm.Field(i)
-
-		if(itemType.Field(i).Name!="RWMutex" && itemType.Field(i).Name!="group"){
-			field.Set(reflect.Value(fieldNew))
+		//item.Unlock()
+		//glb.Debug.Println(itemType.Field(i).Name)
+		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+			//newItem.RLock()
+			val := reflect.Value(fieldNew)
+			//newItem.RUnlock()
+			item.Lock()
+			field.Set(val)
+			item.Unlock()
 		}
 	}
-	newItem.RUnlock()
+	//item.Unlock()
+	//newItem.RUnlock()
 	//item.Unlock()
 	gp.Lock()
 	gp.AlgoDataChanged = true
@@ -1117,9 +1266,9 @@ func (gp *Group) Set_AlgoData_Val(newItemRaw AlgoDataStruct) {
 	gp.RLock()
 	item := gp.AlgoData
 	gp.RUnlock()
-	item.Lock()
+	//item.Lock()
 	newItem := &newItemRaw
-	newItem.RLock()
+	//newItem.RLock()
 
 	elmNew := reflect.ValueOf(newItem).Elem()
 	elm := reflect.ValueOf(item).Elem()
@@ -1130,13 +1279,18 @@ func (gp *Group) Set_AlgoData_Val(newItemRaw AlgoDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if(itemType.Field(i).Name!="RWMutex" && itemType.Field(i).Name!="group"){
+		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
 			glb.Debug.Println(itemType.Field(i).Name)
-			field.Set(reflect.Value(fieldNew))
+			//newItem.RLock()
+			val := reflect.Value(fieldNew)
+			//newItem.RUnlock()
+			item.Lock()
+			field.Set(val)
+			item.Unlock()
 		}
 	}
-	newItem.RUnlock()
-	item.Unlock()
+	//newItem.RUnlock()
+	//item.Unlock()
 	gp.Lock()
 	gp.AlgoDataChanged = true
 	gp.Unlock()
@@ -1391,6 +1545,7 @@ func (rs *ResultDataStruct) Set_AlgoLocAccuracy(algoName string,loc string, dist
 	if _,ok := rs.AlgoAccuracyLoc[algoName];ok{
 		rs.AlgoAccuracyLoc[algoName][loc] = distError
 	}else{
+		rs.AlgoAccuracyLoc = make(map[string]map[string]int)
 		rs.AlgoAccuracyLoc[algoName] = make(map[string]int)
 		rs.AlgoAccuracyLoc[algoName][loc] = distError
 	}
