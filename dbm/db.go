@@ -73,10 +73,10 @@ func RenameNetwork(group string, oldName string, newName string) error {
 // if the users of group are cached, returns them.
 // otherwise, read them from database, cache them and return them.
 func GetUsers(group string) []string {
-	val, ok := GetUserCache(group)
-	if ok {
-		return val
-	}
+	//val, ok := GetUserCache(group)
+	//if ok {
+	//	return val
+	//}
 
 	uniqueUsers := []string{}
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
@@ -96,13 +96,14 @@ func GetUsers(group string) []string {
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			v2 := LoadFingerprint(v, false)
 			if !glb.StringInSlice(v2.Username, uniqueUsers) {
+				glb.Debug.Println(v2)
 				uniqueUsers = append(uniqueUsers, v2.Username)
 			}
 		}
 		return nil
 	})
 
-	go SetUserCache(group, uniqueUsers)
+	//go SetUserCache(group, uniqueUsers)
 	return uniqueUsers
 }
 
