@@ -28,9 +28,8 @@ func init() {
 	startTime = time.Now()
 }
 
-
-func PreLoadSettingsDecorator(routeFunc func(c *gin.Context)) func(c *gin.Context){
-	return func(c *gin.Context){
+func PreLoadSettingsDecorator(routeFunc func(c *gin.Context)) func(c *gin.Context) {
+	return func(c *gin.Context) {
 		group := c.DefaultQuery("group", "noneasdf")
 		if group != "noneasdf" {
 			dbm.GetSharedPrf(group)
@@ -39,19 +38,19 @@ func PreLoadSettingsDecorator(routeFunc func(c *gin.Context)) func(c *gin.Contex
 	}
 }
 
-func PreLoadSettings(c *gin.Context){
+func PreLoadSettings(c *gin.Context) {
 	glb.Debug.Println("PreloadSettings")
 	group1 := c.Param("group")
 	group2 := c.DefaultQuery("group", "noneasdf")
 	groupExists := false
 	//glb.Debug.Println(c)
-	if len(group1)!=0 {
+	if len(group1) != 0 {
 		glb.Debug.Println(group1)
 		//glb.Debug.Println(dbm.GetSharedPrf(group1))
 		groupExists = dbm.GroupExists(group1)
-		if groupExists{
+		if groupExists {
 			dbm.GetSharedPrf(group1)
-		}else{
+		} else {
 			glb.Error.Println("Group isn't Exists")
 			//c.JSON(http.StatusOK, gin.H{
 			//	"message":   fmt.Sprintf("There is no group with this group name: ",group1),
@@ -59,13 +58,13 @@ func PreLoadSettings(c *gin.Context){
 			c.Redirect(302, "/change-db?error=groupNotExists")
 		}
 
-	}else if group2 != "noneasdf"{
+	} else if group2 != "noneasdf" {
 		glb.Debug.Println(group2)
 		//glb.Debug.Println(dbm.GetSharedPrf(group2))
 		groupExists = dbm.GroupExists(group2)
-		if groupExists{
+		if groupExists {
 			dbm.GetSharedPrf(group2)
-		}else{
+		} else {
 			glb.Error.Println("Group isn't Exists")
 			//c.JSON(http.StatusOK, gin.H{
 			//	"message":   fmt.Sprintf("There is no group with this group name: ",group2),
@@ -73,11 +72,11 @@ func PreLoadSettings(c *gin.Context){
 			c.Redirect(302, "/change-db?error=groupNotExists")
 		}
 
-	}else{
+	} else {
 		glb.Error.Println("Group name not mentioned in url")
 		c.JSON(http.StatusOK, gin.H{
-			"message":   fmt.Sprintf("group name must be mentioned in url(e.g.: /groupName (url param) or ?group=groupName (GET param))"),
-			"success":   false})
+			"message": fmt.Sprintf("group name must be mentioned in url(e.g.: /groupName (url param) or ?group=groupName (GET param))"),
+			"success": false})
 	}
 	// Todo: add real "noneasdf" state
 }
@@ -222,7 +221,7 @@ func GetCurrentPositionOfAllUsers(groupName string) map[string]glb.UserPositionJ
 	userFingerprints := make(map[string]parameters.Fingerprint)
 	var err error
 	userPositions, userFingerprints, err = dbm.TrackFingerprintsEmptyPosition(groupName)
-	if (err != nil ) {
+	if (err != nil) {
 		return userPositions
 	}
 
@@ -273,7 +272,7 @@ func GetCurrentPositionOfUser(groupName string, user string) glb.UserPositionJSO
 	//	userJSON.ScikitData = algorithms.ScikitClassify(groupName, userFingerprint)
 	//}
 	gp := dbm.GM.GetGroup(groupName)
-	_,userJSON.KnnGuess = algorithms.TrackKnn(gp, userFingerprint)
+	_, userJSON.KnnGuess = algorithms.TrackKnn(gp, userFingerprint)
 
 	//_, userJSON.KnnGuess = calculateKnn(userFingerprint)
 	go dbm.SetUserPositionCache(groupName+user, userJSON)
@@ -304,10 +303,6 @@ func Calculate(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
 }
-
-
-
-
 
 // An api that calls getHistoricalUserPositions() & getCurrentPositionOfUser()
 // Returns location of a user, user list or users of a group
@@ -516,24 +511,24 @@ func PutKnnKRange(c *gin.Context) {
 		kRangeListStr := strings.Split(kRangeRawStr, ",")
 		kRange := []int{}
 
-		for _,numStr := range kRangeListStr{
-			num,_ := strconv.Atoi(numStr)
-			kRange = append(kRange,num)
+		for _, numStr := range kRangeListStr {
+			num, _ := strconv.Atoi(numStr)
+			kRange = append(kRange, num)
 		}
 
 		// check kRange length
 		if len(kRange) == 1 || len(kRange) == 2 {
 			//validKs := glb.MakeRange(kRange[0],kRange[0])
-			err := dbm.SetSharedPrf(group,"KnnKRange", kRange)
+			err := dbm.SetSharedPrf(group, "KnnKRange", kRange)
 			if err == nil {
 				//optimizePriorsThreaded(strings.ToLower(group))
 				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K range for " + group + ", now set to " + kRangeRawStr})
 			} else {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			}
-		//}else if( len(kRange) == 2){
-		//	algorithms.ValidKs = glb.MakeRange(kRange[0],kRange[1])
-		}else{
+			//}else if( len(kRange) == 2){
+			//	algorithms.ValidKs = glb.MakeRange(kRange[0],kRange[1])
+		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Knn K range length must be 2 at the maximum value "})
 		}
 	} else {
@@ -561,19 +556,19 @@ func PutKnnMinClusterRSSRange(c *gin.Context) {
 		rssRangeListStr := strings.Split(rssRangeRawStr, ",")
 		minCRssRange := []int{}
 
-		for _,numStr := range rssRangeListStr{
-			num,err := strconv.Atoi(numStr)
-			if err != nil{
+		for _, numStr := range rssRangeListStr {
+			num, err := strconv.Atoi(numStr)
+			if err != nil {
 				glb.Error.Println(err)
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 			}
-			minCRssRange = append(minCRssRange,num)
+			minCRssRange = append(minCRssRange, num)
 		}
 
 		// check kRange length
 		if len(minCRssRange) == 1 || len(minCRssRange) == 2 {
 			//validKs := glb.MakeRange(kRange[0],kRange[0])
-			err := dbm.SetSharedPrf(group,"KnnMinCRssRange", minCRssRange)
+			err := dbm.SetSharedPrf(group, "KnnMinCRssRange", minCRssRange)
 			if err == nil {
 				//optimizePriorsThreaded(strings.ToLower(group))
 				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K range for " + group + ", now set to " + rssRangeRawStr})
@@ -582,14 +577,13 @@ func PutKnnMinClusterRSSRange(c *gin.Context) {
 			}
 			//}else if( len(kRange) == 2){
 			//	algorithms.ValidKs = glb.MakeRange(kRange[0],kRange[1])
-		}else{
+		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Knn K range length must be 2 at the maximum value "})
 		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
 }
-
 
 // Calls setCutoffOverride() and then calls optimizePriorsThreaded()
 // GET parameters: group, cutoff
@@ -608,7 +602,7 @@ func PutMinRss(c *gin.Context) {
 	if group != "noneasdf" && minRss != "none" {
 		newMinRss, err := strconv.Atoi(minRss)
 		if err == nil {
-			err2 := dbm.SetSharedPrf(group, "MinRss",newMinRss)
+			err2 := dbm.SetSharedPrf(group, "MinRss", newMinRss)
 			if err2 == nil {
 				//optimizePriorsThreaded(strings.ToLower(group))
 				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding Minimum RSS for " + group + ", now set to " + minRss})
@@ -749,7 +743,6 @@ func DeleteLocation(c *gin.Context) {
 	}
 }
 
-
 func DeleteLocationBaseDB(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -777,8 +770,6 @@ func DeleteLocationBaseDB(c *gin.Context) {
 	}
 }
 
-
-
 // Is like deleteLocation(), deletes a list of locations instead.
 // GET parameters: group, names
 func DeleteLocations(c *gin.Context) {
@@ -793,7 +784,7 @@ func DeleteLocations(c *gin.Context) {
 	locationsQuery := strings.ToLower(c.DefaultQuery("names", "none"))
 	if groupName != "noneasdf" && locationsQuery != "none" {
 		locations := strings.Split(strings.ToLower(locationsQuery), ",")
-		numChanges := dbm.DeleteLocationsDB(locations,groupName)
+		numChanges := dbm.DeleteLocationsDB(locations, groupName)
 		// todo: can't calculateLearn( there is problem with goroutine)
 		algorithms.CalculateLearn(groupName)
 		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
@@ -846,18 +837,17 @@ func Setfiltermacs(c *gin.Context) {
 		if len(filterMacs.Macs) == 0 {
 			//glb.RuntimeArgs.NeedToFilter[filterMacs.Group] = false
 			//glb.RuntimeArgs.NotNullFilterList[filterMacs.Group] = false
-			dbm.SetRuntimePrf(filterMacs.Group,"NeedToFilter",false)
-			dbm.SetRuntimePrf(filterMacs.Group,"NotNullFilterList",false)
+			dbm.SetRuntimePrf(filterMacs.Group, "NeedToFilter", false)
+			dbm.SetRuntimePrf(filterMacs.Group, "NotNullFilterList", false)
 		} else {
 			//glb.RuntimeArgs.NeedToFilter[filterMacs.Group] = true
 			//glb.RuntimeArgs.NotNullFilterList[filterMacs.Group] = true
-			dbm.SetRuntimePrf(filterMacs.Group,"NeedToFilter",true)
-			dbm.SetRuntimePrf(filterMacs.Group,"NotNullFilterList",true)
+			dbm.SetRuntimePrf(filterMacs.Group, "NeedToFilter", true)
+			dbm.SetRuntimePrf(filterMacs.Group, "NotNullFilterList", true)
 		}
 
-
 		//err := dbm.SetFilterMacDB(filterMacs.Group, filterMacs.Macs)
-		err := dbm.SetSharedPrf(filterMacs.Group,"FilterMacsMap",filterMacs.Macs)
+		err := dbm.SetSharedPrf(filterMacs.Group, "FilterMacsMap", filterMacs.Macs)
 		if err == nil {
 			//glb.RuntimeArgs.FilterMacsMap[filterMacs.Group] = filterMacs.Macs
 			glb.Debug.Println("MacFilter set successfully ")
@@ -959,7 +949,6 @@ func ReformDB(c *gin.Context) {
 	}
 }
 
-
 func CVResults(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -974,7 +963,7 @@ func CVResults(c *gin.Context) {
 		algoAccuracy := dbm.GetCVResults(groupName)
 
 		glb.Debug.Println("Got algorithms accuracy")
-		c.JSON(http.StatusOK, gin.H{"Algorithms Accuracy":algoAccuracy,})
+		c.JSON(http.StatusOK, gin.H{"Algorithms Accuracy": algoAccuracy,})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
@@ -992,11 +981,11 @@ func CalcCompletionLevel(c *gin.Context) {
 
 	if groupName != "noneasdf" {
 		cmpLevel := dbm.GetCalcCompletionLevel()
-		if (cmpLevel>0 && cmpLevel<=1){
+		if (cmpLevel > 0 && cmpLevel <= 1) {
 			//cmpLevel = float64(int(cmpLevel*10000000))/100000
-			glb.Debug.Printf("Calculation level: %f % \n",cmpLevel)
+			glb.Debug.Printf("Calculation level: %f % \n", cmpLevel)
 			c.JSON(http.StatusOK, gin.H{"success": true, "message": cmpLevel,})
-		}else{
+		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "No calculation is running"})
 		}
 
@@ -1004,8 +993,6 @@ func CalcCompletionLevel(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
 }
-
-
 
 func BuildGroup(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
@@ -1027,9 +1014,7 @@ func BuildGroup(c *gin.Context) {
 	}
 }
 
-
-
-func AddArbitLocations(c *gin.Context){
+func AddArbitLocations(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -1039,24 +1024,25 @@ func AddArbitLocations(c *gin.Context){
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
 	type st struct {
-		Locations  []string `json:"locations"`
+		Locations []string `json:"locations"`
 	}
 
 	var tempSt st
 	if groupName != "noneasdf" {
+		//glb.Warning.Println(c.Request.GetBody())
 		if err := c.ShouldBindJSON(&tempSt); err == nil {
 			locations := tempSt.Locations
 			glb.Debug.Println(locations)
-			err := dbm.AddArbitLocations(groupName,locations)
-			if err != nil{
+			err := dbm.AddArbitLocations(groupName, locations)
+			if err != nil {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-			}else{
+			} else {
 				c.JSON(http.StatusOK, gin.H{"success": true})
 			}
-		}else {
+		} else {
 			glb.Warning.Println("Can't bind json")
 			glb.Error.Println(err)
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:"+err.Error()})
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:" + err.Error()})
 			//c.JSON(http.StatusOK, gin.H{"message": "Nums of the FilterMacs are zero", "success": false})
 		}
 	} else {
@@ -1064,7 +1050,7 @@ func AddArbitLocations(c *gin.Context){
 	}
 }
 
-func DelArbitLocations(c *gin.Context){
+func DelArbitLocations(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -1074,23 +1060,23 @@ func DelArbitLocations(c *gin.Context){
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
 	type st struct {
-		Locations  []string `json:"locations"`
+		Locations []string `json:"locations"`
 	}
 	var tempSt st
 
 	if groupName != "noneasdf" {
 		if err := c.ShouldBindJSON(&tempSt); err == nil {
 			locations := tempSt.Locations
-			err := dbm.DelArbitLocations(groupName,locations)
-			if err != nil{
+			err := dbm.DelArbitLocations(groupName, locations)
+			if err != nil {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-			}else{
+			} else {
 				c.JSON(http.StatusOK, gin.H{"success": true})
 			}
-		}else {
+		} else {
 			glb.Warning.Println("Can't bind json")
 			glb.Error.Println(err)
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:"+err.Error()})
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:" + err.Error()})
 			//c.JSON(http.StatusOK, gin.H{"message": "Nums of the FilterMacs are zero", "success": false})
 		}
 	} else {
@@ -1098,7 +1084,7 @@ func DelArbitLocations(c *gin.Context){
 	}
 }
 
-func GetArbitLocations(c *gin.Context){
+func GetArbitLocations(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")

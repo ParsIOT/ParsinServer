@@ -11,7 +11,10 @@
     <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
     <link href="/static/css/custom.css" rel="stylesheet">
     <link href="/static/css/leaflet.css" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
+    <link href="/static/css/plugins/leaflet/leaflet.draw.css" rel="stylesheet">
+    <link href="/static/css/plugins/leaflet/leaflet.toolbar.css" rel="stylesheet">
+    <link href="/static/css/plugins/leaflet/leaflet.draw-toolbar.css" rel="stylesheet">
+    <link type="text/css" href="/static/css/plugins/sweetalert2.css" rel="stylesheet">
     <!-- Font Awesome CSS -->
     <link rel="stylesheet" href="/static/css/font-awesome.min.css">
     <style>
@@ -54,12 +57,42 @@
 <!-- Bootstrap and JQuery JS -->
 <script src="/static/js/jquery-2.0.0.min.js"></script>
 <script src='/static/js/bootstrap.js'></script>
-<script src="/static/js/sweetalert.min.js"></script>
+<script src="/static/js/plugins/sweetalert2.all.min.js"></script>
 <script src='/static/js/leaflet.js'></script>
 
+{{/*leaflet draw*/}}
+<script src="/static/js/plugins/leaflet/leaflet.draw/Leaflet.draw.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/Leaflet.Draw.Event.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/Edit.Poly.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/Edit.SimpleShape.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/Edit.Rectangle.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/Edit.Marker.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/Edit.CircleMarker.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/Edit.Circle.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.Feature.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.Polyline.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.Polygon.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.SimpleShape.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.Rectangle.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.Circle.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.Marker.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.CircleMarker.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/ext/TouchEvents.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/ext/LatLngUtil.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/ext/GeometryUtil.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/ext/LineUtil.Intersect.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/ext/Polyline.Intersect.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/ext/Polygon.Intersect.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/Control.Draw.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/Tooltip.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/Toolbar.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/draw/DrawToolbar.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/edit/EditToolbar.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/EditToolbar.Edit.js"></script>
+<script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/EditToolbar.Delete.js"></script>
 
 <script type="application/javascript">
-    $('#map').css('height', $(window.top).height() - 275);
+    // $('#map').css('height', $(window.top).height() - 275);
     var map = L.map('map', {
         crs: L.CRS.Simple,
         minZoom: -100,
@@ -67,6 +100,167 @@
     var bounds = [[-1700, -1800], [1700, 1800]];
     var image = L.imageOverlay('/static/img/MapFull.png', bounds).addTo(map);
     map.setView([0, 0], -2);
+
+
+    var arbitrary_area_markers = L.featureGroup();
+    map.addLayer(arbitrary_area_markers);
+
+    var drawControl = new L.Control.Draw({
+        position: 'topright',
+        edit: {
+            featureGroup: arbitrary_area_markers,
+            edit: false
+        },
+        draw: {
+            polygon: false,
+            polyline: false,
+            marker: false,
+            circle: false,
+            circlemarker: false
+        }
+    });
+
+    map.addControl(drawControl);
+
+
+    //get Arbitrary Locations from the server and put them on the map
+    $.get("/getArbitLocations", {
+                "group": {{ .Group }},
+            },
+            function (result) {
+                if (result['success']) {
+                    var locations = result["locations"];
+                    locations.forEach((location, index) => {
+                        marker_pos = location.split(',');
+                        [x, y] = [parseInt(marker_pos[0]), parseInt(marker_pos[1])];
+                        L.marker([x, y]).addTo(arbitrary_area_markers)
+                    });
+                } else {
+                    swal("Something went wrong.", data['message'], "error");
+                }
+            }
+    );
+
+
+    map.on('draw:created', function (e) {
+        var layer = e.layer;
+        var layerType = e.layerType;
+        // console.log('A');
+        if (layerType === 'rectangle') {
+            // console.log('B');
+            north_east_point = [layer.getBounds()._northEast.lat, layer.getBounds()._northEast.lng];
+            south_west_point = [layer.getBounds()._southWest.lat, layer.getBounds()._southWest.lng];
+            swal({
+                title: 'Area Markers Creation',
+                text: 'Please Enter Number of Vertical and Horizontal Points to put markers on',
+                type: 'info',
+                showCancelButton: true,
+                html:
+                '<div class="form-horizontal">' +
+                '   <div class="form-group">' +
+                '      <label class="col-lg-6 control-label">Number of Vertical Points</label>' +
+                '      <div class="col-lg-4">' +
+                '          <input type="text" placeholder="Vertical Points" class="form-control" id="y_points_num">' +
+                '      </div>' +
+                '   </div>' +
+                '   <div class="form-group">' +
+                '      <label class="col-lg-6 control-label">Number of Horizontal Points</label>' +
+                '      <div class="col-lg-4">' +
+                '          <input type="text" placeholder="Horizontal Points" class="form-control" id="x_points_num">' +
+                '      </div>' +
+                '   </div>' +
+                '</div>',
+                confirmButtonText: 'Add the markers!'
+            }).then(function (result) {
+                if (result.value) {
+                    var x_points_num = parseInt($('#x_points_num').val()) - 1;
+                    var y_points_num = parseInt($('#y_points_num').val()) - 1;
+                    var data = [];
+                    x_step = parseInt(Math.abs((north_east_point[0] - south_west_point[0]) / x_points_num));
+                    y_step = parseInt(Math.abs((north_east_point[1] - south_west_point[1]) / y_points_num));
+                    for (var x = south_west_point[0]; x <= north_east_point[0]; x += x_step) {
+                        for (var y = south_west_point[1]; y <= north_east_point[1]; y += y_step) {
+                            L.marker([parseInt(x), parseInt(y)]).addTo(arbitrary_area_markers);
+                            data.push(parseInt(x).toString() + '.0' + ',' + parseInt(y).toString() + '.0')
+                        }
+                    }
+                    //send markers to server
+                    $.ajax({
+                        method: "POST",
+                        url: "/addArbitLocations/?group={{ .Group }}",
+                        dataType: "json",
+                        data: JSON.stringify({
+                            "locations": data,
+                        }),
+                        success: function (data, textStatus, jqXHR) {
+                            if (data['success']) {
+                                swal(
+                                        'Created!',
+                                        'The new markers have been created.',
+                                        'success'
+                                )
+                            }
+                            console.log(data)
+                        },
+                        error: function (data, textStatus, jqXHR) {
+                            console.log(data)
+                        }
+                    });
+                    arbitrary_area_markers.addLayer(layer)
+                }
+            })
+        }
+        /*        else {
+                    arbitrary_area_markers.addLayer(layer)
+                }*/
+    });
+
+    map.on('draw:deleted', function (e) {
+        var removed_layers = e.layers;
+        //https://stackoverflow.com/questions/18014907/leaflet-draw-retrieve-layer-type-on-drawedited-event
+        removed_markers = [];
+
+        removed_layers.eachLayer(function (layer) {
+            if (layer instanceof L.Rectangle) {
+                var north_east_vertex = [layer._bounds._northEast.lat, layer._bounds._northEast.lng];
+                var south_west_vertex = [layer._bounds._southWest.lat, layer._bounds._southWest.lng];
+                editedAreas.push({
+                    'area_id': layer.properties.area_id,
+                    'new_bounds': {'north_east': north_east_vertex, 'south_west': south_west_vertex}
+                });
+            }
+
+            if (layer instanceof L.Marker) {
+                marker_pos = (layer.getLatLng().lat).toString() + '.0' + ',' + (layer.getLatLng().lng) + '.0'
+                removed_markers.push(marker_pos)
+
+            }
+
+        });
+        //send removed markers to server
+        $.ajax({
+            method: "POST",
+            url: "/delArbitLocations?group={{ .Group }}",
+            dataType: "json",
+            data: JSON.stringify({
+                "locations": removed_markers,
+            }),
+            success: function (data, textStatus, jqXHR) {
+                if (data['success']) {
+                    swal(
+                            'Removed!',
+                            'The selected markers have been removed.',
+                            'success'
+                    )
+                }
+                console.log(data)
+            },
+            error: function (data, textStatus, jqXHR) {
+                console.log(data)
+            }
+        });
+
+    })
 
 </script>
 </body>
