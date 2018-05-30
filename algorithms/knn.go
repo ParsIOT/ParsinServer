@@ -476,7 +476,7 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 			distance = math.Pow(10, -1*float64(precision))
 			//distance = maxDist
 		}
-		weight := glb.Round(float64(1.0)/(float64(1.0)+distance), 2)
+		weight := glb.Round(float64(1.0)/(float64(1.0)+distance), 5)
 
 		//glb.Debug.Println("distance: ",distance)
  		//glb.Debug.Println("weight: ",weight)
