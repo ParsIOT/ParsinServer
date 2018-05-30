@@ -320,6 +320,19 @@
                             </dd>
                         </dl>
                     {{ end }}
+                         <dl>
+                                <dt>
+                                    <div>
+                                        Accuracy:
+                                    </div>
+                                    &nbsp;
+                                </dt>
+                                <dd>
+                                    <div>
+                                        {{ index $.Dash.LocationAccuracy "all" }}
+                                    </div>
+                                </dd>
+                            </dl>
                     </div>
                 </div>
             </div>
@@ -603,7 +616,7 @@
 
                 },
                 function () {
-                    preConfirm: setInterval(getdata, 100)
+                    preConfirm: setInterval(getdata, 1000)
                     $.get("/calculate", {
                                 "group": "{{ .Group }}",
                             },
