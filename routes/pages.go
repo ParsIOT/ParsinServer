@@ -191,16 +191,21 @@ func SlashDashboard(c *gin.Context) {
 		dash.Locations[n] = []string{}
 		uniqueLocs := md.UniqueLocs
 		sort.Sort(sort.StringSlice(uniqueLocs))
+
 		for _,loc := range uniqueLocs {
 			dash.Locations[n] = append(dash.Locations[n], loc)
-			algoAccuracy := gp.Get_ResultData().Get_AlgoLocAccuracy()
-			for loc,accuracy := range algoAccuracy["knn"]{
-				dash.LocationAccuracy[loc] = accuracy
-			}
+
 			//dash.LocationAccuracy[loc] = gp.Get_Results()[n].Accuracy[loc]
 			//glb.Debug.Println(ps.BayesResults[n].TotalLocations[loc])
 			dash.LocationCount = md.LocCount
 		}
+		totalError := 0
+		algoAccuracy := gp.Get_ResultData().Get_AlgoLocAccuracy()
+		for loc, accuracy := range algoAccuracy["knn"] {
+			dash.LocationAccuracy[loc] = accuracy
+			totalError += accuracy
+		}
+		dash.LocationAccuracy["all"] = totalError
 	}
 	//glb.Debug.Println(dash)
 	c.HTML(http.StatusOK, "dashboard.tmpl", gin.H{
