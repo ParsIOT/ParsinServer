@@ -417,6 +417,8 @@ func CalculateLearn(groupName string) {
 						if err != nil{
 							if err.Error() == "NumofAP_lowerThan_MinApNum"{
 								continue
+							} else if err.Error() == "NoValidFingerprints" {
+								continue
 							}
 						}else{
 							trackedPointsNum++
@@ -463,13 +465,18 @@ func CalculateLearn(groupName string) {
 	glb.ProgressBarCurLevel = 0 // reset progressBar level
 
 	// Select best hyperParameters
-	glb.Debug.Println(totalErrorList)
+	//glb.Debug.Println(totalErrorList)
 	sort.Ints(totalErrorList)
 	bestResult = totalErrorList[0]
 	bestErrHyperParameters := knnErrHyperParameters[bestResult]
 	bestK = bestErrHyperParameters[0].(int)
 	bestMinClusterRss = bestErrHyperParameters[1].(int)
 
+	glb.Debug.Println("CrossValidation resuts:")
+	for _, res := range totalErrorList {
+		glb.Debug.Println(knnErrHyperParameters[res], " : ", res)
+	}
+	glb.Debug.Println()
 	glb.Debug.Println("Best K : ",bestK)
 	glb.Debug.Println("Best MinClusterRss : ",bestMinClusterRss)
 	glb.Debug.Println("Minimum error = ",bestResult)
@@ -512,11 +519,13 @@ func CalculateLearn(groupName string) {
 			if err != nil {
 				if err.Error() == "NumofAP_lowerThan_MinApNum" {
 					continue
+				} else if err.Error() == "NoValidFingerprints" {
+					continue
 				}
 			}else{
 				trackedPointsNum++
 			}
-			//glb.Debug.Println(fp.Location," ==== ",resultDot)
+			glb.Debug.Println(fp.Location, " ==== ", resultDot)
 
 			resx,resy := getDotFromString(resultDot)
 			x,y := getDotFromString(testLocation) // testLocation is fp.Location

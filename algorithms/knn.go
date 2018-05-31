@@ -144,6 +144,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 
 	//rd := gp.Get_RawData()
 	//md := gp.Get_MiddleData()
+
 	tempKnnFingerprints := gp.Get_AlgoData().Get_KnnFPs()
 
 	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
@@ -419,6 +420,9 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 		//	glb.Error.Println(sumW)
 		//	glb.Error.Println(jsonFingerprint)
 		//}
+		if sumW == float64(0) {
+			return errors.New("NoValidFingerprints"), ""
+		}
 
 		currentXint := int(float64(currentX) / sumW)
 		currentYint := int(float64(currentY) / sumW)
