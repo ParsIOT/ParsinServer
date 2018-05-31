@@ -133,7 +133,7 @@
                     locations.forEach((location, index) => {
                         marker_pos = location.split(',');
                         [x, y] = [parseInt(marker_pos[0]), parseInt(marker_pos[1])];
-                        L.marker([x, y]).addTo(arbitrary_area_markers)
+                        L.marker([x, y]).addTo(arbitrary_area_markers);
                     });
                 } else {
                     swal("Something went wrong.", data['message'], "error");
@@ -178,10 +178,20 @@
                     var data = [];
                     x_step = parseInt(Math.abs((north_east_point[0] - south_west_point[0]) / x_points_num));
                     y_step = parseInt(Math.abs((north_east_point[1] - south_west_point[1]) / y_points_num));
+
+                    points_distance = 10;
                     for (var x = south_west_point[0]; x <= north_east_point[0]; x += x_step) {
                         for (var y = south_west_point[1]; y <= north_east_point[1]; y += y_step) {
                             L.marker([parseInt(x), parseInt(y)]).addTo(arbitrary_area_markers);
-                            data.push(parseInt(x).toString() + '.0' + ',' + parseInt(y).toString() + '.0')
+                            data.push(parseInt(x).toString() + '.0' + ',' + parseInt(y).toString() + '.0');
+
+                            //add the other nearby two markers
+                            L.marker([parseInt(x + x_step / points_distance), parseInt(y + y_step / points_distance)]).addTo(arbitrary_area_markers);
+                            data.push((parseInt(x + x_step / points_distance)).toString() + '.0' + ',' + (parseInt(y + y_step / points_distance)).toString() + '.0');
+
+                            L.marker([parseInt(x + x_step / points_distance), parseInt(y)]).addTo(arbitrary_area_markers);
+                            data.push((parseInt(x + x_step / points_distance)).toString() + '.0' + ',' + (parseInt(y)).toString() + '.0');
+
                         }
                     }
                     //send markers to server
@@ -192,7 +202,7 @@
                         data: JSON.stringify({
                             "locations": data,
                         }),
-                        success: function (data, textStatus, jqXHR) {
+                        success: function (data) {
                             if (data['success']) {
                                 swal(
                                         'Created!',
@@ -200,9 +210,8 @@
                                         'success'
                                 )
                             }
-                            console.log(data)
                         },
-                        error: function (data, textStatus, jqXHR) {
+                        error: function (data) {
                             console.log(data)
                         }
                     });
@@ -253,7 +262,6 @@
                             'success'
                     )
                 }
-                console.log(data)
             },
             error: function (data, textStatus, jqXHR) {
                 console.log(data)
