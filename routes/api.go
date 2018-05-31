@@ -1071,6 +1071,7 @@ func DelArbitLocations(c *gin.Context) {
 			if err != nil {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			} else {
+				glb.Debug.Println("Arbit locations are deleted: ", locations)
 				c.JSON(http.StatusOK, gin.H{"success": true})
 			}
 		} else {
@@ -1099,5 +1100,29 @@ func GetArbitLocations(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": true, "locations": locations})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
+	}
+}
+
+func GetLocationMacs(c *gin.Context) {
+	groupName := c.Param("group")
+	location := c.Param("location")
+
+	if len(groupName) != 0 && len(location) != 0 {
+		gp := dbm.GM.GetGroup(groupName)
+		fpInMemory := gp.Get_RawData().Get_Fingerprints()
+
+		macs := []string{}
+		for _, fp := range fpInMemory {
+			if fp.Location == location {
+				for _, rt := range fp.WifiFingerprint {
+					if !glb.StringInSlice(rt.Mac, macs) {
+						macs = append(macs, rt.Mac)
+					}
+				}
+			}
+		}
+		c.JSON(http.StatusOK, gin.H{"success": true, "macs": macs})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or location not mentioned"})
 	}
 }

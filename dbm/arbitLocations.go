@@ -32,6 +32,8 @@ func DelArbitLocations(groupName string, delLocList []string) error {
 	shrPrf := GetSharedPrf(groupName)
 	allLocations := shrPrf.ArbitLocations
 
+	//glb.Debug.Println(allLocations)
+	//glb.Debug.Println(delLocList)
 	tempLocationList := []string{}
 
 	for _,loc := range allLocations{
@@ -39,6 +41,7 @@ func DelArbitLocations(groupName string, delLocList []string) error {
 			tempLocationList = append(tempLocationList, loc)
 		}
 	}
+	//glb.Debug.Println(tempLocationList)
 
 	err := SetSharedPrf(groupName, "ArbitLocations", tempLocationList)
 

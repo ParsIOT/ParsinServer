@@ -783,18 +783,18 @@ func BuildGroupDB(groupName string){
 	fingerprintInMemory := make(map[string]parameters.Fingerprint)
 	for key,fp := range fingerprintInMemoryRaw{
 		fp.Location = glb.RoundLocationDim(fp.Location)
-		glb.Debug.Println(fp.Location)
+		//glb.Debug.Println(fp.Location)
 		fingerprintInMemory[key] = fp
 	}
-	glb.Debug.Println(fingerprintOrdering)
+	//glb.Debug.Println(fingerprintOrdering)
 	//glb.Debug.Println(fingerprintInMemory[fingerprintOrdering[0]])
 	//glb.Debug.Println(groupName)
 	gp := GM.GetGroup(groupName)
 	rd := gp.Get_RawData()
 	rd.Set_Fingerprints(fingerprintInMemory)
 	rd.Set_FingerprintsOrdering(fingerprintOrdering)
-	glb.Debug.Println(GM.isLoad[groupName])
+	//glb.Debug.Println(GM.isLoad[groupName])
 	//GM.InstantFlushDB(groupName)
-	glb.Debug.Println(gp.Get_RawData_Val().FingerprintsOrdering)
+	//glb.Debug.Println(gp.Get_RawData_Val().FingerprintsOrdering)
 }
 

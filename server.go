@@ -248,6 +248,7 @@ func main() {
 		{
 			//Todo: Url must be same format to mention group name (now, group can be url param or be GET param)
 			needToLoadSettings.GET("/dashboard/:group", routes.SlashDashboard)
+			needToLoadSettings.GET("/explore/:group/:network/:location", routes.GetLocationMacs)
 			//needToLoadSettings.GET("/explore/:group/:network/:location", routes.SlashExplore2)
 			//needToLoadSettings.GET("/pie/:group/:network/:location", routes.SlashPie)
 			needToLoadSettings.GET("/livemap/:group", routes.LiveLocationMap)
