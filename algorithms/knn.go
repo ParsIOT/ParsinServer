@@ -426,7 +426,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 
 		currentXint := int(float64(currentX) / sumW)
 		currentYint := int(float64(currentY) / sumW)
-		//glb.Debug.Println()
+
 		//glb.Debug.Println(jsonFingerprint.Location)
 		//glb.Debug.Println(glb.IntToString(currentXint) + ".0," + glb.IntToString(currentYint)+".0")
 		//Debug.Println(currentX)

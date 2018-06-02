@@ -113,6 +113,7 @@ type ResultDataStruct struct{
 	Results         map[string]parameters.Fingerprint
 	AlgoAccuracy    map[string]int
 	AlgoAccuracyLoc map[string]map[string]int
+	UserHistory     map[string][]glb.UserPositionJSON
 }
 
 func (st *ResultDataStruct) Lock() {
@@ -517,12 +518,17 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group){
 				resultData.RUnlock()
 				resultData.Lock()
 				resultData.Results = make(map[string]parameters.Fingerprint)  // delete trackresults data
+				//resultData.UserHistory = make(map[string][]string)
 				resultData.Unlock()
 				//glb.Error.Println(resultData)
-				resultData.RLock()
+				resultData.Lock()
 
+				tempUserHistory := resultData.UserHistory
+				resultData.UserHistory = make(map[string][]glb.UserPositionJSON)
 				v, err := resultData.MarshalJSON()
-				resultData.RUnlock()
+				resultData.UserHistory = tempUserHistory
+
+				resultData.Unlock()
 				if err != nil {
 					fmt.Errorf(err.Error())
 				}
@@ -882,6 +888,7 @@ func (gp *Group) NewResultDataStruct() *ResultDataStruct {
 		Results:         make(map[string]parameters.Fingerprint),
 		AlgoAccuracy:    make(map[string]int),
 		AlgoAccuracyLoc: make(map[string]map[string]int),
+		UserHistory:     make(map[string][]glb.UserPositionJSON),
 	}
 }
 
@@ -1511,7 +1518,6 @@ func (ad *AlgoDataStruct) Set_KnnFPs(new_item  parameters.KnnFingerprints){
 
 func (rs *ResultDataStruct) Append(fp parameters.Fingerprint){
 	defer rs.SetDirtyBit()
-
 	rs.Lock()
 	rs.Results[strconv.FormatInt(fp.Timestamp, 10)] = fp
 	rs.Unlock()
@@ -1538,7 +1544,7 @@ func (rs *ResultDataStruct) Get_AlgoLocAccuracy() map[string]map[string]int  {
 	return item
 }
 func (rs *ResultDataStruct) Set_AlgoLocAccuracy(algoName string,loc string, distError int){
-	defer rs.SetDirtyBit()
+	//defer rs.SetDirtyBit()
 
 	//glb.Error.Println(algoName," ",loc," ",distError)
 	rs.Lock()
@@ -1550,4 +1556,37 @@ func (rs *ResultDataStruct) Set_AlgoLocAccuracy(algoName string,loc string, dist
 		rs.AlgoAccuracyLoc[algoName][loc] = distError
 	}
 	rs.Unlock()
+}
+
+func (rs *ResultDataStruct) Append_UserHistory(user string, userPos glb.UserPositionJSON) {
+	//defer rs.SetDirtyBit()
+
+	rs.Lock()
+	if _, ok := rs.UserHistory[user]; ok {
+		if len(rs.UserHistory[user]) < glb.MaxUserHistoryLen {
+			rs.UserHistory[user] = append(rs.UserHistory[user], userPos)
+		} else {
+			tempUserHistory := []glb.UserPositionJSON{}
+			tempUserHistory = append(tempUserHistory, rs.UserHistory[user][1:]...)
+			tempUserHistory = append(tempUserHistory, userPos)
+			rs.UserHistory[user] = tempUserHistory
+		}
+	} else {
+		rs.UserHistory[user] = []glb.UserPositionJSON{userPos}
+		//glb.Debug.Println(rs.UserHistory[user])
+	}
+	rs.Unlock()
+}
+func (rs *ResultDataStruct) Get_UserHistory(user string) []glb.UserPositionJSON {
+	//defer rs.SetDirtyBit()
+
+	history := []glb.UserPositionJSON{}
+	rs.RLock()
+	if userHistory, ok := rs.UserHistory[user]; ok {
+		history = userHistory
+	} else {
+		history = []glb.UserPositionJSON{}
+	}
+	rs.RUnlock()
+	return history
 }

@@ -194,8 +194,9 @@ func GetHistoricalUserPositions(groupName string, user string, n int) []glb.User
 	userJSONs := make([]glb.UserPositionJSON, len(fingerprints))
 	for i, fingerprint := range fingerprints {
 		var userJSON glb.UserPositionJSON
-		UTCfromUnixNano := time.Unix(0, fingerprint.Timestamp)
-		userJSON.Time = UTCfromUnixNano.String()
+		//UTCfromUnixNano := time.Unix(0, fingerprint.Timestamp)
+		//userJSON.Time = UTCfromUnixNano.String()
+		userJSON.Time = fingerprint.Timestamp
 		//bayesGuess, bayesData := bayes.CalculatePosterior(fingerprint, nil)
 		//userJSON.BayesGuess = bayesGuess
 		//userJSON.BayesData = bayesData

@@ -37,8 +37,8 @@ func TrackFingerprintsEmptyPosition(group string)(map[string]glb.UserPositionJSO
 			if _, ok := userPositions[v2.Username]; !ok {
 				timestampString := string(k)
 				timestampUnixNano, _ := strconv.ParseInt(timestampString, 10, 64)
-				UTCfromUnixNano := time.Unix(0, timestampUnixNano)
-				foo := glb.UserPositionJSON{Time: UTCfromUnixNano.String()}
+				//UTCfromUnixNano := time.Unix(0, timestampUnixNano)
+				foo := glb.UserPositionJSON{Time: timestampUnixNano}
 				userPositions[v2.Username] = foo
 				userFingerprints[v2.Username] = v2
 				numUsersFound++
@@ -84,8 +84,9 @@ func TrackFingeprintEmptyPosition(user string, group string)(glb.UserPositionJSO
 			if v2.Username == user {
 				timestampString := string(k)
 				timestampUnixNano, _ := strconv.ParseInt(timestampString, 10, 64)
-				UTCfromUnixNano := time.Unix(0, timestampUnixNano)
-				userJSON.Time = UTCfromUnixNano.String()
+				//UTCfromUnixNano := time.Unix(0, timestampUnixNano)
+				//userJSON.Time = UTCfromUnixNano.String()
+				userJSON.Time = timestampUnixNano
 				userFingerprint = v2
 				return nil
 			}

@@ -47,13 +47,13 @@ var RuntimeArgs struct {
 }
 
 type UserPositionJSON struct {
-	Time       interface{}        `json:"time"`
-	BayesGuess interface{}        `json:"bayesguess"`
+	Time       int64              `json:"time"`
+	BayesGuess string             `json:"bayesguess"`
 	BayesData  map[string]float64 `json:"bayesdata"`
-	SvmGuess   interface{}        `json:"svmguess"`
+	SvmGuess   string             `json:"svmguess"`
 	SvmData    map[string]float64 `json:"svmdata"`
-	ScikitData     map[string]string `json:"rfdata"`
-	KnnGuess   interface{}        `json:"knnguess"`
+	ScikitData map[string]string  `json:"rfdata"`
+	KnnGuess   string             `json:"knnguess"`
 }
 
 //	filterMacs is used for set filtermacs

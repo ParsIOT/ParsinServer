@@ -13,7 +13,6 @@ import (
 	"ParsinServer/algorithms/clustering"
 	"sort"
 	"runtime"
-	"time"
 )
 
 var threadedCross bool = false //don't use, it's not safe now!
@@ -45,7 +44,9 @@ func TrackFingerprintPOST(c *gin.Context) {
 	if glb.BindJSON(&jsonFingerprint, c) == nil {
 		if (len(jsonFingerprint.WifiFingerprint) >= glb.MinApNum) {
 			glb.Debug.Println("Track json: ",jsonFingerprint)
-			message, success, bayesGuess, _, svmGuess, _, knnGuess, scikitData  := TrackFingerprint(jsonFingerprint)
+			message, success, location, bayesGuess, _, svmGuess, _, knnGuess, scikitData := TrackFingerprint(jsonFingerprint)
+
+			knnGuess = location // todo: this is done for compatability ,use 'location' instead of knn
 			if success {
 				scikitDataStr := glb.StringMap2String(scikitData)
 				resJsonMap := gin.H{"message": message, "success": true, "bayes": bayesGuess, "svm": svmGuess, "knn": knnGuess}
@@ -143,7 +144,7 @@ func LearnFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool) {
 }
 
 // call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
-func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, string, map[string]float64, string, map[string]float64, string, map[string]string) {
+func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, string, string, map[string]float64, string, map[string]float64, string, map[string]string) {
 	// Classify with filter fingerprint
 	//fullFingerprint := jsonFingerprint
 
@@ -158,16 +159,17 @@ func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, str
 	scikitData := make(map[string]string)
 	knnGuess := ""
 	message := ""
+	location := ""
 
 	parameters.CleanFingerprint(&jsonFingerprint)
 	if !dbm.GroupExists(jsonFingerprint.Group) || len(jsonFingerprint.Group) == 0 {
-		return "You should insert fingerprints before tracking", false, "", bayesData, "", make(map[string]float64), "", make(map[string]string)
+		return "You should insert fingerprints before tracking", false, "", "", bayesData, "", make(map[string]float64), "", make(map[string]string)
 	}
 	if len(jsonFingerprint.WifiFingerprint) == 0 {
-		return "No fingerprints found to track, see API", false, "", bayesData, "", make(map[string]float64), "", make(map[string]string)
+		return "No fingerprints found to track, see API", false, "", "", bayesData, "", make(map[string]float64), "", make(map[string]string)
 	}
 	if len(jsonFingerprint.Username) == 0 {
-		return "No username defined, see API", false, "", bayesData, "", make(map[string]float64), "", make(map[string]string)
+		return "No username defined, see API", false, "", "", bayesData, "", make(map[string]float64), "", make(map[string]string)
 	}
 
 	wasLearning, ok := dbm.GetLearningCache(strings.ToLower(jsonFingerprint.Group))
@@ -249,7 +251,7 @@ func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, str
 
 	// Send out the final responses
 	var userJSON glb.UserPositionJSON
-	userJSON.Time = time.Now().String()
+	userJSON.Time = jsonFingerprint.Timestamp
 	userJSON.BayesGuess = bayesGuess
 	userJSON.BayesData = bayesData
 	userJSON.SvmGuess = svmGuess
@@ -258,6 +260,19 @@ func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, str
 	userJSON.KnnGuess = knnGuess
 
 	go dbm.SetUserPositionCache(strings.ToLower(jsonFingerprint.Group)+strings.ToLower(jsonFingerprint.Username), userJSON)
+	go gp.Get_ResultData().Append_UserHistory(jsonFingerprint.Username, userJSON)
+
+	// User history effect
+	location = knnGuess
+	userHistory := gp.Get_ResultData().Get_UserHistory(jsonFingerprint.Username)
+	location = HistoryEffect(userJSON, userHistory)
+
+	glb.Debug.Println("Knn guess: ", knnGuess)
+	glb.Debug.Println("location: ", location)
+
+	userJSON.KnnGuess = location //todo: must add location as seprated variable from knnguess in glb.UserPositionJSON
+
+	//glb.Debug.Println(len(gp.Get_ResultData().Get_UserHistory(jsonFingerprint.Username)))
 
 	// Send MQTT if needed
 	if glb.RuntimeArgs.Mqtt {
@@ -278,9 +293,9 @@ func TrackFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool, str
 		//go routes.SendMQTTLocation(string(mqttMessage), jsonFingerprint.Group, jsonFingerprint.Username)
 	}
 
+	glb.Debug.Println(userJSON)
 
-
-	return message, true, bayesGuess, bayesData, svmGuess, svmData, knnGuess, scikitData
+	return message, true, location, bayesGuess, bayesData, svmGuess, svmData, knnGuess, scikitData
 
 }
 
