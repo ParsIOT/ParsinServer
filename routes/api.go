@@ -667,6 +667,31 @@ func EditLoc(c *gin.Context) {
 	}
 }
 
+func EditLocBaseDb(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := c.DefaultQuery("group", "noneasdf")
+	oldloc := strings.TrimSpace(c.DefaultQuery("oldloc", "none"))
+	newloc := strings.TrimSpace(c.DefaultQuery("newloc", "none"))
+	if groupName != "noneasdf" && oldloc != "none" && newloc != "none" {
+		numChanges := dbm.EditLocBaseDB(oldloc, newloc, groupName)
+		dbm.EditLocDB(oldloc, newloc, groupName)
+		glb.Debug.Println("Changed location of " + strconv.Itoa(numChanges) + " fingerprints")
+		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
+		algorithms.CalculateLearn(groupName)
+		c.JSON(http.StatusOK, gin.H{"message": "Changed location of " + strconv.Itoa(numChanges) + " fingerprints", "success": true})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
+	}
+}
+
+
+
 // Changes a mac name in db(fingerprints and fingerprints-track buckets)
 // GET parameters: group, oldmac, newmac
 func EditMac(c *gin.Context) {
@@ -1006,6 +1031,7 @@ func BuildGroup(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
 
 	if groupName != "noneasdf" {
+		dbm.ReformDBDB(groupName)
 		dbm.BuildGroupDB(groupName)
 		algorithms.CalculateLearn(groupName)
 		glb.Debug.Println("Struct reformed successfully")

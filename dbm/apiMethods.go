@@ -339,6 +339,88 @@ func EditLocDB(oldloc string, newloc string, groupName string) int{
 	return numChanges
 }
 
+func EditLocBaseDB(oldloc string, newloc string, groupName string) int {
+	toUpdate := make(map[string]parameters.Fingerprint)
+	numChanges := 0
+	//glb.Debug.Println(groupName)
+	_, fingerprintInMemoryRaw, _ := GetLearnFingerPrints(groupName, false)
+	//if err!= nil{r
+	//	return 0
+	//}
+	//glb.Debug.Println(oldloc)
+	//glb.Debug.Println(newloc)
+	for fpTime, fp := range fingerprintInMemoryRaw {
+		if fp.Location == oldloc {
+			tempFp := fp
+			tempFp.Location = newloc
+			toUpdate[fpTime] = tempFp
+		}
+	}
+	//glb.Debug.Println(fingerprintInMemory)
+	//for fpTime,fp := range toUpdate{
+	//	fingerprintInMemoryRaw[fpTime] = fp
+	//}
+
+	numChanges += len(toUpdate)
+
+	//rd.SetDirtyBit()
+	//GM.InstantFlushDB(groupName)
+
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
+	defer db.Close()
+	if err != nil {
+		glb.Error.Println(err)
+	}
+	db.Update(func(tx *bolt.Tx) error {
+		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
+		if err != nil {
+			return fmt.Errorf("create bucket: %s", err)
+		}
+
+		for k, v := range toUpdate {
+			bucket.Put([]byte(k), []byte(string(parameters.DumpFingerprint(v))))
+		}
+		return nil
+	})
+
+	//glb.Debug.Println(numChanges)
+
+	//
+	//toUpdateRes := make(map[string]string)
+	//
+	//db.View(func(tx *bolt.Tx) error {
+	//	b := tx.Bucket([]byte("Results"))
+	//	if b != nil {
+	//		c := b.Cursor()
+	//		for k, v := c.Last(); k != nil; k, v = c.Prev() {
+	//			v2 := LoadFingerprint(v, false)
+	//			if v2.Location == oldloc {
+	//				v2.Location = newloc
+	//				toUpdateRes[string(k)] = string(parameters.DumpFingerprint(v2))
+	//			}
+	//		}
+	//	}
+	//	return nil
+	//})
+	//
+	//db.Update(func(tx *bolt.Tx) error {
+	//	bucket, err := tx.CreateBucketIfNotExists([]byte("Results"))
+	//	if err != nil {
+	//		return fmt.Errorf("create bucket: %s", err)
+	//	}
+	//
+	//	for k, v := range toUpdateRes {
+	//		bucket.Put([]byte(k), []byte(v))
+	//	}
+	//	return nil
+	//})
+	//numChanges += len(toUpdateRes)
+
+	//return numChanges,toUpdate
+	return numChanges
+}
+
+
 
 // Direct access to db to change Mac names in fingerprints
 func EditMacDB(oldmac string, newmac string, groupName string) int{
@@ -779,7 +861,7 @@ func GetCalcCompletionLevel() float64{
 	return level
 }
 
-func BuildGroupDB(groupName string){
+func BuildGroupDB(groupName string) { //Todo: After each update in groupcache.go rerun this function
 	fingerprintOrdering,fingerprintInMemoryRaw,_ := GetLearnFingerPrints(groupName,false)
 	fingerprintInMemory := make(map[string]parameters.Fingerprint)
 	for key,fp := range fingerprintInMemoryRaw{
@@ -790,7 +872,8 @@ func BuildGroupDB(groupName string){
 	//glb.Debug.Println(fingerprintOrdering)
 	//glb.Debug.Println(fingerprintInMemory[fingerprintOrdering[0]])
 	//glb.Debug.Println(groupName)
-	gp := GM.GetGroup(groupName)
+	//gp := GM.GetGroup(groupName)
+	gp := GM.NewGroup(groupName)
 	rd := gp.Get_RawData()
 	rd.Set_Fingerprints(fingerprintInMemory)
 	rd.Set_FingerprintsOrdering(fingerprintOrdering)
