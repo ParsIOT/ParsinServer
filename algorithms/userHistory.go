@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func HistoryEffect(currentUserPos glb.UserPositionJSON, userHistory []glb.UserPositionJSON) string {
+func HistoryEffect(currentUserPos glb.UserPositionJSON, userHistory []glb.UserPositionJSON) (string, float64) {
 
 	glb.Debug.Println(currentUserPos)
 	glb.Debug.Println(userHistory)
@@ -24,37 +24,6 @@ func HistoryEffect(currentUserPos glb.UserPositionJSON, userHistory []glb.UserPo
 	resY := float64(0)
 	sumFactor := float64(0)
 
-	//for i,factor := range glb.UserHistoryEffectFactors{
-	//	if i==len(locHistory){
-	//		x_y := strings.Split(currentLoc, ",")
-	//		if len(x_y) < 2 {
-	//			//err := errors.New("Location names aren't in the format of x,y")
-	//			glb.Error.Println("Location names aren't in the format of x,y")
-	//		}
-	//		curLocXstr := x_y[0]
-	//		curLocYstr := x_y[1]
-	//		curLocX, _ := strconv.ParseFloat(curLocXstr,64)
-	//		curLocY, _ := strconv.ParseFloat(curLocYstr,64)
-	//
-	//		resX += curLocX*factor
-	//		resY += curLocY*factor
-	//	}else{
-	//		tempLoc := locHistory[i]
-	//		tempx_y := strings.Split(tempLoc, ",")
-	//		if len(tempx_y) < 2 {
-	//			glb.Error.Println("Location names aren't in the format of x,y")
-	//		}
-	//		tempLocXstr := tempx_y[0]
-	//		tempLocYstr := tempx_y[1]
-	//		tempLocX, _ := strconv.ParseFloat(tempLocXstr,64)
-	//		tempLocY, _ := strconv.ParseFloat(tempLocYstr,64)
-	//
-	//		resX += tempLocX*factor
-	//		resY += tempLocY*factor
-	//	}
-	//
-	//	sumFactor += factor
-	//}
 	lastFPTime := tsHistory[len(locHistory)-1]
 
 	gaussModel := NewGaussian(0, glb.UserHistoryGaussVariance)
@@ -101,5 +70,75 @@ func HistoryEffect(currentUserPos glb.UserPositionJSON, userHistory []glb.UserPo
 	resX /= sumFactor
 	resY /= sumFactor
 
-	return glb.IntToString(int(resX)) + ".0," + glb.IntToString(int(resY)) + ".0"
+	result := glb.IntToString(int(resX)) + ".0," + glb.IntToString(int(resY)) + ".0"
+	radius := GetAccuracyCircleRadius(result, locHistory)
+
+	return result, radius
+}
+
+func HistoryEffectStaticFactors(currentUserPos glb.UserPositionJSON, userHistory []glb.UserPositionJSON) (string, float64) {
+
+	locHistory := []string{}
+	for _, userPos := range userHistory {
+		locHistory = append(locHistory, userPos.KnnGuess)
+	}
+	currentLoc := currentUserPos.KnnGuess
+
+	resX := float64(0)
+	resY := float64(0)
+	sumFactor := float64(0)
+
+	for i, factor := range glb.UserHistoryEffectFactors {
+		if i == len(locHistory) {
+			x_y := strings.Split(currentLoc, ",")
+			if len(x_y) < 2 {
+				//err := errors.New("Location names aren't in the format of x,y")
+				glb.Error.Println("Location names aren't in the format of x,y")
+			}
+			curLocXstr := x_y[0]
+			curLocYstr := x_y[1]
+			curLocX, _ := strconv.ParseFloat(curLocXstr, 64)
+			curLocY, _ := strconv.ParseFloat(curLocYstr, 64)
+
+			resX += curLocX * factor
+			resY += curLocY * factor
+		} else {
+			tempLoc := locHistory[i]
+			tempx_y := strings.Split(tempLoc, ",")
+			if len(tempx_y) < 2 {
+				glb.Error.Println("Location names aren't in the format of x,y")
+			}
+			tempLocXstr := tempx_y[0]
+			tempLocYstr := tempx_y[1]
+			tempLocX, _ := strconv.ParseFloat(tempLocXstr, 64)
+			tempLocY, _ := strconv.ParseFloat(tempLocYstr, 64)
+
+			resX += tempLocX * factor
+			resY += tempLocY * factor
+		}
+
+		sumFactor += factor
+	}
+	resX /= sumFactor
+	resY /= sumFactor
+
+	result := glb.IntToString(int(resX)) + ".0," + glb.IntToString(int(resY)) + ".0"
+
+	radius := GetAccuracyCircleRadius(result, locHistory)
+
+	return result, radius
+}
+
+func GetAccuracyCircleRadius(center string, userHistory []string) float64 {
+	maxDist := float64(0)
+	x, y := getDotFromString(center)
+	for _, xy := range userHistory {
+		resx, resy := getDotFromString(xy)
+		dist := calcDist(x, y, resx, resy)
+		//glb.Debug.Println(resx,",",resy)
+		if dist > maxDist {
+			maxDist = dist
+		}
+	}
+	return glb.Round(maxDist, 2)
 }

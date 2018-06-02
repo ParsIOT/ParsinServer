@@ -8,9 +8,10 @@ import (
 	"ParsinServer/glb"
 	"reflect"
 	"strconv"
-	"github.com/jinzhu/copier"
 )
 
+//Todo: After each update in groupcache.go, rebuild the group (use /buildgroup)
+//Todo: After any change in structs rerun "easyjson -all groupcache.go" in dbm directory
 var GM GroupManger
 
 
@@ -402,6 +403,7 @@ func (gm *GroupManger) LoadGroup(groupName string){
 			gp.ResultData = resultData
 			gp.ResultData.mutex = &sync.RWMutex{}
 			gp.ResultData.Results = make(map[string]parameters.Fingerprint)
+
 			gp.Unlock()
 		}
 
@@ -443,6 +445,7 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group){
 			fmt.Errorf("DB isn't loaded!")
 			return
 		} else {
+			glb.Debug.Println("Flushing :", groupName)
 			//glb.Debug.Println("DB is loaded")
 			//DBLock.Lock()
 			dbData := make(map[string][]byte)
@@ -570,7 +573,7 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group){
 
 				for key,val := range dbData{
 					if(key == "Results"){
-						glb.Debug.Println(resultDataList)
+						//glb.Debug.Println(resultDataList)
 						for timeStamp,fp := range resultDataList{ // must put the list to db instantly
 							err1 := SetByteResourceInBucket(parameters.DumpFingerprint(fp),timeStamp,"Results",groupName)
 							if err1 != nil{
@@ -618,13 +621,14 @@ func (gm *GroupManger) Flusher(){
 		var groups map[string]*Group
 
 		GM.RLock()
-		copier.Copy(groups, GM.groups)
+		groups = GM.groups
 		GM.RUnlock()
 		for groupName,gp := range groups{
 			gp.RLock()
 			Permanent := gp.Permanent
 			gp.RUnlock()
 			if Permanent {
+				//glb.Debug.Println("Flushing: ",groupName)
 				GM.FlushDB(groupName,gp)
 			}
 		}
@@ -1572,6 +1576,10 @@ func (rs *ResultDataStruct) Append_UserHistory(user string, userPos glb.UserPosi
 			rs.UserHistory[user] = tempUserHistory
 		}
 	} else {
+		//Todo: must provide standard way when new item added to groupcache structs 
+		if rs.UserHistory == nil { // in old db there is now userHistory
+			rs.UserHistory = make(map[string][]glb.UserPositionJSON)
+		}
 		rs.UserHistory[user] = []glb.UserPositionJSON{userPos}
 		//glb.Debug.Println(rs.UserHistory[user])
 	}
