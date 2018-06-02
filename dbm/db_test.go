@@ -438,7 +438,6 @@ func TestLoadSharedPreferences(t *testing.T){
 	shrPrfRes := RawSharedPreferences{
 		Mixin:     			float64(0.1),
 		Cutoff:    			float64(0.01),
-		KnnK:      			int(30),
 		MinRss:    			int(-110),
 		MinRssOpt: 			int(-100),
 		FilterMacsMap: 		[]string{"b4:52:7d:26:e3:f3","50:67:f0:7b:02:c7"},
@@ -455,7 +454,6 @@ func TestPutSharedPreferences(t *testing.T){
 	shrPrf := RawSharedPreferences{
 		Mixin:     			float64(0.01),
 		Cutoff:    			float64(0.001),
-		KnnK:      			int(20),
 		MinRss:    			int(-130),
 		MinRssOpt: 			int(-110),
 		FilterMacsMap: 		[]string{"b4:52:7d:26:e2:c3","50:67:f0:7c:01:a1"},
