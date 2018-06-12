@@ -230,6 +230,8 @@
                 bestK:{{ $.bestK }}
                 <br>
                 bestMinClusterRss:{{ $.bestMinClusterRss }}
+                <br>
+                MaxMovement: {{ $.maxMovement}}
             </div>
         </div>
     </div>
@@ -253,8 +255,8 @@
                         </button>
                     </div>
                     <div class="col-sm-2 col-xs-6">
-                        <button type="submit" class="btn btn-danger btn-block" id="setMixin"
-                                title="Set Mixin for parameters.">Set Mixin
+                        <button type="submit" class="btn btn-danger btn-block" id="setMaxMovement"
+                                title="Set Max Movement parameter.">Set MaxMovement
                         </button>
                     </div>
                     <div class="col-sm-2 col-xs-6">
@@ -953,10 +955,10 @@
                 });
     });
 
-    $('#setMixin').click(function () {
+    $('#setMaxMovement').click(function () {
         swal({
-                    title: "Set Mixin",
-                    text: "Enter the new Mixin (between 0 and 1, or -1 to set automatically):",
+                    title: "Set MaxMovement",
+                    text: "Enter the new MaxMovement (between 0 and 1, or -1 to set automatically):",
                     type: "input",
                     showCancelButton: true,
                     closeOnConfirm: false,
@@ -969,7 +971,7 @@
                         return false
                     }
                     $.ajax({
-                        url: "/mixin?group={{ .Group }}&mixin=" + inputValue,
+                        url: "/SetMaxMovement?group={{ .Group }}&maxMovement=" + inputValue,
                         type: "PUT",
                         success: function (data) {
                             console.log(data);
@@ -1007,7 +1009,7 @@
                     }
 
                     $.ajax({
-                        url: "/KnnMinClusterRSSRange?group={{ .Group }}&range=" + inputValue,
+                        url: "/SetKnnMinClusterRSSRange?group={{ .Group }}&range=" + inputValue,
                         type: "PUT",
                         success: function (data) {
                             console.log(data);
@@ -1045,7 +1047,7 @@
                     }
 
                     $.ajax({
-                        url: "/KnnKRange?group={{ .Group }}&range=" + inputValue,
+                        url: "/SetKnnKRange?group={{ .Group }}&range=" + inputValue,
                         type: "PUT",
                         success: function (data) {
                             console.log(data);

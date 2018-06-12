@@ -183,6 +183,7 @@ func SlashDashboard(c *gin.Context) {
 	knnAlgo := gp.Get_AlgoData().Get_KnnFPs()
 	bestK := knnAlgo.K
 	bestMinClusterRss := knnAlgo.MinClusterRss
+	maxMovement := dbm.GetSharedPrf(groupName).MaxMovement
 
 	for n := range md.NetworkLocs {
 		//dash.Mixin[n] = gp.Get_Priors()[n].Special["MixIn"]
@@ -209,14 +210,15 @@ func SlashDashboard(c *gin.Context) {
 	}
 	//glb.Debug.Println(dash)
 	c.HTML(http.StatusOK, "dashboard.tmpl", gin.H{
-		"Message": glb.RuntimeArgs.Message,
-		"Group":   groupName,
-		"Dash":    dash,
-		"Users":   people,
-		"kRange":	kRange,
-		"knnMinCRssRange": knnMinCRssRange,
-		"bestK": bestK,
+		"Message":           glb.RuntimeArgs.Message,
+		"Group":             groupName,
+		"Dash":              dash,
+		"Users":             people,
+		"kRange":            kRange,
+		"knnMinCRssRange":   knnMinCRssRange,
+		"bestK":             bestK,
 		"bestMinClusterRss": bestMinClusterRss,
+		"maxMovement":       maxMovement,
 	})
 }
 

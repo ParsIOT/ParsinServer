@@ -25,6 +25,8 @@ var UserHistoryTimeDelayFactor float64
 // Default K in KNN algorithm
 var DefaultKnnMinCRssRange,DefaultKnnKRange []int
 
+var MaxMovement float64
+
 func init() {
 	DefaultMixin = float64(0.1)
 	DefaultCutoff = float64(0.01)
@@ -40,5 +42,5 @@ func init() {
 	UserHistoryEffectFactors = []float64{0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.5, 0.7, 0.8, 1}
 	UserHistoryGaussVariance = 0.15
 	UserHistoryTimeDelayFactor = 10000
-
+	MaxMovement = float64(400)
 }

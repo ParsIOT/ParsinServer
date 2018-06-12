@@ -506,7 +506,7 @@ func MapLike(obj1in interface{},obj2in  interface{}) bool {
 
 func RoundLocationDim(loc string) string{
 	x_y := strings.Split(loc, ",")
-	if len(x_y) < 2 {
+	if !(len(x_y) == 2) {
 		err := errors.New("Location names aren't in the format of x,y")
 		Debug.Println(err)
 	}
@@ -632,4 +632,30 @@ func PowBig(a, n int) *big.Int {
 		n /= 2
 	}
 	return res
+}
+
+func IsValidXY(dot string) bool {
+	x_y := strings.Split(dot, ",")
+	if len(x_y) == 2 {
+		if (len(strings.TrimSpace(x_y[0])) > 0) && (len(strings.TrimSpace(x_y[1])) > 0) {
+			_, err1 := strconv.ParseFloat(x_y[0], 64)
+			_, err2 := strconv.ParseFloat(x_y[1], 64)
+			if err1 == nil && err2 == nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func GetDotFromString(dotStr string) (float64, float64) {
+	x_y := strings.Split(dotStr, ",")
+	locXstr := x_y[0]
+	locYstr := x_y[1]
+	locX, _ := strconv.ParseFloat(locXstr, 64)
+	locY, _ := strconv.ParseFloat(locYstr, 64)
+	return locX, locY
+}
+func CalcDist(x1, y1, x2, y2 float64) float64 {
+	return math.Pow(math.Pow(float64(x1-x2), 2)+math.Pow(float64(y1-y2), 2), 0.5)
 }

@@ -55,7 +55,7 @@ func TestTrackKnn(t *testing.T){
 		},
 	}
 	for i:=0;i<10000;i++{
-		_,resultDot := TrackKnn(gp, fp)
+		_, resultDot, _ := TrackKnn(gp, fp, false)
 
 		if (resultDot != "-12.000004,1411.999993"){
 

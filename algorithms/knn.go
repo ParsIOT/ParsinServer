@@ -49,7 +49,6 @@ var distAlgo string
 //}
 
 func init() {
-
 	knn_regression = true
 	minkowskyQ = 2
 	maxDist = 50
@@ -140,7 +139,7 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//go dbm.SetKnnFPCache(groupName,tempKnnFingerprints)
 	return tempKnnFingerprints,nil
 }
-func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, string) {
+func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsidered bool) (error, string, map[string]float64) {
 
 	//rd := gp.Get_RawData()
 	//md := gp.Get_MiddleData()
@@ -152,7 +151,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	var fingerprintsOrdering []string
 	clusters := make(map[string][]string)
 	//
-	//tempKnnFingerprints, ok := dbm.GetKnnFPCache(jsonFingerprint.Group)
+	//tempKnnFingerprints, ok := dbm.GetKnnFPCache(curFingerprint.Group)
 	//if ok {
 	//	//Debug.Println(tempKnnFingerprints)
 	//	fingerprintsInMemory = tempKnnFingerprints.FingerprintsInMemory
@@ -164,7 +163,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	//	var tempKnnFingerprints parameters.KnnFingerprints
 	//	var err error
 	//
-	//	tempKnnFingerprints,err = dbm.GetKnnFingerprints(jsonFingerprint.Group)
+	//	tempKnnFingerprints,err = dbm.GetKnnFingerprints(curFingerprint.Group)
 	//	if err!=nil{
 	//		glb.Error.Println(err)
 	//	}
@@ -173,10 +172,10 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	//	clusters = tempKnnFingerprints.Clusters
 	//}
 
-	//if strconv.Itoa(int(jsonFingerprint.Timestamp)) == "1516796888995082812"{
+	//if strconv.Itoa(int(curFingerprint.Timestamp)) == "1516796888995082812"{
 	//	glb.Error.Println("!")
 	//}
-	//tempKnnFingerprints := dbm.GM.GetGroup(jsonFingerprint.Group).Get_AlgoData().Get_KnnFPs()
+	//tempKnnFingerprints := dbm.GM.GetGroup(curFingerprint.Group).Get_AlgoData().Get_KnnFPs()
 	fingerprintsInMemory = tempKnnFingerprints.FingerprintsInMemory
 	mainFingerprintsOrdering = tempKnnFingerprints.FingerprintsOrdering
 	clusters = tempKnnFingerprints.Clusters
@@ -194,19 +193,19 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	//}
 	//glb.Debug.Println(sum/int64(len(tempList)))
 
-	//if jsonFingerprint.Location=="-165.000000,-1295.000000"{
+	//if curFingerprint.Location=="-165.000000,-1295.000000"{
 	//	for key,val := range fingerprintsInMemory{
-	//		if val.Location == jsonFingerprint.Location{
-	//			glb.Warning.Println(jsonFingerprint.Timestamp)
+	//		if val.Location == curFingerprint.Location{
+	//			glb.Warning.Println(curFingerprint.Timestamp)
 	//			glb.Warning.Println(key)
 	//		}
 	//	}
 	//}
 	//show := false
-	//if jsonFingerprint.Location == ""{
-	//		for _,fp := range jsonFingerprint.WifiFingerprint{
+	//if curFingerprint.Location == ""{
+	//		for _,fp := range curFingerprint.WifiFingerprint{
 	//			if fp.Mac == "01:17:C5:97:1B:44" && fp.Rssi == -72{
-	//				//glb.Debug.Println(jsonFingerprint)
+	//				//glb.Debug.Println(curFingerprint)
 	//				show = true
 	//			}
 	//		}
@@ -215,7 +214,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 
 	// fingerprintOrdering Creation according to clusters and rss rates
 	highRateRssExist := false
-	for _,rt := range jsonFingerprint.WifiFingerprint{
+	for _, rt := range curFingerprint.WifiFingerprint {
 		if(rt.Rssi>=tempKnnFingerprints.MinClusterRss){
 			if cluster, ok := clusters[rt.Mac]; ok {
 				highRateRssExist = true
@@ -225,6 +224,53 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	}
 	if (!highRateRssExist){
 		fingerprintsOrdering = mainFingerprintsOrdering
+	}
+
+	// History effect:
+	// Idea from: Dynamic Subarea Method in "A Hybrid Indoor Positioning Algorithm based on WiFi Fingerprinting and Pedestrian Dead Reckoning""
+	var tempFingerprintOrdering []string
+	if historyConsidered {
+		baseLoc := "" // according to last location or pdr location, filter far fingerprints
+		if (curFingerprint.Location != "") { // Current PDRLocation is available
+			baseLoc = curFingerprint.Location
+			// todo : we can use lastUserPos.Location even when PDRLocation is available too.
+		} else {
+			userPosHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
+			if len(userPosHistory) != 0 {
+				lastUserPos := userPosHistory[len(userPosHistory)-1]
+				//glb.Error.Println(lastUserPos)
+				// todo:use lastUserPos.loction instead of knnguess
+				baseLoc = lastUserPos.KnnGuess // Current PDRLocation isn't  available, use last location estimated
+			}
+		}
+		//glb.Error.Println(baseLoc)
+		if baseLoc != "" { // ignore when baseLoc is empty (for example there is no userhistory!)
+			baseLocX, baseLocY := glb.GetDotFromString(baseLoc)
+			maxMovement := dbm.GetSharedPrf(gp.Get_Name()).MaxMovement
+			//maxMovement = float64(1)
+			//hist := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
+
+			for _, fpTime := range fingerprintsOrdering {
+				fp := fingerprintsInMemory[fpTime]
+				fpLocX, fpLocY := glb.GetDotFromString(fp.Location)
+				//glb.Error.Println()
+				//glb.Error.Println(baseLoc)
+				//glb.Error.Println(fp.Location)
+				//glb.Error.Println(fp)
+				//glb.Error.Println(glb.CalcDist(fpLocX,fpLocY,baseLocX,baseLocY))
+				if glb.CalcDist(fpLocX, fpLocY, baseLocX, baseLocY) < maxMovement {
+					glb.Error.Println("OK addded")
+					tempFingerprintOrdering = append(tempFingerprintOrdering, fpTime)
+				}
+			}
+			if len(tempFingerprintOrdering) != 0 {
+				//glb.Error.Println(len(fingerprintsOrdering))
+				//glb.Error.Println(len(tempFingerprintOrdering))
+				fingerprintsOrdering = tempFingerprintOrdering
+			} else {
+				glb.Error.Println("There is long distance between base location(last location or PDR current location) and current location")
+			}
+		}
 	}
 
 	//tempList := []string{}
@@ -244,7 +290,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	//glb.Debug.Println(len(mainFingerprintsOrdering))
 
 	// Get k from db
-	//knnK, err := dbm.GetKnnKOverride(jsonFingerprint.Group)
+	//knnK, err := dbm.GetKnnKOverride(curFingerprint.Group)
 	//if err != nil {
 	//	knnK = glb.DefaultKnnK
 	//	glb.Error.Println("Nums of AP must be greater than 3")
@@ -253,7 +299,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 
 	knnK := tempKnnFingerprints.K
 
-	//knnK := dbm.GetSharedPrf(jsonFingerprint.Group).KnnK
+	//knnK := dbm.GetSharedPrf(curFingerprint.Group).KnnK
 
 	// calculating knn
 	W := make(map[string]float64)
@@ -288,7 +334,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 		}
 		//Debug.Println(fp.WifiFingerprint)
 		mac2RssFP := getMac2Rss(fp.WifiFingerprint)
-		mac2RssCur := getMac2Rss(jsonFingerprint.WifiFingerprint)
+		mac2RssCur := getMac2Rss(curFingerprint.WifiFingerprint)
 
 		chanJobs <- jobW{fpTime: fpTime,
 			mac2RssCur: mac2RssCur,
@@ -305,7 +351,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 
 	close(chanResults)
 
-	//if jsonFingerprint.Timestamp==int64(1516794991872647445){
+	//if curFingerprint.Timestamp==int64(1516794991872647445){
 	//	var keys []string
 	//	for k := range W {
 	//		keys = append(keys, k)
@@ -326,7 +372,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 
 	if NumofMinAPNum == 0 {
 		glb.Error.Println("There is no fingerprint that its number of APs be more than ",glb.MinApNum,"MinApNum")
-		return errors.New("NumofAP_lowerThan_MinApNum"),","
+		return errors.New("NumofAP_lowerThan_MinApNum"), ",", nil
 	}
 
 	fingerprintSorted := glb.SortDictByVal(W)
@@ -345,7 +391,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	// instead of using knnK to stop knn algorithm, because there are some dots with same weight ,
 	//		stopNum is set to minimum number of weight (from high to low).
 	for _, w := range uniqueWs {
-		//if jsonFingerprint.Timestamp==int64(1516794991872647445) {
+		//if curFingerprint.Timestamp==int64(1516794991872647445) {
 		//	glb.Debug.Println(w)
 		//}
 		stopNum += countWs[w]
@@ -355,7 +401,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	}
 
 	////fmt.Println(fingerprintSorted)
-	//if jsonFingerprint.Timestamp==int64(1516794991872647445) {
+	//if curFingerprint.Timestamp==int64(1516794991872647445) {
 	//	glb.Debug.Println(countWs)
 	//	glb.Debug.Println(uniqueWs)
 	//	glb.Debug.Println(stopNum)
@@ -366,15 +412,17 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 	//}
 	if knn_regression {
 		sumW := float64(0)
+		KNNList := make(map[string]float64)
 		//var xHist []int64
 		//var xHistequ []string
 		//var xHistMap []string
 		for K, fpTime := range fingerprintSorted {
 			if (K < stopNum) {
+				KNNList[fpTime] = W[fpTime]
 				x_y := strings.Split(fingerprintsInMemory[fpTime].Location, ",")
-				if len(x_y) < 2 {
+				if !(len(x_y) == 2) {
 					err := errors.New("Location names aren't in the format of x,y")
-					return err, ""
+					return err, "", nil
 				}
 				locXstr := x_y[0]
 				locYstr := x_y[1]
@@ -385,7 +433,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 				//currentX = currentX + int(W[fpTime]*locX)
 				//currentY = currentY + int(W[fpTime]*locY)
 
-				//if jsonFingerprint.Timestamp==int64(1516794991872647445) {
+				//if curFingerprint.Timestamp==int64(1516794991872647445) {
 				//	xHist = append(xHist,int64(W[fpTime]*locX))
 				//	xHistequ = append(xHistequ,fmt.Sprint(W[fpTime],"*",locX))
 				//	xHistMap = append(xHistMap,fmt.Sprint(W[fpTime],"*",locX,":",int64(W[fpTime]*locX),":",fpTime))
@@ -405,36 +453,36 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 				break;
 			}
 		}
-		//if jsonFingerprint.Timestamp==int64(1516794991872647445) {
+		//if curFingerprint.Timestamp==int64(1516794991872647445) {
 		//	glb.Error.Println(xHist)
 		//	sort.Sort(sort.StringSlice(xHistequ))
 		//	glb.Error.Println(xHistequ)
 		//	glb.Error.Println(xHistMap)
 		//}
 		//sumW = glb.Round(sumW,5)
-		//if jsonFingerprint.Timestamp==int64(1516794991872647445) {
+		//if curFingerprint.Timestamp==int64(1516794991872647445) {
 		//	glb.Error.Println(sumW)
 		//	glb.Error.Println(currentX,"::",currentY)
 		//}
 		//if show{
 		//	glb.Error.Println(sumW)
-		//	glb.Error.Println(jsonFingerprint)
+		//	glb.Error.Println(curFingerprint)
 		//}
 		if sumW == float64(0) {
-			return errors.New("NoValidFingerprints"), ""
+			return errors.New("NoValidFingerprints"), "", nil
 		}
 
 		currentXint := int(float64(currentX) / sumW)
 		currentYint := int(float64(currentY) / sumW)
 
-		//glb.Debug.Println(jsonFingerprint.Location)
+		//glb.Debug.Println(curFingerprint.Location)
 		//glb.Debug.Println(glb.IntToString(currentXint) + ".0," + glb.IntToString(currentYint)+".0")
 		//Debug.Println(currentX)
-		return nil, glb.IntToString(currentXint) + ".0," + glb.IntToString(currentYint)+".0"
+		return nil, glb.IntToString(currentXint) + ".0," + glb.IntToString(currentYint) + ".0", KNNList
 	} else {
 		KNNList := make(map[string]float64)
 		for K, fpTime := range fingerprintSorted {
-			if (K < knnK) {
+			if (K < stopNum) {
 				fpLoc := fingerprintsInMemory[fpTime].Location
 				if _, ok := KNNList[fpLoc]; ok {
 					KNNList[fpLoc] += W[fpTime]
@@ -447,7 +495,7 @@ func TrackKnn(gp *dbm.Group, jsonFingerprint parameters.Fingerprint) (error, str
 		}
 		sortedKNNList := glb.SortDictByVal(KNNList)
 		//glb.Debug.Println(sortedKNNList[0])
-		return nil, sortedKNNList[0]
+		return nil, sortedKNNList[0], KNNList
 	}
 }
 

@@ -32,7 +32,7 @@ func HistoryEffect(currentUserPos glb.UserPositionJSON, userHistory []glb.UserPo
 		if i == len(locHistory)-1 {
 			glb.Debug.Println(loc)
 			x_y := strings.Split(loc, ",")
-			if len(x_y) < 2 {
+			if !(len(x_y) == 2) {
 				//err := errors.New("Location names aren't in the format of x,y")
 				glb.Error.Println("Location names aren't in the format of x,y")
 			}
@@ -91,7 +91,7 @@ func HistoryEffectStaticFactors(currentUserPos glb.UserPositionJSON, userHistory
 	for i, factor := range glb.UserHistoryEffectFactors {
 		if i == len(locHistory) {
 			x_y := strings.Split(currentLoc, ",")
-			if len(x_y) < 2 {
+			if !(len(x_y) == 2) {
 				//err := errors.New("Location names aren't in the format of x,y")
 				glb.Error.Println("Location names aren't in the format of x,y")
 			}
@@ -131,10 +131,10 @@ func HistoryEffectStaticFactors(currentUserPos glb.UserPositionJSON, userHistory
 
 func GetAccuracyCircleRadius(center string, userHistory []string) float64 {
 	maxDist := float64(0)
-	x, y := getDotFromString(center)
+	x, y := glb.GetDotFromString(center)
 	for _, xy := range userHistory {
-		resx, resy := getDotFromString(xy)
-		dist := calcDist(x, y, resx, resy)
+		resx, resy := glb.GetDotFromString(xy)
+		dist := glb.CalcDist(x, y, resx, resy)
 		//glb.Debug.Println(resx,",",resy)
 		if dist > maxDist {
 			maxDist = dist

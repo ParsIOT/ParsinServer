@@ -209,7 +209,7 @@ func GetHistoricalUserPositions(groupName string, user string, n int) []glb.User
 		//	userJSON.ScikitData = algorithms.ScikitClassify(groupName, fingerprint)
 		//}
 		gp := dbm.GM.GetGroup(groupName)
-		_, userJSON.KnnGuess = algorithms.TrackKnn(gp, fingerprint)
+		_, userJSON.KnnGuess, userJSON.KnnData = algorithms.TrackKnn(gp, fingerprint, false)
 		userJSONs[i] = userJSON
 	}
 	return userJSONs
@@ -239,7 +239,7 @@ func GetCurrentPositionOfAllUsers(groupName string) map[string]glb.UserPositionJ
 		//	foo.ScikitData = algorithms.ScikitClassify(groupName, userFingerprints[user])
 		//}
 		gp := dbm.GM.GetGroup(groupName)
-		_, foo.KnnGuess = algorithms.TrackKnn(gp, userFingerprints[user])
+		_, foo.KnnGuess, foo.KnnData = algorithms.TrackKnn(gp, userFingerprints[user], false)
 		go dbm.SetUserPositionCache(groupName+user, foo)
 		userPositions[user] = foo
 	}
@@ -273,7 +273,7 @@ func GetCurrentPositionOfUser(groupName string, user string) glb.UserPositionJSO
 	//	userJSON.ScikitData = algorithms.ScikitClassify(groupName, userFingerprint)
 	//}
 	gp := dbm.GM.GetGroup(groupName)
-	_, userJSON.KnnGuess = algorithms.TrackKnn(gp, userFingerprint)
+	_, userJSON.KnnGuess, userJSON.KnnData = algorithms.TrackKnn(gp, userFingerprint, false)
 
 	//_, userJSON.KnnGuess = calculateKnn(userFingerprint)
 	go dbm.SetUserPositionCache(groupName+user, userJSON)
@@ -580,6 +580,40 @@ func PutKnnMinClusterRSSRange(c *gin.Context) {
 			//	algorithms.ValidKs = glb.MakeRange(kRange[0],kRange[1])
 		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Knn K range length must be 2 at the maximum value "})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
+	}
+}
+
+func PutMaxMovement(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	MaxMovementStr := c.DefaultQuery("maxMovement", "none")
+	glb.Debug.Println(group)
+	glb.Debug.Println(MaxMovementStr)
+
+	if group != "noneasdf" && MaxMovementStr != "none" {
+		MaxMovement, err := strconv.ParseFloat(MaxMovementStr, 64)
+		if err == nil {
+			if MaxMovement == float64(-1) {
+				MaxMovement = glb.MaxMovement
+			}
+			err2 := dbm.SetSharedPrf(group, "MaxMovement", MaxMovement)
+			if err2 == nil {
+				//optimizePriorsThreaded(strings.ToLower(group))
+				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding MaxMovement for " + group + ", now set to " + MaxMovementStr})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err2.Error()})
+			}
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
