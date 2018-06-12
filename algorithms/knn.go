@@ -240,7 +240,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				lastUserPos := userPosHistory[len(userPosHistory)-1]
 				//glb.Error.Println(lastUserPos)
 				// todo:use lastUserPos.loction instead of knnguess
-				baseLoc = lastUserPos.KnnGuess // Current PDRLocation isn't  available, use last location estimated
+				baseLoc = lastUserPos.Location // Current PDRLocation isn't  available, use last location estimated
 			}
 		}
 		//glb.Error.Println(baseLoc)
