@@ -181,43 +181,53 @@ func GetLastFingerprint(c *gin.Context) {
 
 //Returns n of the last location estimations that were stored in fingerprints-track bucket in db
 func GetHistoricalUserPositions(groupName string, user string, n int) []glb.UserPositionJSON {
-	user = strings.ToLower(user)
-	var fingerprints []parameters.Fingerprint
-	var err error
 
-	fingerprints, err = dbm.TrackFingerprints(user, n, groupName)
-	if (err != nil) {
-		return make([]glb.UserPositionJSON, 0) //empty userJSONs
+	//var fingerprints []parameters.Fingerprint
+	//var err error
+	//
+	//fingerprints, err = dbm.TrackFingerprints(user, n, groupName)
+	//if (err != nil) {
+	//	return make([]glb.UserPositionJSON, 0) //empty userJSONs
+	//}
+	//
+	//glb.Debug.Printf("Got history of %d fingerprints\n", len(fingerprints))
+	//userJSONs := make([]glb.UserPositionJSON, len(fingerprints))
+	//for i, fingerprint := range fingerprints {
+	//	var userJSON glb.UserPositionJSON
+	//	//UTCfromUnixNano := time.Unix(0, fingerprint.Timestamp)
+	//	//userJSON.Time = UTCfromUnixNano.String()
+	//	userJSON.Time = fingerprint.Timestamp
+	//	//bayesGuess, bayesData := bayes.CalculatePosterior(fingerprint, nil)
+	//	//userJSON.BayesGuess = bayesGuess
+	//	//userJSON.BayesData = bayesData
+	//	//// Process SVM if needed
+	//	//if glb.RuntimeArgs.Svm {
+	//	//	userJSON.SvmGuess, userJSON.SvmData = algorithms.SvmClassify(fingerprint)
+	//	//}
+	//	//// Process RF if needed
+	//	//if glb.RuntimeArgs.Scikit {
+	//	//	userJSON.ScikitData = algorithms.ScikitClassify(groupName, fingerprint)
+	//	//}
+	//	gp := dbm.GM.GetGroup(groupName)
+	//	_, userJSON.KnnGuess, userJSON.KnnData = algorithms.TrackKnn(gp, fingerprint, false)
+	//	userJSONs[i] = userJSON
+	//}
+	//return userJSONs
+	gp := dbm.GM.GetGroup(groupName)
+	tempUserPositions := gp.Get_ResultData().Get_UserResults(user)
+	var userPositions []glb.UserPositionJSON
+
+	// Get n last userPositions
+	for i := len(tempUserPositions) - 1; len(tempUserPositions)-n <= i; i-- {
+		userPositions = append(userPositions, tempUserPositions[i])
 	}
 
-	glb.Debug.Printf("Got history of %d fingerprints\n", len(fingerprints))
-	userJSONs := make([]glb.UserPositionJSON, len(fingerprints))
-	for i, fingerprint := range fingerprints {
-		var userJSON glb.UserPositionJSON
-		//UTCfromUnixNano := time.Unix(0, fingerprint.Timestamp)
-		//userJSON.Time = UTCfromUnixNano.String()
-		userJSON.Time = fingerprint.Timestamp
-		//bayesGuess, bayesData := bayes.CalculatePosterior(fingerprint, nil)
-		//userJSON.BayesGuess = bayesGuess
-		//userJSON.BayesData = bayesData
-		//// Process SVM if needed
-		//if glb.RuntimeArgs.Svm {
-		//	userJSON.SvmGuess, userJSON.SvmData = algorithms.SvmClassify(fingerprint)
-		//}
-		//// Process RF if needed
-		//if glb.RuntimeArgs.Scikit {
-		//	userJSON.ScikitData = algorithms.ScikitClassify(groupName, fingerprint)
-		//}
-		gp := dbm.GM.GetGroup(groupName)
-		_, userJSON.KnnGuess, userJSON.KnnData = algorithms.TrackKnn(gp, fingerprint, false)
-		userJSONs[i] = userJSON
-	}
-	return userJSONs
+	return userPositions
 }
 
 //Returns svm, rf, baysian estimations of the track fingerprints that belong to a group
 func GetCurrentPositionOfAllUsers(groupName string) map[string]glb.UserPositionJSON {
-	groupName = strings.ToLower(groupName)
+	//groupName = strings.ToLower(groupName)
 	userPositions := make(map[string]glb.UserPositionJSON)
 	userFingerprints := make(map[string]parameters.Fingerprint)
 	var err error
@@ -249,18 +259,18 @@ func GetCurrentPositionOfAllUsers(groupName string) map[string]glb.UserPositionJ
 
 // Is like getHistoricalUserPositions but only returns the last location estimation
 func GetCurrentPositionOfUser(groupName string, user string) glb.UserPositionJSON {
-	user = strings.ToLower(user)
+
 	val, ok := dbm.GetUserPositionCache(groupName + user)
 	if ok {
 		return val
 	}
-	var userJSON glb.UserPositionJSON
-	var userFingerprint parameters.Fingerprint
-	var err error
-	userJSON, userFingerprint, err = dbm.TrackFingeprintEmptyPosition(user, groupName)
-	if (err != nil) {
-		return userJSON
-	}
+	//var userJSON glb.UserPositionJSON
+	//var userFingerprint parameters.Fingerprint
+	//var err error
+	//userJSON, userFingerprint, err = dbm.TrackFingeprintEmptyPosition(user, groupName)
+	//if (err != nil) {
+	//	return userJSON
+	//}
 
 	//bayesGuess, bayesData := bayes.CalculatePosterior(userFingerprint,nil)
 	//userJSON.BayesGuess = bayesGuess
@@ -273,11 +283,17 @@ func GetCurrentPositionOfUser(groupName string, user string) glb.UserPositionJSO
 	//	userJSON.ScikitData = algorithms.ScikitClassify(groupName, userFingerprint)
 	//}
 	gp := dbm.GM.GetGroup(groupName)
-	_, userJSON.KnnGuess, userJSON.KnnData = algorithms.TrackKnn(gp, userFingerprint, false)
+	var lastUserPos glb.UserPositionJSON
+	userPositions := gp.Get_ResultData().Get_UserResults(user)
+	if len(userPositions) > 0 {
+		lastUserPos = userPositions[len(userPositions)-1]
+	}
+
+	//_, userJSON.KnnGuess, userJSON.KnnData = algorithms.TrackKnn(gp, userFingerprint, false)
 
 	//_, userJSON.KnnGuess = calculateKnn(userFingerprint)
-	go dbm.SetUserPositionCache(groupName+user, userJSON)
-	return userJSON
+	//go dbm.SetUserPositionCache(groupName+user, userJSON)
+	return lastUserPos
 }
 
 // calls optimizePriorsThreaded(),calculateSVM() and rfLearn()
@@ -333,10 +349,12 @@ func GetUserLocations(c *gin.Context) {
 			users = []string{userQuery}
 		}
 		if users[0] == "noneasdf" {
-			users = dbm.GetUsers(groupName)
-			glb.Error.Println(users)
+			//users = dbm.GetUsers(groupName)
+			users = dbm.GetRecentUsers(groupName)
+			glb.Error.Println("Users:", users)
 		}
 		for _, user := range users {
+			user = strings.ToLower(user) // todo: is it necessary? Does it conflict with learning data?
 			if _, ok := people[user]; !ok {
 				people[user] = []glb.UserPositionJSON{}
 			}

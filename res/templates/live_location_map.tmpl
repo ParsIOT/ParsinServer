@@ -159,7 +159,7 @@
             var items = [];
             $.each(data.users, function (key, val) {
 
-                let match = pattern.exec(val[0].knnguess);
+                let match = pattern.exec(val[0].location);
                 if (match && match[1] && match[2]) {
                     if (filter_user != false) {
                         if (filter_user == key) {

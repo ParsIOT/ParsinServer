@@ -138,7 +138,7 @@ func SetUserCache(group string, users []string) {
 	usersCache.Unlock()
 }
 
-//Append a user to the user list of a group (in usersCache variable)
+//AppendResult a user to the user list of a group (in usersCache variable)
 func AppendUserCache(group string, user string) {
 	usersCache.Lock()
 	if _, ok := usersCache.m[group]; ok {

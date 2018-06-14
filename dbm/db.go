@@ -70,6 +70,15 @@ func RenameNetwork(group string, oldName string, newName string) error {
 	return err
 }
 
+func GetRecentUsers(groupName string) []string {
+	userHistories := GM.GetGroup(groupName).Get_ResultData().Get_AllUserResults()
+	var users []string
+	for user, _ := range userHistories {
+		users = append(users, user)
+	}
+	return users
+}
+
 // if the users of group are cached, returns them.
 // otherwise, read them from database, cache them and return them.
 func GetUsers(group string) []string {
@@ -96,7 +105,7 @@ func GetUsers(group string) []string {
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			v2 := LoadFingerprint(v, false)
 			if !glb.StringInSlice(v2.Username, uniqueUsers) {
-				glb.Debug.Println(v2)
+				//glb.Debug.Println(v2)
 				uniqueUsers = append(uniqueUsers, v2.Username)
 			}
 		}

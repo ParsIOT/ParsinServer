@@ -7,7 +7,6 @@ import (
 	"ParsinServer/algorithms/parameters"
 	"ParsinServer/glb"
 	"reflect"
-	"strconv"
 )
 
 //Todo: After each update in groupcache.go, rebuild the group (use /buildgroup)
@@ -111,10 +110,11 @@ func (st *AlgoDataStruct) RUnlock() {
 type ResultDataStruct struct{
 	mutex           *sync.RWMutex
 	group           *Group
-	Results         map[string]parameters.Fingerprint
+	//Results         map[string]parameters.Fingerprint
 	AlgoAccuracy    map[string]int
 	AlgoAccuracyLoc map[string]map[string]int
-	UserHistory     map[string][]glb.UserPositionJSON
+	UserHistory     map[string][]glb.UserPositionJSON // it's temprary
+	UserResults     map[string][]glb.UserPositionJSON // it saves in db
 }
 
 func (st *ResultDataStruct) Lock() {
@@ -402,7 +402,7 @@ func (gm *GroupManger) LoadGroup(groupName string){
 			gp.AlgoData.mutex = &sync.RWMutex{}
 			gp.ResultData = resultData
 			gp.ResultData.mutex = &sync.RWMutex{}
-			gp.ResultData.Results = make(map[string]parameters.Fingerprint)
+			//gp.ResultData.Results = make(map[string]parameters.Fingerprint)
 
 			gp.Unlock()
 		}
@@ -513,16 +513,13 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group){
 				resultData := gp.ResultData
 				gp.RUnlock()
 
-
-
-				//
-				resultData.RLock()
-				resultDataList = resultData.Results
-				resultData.RUnlock()
-				resultData.Lock()
-				resultData.Results = make(map[string]parameters.Fingerprint)  // delete trackresults data
-				//resultData.UserHistory = make(map[string][]string)
-				resultData.Unlock()
+				//resultData.RLock()
+				//resultDataList = resultData.Results
+				//resultData.RUnlock()
+				//resultData.Lock()
+				//resultData.Results = make(map[string]parameters.Fingerprint)  // delete trackresults data
+				////resultData.UserHistory = make(map[string][]string)
+				//resultData.Unlock()
 				//glb.Error.Println(resultData)
 				resultData.Lock()
 
@@ -717,11 +714,11 @@ func (gm *GroupManger) InstantFlushDB(groupName string){
 
 				//
 				//resultData.RLock()
-				resultDataList = resultData.Results
+				//resultDataList = resultData.Results
 				//resultData.RUnlock()
-				resultData.Lock()
-				resultData.Results = make(map[string]parameters.Fingerprint) // delete trackresults data
-				resultData.Unlock()
+				//resultData.Lock()
+				//resultData.Results = make(map[string]parameters.Fingerprint) // delete trackresults data
+				//resultData.Unlock()
 				resultData.RLock()
 				v, err := resultData.MarshalJSON()
 				resultData.RUnlock()
@@ -889,10 +886,11 @@ func (gp *Group) NewResultDataStruct() *ResultDataStruct {
 	return &ResultDataStruct{
 		mutex:           &sync.RWMutex{},
 		group:           gp,
-		Results:         make(map[string]parameters.Fingerprint),
+		//Results:         make(map[string]parameters.Fingerprint),
 		AlgoAccuracy:    make(map[string]int),
 		AlgoAccuracyLoc: make(map[string]map[string]int),
 		UserHistory:     make(map[string][]glb.UserPositionJSON),
+		UserResults:     make(map[string][]glb.UserPositionJSON),
 	}
 }
 
@@ -1520,12 +1518,22 @@ func (ad *AlgoDataStruct) Set_KnnFPs(new_item  parameters.KnnFingerprints){
 	ad.Unlock()
 }
 
-func (rs *ResultDataStruct) Append(fp parameters.Fingerprint){
-	defer rs.SetDirtyBit()
-	rs.Lock()
-	rs.Results[strconv.FormatInt(fp.Timestamp, 10)] = fp
-	rs.Unlock()
-}
+//func (rs *ResultDataStruct) AppendResult(fp parameters.Fingerprint){
+//	defer rs.SetDirtyBit()
+//	rs.Lock()
+//	rs.Results[strconv.FormatInt(fp.Timestamp, 10)] = fp
+//	rs.Unlock()
+//}
+//func (rs *ResultDataStruct) GetUserResult(user string,n int)map[string]parameters.Fingerprint{
+//	userResults := make(map[string]string)
+//	rs.RLock()
+//	results = rs.Results
+//	rs.RUnlock()
+//	count := 0
+//	for fi
+//
+//	return results
+//}
 
 func (rs *ResultDataStruct) Get_AlgoAccuracy() map[string]int {
 	rs.RLock()
@@ -1585,6 +1593,7 @@ func (rs *ResultDataStruct) Append_UserHistory(user string, userPos glb.UserPosi
 	}
 	rs.Unlock()
 }
+
 func (rs *ResultDataStruct) Get_UserHistory(user string) []glb.UserPositionJSON {
 	//defer rs.SetDirtyBit()
 
@@ -1597,4 +1606,62 @@ func (rs *ResultDataStruct) Get_UserHistory(user string) []glb.UserPositionJSON 
 	}
 	rs.RUnlock()
 	return history
+}
+
+func (rs *ResultDataStruct) Get_AllHistory() map[string][]glb.UserPositionJSON {
+	//defer rs.SetDirtyBit()
+
+	history := make(map[string][]glb.UserPositionJSON)
+	rs.RLock()
+	history = rs.UserHistory
+	rs.RUnlock()
+	return history
+}
+
+func (rs *ResultDataStruct) Append_UserResults(user string, userPos glb.UserPositionJSON) {
+	//defer rs.SetDirtyBit()
+
+	rs.Lock()
+	if _, ok := rs.UserResults[user]; ok {
+		if len(rs.UserResults[user]) < glb.MaxUserResultsLen {
+			rs.UserResults[user] = append(rs.UserResults[user], userPos)
+		} else {
+			tempUserResults := []glb.UserPositionJSON{}
+			tempUserResults = append(tempUserResults, rs.UserHistory[user][1:]...)
+			tempUserResults = append(tempUserResults, userPos)
+			rs.UserResults[user] = tempUserResults
+		}
+	} else {
+		//Todo: must provide standard way when new item added to groupcache structs
+		if rs.UserResults == nil { // in old db there is now userHistory
+			rs.UserResults = make(map[string][]glb.UserPositionJSON)
+		}
+		rs.UserResults[user] = []glb.UserPositionJSON{userPos}
+		//glb.Debug.Println(rs.UserHistory[user])
+	}
+	rs.Unlock()
+}
+
+func (rs *ResultDataStruct) Get_UserResults(user string) []glb.UserPositionJSON {
+	//defer rs.SetDirtyBit()
+
+	results := []glb.UserPositionJSON{}
+	rs.RLock()
+	if userResults, ok := rs.UserResults[user]; ok {
+		results = userResults
+	} else {
+		results = []glb.UserPositionJSON{}
+	}
+	rs.RUnlock()
+	return results
+}
+
+func (rs *ResultDataStruct) Get_AllUserResults() map[string][]glb.UserPositionJSON {
+	//defer rs.SetDirtyBit()
+
+	results := make(map[string][]glb.UserPositionJSON)
+	rs.RLock()
+	results = rs.UserResults
+	rs.RUnlock()
+	return results
 }

@@ -48,7 +48,7 @@ var RuntimeArgs struct {
 
 type UserPositionJSON struct {
 	Time        int64              `json:"time"`
-	Location    string             `json:"Location"`
+	Location    string             `json:"location"`
 	BayesGuess  string             `json:"bayesguess"`
 	BayesData   map[string]float64 `json:"bayesdata"`
 	SvmGuess    string             `json:"svmguess"`

@@ -241,12 +241,15 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				//glb.Error.Println(lastUserPos)
 				// todo:use lastUserPos.loction instead of knnguess
 				baseLoc = lastUserPos.Location // Current PDRLocation isn't  available, use last location estimated
+				//glb.Debug.Println(lastUserPos.KnnGuess)
+				//glb.Debug.Println(lastUserPos.Location)
 			}
 		}
-		//glb.Error.Println(baseLoc)
+		glb.Error.Println(baseLoc)
 		if baseLoc != "" { // ignore when baseLoc is empty (for example there is no userhistory!)
 			baseLocX, baseLocY := glb.GetDotFromString(baseLoc)
 			maxMovement := dbm.GetSharedPrf(gp.Get_Name()).MaxMovement
+			//glb.Error.Println()
 			//maxMovement = float64(1)
 			//hist := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
 
@@ -259,13 +262,13 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				//glb.Error.Println(fp)
 				//glb.Error.Println(glb.CalcDist(fpLocX,fpLocY,baseLocX,baseLocY))
 				if glb.CalcDist(fpLocX, fpLocY, baseLocX, baseLocY) < maxMovement {
-					glb.Error.Println("OK addded")
+					//glb.Error.Println("OK addded")
 					tempFingerprintOrdering = append(tempFingerprintOrdering, fpTime)
 				}
 			}
 			if len(tempFingerprintOrdering) != 0 {
-				//glb.Error.Println(len(fingerprintsOrdering))
-				//glb.Error.Println(len(tempFingerprintOrdering))
+				glb.Error.Println(len(fingerprintsOrdering))
+				glb.Error.Println(len(tempFingerprintOrdering))
 				fingerprintsOrdering = tempFingerprintOrdering
 			} else {
 				glb.Error.Println("There is long distance between base location(last location or PDR current location) and current location")

@@ -239,7 +239,6 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	//curFingerprint.Location = knnGuess
 	// Insert full curFingerprint
 	//glb.Debug.Println(curFingerprint)
-	gp.Get_ResultData().Append(curFingerprint)
 	//go dbm.PutFingerprintIntoDatabase(fullFingerprint, "fingerprints-track")
 
 
@@ -266,11 +265,9 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	userJSON.KnnData = knnData
 	userJSON.PDRLocation = pdrLocation
 
-	go dbm.SetUserPositionCache(strings.ToLower(curFingerprint.Group)+strings.ToLower(curFingerprint.Username), userJSON)
-	go gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userJSON)
 
 	// User history effect
-	location = knnGuess
+	//location = knnGuess
 	userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
 	location, accuracyCircleRadius = HistoryEffect(userJSON, userHistory)
 
@@ -280,6 +277,10 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 
 	//location = userJSON.KnnGuess
 	//userJSON.KnnGuess = location //todo: must add location as seprated variable from knnguess in glb.UserPositionJSON
+	go dbm.SetUserPositionCache(strings.ToLower(curFingerprint.Group)+strings.ToLower(curFingerprint.Username), userJSON)
+	go gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userJSON)
+	go gp.Get_ResultData().Append_UserResults(curFingerprint.Username, userJSON)
+
 
 	//glb.Debug.Println(len(gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)))
 
