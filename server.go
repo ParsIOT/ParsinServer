@@ -143,7 +143,8 @@ func main() {
 
 	// Check whether we are just dumping the database
 	if len(glb.RuntimeArgs.Dump) > 0 {
-		err := dbm.DumpFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
+		//err := dbm.DumpFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
+		err := dbm.DumpRawFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
 		if err == nil {
 			fmt.Println("Successfully dumped.")
 		} else {

@@ -180,3 +180,104 @@ func DumpFingerprints(group string) error {
 
 	return nil
 }
+
+// make a folder that is named dump-groupName and dump track and learn db's data to files
+func DumpRawFingerprints(group string) error {
+	// glb.Debug.Println("Making dump-" + group + " directory")
+	err := os.MkdirAll(path.Join(glb.RuntimeArgs.SourcePath, "dumpraw-"+group), 0777)
+	if err != nil {
+		return err
+	}
+
+	// glb.Debug.Println("Opening db")
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0664, nil)
+	defer db.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// glb.Debug.Println("Opening file for learning fingerprints")
+	// glb.Debug.Println(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "learning"))
+	f, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dumpraw-"+group, "learning"), os.O_WRONLY|os.O_CREATE, 0664)
+	if err != nil {
+		return err
+	}
+
+	var fingerprints []parameters.Fingerprint
+
+	db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("fingerprints"))
+		c := b.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			fp := parameters.LoadRawFingerprint(v)
+			fingerprints = append(fingerprints, fp)
+		}
+		return nil
+	})
+
+	var uniqueMacs []string
+	firstLine := "x,y,"
+	for _, fp := range fingerprints {
+		for _, rt := range fp.WifiFingerprint {
+			if !glb.StringInSlice(rt.Mac, uniqueMacs) {
+				uniqueMacs = append(uniqueMacs, rt.Mac)
+				firstLine += rt.Mac + ","
+			}
+		}
+	}
+
+	if _, err = f.WriteString(firstLine + "\n"); err != nil {
+		panic(err)
+	}
+
+	// glb.Debug.Println("Writing fingerprints to file")
+	db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("fingerprints"))
+		c := b.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			fp := parameters.LoadRawFingerprint(v)
+			line := fp.Location + ","
+
+			for _, mac := range uniqueMacs {
+				found := 0
+				for _, rt := range fp.WifiFingerprint {
+					if rt.Mac == mac {
+						line += fmt.Sprintf("%v", rt.Rssi) + ","
+						found = 1
+						break
+					}
+				}
+				if found != 1 {
+					line += "-1000,"
+				}
+			}
+
+			if _, err = f.WriteString(line + "\n"); err != nil {
+				panic(err)
+			}
+		}
+		return nil
+	})
+	f.Close()
+
+	//// glb.Debug.Println("Opening file for tracking fingerprints")
+	//f, err = os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "tracking"), os.O_WRONLY|os.O_CREATE, 0664)
+	//if err != nil {
+	//	return err
+	//}
+	//// glb.Debug.Println("Writing fingerprints to file")
+	//db.View(func(tx *bolt.Tx) error {
+	//	b := tx.Bucket([]byte("results"))
+	//	c := b.Cursor()
+	//	for k, v := c.First(); k != nil; k, v = c.Next() {
+	//		if _, err = f.WriteString(string(glb.DecompressByte(v)) + "\n"); err != nil {
+	//			panic(err)
+	//		}
+	//	}
+	//	return nil
+	//})
+	//f.Close()
+	// glb.Debug.Println("Returning")
+
+	return nil
+}
