@@ -659,3 +659,13 @@ func GetDotFromString(dotStr string) (float64, float64) {
 func CalcDist(x1, y1, x2, y2 float64) float64 {
 	return math.Pow(math.Pow(float64(x1-x2), 2)+math.Pow(float64(y1-y2), 2), 0.5)
 }
+
+func Median(arr []int) int {
+	sort.Ints(arr)
+	l := len(arr)
+	if l%2 == 0 {
+		return int((arr[l/2] + arr[l/2+1]) / 2)
+	} else {
+		return arr[(l+1)/2]
+	}
+}

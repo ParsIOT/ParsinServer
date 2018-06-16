@@ -12,6 +12,7 @@ import (
 	"ParsinServer/algorithms/clustering"
 	"sort"
 	"runtime"
+	"math"
 )
 
 var threadedCross bool = false //don't use, it's not safe now!
@@ -315,7 +316,9 @@ func CalculateLearn(groupName string) {
 	gp := dbm.GM.GetGroup(groupName)
 
 	gp.Set_Permanent(false) //for crossvalidation
-	rd := gp.Get_RawData_Filtered_Val()
+
+	//rd := gp.Get_RawData_Filtered_Val()  //Todo: instead of local rd , preprocess rd and save that
+	rd := gp.Get_RawData_Val()
 
 	var crossValidationPartsList []crossValidationParts
 	crossValidationPartsList = GetCrossValidationParts(gp,rd)
@@ -910,4 +913,193 @@ func GetParameters(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct) {
 	}
 	md.LocCount = glb.DuplicateCountString(locations)
 
+}
+
+func PreProcess(groupName string) {
+
+	gp := dbm.GM.GetGroup(groupName)
+	rd := gp.Get_RawData()
+	fingerprintsOrdering := rd.Get_FingerprintsOrdering()
+	fingerprintsData := rd.Get_Fingerprints()
+
+	// filter fingerprints according to filtermac list
+	for _, fpIndex := range fingerprintsOrdering {
+		fp := fingerprintsData[fpIndex]
+		dbm.FilterFingerprint(&fp)
+		fingerprintsData[fpIndex] = fp
+	}
+
+	// Regulation rss data(outline detection)
+	// Grouping fingerprints by location
+	locRDMap := make(map[string]dbm.RawDataStruct)
+	for _, index := range rd.FingerprintsOrdering {
+		fp := rd.Fingerprints[index]
+
+		if fpRD, ok := locRDMap[fp.Location]; ok {
+			fpRD.Fingerprints[index] = fp
+			fpRD.FingerprintsOrdering = append(fpRD.FingerprintsOrdering, index)
+			locRDMap[fp.Location] = fpRD
+		} else {
+			fpM := make(map[string]parameters.Fingerprint)
+			fpM[index] = fp
+			fpO := []string{index}
+			templocRDMap := *gp.NewRawDataStruct()
+			templocRDMap.Fingerprints = fpM
+			templocRDMap.FingerprintsOrdering = fpO
+			locRDMap[fp.Location] = templocRDMap
+			//
+			//locRDMap[fp.Location] = dbm.RawDataStruct{
+			//	Fingerprints:	fpM,
+			//	FingerprintsOrdering: fpO,
+			//}
+		}
+	}
+
+	// regulating rss data
+	//for loc,rdData := range locRDMap{
+	//	locRDMap[loc] = RemoveOutlines(rdData)
+	//}
+
+	// converting locRDMap to rd
+	tempFingerprintsData := make(map[string]parameters.Fingerprint)
+	tempFingerprintsOrdering := []string{}
+	for _, rdData := range locRDMap {
+		for _, fpTime := range rdData.FingerprintsOrdering {
+			tempFingerprintsOrdering = append(tempFingerprintsOrdering, fpTime)
+			tempFingerprintsData[fpTime] = rdData.Fingerprints[fpTime]
+		}
+
+	}
+
+	// save proccessed data to rd
+	gp.Get_RawData().Set_Fingerprints(tempFingerprintsData)
+	gp.Get_RawData().Set_FingerprintsOrdering(tempFingerprintsOrdering)
+
+}
+
+func RemoveOutlines(rd dbm.RawDataStruct) dbm.RawDataStruct {
+
+	macs := []string{}
+	for _, fp := range rd.Fingerprints {
+		for _, rt := range fp.WifiFingerprint {
+			if !glb.StringInSlice(rt.Mac, macs) {
+				macs = append(macs, rt.Mac)
+			}
+		}
+	}
+
+	//Converting fp.wififingerprints to map
+	fpMap := make(map[string]map[string]int)
+	for _, fpTime := range rd.FingerprintsOrdering {
+		fpMap[fpTime] = make(map[string]int)
+		for _, rt := range rd.Fingerprints[fpTime].WifiFingerprint {
+			fpMap[fpTime][rt.Mac] = rt.Rssi
+		}
+	}
+
+	fpNum := len(rd.Fingerprints)
+
+	maxOutlineNum := int(float64(fpNum) * glb.PreprocessOutlinePercent)
+
+	minNonOutline := int(fpNum / 2)
+	//glb.Error.Println(macs)
+	for _, mac := range macs {
+		nonOutlineCount := 0
+		validFP := []string{}
+		rssVals := []int{}
+		for _, fpTime := range rd.FingerprintsOrdering {
+			//fp := rd.Fingerprints[fpTime]
+			//for _,rt := range fp.WifiFingerprint{
+			//	if rt.Mac == mac {
+
+			//glb.Error.Println(fpMap[fpTime][mac])
+			if rss, ok := fpMap[fpTime][mac]; ok {
+				nonOutlineCount++
+				validFP = append(validFP, fpTime)
+				rssVals = append(rssVals, rss)
+			}
+
+			//	}
+			//}
+		}
+
+		//glb.Error.Println(minNonOutline)
+		//glb.Error.Println(nonOutlineCount)
+		if nonOutlineCount < minNonOutline { //ignore this mac
+			continue
+		}
+
+		substRssVal := glb.Median(rssVals)
+		//glb.Error.Println(substRssVal)
+
+		for _, fpTime := range rd.FingerprintsOrdering { //substitude outlines with substRssVal
+			if !glb.StringInSlice(fpTime, validFP) {
+				//for i,rt := range rd.Fingerprints[fpTime].WifiFingerprint{
+				//	if rt.Mac == mac{
+				//		rd.Fingerprints[fpTime].WifiFingerprint[i].Rssi = substRssVal
+				//	}
+				//}
+				//rd.Fingerprints[fpTime].Location=="988.0,1441.0" && mac=="01:17:C5:97:58:C3"
+				fpMap[fpTime][mac] = substRssVal
+			}
+		}
+
+		if fpNum-nonOutlineCount >= maxOutlineNum { //loss rss are outlines, no need to calculate outlines
+			continue
+		}
+
+		remainOutlineNum := maxOutlineNum - (fpNum - nonOutlineCount)
+		//Calculate outlines
+		rssDist := make(map[string]float64)
+		for _, fpTime := range validFP {
+			rss := fpMap[fpTime][mac]
+			rssDist[fpTime] = math.Abs(float64(substRssVal - rss))
+		}
+
+		sortedFP := glb.SortDictByVal(rssDist)
+
+		outlineChangeCount := 0
+		for _, fpTime := range sortedFP {
+			//glb.Error.Println(fpMap[fpTime][mac])
+			//glb.Error.Println(substRssVal)
+			//glb.Error.Println()
+
+			if math.Abs(float64(fpMap[fpTime][mac]-substRssVal)) < float64(glb.NormalRssDev+1) { // Avoid changing too close rss
+				break
+			}
+			fpMap[fpTime][mac] = substRssVal
+			outlineChangeCount++
+			if outlineChangeCount == remainOutlineNum {
+				break
+			}
+		}
+
+	}
+
+	// Converting fpMap to fingerprint.Wififingerpint
+	//for _,fpTime := range rd.FingerprintsOrdering{
+	//	for i,rt := range rd.Fingerprints[fpTime].WifiFingerprint{
+	//		rd.Fingerprints[fpTime].WifiFingerprint[i].Rssi = fpMap[fpTime][rt.Mac]
+	//	}
+	//}
+
+	for _, fpTime := range rd.FingerprintsOrdering {
+		fp := rd.Fingerprints[fpTime]
+		tempRouteList := []parameters.Router{}
+		for mac, rss := range fpMap[fpTime] {
+			tempRouteList = append(tempRouteList, parameters.Router{Mac: mac, Rssi: rss})
+		}
+		newFP := parameters.Fingerprint{
+			Timestamp:       fp.Timestamp,
+			Location:        fp.Location,
+			Username:        fp.Username,
+			Group:           fp.Group,
+			WifiFingerprint: tempRouteList,
+		}
+		rd.Fingerprints[fpTime] = newFP
+		//for i,rt := range rd.Fingerprints[fpTime].WifiFingerprint{
+		//	rd.Fingerprints[fpTime].WifiFingerprint[i].Rssi = fpMap[fpTime][rt.Mac]
+		//}
+	}
+	return rd
 }

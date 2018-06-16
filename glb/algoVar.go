@@ -15,6 +15,9 @@ var RssiRange []float32
 var DefaultCutoff,DefaultMixin float64
 var MinApNum int
 
+var PreprocessOutlinePercent float64 // percentage of a location fingerprints that its received rss considered as outline
+var NormalRssDev int                 // Normal deviation rss from median
+
 var ProgressBarLength,ProgressBarCurLevel int
 
 var MaxUserHistoryLen int
@@ -46,4 +49,7 @@ func init() {
 	UserHistoryGaussVariance = 0.15
 	UserHistoryTimeDelayFactor = 10000
 	MaxMovement = float64(400)
+
+	PreprocessOutlinePercent = float64(0.333) // third part of fingerprints are considered as outline
+	NormalRssDev = 5
 }

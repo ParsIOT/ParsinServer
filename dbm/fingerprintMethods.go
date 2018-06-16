@@ -10,6 +10,7 @@ import (
 	"time"
 	"strconv"
 	"os"
+	"sort"
 )
 
 
@@ -142,7 +143,7 @@ func DumpFingerprints(group string) error {
 
 	// glb.Debug.Println("Opening file for learning fingerprints")
 	// glb.Debug.Println(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "learning"))
-	f, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "learning"), os.O_WRONLY|os.O_CREATE, 0664)
+	f, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "learning.csv"), os.O_WRONLY|os.O_CREATE, 0664)
 	if err != nil {
 		return err
 	}
@@ -198,7 +199,7 @@ func DumpRawFingerprints(group string) error {
 
 	// glb.Debug.Println("Opening file for learning fingerprints")
 	// glb.Debug.Println(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "learning"))
-	f, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dumpraw-"+group, "learning"), os.O_WRONLY|os.O_CREATE, 0664)
+	f, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dumpraw-"+group, "learning.csv"), os.O_WRONLY|os.O_CREATE, 0664)
 	if err != nil {
 		return err
 	}
@@ -290,7 +291,7 @@ func DumpCalculatedFingerprints(groupName string) error {
 
 	// glb.Debug.Println("Opening file for learning fingerprints")
 	// glb.Debug.Println(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+groupName, "learning"))
-	f, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dumpcalc-"+groupName, "learning"), os.O_WRONLY|os.O_CREATE, 0664)
+	f, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dumpcalc-"+groupName, "learning.csv"), os.O_WRONLY|os.O_CREATE, 0664)
 	if err != nil {
 		return err
 	}
@@ -300,6 +301,7 @@ func DumpCalculatedFingerprints(groupName string) error {
 	fingerprintsInMemory := rd.Get_Fingerprints()
 	fingerprintsOrdering := rd.Get_FingerprintsOrdering()
 
+	sort.Strings(fingerprintsOrdering)
 	for _, fpTime := range fingerprintsOrdering {
 		fingerprints = append(fingerprints, fingerprintsInMemory[fpTime])
 	}
@@ -310,10 +312,15 @@ func DumpCalculatedFingerprints(groupName string) error {
 		for _, rt := range fp.WifiFingerprint {
 			if !glb.StringInSlice(rt.Mac, uniqueMacs) {
 				uniqueMacs = append(uniqueMacs, rt.Mac)
-				firstLine += rt.Mac + ","
 			}
 		}
 	}
+
+	sort.Strings(uniqueMacs)
+	for _, mac := range uniqueMacs {
+		firstLine += mac + ","
+	}
+
 
 	if _, err = f.WriteString(firstLine); err != nil {
 		panic(err)
