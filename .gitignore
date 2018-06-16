@@ -80,7 +80,6 @@ nohup.out
 
 !data/
 data/*
-!data/Settings.db
 
 # Data
 *.p
