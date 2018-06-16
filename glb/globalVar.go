@@ -32,6 +32,8 @@ var RuntimeArgs struct {
 	MosquittoPID      string
 	MqttAdminPassword string
 	Dump              string
+	DumpRaw           string
+	DumpCalc          string
 	Message           string
 	Mqtt              bool
 	MqttExisting      bool

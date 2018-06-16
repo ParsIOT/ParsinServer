@@ -77,7 +77,9 @@ func main() {
 	flag.StringVar(&glb.RuntimeArgs.MqttAdmin, "mqttadmin", "", "admin to read all messages")
 	flag.StringVar(&glb.RuntimeArgs.MqttAdminPassword, "mqttadminpass", "", "admin to read all messages")
 	flag.StringVar(&glb.RuntimeArgs.MosquittoPID, "mosquitto", "", "mosquitto PID (`pgrep mosquitto`)")
-	flag.StringVar(&glb.RuntimeArgs.Dump, "dump", "", "group to dump to folder")
+	flag.StringVar(&glb.RuntimeArgs.Dump, "dump", "", "db with json format dump to data folder")
+	flag.StringVar(&glb.RuntimeArgs.DumpCalc, "dumpcalc", "", "calculated db data with json format dump to data folder")
+	flag.StringVar(&glb.RuntimeArgs.DumpRaw, "dumpraw", "", "raw db data with csv format dump to data folder")
 	flag.StringVar(&glb.RuntimeArgs.Message, "message", "", "message to display to all users")
 	flag.StringVar(&glb.RuntimeArgs.SourcePath, "data", "", "path to data folder")
 	flag.StringVar(&glb.RuntimeArgs.ScikitPort, "scikit", "", "port for scikit-learn calculations")
@@ -144,7 +146,7 @@ func main() {
 	// Check whether we are just dumping the database
 	if len(glb.RuntimeArgs.Dump) > 0 {
 		//err := dbm.DumpFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
-		err := dbm.DumpRawFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
+		err := dbm.DumpFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
 		if err == nil {
 			fmt.Println("Successfully dumped.")
 		} else {
@@ -152,6 +154,35 @@ func main() {
 		}
 		os.Exit(1)
 	}
+	if len(glb.RuntimeArgs.DumpCalc) > 0 {
+		err := dbm.DumpCalculatedFingerprints(strings.ToLower(glb.RuntimeArgs.DumpCalc))
+		if err == nil {
+			fmt.Println("Successfully dumped.")
+		} else {
+			log.Fatal(err)
+		}
+		os.Exit(1)
+	}
+	if len(glb.RuntimeArgs.DumpRaw) > 0 {
+		err := dbm.DumpRawFingerprints(strings.ToLower(glb.RuntimeArgs.DumpRaw))
+		if err == nil {
+			fmt.Println("Successfully dumped.")
+		} else {
+			log.Fatal(err)
+		}
+		os.Exit(1)
+	}
+		//err := dbm.DumpFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
+	//err := dbm.DumpRawFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
+	//if err == nil {
+	//	fmt.Println("Successfully dumped.")
+	//} else {
+	//	log.Fatal(err)
+	//}
+	//os.Exit(1)
+
+
+
 
 	// Useradded command
 	// Check whether we are just dumping the database
