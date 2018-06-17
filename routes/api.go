@@ -218,7 +218,7 @@ func GetHistoricalUserPositions(groupName string, user string, n int) []glb.User
 	var userPositions []glb.UserPositionJSON
 
 	// Get n last userPositions
-	for i := len(tempUserPositions) - 1; len(tempUserPositions)-n <= i; i-- {
+	for i := len(tempUserPositions) - 1; len(tempUserPositions)-n <= i && i >= 0; i-- {
 		userPositions = append(userPositions, tempUserPositions[i])
 	}
 
