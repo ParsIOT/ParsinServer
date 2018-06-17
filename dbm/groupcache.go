@@ -1619,7 +1619,7 @@ func (rs *ResultDataStruct) Get_AllHistory() map[string][]glb.UserPositionJSON {
 }
 
 func (rs *ResultDataStruct) Append_UserResults(user string, userPos glb.UserPositionJSON) {
-	//defer rs.SetDirtyBit()
+	defer rs.SetDirtyBit()
 
 	rs.Lock()
 	if _, ok := rs.UserResults[user]; ok {
@@ -1664,4 +1664,12 @@ func (rs *ResultDataStruct) Get_AllUserResults() map[string][]glb.UserPositionJS
 	results = rs.UserResults
 	rs.RUnlock()
 	return results
+}
+
+func (rs *ResultDataStruct) Clear_UserResults() {
+	defer rs.SetDirtyBit()
+
+	rs.Lock()
+	rs.UserResults = make(map[string][]glb.UserPositionJSON)
+	rs.Unlock()
 }

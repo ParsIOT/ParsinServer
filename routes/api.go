@@ -1206,3 +1206,21 @@ func GetLocationMacs(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or location not mentioned"})
 	}
 }
+
+func DelResults(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	if groupName != "noneasdf" {
+		dbm.GM.GetGroup(groupName).Get_ResultData().Clear_UserResults()
+		//locations := dbm.DelResults(groupName)
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
+	}
+}

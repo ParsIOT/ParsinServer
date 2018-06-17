@@ -298,6 +298,7 @@ func main() {
 			needToLoadSettings.DELETE("/locations", routes.DeleteLocations)
 			needToLoadSettings.DELETE("/user", routes.DeleteUser)
 			needToLoadSettings.DELETE("/database", routes.DeleteDatabase)
+			needToLoadSettings.DELETE("/delresults", routes.DelResults)
 			needToLoadSettings.GET("/calculate", routes.Calculate)
 			needToLoadSettings.GET("/cvresults", routes.CVResults)
 			needToLoadSettings.GET("/calcLevel", routes.CalcCompletionLevel)
