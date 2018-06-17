@@ -956,9 +956,9 @@ func PreProcess(groupName string) {
 	}
 
 	// regulating rss data
-	//for loc,rdData := range locRDMap{
-	//	locRDMap[loc] = RemoveOutlines(rdData)
-	//}
+	for loc, rdData := range locRDMap {
+		locRDMap[loc] = RemoveOutlines(rdData)
+	}
 
 	// converting locRDMap to rd
 	tempFingerprintsData := make(map[string]parameters.Fingerprint)
