@@ -17,6 +17,7 @@ var MinApNum int
 
 var PreprocessOutlinePercent float64 // percentage of a location fingerprints that its received rss considered as outline
 var NormalRssDev int                 // Normal deviation rss from median
+var RssRegulation bool               // permit to rss outlines deleting
 
 var ProgressBarLength,ProgressBarCurLevel int
 
@@ -52,4 +53,5 @@ func init() {
 
 	PreprocessOutlinePercent = float64(0.333) // third part of fingerprints are considered as outline
 	NormalRssDev = 5
+	RssRegulation = true
 }
