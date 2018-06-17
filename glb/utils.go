@@ -330,6 +330,33 @@ func SortDictByVal(W map[string]float64) []string {
 	return keySorted
 }
 
+// Like SortDictByVal but when there are some fingerprints(specific mac) with same rss,
+//		sort them according to their timestamp(actually there is no difference between them) to avoid side effects
+// 			(because random ordering of these FP may cause some wrong priorities).
+//		of course, we must solve this problem by correcting the algorithms. It's difficult, because maybe there are many FPs(specific mac) with same rss
+func SortFPByRSS(W map[string]float64) []string {
+	var keySorted []string
+	reverseMap := map[float64][]string{}
+	var valueList sort.Float64Slice
+	for k, v := range W {
+		reverseMap[v] = append(reverseMap[v], k)
+	}
+	for k := range reverseMap {
+		valueList = append(valueList, k)
+	}
+	valueList.Sort()
+	sort.Sort(sort.Reverse(valueList))
+
+	for _, k := range valueList {
+		sort.Strings(reverseMap[k]) // sort keys that have same value by their name (it's not logical but avoid some sideeffects)
+		// todo: solve this problem !
+		for _, s := range reverseMap[k] {
+			keySorted = append(keySorted, s)
+		}
+	}
+	return keySorted
+}
+
 func StringMap2String(stringMap map[string]string) string{
 	res := ""
 

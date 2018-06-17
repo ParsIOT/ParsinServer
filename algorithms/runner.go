@@ -991,6 +991,7 @@ func RemoveOutlines(rd dbm.RawDataStruct) dbm.RawDataStruct {
 		}
 	}
 
+	//rd.Fingerprints[rd.FingerprintsOrdering[0]].Location == "999.0,645.0"
 	//Converting fp.wififingerprints to map
 	fpMap := make(map[string]map[string]int)
 	for _, fpTime := range rd.FingerprintsOrdering {
@@ -1032,6 +1033,8 @@ func RemoveOutlines(rd dbm.RawDataStruct) dbm.RawDataStruct {
 			continue
 		}
 
+		// todo: instead of sorting, use proper parameters or algorithm to choose rsss
+
 		substRssVal := glb.Median(rssVals)
 		//glb.Error.Println(substRssVal)
 
@@ -1059,7 +1062,7 @@ func RemoveOutlines(rd dbm.RawDataStruct) dbm.RawDataStruct {
 			rssDist[fpTime] = math.Abs(float64(substRssVal - rss))
 		}
 
-		sortedFP := glb.SortDictByVal(rssDist)
+		sortedFP := glb.SortFPByRSS(rssDist)
 
 		outlineChangeCount := 0
 		for _, fpTime := range sortedFP {
@@ -1104,5 +1107,8 @@ func RemoveOutlines(rd dbm.RawDataStruct) dbm.RawDataStruct {
 		//	rd.Fingerprints[fpTime].WifiFingerprint[i].Rssi = fpMap[fpTime][rt.Mac]
 		//}
 	}
+
 	return rd
 }
+
+//todo : write a function that correct(change) new fingerprint timestamp that has same name with available fps
