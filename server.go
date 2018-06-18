@@ -284,7 +284,12 @@ func main() {
 			//needToLoadSettings.GET("/explore/:group/:network/:location", routes.SlashExplore2)
 			//needToLoadSettings.GET("/pie/:group/:network/:location", routes.SlashPie)
 			needToLoadSettings.GET("/livemap/:group", routes.LiveLocationMap)
-			needToLoadSettings.GET("/location", routes.GetUserLocations)
+			//needToLoadSettings.GET("/userhistory/:group", routes.UserHistoryMap)
+			needToLoadSettings.GET("/userhistory/:group", func(context *gin.Context) {
+				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
+				routes.UserHistoryMap(context)
+			})
+			//needToLoadSettings.GET("/location", routes.GetUserLocations)
 			needToLoadSettings.GET("/locationsmap/:group", routes.LocationsOnMap)
 			needToLoadSettings.GET("/locations", routes.GetLocationList)
 			needToLoadSettings.GET("/editloc", routes.EditLoc)
@@ -298,7 +303,7 @@ func main() {
 			needToLoadSettings.DELETE("/locations", routes.DeleteLocations)
 			needToLoadSettings.DELETE("/user", routes.DeleteUser)
 			needToLoadSettings.DELETE("/database", routes.DeleteDatabase)
-			needToLoadSettings.DELETE("/delresults", routes.DelResults)
+			//needToLoadSettings.DELETE("/delresults", routes.DelResults)
 			needToLoadSettings.GET("/calculate", routes.Calculate)
 			needToLoadSettings.GET("/cvresults", routes.CVResults)
 			needToLoadSettings.GET("/calcLevel", routes.CalcCompletionLevel)
@@ -326,6 +331,9 @@ func main() {
 		}
 
 	}
+
+	r.DELETE("/delresults", routes.DelResults)
+	r.GET("/location", routes.GetUserLocations)
 
 	r.POST("/addArbitLocations", routes.AddArbitLocations)
 	r.POST("/delArbitLocations", routes.DelArbitLocations)

@@ -252,10 +252,8 @@
 //                    accuracy: 200,
                 title: key,
                 smallIcon: true
-            }).bindPopup(key).addTo(map).on('popupopen', function (e) {
-                markers[key]._popup.setContent("<b>" + key + "</b><br>x = " + e.target._accMarker._latlng.lat
-                    + "<br>y = " + e.target._accMarker._latlng.lng);
-            });
+            }).bindPopup("<b>" + key + "</b><br>" + e.target.getLatLng().lat
+                    + "," + e.target.getLatLng().lng).addTo(map);
 
         }
     }

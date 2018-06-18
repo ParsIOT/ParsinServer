@@ -262,6 +262,20 @@ func ArbitraryLocations(c *gin.Context) {
 	})
 }
 
+// slashDashboard displays the Users on a map
+func UserHistoryMap(c *gin.Context) {
+	groupName := c.Param("group")
+	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+		})
+		return
+	}
+	c.HTML(http.StatusOK, "trace_history_map.tmpl", gin.H{
+		"Group": groupName,
+	})
+}
+
 // slash Location returns location (to be deprecated)
 //func SlashLocation(c *gin.Context) {
 //	groupName := c.Param("group")
