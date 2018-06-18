@@ -32,12 +32,15 @@ var DefaultKnnMinCRssRange,DefaultKnnKRange []int
 
 var MaxMovement float64
 
+var MaxEuclideanRssVectorDist float64
+
 func init() {
 	DefaultMixin = float64(0.1)
 	DefaultCutoff = float64(0.01)
 	MinApNum = 1
 	MinRssi = -110
 	MaxRssi = 5
+	MaxEuclideanRssVectorDist = 50
 	ProgressBarLength = 0
 	ProgressBarCurLevel = 0
 	DefaultKnnKRange = []int{25, 26}         //{10,30}
@@ -54,4 +57,5 @@ func init() {
 	PreprocessOutlinePercent = float64(0.333) // third part of fingerprints are considered as outline
 	NormalRssDev = 5
 	RssRegulation = true
+
 }

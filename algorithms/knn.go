@@ -18,8 +18,6 @@ var knn_regression bool
 
 var minkowskyQ float64
 
-var maxDist float64
-
 
 var maxrssInNormal,minrssInNormal float64
 
@@ -51,7 +49,6 @@ var distAlgo string
 func init() {
 	knn_regression = true
 	minkowskyQ = 2
-	maxDist = 50
 	distAlgo = "Euclidean" // Euclidean, Cosine
 	//topRssList = []int{-60,-79,-90}
 	maxrssInNormal = -55.0
@@ -513,7 +510,7 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 				//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
 				//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
 			} else {
-				distance = distance + math.Pow(float64(maxDist), minkowskyQ)
+				distance = distance + math.Pow(float64(glb.MaxEuclideanRssVectorDist), minkowskyQ)
 				//distance = distance + 9
 				//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)
 			}

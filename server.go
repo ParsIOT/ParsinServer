@@ -289,6 +289,12 @@ func main() {
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
 				routes.UserHistoryMap(context)
 			})
+
+			needToLoadSettings.GET("/fingerprintAmbiguity/:group", func(context *gin.Context) {
+				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
+				routes.FingerprintAmbiguity(context)
+			})
+
 			//needToLoadSettings.GET("/location", routes.GetUserLocations)
 			needToLoadSettings.GET("/locationsmap/:group", routes.LocationsOnMap)
 			needToLoadSettings.GET("/locations", routes.GetLocationList)
@@ -334,6 +340,7 @@ func main() {
 
 	r.DELETE("/delresults", routes.DelResults)
 	r.GET("/location", routes.GetUserLocations)
+	r.GET("/fingerprintLikeness", routes.FingerprintLikeness)
 
 	r.POST("/addArbitLocations", routes.AddArbitLocations)
 	r.POST("/delArbitLocations", routes.DelArbitLocations)

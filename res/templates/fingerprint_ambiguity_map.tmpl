@@ -37,7 +37,7 @@
             height: 500px;
         }
 
-        #users-table-container {
+        #locations-table-container {
             overflow: scroll;
         }
     </style>
@@ -76,38 +76,31 @@
                 <div class="panel-heading">
                     Users
                 </div>
-                <div class="panel-body" id="users-table-container">
+                <div class="panel-body" id="locations-table-container">
                     <div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
                         <div class="col-md-12">
-                            <a href="#filter-users" data-toggle="collapse"><h4 style="text-decoration: underline;">
-                                User trace</h4></a>
-                            <div id="filter-users" class="collapse in">
+                            <a href="#location" data-toggle="collapse"><h4 style="text-decoration: underline;">
+                                Select Location</h4></a>
+                            <div id="location" class="collapse in">
                                 <div class="form-group">
-                                    <label for="refresh-interval">Enter user </label>
-                                    <input id="user" class="form-control" placeholder="user to filter"/>
+                                    <label for="refresh-interval">Enter location</label>
+                                    <input id="locName" class="form-control" placeholder="locName"/>
                                 </div>
                                 <div class="form-group">
-                                    <label for="refresh-interval">Enter N</label>
-                                    <input id="n" class="form-control" placeholder="num of history track"/>
+                                    <label for="refresh-interval">Enter MaxFPDist(0 to 50.0)</label>
+                                    <input id="maxFPDist" class="form-control" placeholder="maxFPDist"/>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <div class="form-group">
-                                        <button onclick="userTrace()" class="btn btn-success btn-sm btn-block">
-                                            GetTrace
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <button onclick="clearHistory()" class="btn btn-warning btn-sm btn-block">Clear
-                                            History
+                                        <button onclick="getFPAmbiguity()" class="btn btn-success btn-block">
+                                            Get similar FP
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <table id="users-table"
+                    <table id="locations-table"
                            class="table table-responsive table-hover table-condensed table-bordered">
                         <thead>
                         <tr>
@@ -130,7 +123,7 @@
     var filter_user = false;
     var reloadDataInterval;
     $('#live-map').css('height', $(window.top).height() - 275);
-    $('#users-table-container').css('height', $(window.top).height() - 245);
+    $('#locations-table-container').css('height', $(window.top).height() - 245);
     var map = L.map('live-map', {
         crs: L.CRS.Simple,
         minZoom: -100,
@@ -173,45 +166,40 @@
     }
 
     function UpdateTraceMap() {
-        user = $('#user').val();
-        n = $('#n').val();
-        var items = [];
-        var locations = [];
+        locName = $('#locName').val();
+        maxFPDist = $('#maxFPDist').val();
 
-        $.getJSON("/location?group={{ .Group }}&user=" + user + "&n=" + n, function (data) {
+        let mainLoc = pattern.exec(locName);
+        addMainMarker(mainLoc);
+
+        var items = [];
+
+        $.getJSON("/fingerprintLikeness?group={{ .Group }}&location=" + locName + "&maxFPDist=" + maxFPDist, function (data) {
             // console.log(data.users[user])
-            $.each(data.users[user], function (key, val) {
-                // console.log(val.location)
-                key = data.users[user].length - key
-                let match = pattern.exec(val.location);
+            let count = 1;
+            $.each(data.locCount, function (key, val) {
+                let match = pattern.exec(key);
                 if (match && match[1] && match[2]) {
-                    locations.push(match);
                     items.push("<tr class='bg-info'><td>" + key + "</td><td>" + match[1] + "</td><td>" + match[2] + "</td></tr>");
                     // console.log(match)
-                    createMarker(key, match);
+                    createMarker(count, match, val);
                     // markers[key]=match;
                 } else {
                     items.push("<tr class='bg-info'><td>" + key + "</td><td colspan='2' class='text-center'> NO DATA </td></tr>");
                 }
+                count++;
             });
 
-            for (var i = 0; i < locations.length - 1; i++) {
-                Line(locations[i][1], locations[i][2], locations[i + 1][1], locations[i + 1][2])
-            }
-
-
-            $("#users-table").find("tbody").remove();
+            $("#locations-table").find("tbody").remove();
             console.log(items);
             $("<tbody/>", {
                 "class": "tab-content",
                 html: items.join("")
-            }).appendTo("#users-table");
+            }).appendTo("#locations-table");
         });
     }
 
-    function userTrace() {
-        user = $('#user').val();
-        n = $('#n').val();
+    function getFPAmbiguity() {
         // console.log(user,n);
         for (var marker in markers) {
             // if (marker != filter_user) {
@@ -220,68 +208,32 @@
             // Remove lines
             // map.removeLayer(lineLayer);
         }
-        map.removeLayer(lineLayer);
-        lineLayer = L.featureGroup();
-        map.addLayer(lineLayer);
 
         markers = {};
-        markersLoc = {};
         UpdateTraceMap();
     }
 
-    function clearHistory() {
-        user = $('#user').val();
-        swal({
-                    title: "Delete History",
-                    text: "Are you sure you want to delete history of " + user,
-                    type: "warning",
-                    showCancelButton: true,
-                    confirmButtonColor: "#DD6B55",
-                    confirmButtonText: "Yes, delete it!",
-                    cancelButtonText: "No, cancel pls!",
-                    closeOnConfirm: false,
-                    closeOnCancel: false
-                },
-                function (isConfirm) {
-                    if (isConfirm) {
-                        var req = $.ajax({
-                            method: "DELETE",
-                            url: "/delresults" + '?' + $.param({"group": "{{ .Group }}", "user": user})
-                        });
-                        req.done(function (data) {
-                            console.log(data)
-                            if (data['success']) {
-                                swal("Deleted!", data['message'], "success");
-                                location.reload()
-                            } else {
-                                swal("Something went wrong.", data['message'], "error");
-                            }
-                        });
-                        req.fail(function (data) {
-                            swal("Sorry", data['message'], "error");
-                        });
-                    } else {
-                        swal("Cancelled", "Your data is safe :)", "error");
-                    }
-                });
+
+    function createMarker(key, match, message) {
+
+        markers[key] = L.marker([match[1], match[2]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+            title: match[0] + ":" + message,
+            smallIcon: true
+        }).bindPopup(message).addTo(map);
 
     }
 
+    function addMainMarker(match) {
 
-
-    function createMarker(key, match) {
-        if (match in markersLoc) {
-            markersLoc[match].push(key);
-            markers[markersLoc[match][0]].setPopupContent(markersLoc[match].join(","));
-        } else {
-            markersLoc[match] = [key];
-            markers[key] = L.marker([match[1], match[2]], {
+        markers[-1] = L.userMarker([match[1], match[2]], {
 //                    pulsing: true,
 //                    accuracy: 200,
-                title: key,
-                smallIcon: true
-            }).bindPopup(JSON.stringify(key)).addTo(map);
-        }
+            title: match[0],
+            smallIcon: true
+        }).bindPopup(match[0]).addTo(map);
+
     }
 </script>
 </body>

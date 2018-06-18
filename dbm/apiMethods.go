@@ -11,6 +11,7 @@ import (
 	"ParsinServer/algorithms/parameters"
 	"encoding/json"
 	"errors"
+	"math"
 )
 
 func TrackFingerprintsEmptyPosition(group string)(map[string]glb.UserPositionJSON,map[string]parameters.Fingerprint,error){
@@ -882,3 +883,86 @@ func BuildGroupDB(groupName string) { //Todo: After each update in groupcache.go
 	//glb.Debug.Println(gp.Get_RawData_Val().FingerprintsOrdering)
 }
 
+func FingerprintLikeness(groupName string, loc string, maxFPDist float64) map[string]int {
+	gp := GM.GetGroup(groupName)
+	rd := gp.Get_RawData()
+	FingerprintsOrdering := rd.Get_FingerprintsOrdering()
+	FingerprintsData := rd.Get_Fingerprints()
+
+	locFingerprintsOrdering := []string{}
+	locFingerprintsData := make(map[string]parameters.Fingerprint)
+
+	totalFingerprintsOrdering := []string{}
+	totalFingerprintsData := make(map[string]parameters.Fingerprint)
+
+	for _, fpTime := range FingerprintsOrdering {
+		if FingerprintsData[fpTime].Location == loc {
+			locFingerprintsOrdering = append(locFingerprintsOrdering, fpTime)
+			locFingerprintsData[fpTime] = FingerprintsData[fpTime]
+		} else {
+			totalFingerprintsOrdering = append(totalFingerprintsOrdering, fpTime)
+			totalFingerprintsData[fpTime] = FingerprintsData[fpTime]
+		}
+	}
+
+	//Distance calculating
+	resultFPs := make(map[string]parameters.Fingerprint)
+
+	for _, fpMain := range locFingerprintsData {
+		mac2RssMain := make(map[string]int)
+		for _, rt := range fpMain.WifiFingerprint {
+			mac2RssMain[rt.Mac] = rt.Rssi
+		}
+		for _, fpTime := range totalFingerprintsOrdering {
+			//glb.Debug.Println(totalFingerprintsData[fpTime])
+			fp := totalFingerprintsData[fpTime]
+			mac2Rss := make(map[string]int)
+			for _, rt := range fp.WifiFingerprint {
+				mac2Rss[rt.Mac] = rt.Rssi
+			}
+
+			distance := float64(0)
+			for mainMac, mainRssi := range mac2RssMain {
+				if fpRss, ok := mac2Rss[mainMac]; ok {
+					distance = distance + math.Pow(float64(mainRssi-fpRss), 2)
+					//curDist := math.Pow(10.0,float64(curRssi)*0.05)
+					//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
+					//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
+				} else {
+					distance = distance + math.Pow(float64(glb.MaxEuclideanRssVectorDist), 2)
+					//distance = distance + 9
+					//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)
+				}
+			}
+			distance = distance / float64(len(mac2RssMain))
+			//if(distance==float64(0)){
+			//	glb.Error.Println("###@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+			//}
+			precision := 10
+			distance = glb.Round(math.Pow(distance, float64(1.0)/2), precision)
+			if distance == float64(0) {
+				//glb.Error.Println("Distance zero")
+				//glb.Error.Println(job.mac2RssCur)
+				//glb.Error.Println(job.mac2RssFP)
+				distance = math.Pow(10, -1*float64(precision))
+				//distance = maxDist
+			}
+			if distance <= maxFPDist {
+				//glb.Debug.Println(fp)
+				resultFPs[fpTime] = fp
+			}
+		}
+	}
+
+	locCount := make(map[string]int)
+	for _, fp := range resultFPs {
+		//glb.Debug.Println(fp)
+		if count, ok := locCount[fp.Location]; ok {
+			locCount[fp.Location] = count + 1
+		} else {
+			locCount[fp.Location] = 1
+		}
+	}
+
+	return locCount
+}
