@@ -182,6 +182,7 @@
             // console.log(data.users[user])
             $.each(data.users[user], function (key, val) {
                 // console.log(val.location)
+                key = data.users[user].length - key
                 let match = pattern.exec(val.location);
                 if (match && match[1] && match[2]) {
                     locations.push(match);
