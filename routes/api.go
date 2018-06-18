@@ -338,6 +338,7 @@ func GetUserLocations(c *gin.Context) {
 	usersQuery := c.DefaultQuery("users", "noneasdf")
 	nQuery := c.DefaultQuery("n", "noneasdf")
 	groupName = strings.ToLower(groupName)
+	userQuery = strings.ToLower(userQuery)
 	if groupName != "noneasdf" {
 		if !dbm.GroupExists(groupName) {
 			c.JSON(http.StatusOK, gin.H{"message": "You should insert fingerprints before tracking, see documentation", "success": false})
