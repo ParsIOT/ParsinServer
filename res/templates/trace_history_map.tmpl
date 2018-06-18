@@ -25,6 +25,11 @@
     <script src='/static/js/leaflet.usermarker.js'></script>
     <script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
 
+    <script src="/static/js/sweetalert.min.js"></script>
+    <script src="/static/js/d3.min.js"></script>
+    <script src="/static/js/d3.tip.v0.6.3.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
+
     <!-- Font Awesome CSS -->
     <link rel="stylesheet" href="/static/css/font-awesome.min.css">
     <style>
@@ -89,6 +94,13 @@
                                     <div class="form-group">
                                         <button onclick="userTrace()" class="btn btn-success btn-sm btn-block">
                                             GetTrace
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <button onclick="clearHistory()" class="btn btn-warning btn-sm btn-block">Clear
+                                            History
                                         </button>
                                     </div>
                                 </div>
@@ -194,56 +206,7 @@
                 html: items.join("")
             }).appendTo("#users-table");
         });
-
-        // setTimeout(function () {
-        //     $('.bs-callout').removeClass('bs-callout-danger').addClass('bs-callout-success')
-        //     if ($('#auto-reload').is(':checked')) {
-        //         resetDataLoadInterval()
-        //     }
-        // }, 200);
     }
-
-
-    // $('#auto-reload').change(function () {
-    //     if (this.checked) {
-    //         $('#refresh-interval').prop('disabled', false);
-    //         resetDataLoadInterval();
-    //     } else {
-    //         clearInterval(reloadDataInterval);
-    //         $('#refresh-interval').prop('disabled', true);
-    //     }
-    // });
-
-    // $('#refresh-interval').change("change", function () {
-    //     resetDataLoadInterval();
-    // });
-
-    // function resetDataLoadInterval(interval = null) {
-    //     clearInterval(reloadDataInterval);
-    //     if (interval) {
-    //         reloadDataInterval = setInterval(updateUsersLocation, interval);
-    //         return
-    //     }
-    //     let v = parseInt($('#refresh-interval').val());
-    //     let m = parseInt($('#refresh-interval').prop('min'));
-    //     if (m < v) {
-    //         reloadDataInterval = setInterval(updateUsersLocation, v);
-    //     } else {
-    //         reloadDataInterval = setInterval(updateUsersLocation, m);
-    //     }
-    // }
-
-    // function filterUsers() {
-    //     filter_user = $('#filter-user').val();
-    //     for (var marker in markers) {
-    //         if (marker != filter_user) {
-    //             console.log(marker);
-    //             map.removeLayer(markers[marker]);
-    //             delete markers[marker];
-    //         }
-    //     }
-    //     updateUsersLocation();
-    // }
 
     function userTrace() {
         user = $('#user').val();
@@ -265,16 +228,47 @@
         UpdateTraceMap();
     }
 
-    // function clearFilter() {
-    //     user = false;
-    //     updateUsersLocation();
-    // }
+    function clearHistory() {
+        user = $('#user').val();
+        swal({
+                    title: "Delete History",
+                    text: "Are you sure you want to delete history of " + user,
+                    type: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#DD6B55",
+                    confirmButtonText: "Yes, delete it!",
+                    cancelButtonText: "No, cancel pls!",
+                    closeOnConfirm: false,
+                    closeOnCancel: false
+                },
+                function (isConfirm) {
+                    if (isConfirm) {
+                        var req = $.ajax({
+                            method: "DELETE",
+                            url: "/delresults" + '?' + $.param({"group": "{{ .Group }}", "user": user})
+                        });
+                        req.done(function (data) {
+                            console.log(data)
+                            if (data['success']) {
+                                swal("Deleted!", data['message'], "success");
+                                location.reload()
+                            } else {
+                                swal("Something went wrong.", data['message'], "error");
+                            }
+                        });
+                        req.fail(function (data) {
+                            swal("Sorry", data['message'], "error");
+                        });
+                    } else {
+                        swal("Cancelled", "Your data is safe :)", "error");
+                    }
+                });
+
+    }
+
+
 
     function createMarker(key, match) {
-        // console.log(key)
-        // console.log(match)
-
-        // console.log(markersLoc)
         if (match in markersLoc) {
             markersLoc[match].push(key);
             markers[markersLoc[match][0]].setPopupContent(markersLoc[match].join(","));

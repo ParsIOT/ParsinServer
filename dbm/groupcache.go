@@ -7,6 +7,7 @@ import (
 	"ParsinServer/algorithms/parameters"
 	"ParsinServer/glb"
 	"reflect"
+	"errors"
 )
 
 //Todo: After each update in groupcache.go, rebuild the group (use /buildgroup)
@@ -1666,10 +1667,16 @@ func (rs *ResultDataStruct) Get_AllUserResults() map[string][]glb.UserPositionJS
 	return results
 }
 
-func (rs *ResultDataStruct) Clear_UserResults() {
+func (rs *ResultDataStruct) Clear_UserResults(user string) error {
 	defer rs.SetDirtyBit()
 
 	rs.Lock()
-	rs.UserResults = make(map[string][]glb.UserPositionJSON)
-	rs.Unlock()
+	if val, ok := rs.UserResults[user]; (ok && len(val) != 0) {
+		rs.UserResults[user] = []glb.UserPositionJSON{}
+		rs.Unlock()
+		return nil
+	} else {
+		rs.Unlock()
+		return errors.New("There are no results for this user")
+	}
 }

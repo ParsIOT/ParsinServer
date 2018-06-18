@@ -1216,11 +1216,18 @@ func DelResults(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
-	if groupName != "noneasdf" {
-		dbm.GM.GetGroup(groupName).Get_ResultData().Clear_UserResults()
+	user := strings.ToLower(c.DefaultQuery("user", "none"))
+
+	if groupName != "noneasdf" && user != "none" {
+		err := dbm.GM.GetGroup(groupName).Get_ResultData().Clear_UserResults(user)
 		//locations := dbm.DelResults(groupName)
-		c.JSON(http.StatusOK, gin.H{"success": true})
+		if err == nil {
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		}
+
 	} else {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or user not mentioned"})
 	}
 }
