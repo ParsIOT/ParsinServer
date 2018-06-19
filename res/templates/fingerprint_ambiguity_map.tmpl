@@ -84,11 +84,11 @@
                             <div id="location" class="collapse in">
                                 <div class="form-group">
                                     <label for="refresh-interval">Enter location</label>
-                                    <input id="locName" class="form-control" placeholder="locName"/>
+                                    <input id="locName" class="form-control" placeholder="Location Num"/>
                                 </div>
                                 <div class="form-group">
                                     <label for="refresh-interval">Enter MaxFPDist(0 to 50.0)</label>
-                                    <input id="maxFPDist" class="form-control" placeholder="maxFPDist"/>
+                                    <input id="maxFPDist" class="form-control" placeholder="Max RSS Vector distance"/>
                                 </div>
                                 <div class="col-md-12">
                                     <div class="form-group">
@@ -104,12 +104,12 @@
                            class="table table-responsive table-hover table-condensed table-bordered">
                         <thead>
                         <tr>
-                            <td>Key</td>
-                            <td>X</td>
-                            <td>Y</td>
+                            <td>Location</td>
+                            <td>Num</td>
                         </tr>
                         </thead>
                     </table>
+                    <h4 id="show-details-link" class="text-center"/>
                 </div>
             </div>
         </div>
@@ -122,6 +122,7 @@
 <script type="application/javascript">
     var filter_user = false;
     var reloadDataInterval;
+
     $('#live-map').css('height', $(window.top).height() - 275);
     $('#locations-table-container').css('height', $(window.top).height() - 245);
     var map = L.map('live-map', {
@@ -166,6 +167,8 @@
     }
 
     function UpdateTraceMap() {
+
+
         locName = $('#locName').val();
         maxFPDist = $('#maxFPDist').val();
 
@@ -176,16 +179,17 @@
 
         $.getJSON("/fingerprintLikeness?group={{ .Group }}&location=" + locName + "&maxFPDist=" + maxFPDist, function (data) {
             // console.log(data.users[user])
+
             let count = 1;
-            $.each(data.locCount, function (key, val) {
-                let match = pattern.exec(key);
+            $.each(data.resultMap, function (location, fingerprints) {
+                let match = pattern.exec(location);
                 if (match && match[1] && match[2]) {
-                    items.push("<tr class='bg-info'><td>" + key + "</td><td>" + match[1] + "</td><td>" + match[2] + "</td></tr>");
+                    items.push("<tr class='bg-info'><td>" + location + "</td><td>" + fingerprints.length + "</td></tr>");
                     // console.log(match)
-                    createMarker(count, match, val);
+                    createMarker(count, match, fingerprints);
                     // markers[key]=match;
                 } else {
-                    items.push("<tr class='bg-info'><td>" + key + "</td><td colspan='2' class='text-center'> NO DATA </td></tr>");
+                    items.push("<tr class='bg-info'><td>" + location + "</td><td colspan='2' class='text-center'> NO DATA </td></tr>");
                 }
                 count++;
             });
@@ -196,6 +200,13 @@
                 "class": "tab-content",
                 html: items.join("")
             }).appendTo("#locations-table");
+
+            $("#show-details-link").find("a").remove();//remove show rss details link
+            $("<a/>", {
+                "target": "_blank",
+                "onclick": "window.open('" + "/fingerprintLikeness?group={{ .Group }}&location=" + locName + "&maxFPDist=" + maxFPDist + "','pagename','resizable,height=420,width=1000'); return false;",
+                html: "See Rss details"
+            }).appendTo("#show-details-link");
         });
     }
 
@@ -219,9 +230,9 @@
         markers[key] = L.marker([match[1], match[2]], {
 //                    pulsing: true,
 //                    accuracy: 200,
-            title: match[0] + ":" + message,
+            title: match[0] + " : " + message.length,
             smallIcon: true
-        }).bindPopup(message).addTo(map);
+        }).bindPopup(match[0] + " : " + message.length).addTo(map);
 
     }
 

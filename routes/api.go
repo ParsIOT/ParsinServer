@@ -1248,8 +1248,8 @@ func FingerprintLikeness(c *gin.Context) {
 	if groupName != "noneasdf" && location != "none" && maxFPDistStr != "none" {
 		maxFPDist, err := strconv.ParseFloat(maxFPDistStr, 64)
 		if err == nil {
-			locCount := dbm.FingerprintLikeness(groupName, location, maxFPDist)
-			c.JSON(http.StatusOK, gin.H{"success": true, "locCount": locCount})
+			resultMap, fingerprintRssDetails := dbm.FingerprintLikeness(groupName, location, maxFPDist)
+			c.JSON(http.StatusOK, gin.H{"success": true, "resultMap": resultMap, "fingerprintDetails": fingerprintRssDetails})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 		}

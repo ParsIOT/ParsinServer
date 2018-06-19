@@ -9,6 +9,7 @@ package parameters
 import (
 	"strings"
 	"ParsinServer/glb"
+	"strconv"
 )
 
 //Fingerprint is the prototypical glb.Information from the fingerprinting device
@@ -24,6 +25,10 @@ type Fingerprint struct {
 	Location        string   `json:"location"`
 	Timestamp       int64    `json:"timestamp"`
 	WifiFingerprint []Router `json:"wifi-fingerprint"`
+}
+
+func (fp *Fingerprint) GetTimestamp() string {
+	return strconv.FormatInt(fp.Timestamp, 10)
 }
 
 type BulkFingerprint struct {

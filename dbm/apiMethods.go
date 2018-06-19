@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math"
+	"sort"
 )
 
 func TrackFingerprintsEmptyPosition(group string)(map[string]glb.UserPositionJSON,map[string]parameters.Fingerprint,error){
@@ -883,7 +884,9 @@ func BuildGroupDB(groupName string) { //Todo: After each update in groupcache.go
 	//glb.Debug.Println(gp.Get_RawData_Val().FingerprintsOrdering)
 }
 
-func FingerprintLikeness(groupName string, loc string, maxFPDist float64) map[string]int {
+func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[string][]string, [][]string) {
+	resultWithMainFP := []parameters.Fingerprint{}
+
 	gp := GM.GetGroup(groupName)
 	rd := gp.Get_RawData()
 	FingerprintsOrdering := rd.Get_FingerprintsOrdering()
@@ -899,6 +902,7 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) map[st
 		if FingerprintsData[fpTime].Location == loc {
 			locFingerprintsOrdering = append(locFingerprintsOrdering, fpTime)
 			locFingerprintsData[fpTime] = FingerprintsData[fpTime]
+			resultWithMainFP = append(resultWithMainFP, FingerprintsData[fpTime])
 		} else {
 			totalFingerprintsOrdering = append(totalFingerprintsOrdering, fpTime)
 			totalFingerprintsData[fpTime] = FingerprintsData[fpTime]
@@ -954,15 +958,52 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) map[st
 		}
 	}
 
-	locCount := make(map[string]int)
+	resultMap := make(map[string][]string)
 	for _, fp := range resultFPs {
+		resultWithMainFP = append(resultWithMainFP, fp)
 		//glb.Debug.Println(fp)
-		if count, ok := locCount[fp.Location]; ok {
-			locCount[fp.Location] = count + 1
+		if list, ok := resultMap[fp.Location]; ok {
+			list = append(list, fp.GetTimestamp())
+			resultMap[fp.Location] = list
 		} else {
-			locCount[fp.Location] = 1
+			resultMap[fp.Location] = []string{fp.GetTimestamp()}
 		}
 	}
 
-	return locCount
+	fingerprintRssDetails := [][]string{}
+
+	var uniqueMacs []string
+	firstLine := []string{"x,y"}
+	for _, fp := range resultWithMainFP {
+		for _, rt := range fp.WifiFingerprint {
+			if !glb.StringInSlice(rt.Mac, uniqueMacs) {
+				uniqueMacs = append(uniqueMacs, rt.Mac)
+			}
+		}
+	}
+	sort.Strings(uniqueMacs)
+	for _, mac := range uniqueMacs {
+		firstLine = append(firstLine, mac)
+	}
+	fingerprintRssDetails = append(fingerprintRssDetails, firstLine)
+
+	for _, fp := range resultWithMainFP {
+		line := []string{fp.Location}
+		for _, mac := range uniqueMacs {
+			macFound := false
+			for _, rt := range fp.WifiFingerprint {
+				if rt.Mac == mac {
+					line = append(line, strconv.Itoa(rt.Rssi))
+					macFound = true
+					break;
+				}
+			}
+			if macFound {
+				line = append(line, "")
+			}
+		}
+		fingerprintRssDetails = append(fingerprintRssDetails, line)
+	}
+
+	return resultMap, fingerprintRssDetails
 }
