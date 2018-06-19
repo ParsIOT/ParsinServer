@@ -140,7 +140,7 @@
                     title: key,
                     draggable: true,
                     smallIcon: true
-                }).bindPopup("<b>x = " + match[1] + "</b><br><b>y = " + match[2] + "</b>").addTo(markers);
+                }).bindPopup("<b>" + match[1] + "," + match[2] + "</b>").addTo(markers);
             } else {
                 items.push("<tr><td colspan='2' class='text-center'>" + key + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
 
