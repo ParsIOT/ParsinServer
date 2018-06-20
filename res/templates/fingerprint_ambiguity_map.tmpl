@@ -95,6 +95,9 @@
                                         <button onclick="getFPAmbiguity()" class="btn btn-success btn-block">
                                             Get similar FP
                                         </button>
+                                        <button onclick="getMapLocations()" class="btn btn-warning btn-block">
+                                            Reset Map
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -137,15 +140,16 @@
 
     lineLayer = L.featureGroup();
     map.addLayer(lineLayer);
-
+    locationMarkers = L.featureGroup();
     var markers = {};
     var markersLoc = {};
     var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
 
     //    var marker = L.userMarker([0, 0], {pulsing: true, accuracy: 100, smallIcon: true});
     //    marker.addTo(map);
+    getMapLocations();
 
-    UpdateTraceMap();
+    // UpdateTraceMap();
 
     function Line(p1x, p1y, p2x, p2y) {
 
@@ -166,8 +170,43 @@
         line.addTo(lineLayer);
     }
 
-    function UpdateTraceMap() {
+    function getMapLocations() {
 
+        for (var marker in markers) {  // delete fingerprint locations from map
+            map.removeLayer(markers[marker]);
+        }
+
+        markers = {};
+
+        $.getJSON("/locations?group={{ .Group }}", function (data) {
+            // var items = [];
+
+            $.each(data.locations, function (key, val) {
+                let match = pattern.exec(key);
+                if (match) {
+                    // items.push("<tr><td>" + match[1] + "</td><td>" + match[2] + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
+
+                    L.userMarker([match[1], match[2]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+                        title: key,
+                        smallIcon: true
+                    }).bindPopup("<b>" + match[1] + "," + match[2] + "</b>").addTo(locationMarkers);
+                }
+            });
+            locationMarkers.addTo(map);
+            locationMarkers.eachLayer(function (marker) {
+                marker.on('click', function (e) {
+                    $('#locName').val((e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0");
+                    UpdateTraceMap();
+                });
+
+            });
+        });
+    }
+
+    function UpdateTraceMap() {
+        map.removeLayer(locationMarkers);
 
         locName = $('#locName').val();
         maxFPDist = $('#maxFPDist').val();
