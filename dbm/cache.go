@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"ParsinServer/glb"
+	"ParsinServer/dbm/parameters"
 )
 
 //Todo: These time can be dynamic for each group and each variable
@@ -45,8 +45,8 @@ var usersCache = struct {
 // key= concatenation of group Name and user Name, value= a UserPositionJSON instance
 var userPositionCache = struct {
 	sync.RWMutex
-	m map[string]glb.UserPositionJSON
-}{m: make(map[string]glb.UserPositionJSON)}
+	m map[string]parameters.UserPositionJSON
+}{m: make(map[string]parameters.UserPositionJSON)}
 
 //It's used to understand that new Fingerprint was added to db.
 //Containing a map : key= group Name, value= is new fingerprint added to db?
@@ -89,7 +89,7 @@ func ResetCache(cache string) {
 		usersCache.Unlock()
 	} else if cache == "userPositionCache" {
 		userPositionCache.Lock()
-		userPositionCache.m = make(map[string]glb.UserPositionJSON)
+		userPositionCache.m = make(map[string]parameters.UserPositionJSON)
 		userPositionCache.Unlock()
 	//} else if cache == "psCache" {
 	//	psCache.Lock()
@@ -187,7 +187,7 @@ func AppendUserCache(group string, user string) {
 //}
 
 //userPositionCache variable getter function
-func GetUserPositionCache(group_user string) (glb.UserPositionJSON, bool) {
+func GetUserPositionCache(group_user string) (parameters.UserPositionJSON, bool) {
 	//Debug.Println("getUserPositionCache")
 	userPositionCache.RLock()
 	cached, ok := userPositionCache.m[group_user]
@@ -196,7 +196,7 @@ func GetUserPositionCache(group_user string) (glb.UserPositionJSON, bool) {
 }
 
 //userPositionCache variable setter function
-func SetUserPositionCache(group_user string, p glb.UserPositionJSON) {
+func SetUserPositionCache(group_user string, p parameters.UserPositionJSON) {
 	//Debug.Println("setUserPositionCache")
 	userPositionCache.Lock()
 	userPositionCache.m[group_user] = p

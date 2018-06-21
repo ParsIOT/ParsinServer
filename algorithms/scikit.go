@@ -11,7 +11,7 @@ import (
 	"path"
 	"time"
 	"ParsinServer/glb"
-	"ParsinServer/algorithms/parameters"
+	"ParsinServer/dbm/parameters"
 	"ParsinServer/dbm"
 )
 

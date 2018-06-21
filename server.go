@@ -310,6 +310,11 @@ func main() {
 			needToLoadSettings.DELETE("/user", routes.DeleteUser)
 			needToLoadSettings.DELETE("/database", routes.DeleteDatabase)
 			//needToLoadSettings.DELETE("/delresults", routes.DelResults)
+
+			needToLoadSettings.DELETE("/delresults", routes.DelResults)
+			needToLoadSettings.GET("/location", routes.GetUserLocations)
+			needToLoadSettings.GET("/fingerprintLikeness", routes.FingerprintLikeness)
+
 			needToLoadSettings.GET("/calculate", routes.Calculate)
 			needToLoadSettings.GET("/cvresults", routes.CVResults)
 			needToLoadSettings.GET("/calcLevel", routes.CalcCompletionLevel)
@@ -331,20 +336,16 @@ func main() {
 			needToLoadSettings.GET("/getuniquemacs", routes.GetUniqueMacs)
 
 			//Arbitrary locations
-			//needToLoadSettings.GET("/addArbitLocations", routes.AddArbitLocations)
-			//needToLoadSettings.GET("/delArbitLocations", routes.DelArbitLocations)
-			//needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
+			needToLoadSettings.GET("/addArbitLocations", routes.AddArbitLocations)
+			needToLoadSettings.GET("/delArbitLocations", routes.DelArbitLocations)
+			needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
 		}
 
 	}
 
-	r.DELETE("/delresults", routes.DelResults)
-	r.GET("/location", routes.GetUserLocations)
-	r.GET("/fingerprintLikeness", routes.FingerprintLikeness)
-
-	r.POST("/addArbitLocations", routes.AddArbitLocations)
-	r.POST("/delArbitLocations", routes.DelArbitLocations)
-	r.GET("/getArbitLocations", routes.GetArbitLocations)
+	//r.POST("/addArbitLocations", routes.AddArbitLocations)
+	//r.POST("/delArbitLocations", routes.DelArbitLocations)
+	//r.GET("/getArbitLocations", routes.GetArbitLocations)
 
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", algorithms.LearnFingerprintPOST)

@@ -3,8 +3,7 @@
 package dbm
 
 import (
-	parameters "ParsinServer/algorithms/parameters"
-	glb "ParsinServer/glb"
+	parameters "ParsinServer/dbm/parameters"
 	json "encoding/json"
 	easyjson "github.com/mailru/easyjson"
 	jlexer "github.com/mailru/easyjson/jlexer"
@@ -103,14 +102,14 @@ func easyjson3b8810b5DecodeParsinServerDbm(in *jlexer.Lexer, out *ResultDataStru
 			} else {
 				in.Delim('{')
 				if !in.IsDelim('}') {
-					out.UserHistory = make(map[string][]glb.UserPositionJSON)
+					out.UserHistory = make(map[string][]parameters.UserPositionJSON)
 				} else {
 					out.UserHistory = nil
 				}
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v4 []glb.UserPositionJSON
+					var v4 []parameters.UserPositionJSON
 					if in.IsNull() {
 						in.Skip()
 						v4 = nil
@@ -118,15 +117,15 @@ func easyjson3b8810b5DecodeParsinServerDbm(in *jlexer.Lexer, out *ResultDataStru
 						in.Delim('[')
 						if v4 == nil {
 							if !in.IsDelim(']') {
-								v4 = make([]glb.UserPositionJSON, 0, 1)
+								v4 = make([]parameters.UserPositionJSON, 0, 1)
 							} else {
-								v4 = []glb.UserPositionJSON{}
+								v4 = []parameters.UserPositionJSON{}
 							}
 						} else {
 							v4 = (v4)[:0]
 						}
 						for !in.IsDelim(']') {
-							var v5 glb.UserPositionJSON
+							var v5 parameters.UserPositionJSON
 							(v5).UnmarshalEasyJSON(in)
 							v4 = append(v4, v5)
 							in.WantComma()
@@ -144,14 +143,14 @@ func easyjson3b8810b5DecodeParsinServerDbm(in *jlexer.Lexer, out *ResultDataStru
 			} else {
 				in.Delim('{')
 				if !in.IsDelim('}') {
-					out.UserResults = make(map[string][]glb.UserPositionJSON)
+					out.UserResults = make(map[string][]parameters.UserPositionJSON)
 				} else {
 					out.UserResults = nil
 				}
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v6 []glb.UserPositionJSON
+					var v6 []parameters.UserPositionJSON
 					if in.IsNull() {
 						in.Skip()
 						v6 = nil
@@ -159,15 +158,15 @@ func easyjson3b8810b5DecodeParsinServerDbm(in *jlexer.Lexer, out *ResultDataStru
 						in.Delim('[')
 						if v6 == nil {
 							if !in.IsDelim(']') {
-								v6 = make([]glb.UserPositionJSON, 0, 1)
+								v6 = make([]parameters.UserPositionJSON, 0, 1)
 							} else {
-								v6 = []glb.UserPositionJSON{}
+								v6 = []parameters.UserPositionJSON{}
 							}
 						} else {
 							v6 = (v6)[:0]
 						}
 						for !in.IsDelim(']') {
-							var v7 glb.UserPositionJSON
+							var v7 parameters.UserPositionJSON
 							(v7).UnmarshalEasyJSON(in)
 							v6 = append(v6, v7)
 							in.WantComma()

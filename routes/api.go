@@ -19,7 +19,7 @@ import (
 	"ParsinServer/glb"
 	"ParsinServer/algorithms"
 	"ParsinServer/dbm"
-	"ParsinServer/algorithms/parameters"
+	"ParsinServer/dbm/parameters"
 )
 
 var startTime time.Time
@@ -86,7 +86,7 @@ func GetStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"uptime": time.Since(startTime).Seconds(), "registered": startTime.String(), "status": "standard", "num_cores": runtime.NumCPU(), "success": true})
 }
 
-// glb.UserPositionJSON stores the a users time, location and bayes after calculatePosterior()
+// parameters.UserPositionJSON stores the a users time, location and bayes after calculatePosterior()
 
 // Gets location list:
 // Example:
@@ -180,20 +180,20 @@ func GetLastFingerprint(c *gin.Context) {
 }
 
 //Returns n of the last location estimations that were stored in fingerprints-track bucket in db
-func GetHistoricalUserPositions(groupName string, user string, n int) []glb.UserPositionJSON {
+func GetHistoricalUserPositions(groupName string, user string, n int) []parameters.UserPositionJSON {
 
 	//var fingerprints []parameters.Fingerprint
 	//var err error
 	//
 	//fingerprints, err = dbm.TrackFingerprints(user, n, groupName)
 	//if (err != nil) {
-	//	return make([]glb.UserPositionJSON, 0) //empty userJSONs
+	//	return make([]parameters.UserPositionJSON, 0) //empty userJSONs
 	//}
 	//
 	//glb.Debug.Printf("Got history of %d fingerprints\n", len(fingerprints))
-	//userJSONs := make([]glb.UserPositionJSON, len(fingerprints))
+	//userJSONs := make([]parameters.UserPositionJSON, len(fingerprints))
 	//for i, fingerprint := range fingerprints {
-	//	var userJSON glb.UserPositionJSON
+	//	var userJSON parameters.UserPositionJSON
 	//	//UTCfromUnixNano := time.Unix(0, fingerprint.Timestamp)
 	//	//userJSON.Time = UTCfromUnixNano.String()
 	//	userJSON.Time = fingerprint.Timestamp
@@ -215,10 +215,11 @@ func GetHistoricalUserPositions(groupName string, user string, n int) []glb.User
 	//return userJSONs
 	gp := dbm.GM.GetGroup(groupName)
 	tempUserPositions := gp.Get_ResultData().Get_UserResults(user)
-	var userPositions []glb.UserPositionJSON
+	var userPositions []parameters.UserPositionJSON
 
 	// Get n last userPositions
 	for i := len(tempUserPositions) - 1; len(tempUserPositions)-n <= i && i >= 0; i-- {
+		//glb.Debug.Println(tempUserPositions[i].Fingerprint)
 		userPositions = append(userPositions, tempUserPositions[i])
 	}
 
@@ -226,9 +227,9 @@ func GetHistoricalUserPositions(groupName string, user string, n int) []glb.User
 }
 
 //Returns svm, rf, baysian estimations of the track fingerprints that belong to a group
-func GetCurrentPositionOfAllUsers(groupName string) map[string]glb.UserPositionJSON {
+func GetCurrentPositionOfAllUsers(groupName string) map[string]parameters.UserPositionJSON {
 	//groupName = strings.ToLower(groupName)
-	userPositions := make(map[string]glb.UserPositionJSON)
+	userPositions := make(map[string]parameters.UserPositionJSON)
 	userFingerprints := make(map[string]parameters.Fingerprint)
 	var err error
 	userPositions, userFingerprints, err = dbm.TrackFingerprintsEmptyPosition(groupName)
@@ -258,13 +259,13 @@ func GetCurrentPositionOfAllUsers(groupName string) map[string]glb.UserPositionJ
 }
 
 // Is like getHistoricalUserPositions but only returns the last location estimation
-func GetCurrentPositionOfUser(groupName string, user string) glb.UserPositionJSON {
+func GetCurrentPositionOfUser(groupName string, user string) parameters.UserPositionJSON {
 
 	val, ok := dbm.GetUserPositionCache(groupName + user)
 	if ok {
 		return val
 	}
-	//var userJSON glb.UserPositionJSON
+	//var userJSON parameters.UserPositionJSON
 	//var userFingerprint parameters.Fingerprint
 	//var err error
 	//userJSON, userFingerprint, err = dbm.TrackFingeprintEmptyPosition(user, groupName)
@@ -283,7 +284,7 @@ func GetCurrentPositionOfUser(groupName string, user string) glb.UserPositionJSO
 	//	userJSON.ScikitData = algorithms.ScikitClassify(groupName, userFingerprint)
 	//}
 	gp := dbm.GM.GetGroup(groupName)
-	var lastUserPos glb.UserPositionJSON
+	var lastUserPos parameters.UserPositionJSON
 	userPositions := gp.Get_ResultData().Get_UserResults(user)
 	if len(userPositions) > 0 {
 		lastUserPos = userPositions[len(userPositions)-1]
@@ -344,7 +345,7 @@ func GetUserLocations(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "You should insert fingerprints before tracking, see documentation", "success": false})
 			return
 		}
-		people := make(map[string][]glb.UserPositionJSON)
+		people := make(map[string][]parameters.UserPositionJSON)
 		users := strings.Split(strings.ToLower(usersQuery), ",")
 		if users[0] == "noneasdf" {
 			users = []string{userQuery}
@@ -357,7 +358,7 @@ func GetUserLocations(c *gin.Context) {
 		for _, user := range users {
 			user = strings.ToLower(user) // todo: is it necessary? Does it conflict with learning data?
 			if _, ok := people[user]; !ok {
-				people[user] = []glb.UserPositionJSON{}
+				people[user] = []parameters.UserPositionJSON{}
 			}
 			if nQuery != "noneasdf" {
 				number, _ := strconv.ParseInt(nQuery, 10, 0)
@@ -907,7 +908,7 @@ func Setfiltermacs(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	var filterMacs glb.FilterMacs
+	var filterMacs parameters.FilterMacs
 
 	//x, _ := ioutil.ReadAll(c.Request.Body)
 	//Warning.Println("%s", string(x))
@@ -1249,7 +1250,17 @@ func FingerprintLikeness(c *gin.Context) {
 		maxFPDist, err := strconv.ParseFloat(maxFPDistStr, 64)
 		if err == nil {
 			resultMap, fingerprintRssDetails := dbm.FingerprintLikeness(groupName, location, maxFPDist)
-			c.JSON(http.StatusOK, gin.H{"success": true, "resultMap": resultMap, "fingerprintDetails": fingerprintRssDetails})
+
+			rssDetailsStr := ""
+			for _, fpRSSs := range fingerprintRssDetails {
+				line := ""
+				for _, rss := range fpRSSs {
+					line += rss + ","
+				}
+				rssDetailsStr += line + "\n"
+			}
+
+			c.JSON(http.StatusOK, gin.H{"success": true, "resultMap": resultMap, "fingerprintDetails": fingerprintRssDetails, "rssDetailsStr": rssDetailsStr})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 		}

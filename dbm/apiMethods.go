@@ -8,15 +8,15 @@ import (
 	"strings"
 	"path"
 	"ParsinServer/glb"
-	"ParsinServer/algorithms/parameters"
+	"ParsinServer/dbm/parameters"
 	"encoding/json"
 	"errors"
 	"math"
 	"sort"
 )
 
-func TrackFingerprintsEmptyPosition(group string)(map[string]glb.UserPositionJSON,map[string]parameters.Fingerprint,error){
-	userPositions := make(map[string]glb.UserPositionJSON)
+func TrackFingerprintsEmptyPosition(group string) (map[string]parameters.UserPositionJSON, map[string]parameters.Fingerprint, error) {
+	userPositions := make(map[string]parameters.UserPositionJSON)
 	userFingerprints := make(map[string]parameters.Fingerprint)
 
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
@@ -40,7 +40,7 @@ func TrackFingerprintsEmptyPosition(group string)(map[string]glb.UserPositionJSO
 				timestampString := string(k)
 				timestampUnixNano, _ := strconv.ParseInt(timestampString, 10, 64)
 				//UTCfromUnixNano := time.Unix(0, timestampUnixNano)
-				foo := glb.UserPositionJSON{Time: timestampUnixNano}
+				foo := parameters.UserPositionJSON{Time: timestampUnixNano}
 				userPositions[v2.Username] = foo
 				userFingerprints[v2.Username] = v2
 				numUsersFound++
@@ -58,8 +58,8 @@ func TrackFingerprintsEmptyPosition(group string)(map[string]glb.UserPositionJSO
 	return userPositions,userFingerprints,nil
 }
 
-func TrackFingeprintEmptyPosition(user string, group string)(glb.UserPositionJSON,parameters.Fingerprint,error){
-	var userJSON glb.UserPositionJSON
+func TrackFingeprintEmptyPosition(user string, group string) (parameters.UserPositionJSON, parameters.Fingerprint, error) {
+	var userJSON parameters.UserPositionJSON
 	var userFingerprint parameters.Fingerprint
 
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
@@ -929,13 +929,10 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 			for mainMac, mainRssi := range mac2RssMain {
 				if fpRss, ok := mac2Rss[mainMac]; ok {
 					distance = distance + math.Pow(float64(mainRssi-fpRss), 2)
-					//curDist := math.Pow(10.0,float64(curRssi)*0.05)
-					//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
-					//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
+
 				} else {
 					distance = distance + math.Pow(float64(glb.MaxEuclideanRssVectorDist), 2)
-					//distance = distance + 9
-					//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)
+
 				}
 			}
 			distance = distance / float64(len(mac2RssMain))
@@ -998,12 +995,22 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 					break;
 				}
 			}
-			if macFound {
+			if !macFound {
 				line = append(line, "")
 			}
 		}
 		fingerprintRssDetails = append(fingerprintRssDetails, line)
 	}
+
+	//for _,fpRSSs := range fingerprintRssDetails{
+	//	line := ""
+	//	for _,rss := range fpRSSs{
+	//		line += rss
+	//		line += ","
+	//	}
+	//	glb.Debug.Println(line)
+	//}
+
 
 	return resultMap, fingerprintRssDetails
 }

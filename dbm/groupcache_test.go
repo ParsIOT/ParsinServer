@@ -11,15 +11,15 @@ func TestAdd_UserHistory(t *testing.T) {
 	defer freedb(testdb)
 
 	gp := GM.GetGroup(testdb)
-	fp1 := glb.UserPositionJSON{
+	fp1 := parameters.UserPositionJSON{
 		Time:     1000,
 		KnnGuess: "10,10",
 	}
-	fp2 := glb.UserPositionJSON{
+	fp2 := parameters.UserPositionJSON{
 		Time:     1003,
 		KnnGuess: "20,20",
 	}
-	fp3 := glb.UserPositionJSON{
+	fp3 := parameters.UserPositionJSON{
 		Time:     1006,
 		KnnGuess: "30,30",
 	}
@@ -33,7 +33,7 @@ func TestAdd_UserHistory(t *testing.T) {
 	//if (userHistory[0].KnnGuess == "10,10"){
 	//	glb.Debug.Println("ok")
 	//}
-	result := []glb.UserPositionJSON{fp2, fp3}
+	result := []parameters.UserPositionJSON{fp2, fp3}
 
 	assert.Equal(t, userHistory, result)
 }

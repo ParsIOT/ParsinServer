@@ -17,7 +17,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson7b60966aDecodeParsinServerAlgorithmsParameters(in *jlexer.Lexer, out *Router) {
+func easyjson7b60966aDecodeParsinServerDbmParameters(in *jlexer.Lexer, out *Router) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -50,7 +50,7 @@ func easyjson7b60966aDecodeParsinServerAlgorithmsParameters(in *jlexer.Lexer, ou
 		in.Consumed()
 	}
 }
-func easyjson7b60966aEncodeParsinServerAlgorithmsParameters(out *jwriter.Writer, in Router) {
+func easyjson7b60966aEncodeParsinServerDbmParameters(out *jwriter.Writer, in Router) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -80,27 +80,27 @@ func easyjson7b60966aEncodeParsinServerAlgorithmsParameters(out *jwriter.Writer,
 // MarshalJSON supports json.Marshaler interface
 func (v Router) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson7b60966aEncodeParsinServerAlgorithmsParameters(&w, v)
+	easyjson7b60966aEncodeParsinServerDbmParameters(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Router) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson7b60966aEncodeParsinServerAlgorithmsParameters(w, v)
+	easyjson7b60966aEncodeParsinServerDbmParameters(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Router) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson7b60966aDecodeParsinServerAlgorithmsParameters(&r, v)
+	easyjson7b60966aDecodeParsinServerDbmParameters(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Router) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson7b60966aDecodeParsinServerAlgorithmsParameters(l, v)
+	easyjson7b60966aDecodeParsinServerDbmParameters(l, v)
 }
-func easyjson7b60966aDecodeParsinServerAlgorithmsParameters1(in *jlexer.Lexer, out *Fingerprint) {
+func easyjson7b60966aDecodeParsinServerDbmParameters1(in *jlexer.Lexer, out *Fingerprint) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -160,7 +160,7 @@ func easyjson7b60966aDecodeParsinServerAlgorithmsParameters1(in *jlexer.Lexer, o
 		in.Consumed()
 	}
 }
-func easyjson7b60966aEncodeParsinServerAlgorithmsParameters1(out *jwriter.Writer, in Fingerprint) {
+func easyjson7b60966aEncodeParsinServerDbmParameters1(out *jwriter.Writer, in Fingerprint) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -231,27 +231,27 @@ func easyjson7b60966aEncodeParsinServerAlgorithmsParameters1(out *jwriter.Writer
 // MarshalJSON supports json.Marshaler interface
 func (v Fingerprint) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson7b60966aEncodeParsinServerAlgorithmsParameters1(&w, v)
+	easyjson7b60966aEncodeParsinServerDbmParameters1(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Fingerprint) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson7b60966aEncodeParsinServerAlgorithmsParameters1(w, v)
+	easyjson7b60966aEncodeParsinServerDbmParameters1(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Fingerprint) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson7b60966aDecodeParsinServerAlgorithmsParameters1(&r, v)
+	easyjson7b60966aDecodeParsinServerDbmParameters1(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Fingerprint) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson7b60966aDecodeParsinServerAlgorithmsParameters1(l, v)
+	easyjson7b60966aDecodeParsinServerDbmParameters1(l, v)
 }
-func easyjson7b60966aDecodeParsinServerAlgorithmsParameters2(in *jlexer.Lexer, out *BulkFingerprint) {
+func easyjson7b60966aDecodeParsinServerDbmParameters2(in *jlexer.Lexer, out *BulkFingerprint) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -303,7 +303,7 @@ func easyjson7b60966aDecodeParsinServerAlgorithmsParameters2(in *jlexer.Lexer, o
 		in.Consumed()
 	}
 }
-func easyjson7b60966aEncodeParsinServerAlgorithmsParameters2(out *jwriter.Writer, in BulkFingerprint) {
+func easyjson7b60966aEncodeParsinServerDbmParameters2(out *jwriter.Writer, in BulkFingerprint) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -334,23 +334,23 @@ func easyjson7b60966aEncodeParsinServerAlgorithmsParameters2(out *jwriter.Writer
 // MarshalJSON supports json.Marshaler interface
 func (v BulkFingerprint) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson7b60966aEncodeParsinServerAlgorithmsParameters2(&w, v)
+	easyjson7b60966aEncodeParsinServerDbmParameters2(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v BulkFingerprint) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson7b60966aEncodeParsinServerAlgorithmsParameters2(w, v)
+	easyjson7b60966aEncodeParsinServerDbmParameters2(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *BulkFingerprint) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson7b60966aDecodeParsinServerAlgorithmsParameters2(&r, v)
+	easyjson7b60966aDecodeParsinServerDbmParameters2(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *BulkFingerprint) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson7b60966aDecodeParsinServerAlgorithmsParameters2(l, v)
+	easyjson7b60966aDecodeParsinServerDbmParameters2(l, v)
 }

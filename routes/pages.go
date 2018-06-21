@@ -17,6 +17,7 @@ import (
 	"ParsinServer/glb"
 	"ParsinServer/dbm"
 	"sort"
+	"ParsinServer/dbm/parameters"
 )
 
 
@@ -145,7 +146,7 @@ func SlashDashboard(c *gin.Context) {
 	for user := range filterUserMap {
 		users = append(users, user)
 	}
-	people := make(map[string]glb.UserPositionJSON)
+	people := make(map[string]parameters.UserPositionJSON)
 	//if len(users) == 0 {
 	//	people = GetCurrentPositionOfAllUsers(groupName)
 	//} else {
@@ -163,7 +164,7 @@ func SlashDashboard(c *gin.Context) {
 		LocationCount    map[string]int
 		Mixin            map[string]float64
 		VarabilityCutoff map[string]float64
-		Users            map[string]glb.UserPositionJSON
+		Users            map[string]parameters.UserPositionJSON
 	}
 	var dash DashboardData
 	dash.Networks = []string{}

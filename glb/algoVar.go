@@ -52,7 +52,7 @@ func init() {
 	UserHistoryEffectFactors = []float64{0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.5, 0.7, 0.8, 1}
 	UserHistoryGaussVariance = 0.15
 	UserHistoryTimeDelayFactor = 10000
-	MaxMovement = float64(400)
+	MaxMovement = float64(10000)
 
 	PreprocessOutlinePercent = float64(0.333) // third part of fingerprints are considered as outline
 	NormalRssDev = 5

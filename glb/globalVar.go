@@ -48,24 +48,7 @@ var RuntimeArgs struct {
 	KNN               bool
 }
 
-type UserPositionJSON struct {
-	Time        int64              `json:"time"`
-	Location    string             `json:"location"`
-	BayesGuess  string             `json:"bayesguess"`
-	BayesData   map[string]float64 `json:"bayesdata"`
-	SvmGuess    string             `json:"svmguess"`
-	SvmData     map[string]float64 `json:"svmdata"`
-	ScikitData  map[string]string  `json:"rfdata"`
-	KnnGuess    string             `json:"knnguess"`
-	KnnData     map[string]float64 `json:"knndata"`
-	PDRLocation string             `json:"pdrlocation"`
-}
 
-//	filterMacs is used for set filtermacs
-type FilterMacs struct {
-	Group string   `json:"group"`
-	Macs  []string `json:"macs"`
-}
 type Empty struct{}
 
 func init(){

@@ -2,7 +2,7 @@ package algorithms
 
 import (
 	"testing"
-	"ParsinServer/algorithms/parameters"
+	"ParsinServer/dbm/parameters"
 	"ParsinServer/dbm"
 	"ParsinServer/glb"
 	"github.com/stretchr/testify/assert"

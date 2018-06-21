@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-	"ParsinServer/algorithms/parameters"
+	"ParsinServer/dbm/parameters"
 	"ParsinServer/dbm"
 	"ParsinServer/algorithms/clustering"
 	"sort"
@@ -255,7 +255,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	//}
 
 	// Send out the final responses
-	var userJSON glb.UserPositionJSON
+	var userJSON parameters.UserPositionJSON
 	userJSON.Time = curFingerprint.Timestamp
 	userJSON.BayesGuess = bayesGuess
 	userJSON.BayesData = bayesData
@@ -265,7 +265,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	userJSON.KnnGuess = knnGuess
 	userJSON.KnnData = knnData
 	userJSON.PDRLocation = pdrLocation
-
+	userJSON.Fingerprint = curFingerprint
 
 	// User history effect
 	//location = knnGuess
@@ -277,7 +277,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	glb.Debug.Println("location: ", location)
 
 	//location = userJSON.KnnGuess
-	//userJSON.KnnGuess = location //todo: must add location as seprated variable from knnguess in glb.UserPositionJSON
+	//userJSON.KnnGuess = location //todo: must add location as seprated variable from knnguess in parameters.UserPositionJSON
 	go dbm.SetUserPositionCache(strings.ToLower(curFingerprint.Group)+strings.ToLower(curFingerprint.Username), userJSON)
 	go gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userJSON)
 	go gp.Get_ResultData().Append_UserResults(curFingerprint.Username, userJSON)

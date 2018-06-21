@@ -20,7 +20,7 @@ import (
 	"ParsinServer/glb"
 	"strconv"
 	"errors"
-	"ParsinServer/algorithms/parameters"
+	"ParsinServer/dbm/parameters"
 )
 
 

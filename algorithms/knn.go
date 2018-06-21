@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"ParsinServer/glb"
 	"errors"
-	"ParsinServer/algorithms/parameters"
+	"ParsinServer/dbm/parameters"
 	"ParsinServer/dbm"
 	"sort"
 )
@@ -242,7 +242,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				//glb.Debug.Println(lastUserPos.Location)
 			}
 		}
-		glb.Error.Println(baseLoc)
+		//glb.Error.Println(baseLoc)
 		if baseLoc != "" { // ignore when baseLoc is empty (for example there is no userhistory!)
 			baseLocX, baseLocY := glb.GetDotFromString(baseLoc)
 			maxMovement := dbm.GetSharedPrf(gp.Get_Name()).MaxMovement
@@ -379,7 +379,11 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 	ws := []float64{}
 	for _, w := range W {
+		//if(w>float64(0.2)){
+		//glb.Error.Println(w)
 		ws = append(ws, w)
+		//}
+
 	}
 
 	stopNum := 0 //used instead of knnK

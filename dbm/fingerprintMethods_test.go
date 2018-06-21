@@ -2,7 +2,7 @@ package dbm
 
 import (
 	"testing"
-	"ParsinServer/algorithms/parameters"
+	"ParsinServer/dbm/parameters"
 	"github.com/stretchr/testify/assert"
 )
 

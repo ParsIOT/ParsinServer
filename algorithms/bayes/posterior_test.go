@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 	"ParsinServer/glb"
-	"ParsinServer/algorithms/parameters"
+	"ParsinServer/dbm/parameters"
 	"ParsinServer/dbm"
 )
 

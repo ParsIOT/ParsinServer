@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	"ParsinServer/algorithms/parameters"
+	"ParsinServer/dbm/parameters"
 	"ParsinServer/glb"
 	"reflect"
 	"errors"
@@ -114,8 +114,8 @@ type ResultDataStruct struct{
 	//Results         map[string]parameters.Fingerprint
 	AlgoAccuracy    map[string]int
 	AlgoAccuracyLoc map[string]map[string]int
-	UserHistory     map[string][]glb.UserPositionJSON // it's temprary
-	UserResults     map[string][]glb.UserPositionJSON // it saves in db
+	UserHistory     map[string][]parameters.UserPositionJSON // it's temprary
+	UserResults     map[string][]parameters.UserPositionJSON // it saves in db
 }
 
 func (st *ResultDataStruct) Lock() {
@@ -525,7 +525,7 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group){
 				resultData.Lock()
 
 				tempUserHistory := resultData.UserHistory
-				resultData.UserHistory = make(map[string][]glb.UserPositionJSON)
+				resultData.UserHistory = make(map[string][]parameters.UserPositionJSON)
 				v, err := resultData.MarshalJSON()
 				resultData.UserHistory = tempUserHistory
 
@@ -890,8 +890,8 @@ func (gp *Group) NewResultDataStruct() *ResultDataStruct {
 		//Results:         make(map[string]parameters.Fingerprint),
 		AlgoAccuracy:    make(map[string]int),
 		AlgoAccuracyLoc: make(map[string]map[string]int),
-		UserHistory:     make(map[string][]glb.UserPositionJSON),
-		UserResults:     make(map[string][]glb.UserPositionJSON),
+		UserHistory:     make(map[string][]parameters.UserPositionJSON),
+		UserResults:     make(map[string][]parameters.UserPositionJSON),
 	}
 }
 
@@ -1571,7 +1571,7 @@ func (rs *ResultDataStruct) Set_AlgoLocAccuracy(algoName string,loc string, dist
 	rs.Unlock()
 }
 
-func (rs *ResultDataStruct) Append_UserHistory(user string, userPos glb.UserPositionJSON) {
+func (rs *ResultDataStruct) Append_UserHistory(user string, userPos parameters.UserPositionJSON) {
 	//defer rs.SetDirtyBit()
 
 	rs.Lock()
@@ -1579,7 +1579,7 @@ func (rs *ResultDataStruct) Append_UserHistory(user string, userPos glb.UserPosi
 		if len(rs.UserHistory[user]) < glb.MaxUserHistoryLen {
 			rs.UserHistory[user] = append(rs.UserHistory[user], userPos)
 		} else {
-			tempUserHistory := []glb.UserPositionJSON{}
+			tempUserHistory := []parameters.UserPositionJSON{}
 			tempUserHistory = append(tempUserHistory, rs.UserHistory[user][1:]...)
 			tempUserHistory = append(tempUserHistory, userPos)
 			rs.UserHistory[user] = tempUserHistory
@@ -1587,39 +1587,39 @@ func (rs *ResultDataStruct) Append_UserHistory(user string, userPos glb.UserPosi
 	} else {
 		//Todo: must provide standard way when new item added to groupcache structs 
 		if rs.UserHistory == nil { // in old db there is now userHistory
-			rs.UserHistory = make(map[string][]glb.UserPositionJSON)
+			rs.UserHistory = make(map[string][]parameters.UserPositionJSON)
 		}
-		rs.UserHistory[user] = []glb.UserPositionJSON{userPos}
+		rs.UserHistory[user] = []parameters.UserPositionJSON{userPos}
 		//glb.Debug.Println(rs.UserHistory[user])
 	}
 	rs.Unlock()
 }
 
-func (rs *ResultDataStruct) Get_UserHistory(user string) []glb.UserPositionJSON {
+func (rs *ResultDataStruct) Get_UserHistory(user string) []parameters.UserPositionJSON {
 	//defer rs.SetDirtyBit()
 
-	history := []glb.UserPositionJSON{}
+	history := []parameters.UserPositionJSON{}
 	rs.RLock()
 	if userHistory, ok := rs.UserHistory[user]; ok {
 		history = userHistory
 	} else {
-		history = []glb.UserPositionJSON{}
+		history = []parameters.UserPositionJSON{}
 	}
 	rs.RUnlock()
 	return history
 }
 
-func (rs *ResultDataStruct) Get_AllHistory() map[string][]glb.UserPositionJSON {
+func (rs *ResultDataStruct) Get_AllHistory() map[string][]parameters.UserPositionJSON {
 	//defer rs.SetDirtyBit()
 
-	history := make(map[string][]glb.UserPositionJSON)
+	history := make(map[string][]parameters.UserPositionJSON)
 	rs.RLock()
 	history = rs.UserHistory
 	rs.RUnlock()
 	return history
 }
 
-func (rs *ResultDataStruct) Append_UserResults(user string, userPos glb.UserPositionJSON) {
+func (rs *ResultDataStruct) Append_UserResults(user string, userPos parameters.UserPositionJSON) {
 	defer rs.SetDirtyBit()
 
 	rs.Lock()
@@ -1627,7 +1627,7 @@ func (rs *ResultDataStruct) Append_UserResults(user string, userPos glb.UserPosi
 		if len(rs.UserResults[user]) < glb.MaxUserResultsLen {
 			rs.UserResults[user] = append(rs.UserResults[user], userPos)
 		} else {
-			tempUserResults := []glb.UserPositionJSON{}
+			tempUserResults := []parameters.UserPositionJSON{}
 			tempUserResults = append(tempUserResults, rs.UserHistory[user][1:]...)
 			tempUserResults = append(tempUserResults, userPos)
 			rs.UserResults[user] = tempUserResults
@@ -1635,32 +1635,32 @@ func (rs *ResultDataStruct) Append_UserResults(user string, userPos glb.UserPosi
 	} else {
 		//Todo: must provide standard way when new item added to groupcache structs
 		if rs.UserResults == nil { // in old db there is now userHistory
-			rs.UserResults = make(map[string][]glb.UserPositionJSON)
+			rs.UserResults = make(map[string][]parameters.UserPositionJSON)
 		}
-		rs.UserResults[user] = []glb.UserPositionJSON{userPos}
+		rs.UserResults[user] = []parameters.UserPositionJSON{userPos}
 		//glb.Debug.Println(rs.UserHistory[user])
 	}
 	rs.Unlock()
 }
 
-func (rs *ResultDataStruct) Get_UserResults(user string) []glb.UserPositionJSON {
+func (rs *ResultDataStruct) Get_UserResults(user string) []parameters.UserPositionJSON {
 	//defer rs.SetDirtyBit()
 
-	results := []glb.UserPositionJSON{}
+	results := []parameters.UserPositionJSON{}
 	rs.RLock()
 	if userResults, ok := rs.UserResults[user]; ok {
 		results = userResults
 	} else {
-		results = []glb.UserPositionJSON{}
+		results = []parameters.UserPositionJSON{}
 	}
 	rs.RUnlock()
 	return results
 }
 
-func (rs *ResultDataStruct) Get_AllUserResults() map[string][]glb.UserPositionJSON {
+func (rs *ResultDataStruct) Get_AllUserResults() map[string][]parameters.UserPositionJSON {
 	//defer rs.SetDirtyBit()
 
-	results := make(map[string][]glb.UserPositionJSON)
+	results := make(map[string][]parameters.UserPositionJSON)
 	rs.RLock()
 	results = rs.UserResults
 	rs.RUnlock()
@@ -1672,7 +1672,7 @@ func (rs *ResultDataStruct) Clear_UserResults(user string) error {
 
 	rs.Lock()
 	if val, ok := rs.UserResults[user]; (ok && len(val) != 0) {
-		rs.UserResults[user] = []glb.UserPositionJSON{}
+		rs.UserResults[user] = []parameters.UserPositionJSON{}
 		rs.Unlock()
 		return nil
 	} else {

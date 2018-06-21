@@ -1,7 +1,7 @@
 package dbm
 
 import (
-	"ParsinServer/algorithms/parameters"
+	"ParsinServer/dbm/parameters"
 	"github.com/boltdb/bolt"
 	"path"
 	"ParsinServer/glb"

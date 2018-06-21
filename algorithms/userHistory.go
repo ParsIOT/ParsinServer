@@ -4,9 +4,10 @@ import (
 	"ParsinServer/glb"
 	"strings"
 	"strconv"
+	"ParsinServer/dbm/parameters"
 )
 
-func HistoryEffect(currentUserPos glb.UserPositionJSON, userHistory []glb.UserPositionJSON) (string, float64) {
+func HistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory []parameters.UserPositionJSON) (string, float64) {
 
 	glb.Debug.Println(currentUserPos)
 	glb.Debug.Println(userHistory)
@@ -76,7 +77,7 @@ func HistoryEffect(currentUserPos glb.UserPositionJSON, userHistory []glb.UserPo
 	return result, radius
 }
 
-func HistoryEffectStaticFactors(currentUserPos glb.UserPositionJSON, userHistory []glb.UserPositionJSON) (string, float64) {
+func HistoryEffectStaticFactors(currentUserPos parameters.UserPositionJSON, userHistory []parameters.UserPositionJSON) (string, float64) {
 
 	locHistory := []string{}
 	for _, userPos := range userHistory {
