@@ -278,7 +278,7 @@
             markers[key] = L.marker([match[1], match[2]], {
 //                    pulsing: true,
 //                    accuracy: 200,
-                title: key,
+                title: match[0],
                 smallIcon: true
             }).bindPopup(JSON.stringify(key)).addTo(map);
         }
