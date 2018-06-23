@@ -36,17 +36,24 @@
                 <li>
                     <a href="/dashboard/{{ .Group }}"><i class="fa fa-tachometer"></i> Dashboard</a>
                 </li>
-                <li>
-                    <a href="/livemap/{{ .Group }}"><i class="fa fa-map"></i> Track Users</a>
-                </li>
-                <li>
-                    <a href="/userhistory/{{ .Group }}"><i class="fa fa-map"></i> User Trace History</a>
-                </li>
-                <li>
-                    <a href="/fingerprintAmbiguity/{{ .Group }}"><i class="fa fa-map"></i> Fingerprint Ambiguity Map</a>
-                </li>
-                <li>
-                    <a href="/locationsmap/{{ .Group }}"><i class="fa fa-map"></i> Show Locations</a>
+                <li class="dropdown">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="fa fa-map"></i> Map
+                        <span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a href="/livemap/{{ .Group }}"><i class="fa fa-map"></i> Track Users</a>
+                        </li>
+                        <li>
+                            <a href="/userhistory/{{ .Group }}"><i class="fa fa-map"></i> User Trace History</a>
+                        </li>
+                        <li>
+                            <a href="/fingerprintAmbiguity/{{ .Group }}"><i class="fa fa-map"></i> Fingerprint Ambiguity
+                                Map</a>
+                        </li>
+                        <li>
+                            <a href="/locationsmap/{{ .Group }}"><i class="fa fa-map"></i> Show Locations</a>
+                        </li>
+                    </ul>
                 </li>
                 <li>
                     <a href="/arbitraryLocations/{{ .Group }}"><i class="fa fa-database"></i> Arbitrary Locations</a>
