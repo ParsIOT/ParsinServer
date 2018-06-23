@@ -1015,8 +1015,7 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 	//sort dict by loc
 	sort.Strings(locs)
 
-	//
-
+	//create sorted fingerprintRssDetails
 	for _, loc := range locs {
 		for _, line := range fingerprintRssRawDetails[loc] {
 			fingerprintRssDetails = append(fingerprintRssDetails, line)
