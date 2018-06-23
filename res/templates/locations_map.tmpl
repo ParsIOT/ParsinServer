@@ -122,8 +122,8 @@
 
     map.on('click', function (e) {
 //        console.log(e.latlng.lat + "," + e.latlng.lng);
-        $('#click-x').val(e.latlng.lng);
-        $('#click-y').val(e.latlng.lat);
+        $('#click-x').val(Math.round(e.latlng.lat) + ".0");
+        $('#click-y').val(Math.round(e.latlng.lng) + ".0");
     });
 
     $.getJSON("/locations?group={{ .Group }}", function (data) {
