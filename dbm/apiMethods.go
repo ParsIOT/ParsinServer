@@ -984,7 +984,12 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 	}
 	fingerprintRssDetails = append(fingerprintRssDetails, firstLine)
 
+	fingerprintRssRawDetails := make(map[string][][]string)
+	locs := []string{}
 	for _, fp := range resultWithMainFP {
+		if !glb.StringInSlice(fp.Location, locs) {
+			locs = append(locs, fp.Location)
+		}
 		line := []string{fp.Location}
 		for _, mac := range uniqueMacs {
 			macFound := false
@@ -999,8 +1004,25 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 				line = append(line, "")
 			}
 		}
-		fingerprintRssDetails = append(fingerprintRssDetails, line)
+
+		if val, ok := fingerprintRssRawDetails[fp.Location]; ok {
+			val = append(val, line)
+			fingerprintRssRawDetails[fp.Location] = val
+		} else {
+			fingerprintRssRawDetails[fp.Location] = [][]string{line}
+		}
 	}
+	//sort dict by loc
+	sort.Strings(locs)
+
+	//
+
+	for _, loc := range locs {
+		for _, line := range fingerprintRssRawDetails[loc] {
+			fingerprintRssDetails = append(fingerprintRssDetails, line)
+		}
+	}
+
 
 	//for _,fpRSSs := range fingerprintRssDetails{
 	//	line := ""
