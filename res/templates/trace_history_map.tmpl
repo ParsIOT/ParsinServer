@@ -117,6 +117,7 @@
                         </tr>
                         </thead>
                     </table>
+                    <h4 id="show-details-link" class="text-center"/>
                 </div>
             </div>
         </div>
@@ -206,6 +207,12 @@
                 "class": "tab-content",
                 html: items.join("")
             }).appendTo("#users-table");
+            $("#show-details-link").find("a").remove();//remove show rss details link
+            $("<a/>", {
+                "target": "_blank",
+                "onclick": "window.open('" + "/location?group={{ .Group }}&user=" + user + "&n=" + n + "','pagename','resizable,height=420,width=1000'); return false;",
+                html: "See Rss details"
+            }).appendTo("#show-details-link");
         });
     }
 
