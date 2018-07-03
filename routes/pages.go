@@ -234,8 +234,12 @@ func LiveLocationMap(c *gin.Context) {
 		})
 		return
 	}
+	MapName := dbm.GetSharedPrf(groupName).MapName
+	MapPath := path.Join(glb.RuntimeArgs.MapPath,MapName)
+	glb.Debug.Println("final MapPath: ", MapPath)
 	c.HTML(http.StatusOK, "live_location_map.tmpl", gin.H{
 		"Group": groupName,
+		"MapPath": MapPath,
 	})
 }
 

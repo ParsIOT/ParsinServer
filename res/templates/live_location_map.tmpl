@@ -140,7 +140,7 @@
     });
    var bounds = [[-1700, -1800], [1700, 1800]];
     //    var bounds = [[-400, -300], [400, 300]];
-    var image = L.imageOverlay('/static/img/MapFull.png', bounds).addTo(map);
+    var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
     map.setView([0, 0], -2);
 
     var markers = {};

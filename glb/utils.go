@@ -29,7 +29,6 @@ import (
 	"strconv"
 	"math/big"
 	"path/filepath"
-	"path"
 )
 
 var (
@@ -704,8 +703,8 @@ func Median(arr []int) int {
 // good source: https://flaviocopes.com/go-list-files/
 func ListMaps() []string {
 	var files []string
-	root:= path.Join(RuntimeArgs.Cwd, "res/static/map/")
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+
+	err := filepath.Walk(RuntimeArgs.MapPath, func(path string, info os.FileInfo, err error) error {
 		if filepath.Ext(path)== ".png" {
 			files = append(files, info.Name())
 			}

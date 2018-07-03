@@ -25,6 +25,7 @@ var RuntimeArgs struct {
 	ServerCRT         string
 	ServerKey         string
 	SourcePath        string
+	MapPath			  string
 	Socket            string
 	Cwd               string
 	MqttServer        string
@@ -54,6 +55,7 @@ type Empty struct{}
 func init(){
 	cwd, _ := os.Getwd()
 	pkgName := reflect.TypeOf(Empty{}).PkgPath()
+	
 	projName := strings.Split(pkgName,"/")[0]
 	for _,p := range strings.Split(cwd,"/") {
 		if p == projName {
@@ -63,6 +65,7 @@ func init(){
 		RuntimeArgs.Cwd += p +"/"
 	}
 	RuntimeArgs.SourcePath = path.Join(RuntimeArgs.Cwd, "data")
+	RuntimeArgs.MapPath = path.Join(RuntimeArgs.Cwd, "res/static/map/")
 	//RuntimeArgs.SourcePath
 	RuntimeArgs.Message = ""
 	//RuntimeArgs.FilterMacsMap = make(map[string][]string)

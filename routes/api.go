@@ -353,7 +353,7 @@ func GetUserLocations(c *gin.Context) {
 		if users[0] == "noneasdf" {
 			//users = dbm.GetUsers(groupName)
 			users = dbm.GetRecentUsers(groupName)
-			glb.Error.Println("Users:", users)
+			glb.Debug.Println("Users:", users)
 		}
 		for _, user := range users {
 			user = strings.ToLower(user) // todo: is it necessary? Does it conflict with learning data?
