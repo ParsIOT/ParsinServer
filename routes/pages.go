@@ -210,6 +210,7 @@ func SlashDashboard(c *gin.Context) {
 		dash.LocationAccuracy["all"] = totalError
 	}
 	//glb.Debug.Println(dash)
+	mapNamesList := glb.ListMaps()
 	c.HTML(http.StatusOK, "dashboard.tmpl", gin.H{
 		"Message":           glb.RuntimeArgs.Message,
 		"Group":             groupName,
@@ -220,6 +221,7 @@ func SlashDashboard(c *gin.Context) {
 		"bestK":             bestK,
 		"bestMinClusterRss": bestMinClusterRss,
 		"maxMovement":       maxMovement,
+		"mapNamesList":		 mapNamesList,
 	})
 }
 

@@ -60,11 +60,12 @@
     </style>
 
 
-    <script src="/static/js/sweetalert.min.js"></script>
+    {{/*<script src="/static/js/sweetalert.min.js"></script>*/}}
     <script src="/static/js/d3.min.js"></script>
     <script src="/static/js/d3.tip.v0.6.3.js"></script>
-    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
-
+    {{/*<link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">*/}}
+    <link href="/static/css/sweetalert2.css" rel="stylesheet"/>
+    <script src="/static/js/sweetalert2.js"></script>
 
     <link rel="stylesheet" href="/static/css/jquery-ui.css">
     <script src="/static/js/jquery-ui.js"></script>
@@ -275,6 +276,16 @@
                             Min RSS
                         </button>
                     </div>
+                </div>
+                    <!-- Komeil: -->
+                <br/>
+                <div class="row">
+                    <div class="col-sm-2 col-xs-6">
+                        <button type="submit" class="btn btn-warning btn-block" id="chooseMap" title="chooseMap">
+                            Choose map
+                        </button>
+                    </div>
+                </div>
                 </div>
             </div>
         </div>
@@ -1105,6 +1116,54 @@
                     });
                 });
     });
+
+    $('#chooseMap').click(function () {
+        swal({
+            title: "put your map in map folder, Then choose here",
+            input: 'select',
+            inputOptions: {
+            {{ range $mapIndex, $mapName := index $.mapNamesList }}
+                '{{$mapName}}': '{{$mapName}}',
+            {{ end }}
+            },
+            showCancelButton: true,
+            closeOnConfirm: false,
+            animation: "slide-from-top",
+            inputValidator: function (value) {
+                return new Promise(function (resolve, reject) {
+                    if (value !== '') {
+                        $.ajax({
+                            url: "/choosemap?group={{ .Group }}&mapName=" + value,
+                            type: "PUT",
+                            success: function (data) {
+                                console.log(data);
+                                if (data['success']) {
+                                    swal({
+                                        title: "Updated!",
+                                        text: data['message'],
+                                        timer: 2000,
+                                        showConfirmButton: true
+                                    }, function () {
+                                        location.reload();
+                                    });
+                                } else {
+                                    swal("Something went wrong.", data['message'], "error");
+                                }
+                            }
+                        });
+                    } else {
+                        reject('You need to select a Tier');
+                    }
+                });
+            }
+        }).then(function (result) {
+            swal({
+                type: 'success',
+                html: 'You selected: ' + result
+            });
+        }).catch(swal.noop);
+    });
+
 </script>
 
 

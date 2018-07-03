@@ -13,16 +13,10 @@ import (
 )
 
 
-
 var knn_regression bool
-
 var minkowskyQ float64
-
-
 var maxrssInNormal,minrssInNormal float64
-
 //var topRssList []int
-
 var distAlgo string
 
 //var ValidKs []int = defaultValidKs()
@@ -53,7 +47,6 @@ func init() {
 	//topRssList = []int{-60,-79,-90}
 	maxrssInNormal = -55.0
 	minrssInNormal = float64(glb.MinRssi) - 5.0
-
 }
 
 type resultW struct {
@@ -72,7 +65,6 @@ type jobW struct {
 func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []interface{}) (parameters.KnnFingerprints,error) {
 	//Debug.Println(Cosine([]float64{1,2,3},[]float64{1,2,4}))
 	//jsonFingerprint = calcMacRate(jsonFingerprint,false)
-
 	//K := hyperParameters[0].(int)
 	MinClusterRSS := hyperParameters[1].(int)
 	//glb.Debug.Printf("Knn is running (K:%d, MinClusterRss:%d)\n",K,MinClusterRSS)

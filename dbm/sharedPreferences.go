@@ -18,6 +18,7 @@ type RawSharedPreferences struct {
 	FilterMacsMap   []string `json:"FilterMacsMap"`
 	ArbitLocations  []string `json:"ArbitLocations"`
 	MaxMovement     float64  `json:"MaxMovement"`
+	MapName			string	 `json:"MapName"`
 }
 
 func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}) error{
@@ -40,6 +41,8 @@ func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}
 		shPrf.ArbitLocations = val.([]string)
 	case "MaxMovement":
 		shPrf.MaxMovement = val.(float64)
+	case "MapName":
+		shPrf.MapName = val.(string)
 	default:
 		return errors.New("Invalid RawSharedPreferences field")
 	}
@@ -75,6 +78,7 @@ func NewRawSharedPreferences() RawSharedPreferences {
 		FilterMacsMap:   []string{},
 		ArbitLocations:  []string{},
 		MaxMovement:     float64(glb.MaxMovement),
+		MapName:		 glb.ListMaps()[0],
 	}
 }
 
