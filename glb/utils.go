@@ -28,6 +28,7 @@ import (
 	"errors"
 	"strconv"
 	"math/big"
+	"path/filepath"
 )
 
 var (
@@ -246,6 +247,7 @@ func Exists(path string) bool {
 	}
 	return true
 }
+
 
 // CopyFile copies a file from src to dst. If src and dst files exist, and are
 // the same, then return success. Otherise, attempt to create a hard link
@@ -695,4 +697,23 @@ func Median(arr []int) int {
 	} else {
 		return arr[(l+1)/2]
 	}
+}
+
+// komeil: listing png images from map directory
+// good source: https://flaviocopes.com/go-list-files/
+func ListMaps() []string {
+	var files []string
+
+	err := filepath.Walk(RuntimeArgs.MapPath, func(path string, info os.FileInfo, err error) error {
+		if filepath.Ext(path)== ".png" {
+			files = append(files, info.Name())
+			}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	//Debug.Println("list of map files: ", files)
+	sort.Sort(sort.StringSlice(files))
+	return files
 }

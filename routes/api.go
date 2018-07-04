@@ -353,7 +353,7 @@ func GetUserLocations(c *gin.Context) {
 		if users[0] == "noneasdf" {
 			//users = dbm.GetUsers(groupName)
 			users = dbm.GetRecentUsers(groupName)
-			glb.Error.Println("Users:", users)
+			glb.Debug.Println("Users:", users)
 		}
 		for _, user := range users {
 			user = strings.ToLower(user) // todo: is it necessary? Does it conflict with learning data?
@@ -639,6 +639,41 @@ func PutMaxMovement(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
 }
+
+
+
+func ChooseMap(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	mapName := c.DefaultQuery("mapName", "none")
+	glb.Debug.Println(group)
+	glb.Debug.Println(mapName)
+
+	if group != "noneasdf" && mapName != "none" {
+		//MaxMovement, err := strconv.ParseFloat(MaxMovementStr, 64)
+		//if err == nil {
+		//	if MaxMovement == float64(-1) {
+		//		MaxMovement = glb.MaxMovement
+		//	}
+		err2 := dbm.SetSharedPrf(group, "MapName", mapName)
+		if err2 == nil {
+
+			//optimizePriorsThreaded(strings.ToLower(group))
+			glb.Debug.Println(dbm.GetSharedPrf(group).MapName)
+			c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding mapName for " + group + ", now set to " + mapName})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err2.Error()})
+		}
+	}
+}
+
+
 
 // Calls setCutoffOverride() and then calls optimizePriorsThreaded()
 // GET parameters: group, cutoff
@@ -1268,3 +1303,4 @@ func FingerprintLikeness(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or user not mentioned"})
 	}
 }
+
