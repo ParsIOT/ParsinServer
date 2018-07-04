@@ -66,7 +66,8 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//Debug.Println(Cosine([]float64{1,2,3},[]float64{1,2,4}))
 	//jsonFingerprint = calcMacRate(jsonFingerprint,false)
 	//K := hyperParameters[0].(int)
-	MinClusterRSS := hyperParameters[1].(int)
+	MinClusterRSS := hyperParameters[1].(int) //komeil: min threshold for determining whether ...
+												// a fingerprint is in the cluster of a beacon or not
 	//glb.Debug.Printf("Knn is running (K:%d, MinClusterRss:%d)\n",K,MinClusterRSS)
 	//jsonFingerprint = calcMacJustRate(jsonFingerprint,false)
 
@@ -78,14 +79,13 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//Debug.Println(jsonFingerprint)
 	//glb.RuntimeArgs.NeedToFilter[jsonFingerprint.Group] = true
 
-
 	//fingerprints := make(map[string]parameters.Fingerprint)
 	//var fingerprintsOrdering []string
-	clusters := make(map[string][]string)
+	clusters := make(map[string][]string) // komeil: key of map: Mac - value: fpTime
 	//var err error
 
 	fingerprints := rd.Fingerprints
-	fingerprintsOrdering := rd.FingerprintsOrdering
+	fingerprintsOrdering := rd.FingerprintsOrdering // komeil: timestamps of fingerprints as id
 
 	//fingerprintsOrdering,fingerprints,err = dbm.GetLearnFingerPrints(groupName,true)
 	//if err!=nil {
@@ -93,7 +93,7 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//}
 
 	for fpTime,fp := range fingerprints {
-		for _,rt := range fp.WifiFingerprint{
+		for _,rt := range fp.WifiFingerprint{ //rt ==> Router = mac + RSS of an Access Point
 			if (rt.Rssi >= MinClusterRSS){
 				clusters[rt.Mac] = append(clusters[rt.Mac],fpTime)
 			}
@@ -202,7 +202,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 
 	// fingerprintOrdering Creation according to clusters and rss rates
-	highRateRssExist := false
+	highRateRssExist := false // komeil: a variable to decide if it is needed to search all fingerprints instead of one or some clusters
 	for _, rt := range curFingerprint.WifiFingerprint {
 		if(rt.Rssi>=tempKnnFingerprints.MinClusterRss){
 			if cluster, ok := clusters[rt.Mac]; ok {
