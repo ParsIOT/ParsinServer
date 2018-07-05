@@ -29,6 +29,9 @@ import (
 	"strconv"
 	"math/big"
 	"path/filepath"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 )
 
 var (
@@ -701,19 +704,36 @@ func Median(arr []int) int {
 
 // komeil: listing png images from map directory
 // good source: https://flaviocopes.com/go-list-files/
-func ListMaps() []string {
+func ListMaps() map[string][]int {
+	filesAndDimensions := make(map[string][]int)
 	var files []string
 
-	err := filepath.Walk(RuntimeArgs.MapPath, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(RuntimeArgs.MapDirectory, func(path string, info os.FileInfo, err error) error {
 		if filepath.Ext(path)== ".png" {
 			files = append(files, info.Name())
+			//Debug.Println("path: "+path)
+			width,height := getImageDimension(path)
+			filesAndDimensions [info.Name()] = []int{width,height}
 			}
 		return nil
 	})
 	if err != nil {
 		panic(err)
 	}
-	//Debug.Println("list of map files: ", files)
+	Debug.Println("list of map filesAndDimensions: ", filesAndDimensions)
 	sort.Sort(sort.StringSlice(files))
-	return files
+	return filesAndDimensions
+}
+
+func getImageDimension(imagePath string) (int, int) {
+	file, err := os.Open(imagePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+
+	image, _, err := image.DecodeConfig(file)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s: %v\n", imagePath, err)
+	}
+	return image.Width, image.Height
 }

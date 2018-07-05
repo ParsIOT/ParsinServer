@@ -661,8 +661,15 @@ func ChooseMap(c *gin.Context) {
 		//	if MaxMovement == float64(-1) {
 		//		MaxMovement = glb.MaxMovement
 		//	}
+		mapNamesList := glb.ListMaps()
+		MapWidth := mapNamesList[mapName][0]
+		MapHeight := mapNamesList[mapName][1]
+		MapDimensions := []int {MapWidth,MapHeight}
+		glb.Debug.Println("***MapDimensions : ",MapDimensions)
 		err2 := dbm.SetSharedPrf(group, "MapName", mapName)
-		if err2 == nil {
+		err3 := dbm.SetSharedPrf(group, "MapDimensions", MapDimensions)
+
+		if err2 == nil && err3==nil {
 
 			//optimizePriorsThreaded(strings.ToLower(group))
 			glb.Debug.Println(dbm.GetSharedPrf(group).MapName)

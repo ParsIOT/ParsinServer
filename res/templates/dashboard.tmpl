@@ -1123,7 +1123,7 @@
             input: 'select',
             inputOptions: {
             {{ range $mapIndex, $mapName := index $.mapNamesList }}
-                '{{$mapName}}': '{{$mapName}}',
+                '{{$mapIndex}}': '{{$mapIndex}}',
             {{ end }}
             },
             showCancelButton: true,

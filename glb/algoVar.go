@@ -30,6 +30,11 @@ var UserHistoryTimeDelayFactor float64
 // Default K in KNN algorithm
 var DefaultKnnMinCRssRange,DefaultKnnKRange []int
 
+var DefaultMapName string
+var DefaultMapDimensions []int
+var DefaultMapWidth int
+var DefaultMapHeight int
+
 var MaxMovement float64
 
 var MaxEuclideanRssVectorDist float64
@@ -57,5 +62,10 @@ func init() {
 	PreprocessOutlinePercent = float64(0.333) // third part of fingerprints are considered as outline
 	NormalRssDev = 5
 	RssRegulation = true
+
+	DefaultMapName = "DefaultMap.png"
+	DefaultMapDimensions = []int{3400,3600}
+	DefaultMapHeight = 3400
+	DefaultMapWidth = 3600
 
 }
