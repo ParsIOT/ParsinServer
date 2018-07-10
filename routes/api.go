@@ -368,6 +368,43 @@ func GetUserLocations(c *gin.Context) {
 				people[user] = append(people[user], GetCurrentPositionOfUser(groupName, user))
 			}
 		}
+
+		// Add fp wifi data to results
+		//if glb.RuntimeArgs.Debug {
+		//	fpData := dbm.GM.GetGroup(groupName).Get_RawData().Get_Fingerprints()
+		//	tempKnnData := make(map[string]float64)
+		//	for user,userposs := range people{
+		//		for i,userpos := range userposs{
+		//			for fpTime,val := range userpos.KnnData{
+		//				out, err := json.Marshal(fpData[fpTime].WifiFingerprint)
+		//				if err != nil {
+		//					panic (err)
+		//				}
+		//				//tempKnnData[fpTime]=val
+		//				tempKnnData[fpTime+" : "+string(out)]=val
+		//			}
+		//			//userpos.KnnData = tempKnnData
+		//			//glb.Debug.Println(tempKnnData)
+		//			people[user][i].KnnData = tempKnnData
+		//		}
+		//	}
+		//}
+
+		if glb.RuntimeArgs.Debug {
+			fpData := dbm.GM.GetGroup(groupName).Get_RawData().Get_Fingerprints()
+			tempKnnData := make(map[string]float64)
+			for user, userposs := range people {
+				for i, userpos := range userposs {
+					for fpTime, val := range userpos.KnnData {
+						tempKnnData[fpTime+" - "+fpData[fpTime].Location] = val
+					}
+					//userpos.KnnData = tempKnnData
+					//glb.Debug.Println(tempKnnData)
+					people[user][i].KnnData = tempKnnData
+				}
+			}
+		}
+
 		message := "Correctly found locations."
 		if len(people) == 0 {
 			message = "No users found for username " + strings.Join(users, " or ")
@@ -1266,5 +1303,28 @@ func FingerprintLikeness(c *gin.Context) {
 		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or user not mentioned"})
+	}
+}
+
+func GetFingerprint(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	fpId := strings.ToLower(c.DefaultQuery("id", "none"))
+
+	if groupName != "noneasdf" && fpId != "none" {
+		fpData := dbm.GM.GetGroup(groupName).Get_RawData().Get_Fingerprints()
+		if fp, ok := fpData[fpId]; ok {
+			c.JSON(http.StatusOK, gin.H{"success": true, "fingerprint": fp})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Invalid fingerprint id"})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or id not mentioned"})
 	}
 }
