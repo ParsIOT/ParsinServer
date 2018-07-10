@@ -34,6 +34,7 @@ var RuntimeArgs struct {
 	Dump              string
 	DumpRaw           string
 	DumpCalc          string
+	Debug             bool
 	Message           string
 	Mqtt              bool
 	MqttExisting      bool

@@ -86,6 +86,8 @@ func main() {
 	//flag.StringVar(&gvar.RuntimeArgs.FilterMacFile, "filter", "", "JSON file for macs to filter")
 	flag.StringVar(&glb.RuntimeArgs.AdminAdd, "adminadd", "", "Add an admin user or change his password, foramt:<username>:<password>, e.g.:admin:admin")
 	flag.BoolVar(&glb.RuntimeArgs.GaussianDist, "gaussian", false, "Use gaussian distribution instead of historgram")
+	flag.BoolVar(&glb.RuntimeArgs.Debug, "debug", false, "run in debug mode")
+
 	flag.IntVar(&glb.RuntimeArgs.MinRssOpt, "minrss", -100, "Select minimum rss; Any Rss lower than minRss will be ignored.")
 
 	flag.CommandLine.Usage = func() {
@@ -126,6 +128,9 @@ func main() {
 		glb.RuntimeArgs.Scikit = true
 	}
 
+	if glb.RuntimeArgs.Debug {
+		fmt.Println("Running in debug mode")
+	}
 	//// Check whether macs should be filtered
 
 	//glb.RuntimeArgs.FilterMacsMap = make(map[string][]string)
@@ -296,6 +301,7 @@ func main() {
 			})
 
 			//needToLoadSettings.GET("/location", routes.GetUserLocations)
+			needToLoadSettings.GET("/getfingerprint/", routes.GetFingerprint)
 			needToLoadSettings.GET("/locationsmap/:group", routes.LocationsOnMap)
 			needToLoadSettings.GET("/locations", routes.GetLocationList)
 			needToLoadSettings.GET("/editloc", routes.EditLoc)

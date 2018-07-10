@@ -115,7 +115,7 @@ type UserPositionJSON struct {
 	SvmData     map[string]float64 `json:"svmdata"`
 	ScikitData  map[string]string  `json:"rfdata"`
 	KnnGuess    string             `json:"knnguess"`
-	KnnData     map[string]float64 `json:"knndata"`
+	KnnData     map[string]float64 `json:"knndata"` // fpTime --> 1/(1+RssVectordistance) or weight
 	PDRLocation string             `json:"pdrlocation"`
 	Fingerprint Fingerprint        `json:"fingerprint"` // raw fingerprint data
 }
