@@ -889,6 +889,8 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 
 	gp := GM.GetGroup(groupName)
 	rd := gp.Get_RawData()
+	md := gp.Get_MiddleData()
+
 	FingerprintsOrdering := rd.Get_FingerprintsOrdering()
 	FingerprintsData := rd.Get_Fingerprints()
 
@@ -912,35 +914,67 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 	//Distance calculating
 	resultFPs := make(map[string]parameters.Fingerprint)
 
+
+
+	uniqueMacs := md.Get_UniqueMacs()
+	sort.Strings(uniqueMacs)
 	for _, fpMain := range locFingerprintsData {
 		mac2RssMain := make(map[string]int)
+		mainMacs := []string{}
 		for _, rt := range fpMain.WifiFingerprint {
 			mac2RssMain[rt.Mac] = rt.Rssi
+			mainMacs = append(mainMacs, rt.Mac)
 		}
+		for _,mac :=  range uniqueMacs{
+			if !glb.StringInSlice(mac,mainMacs){
+				mac2RssMain[mac] = glb.MinRssiOpt
+			}
+		}
+
+
 		for _, fpTime := range totalFingerprintsOrdering {
 			//glb.Debug.Println(totalFingerprintsData[fpTime])
 			fp := totalFingerprintsData[fpTime]
 			mac2Rss := make(map[string]int)
+			macs := []string{}
 			for _, rt := range fp.WifiFingerprint {
 				mac2Rss[rt.Mac] = rt.Rssi
+				macs = append(macs,rt.Mac)
+			}
+			for _,mac :=  range uniqueMacs{
+				if !glb.StringInSlice(mac,macs){
+					mac2Rss[mac] = glb.MinRssiOpt
+				}
 			}
 
 			distance := float64(0)
+
 			for mainMac, mainRssi := range mac2RssMain {
 				if fpRss, ok := mac2Rss[mainMac]; ok {
 					distance = distance + math.Pow(float64(mainRssi-fpRss), 2)
-
 				} else {
 					distance = distance + math.Pow(float64(glb.MaxEuclideanRssVectorDist), 2)
-
 				}
 			}
 			distance = distance / float64(len(mac2RssMain))
 			//if(distance==float64(0)){
 			//	glb.Error.Println("###@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 			//}
+			distance = math.Pow(distance, float64(1.0)/2)
 			precision := 10
+
+			/*glb.Debug.Println("testDistance",testDistance)
+			precision := 3
 			distance = glb.Round(math.Pow(distance, float64(1.0)/2), precision)
+			glb.Debug.Println("distance with 3 precision: ", distance)
+			precision = 5
+			distance = glb.Round(math.Pow(distance, float64(1.0)/2), precision)
+			glb.Debug.Println("distance with 5 precision: ", distance)
+			precision = 8
+			distance = glb.Round(math.Pow(distance, float64(1.0)/2), precision)
+			glb.Debug.Println("distance with 8 precision: ", distance)*/
+
+
 			if distance == float64(0) {
 				//glb.Error.Println("Distance zero")
 				//glb.Error.Println(job.mac2RssCur)
@@ -969,16 +1003,16 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 
 	fingerprintRssDetails := [][]string{}
 
-	var uniqueMacs []string
+	//var uniqueMacs []string
 	firstLine := []string{"x,y"}
-	for _, fp := range resultWithMainFP {
+	/*for _, fp := range resultWithMainFP {
 		for _, rt := range fp.WifiFingerprint {
 			if !glb.StringInSlice(rt.Mac, uniqueMacs) {
 				uniqueMacs = append(uniqueMacs, rt.Mac)
 			}
 		}
 	}
-	sort.Strings(uniqueMacs)
+	sort.Strings(uniqueMacs)*/
 	for _, mac := range uniqueMacs {
 		firstLine = append(firstLine, mac)
 	}

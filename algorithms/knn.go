@@ -91,11 +91,43 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//if err!=nil {
 	//	return err
 	//}
+	/*uniqueMacs := md.Get_UniqueMacs()
+	sort.Strings(uniqueMacs)
+	for _, fpMain := range locFingerprintsData {
+		mac2RssMain := make(map[string]int)
+		mainMacs := []string{}
+		for _, rt := range fpMain.WifiFingerprint {
+			mac2RssMain[rt.Mac] = rt.Rssi
+			mainMacs = append(mainMacs, rt.Mac)
+		}
+		for _,mac :=  range uniqueMacs{
+			if !glb.StringInSlice(mac,mainMacs){
+				mac2RssMain[mac] = glb.MinRssiOpt
+			}
+		}*/
+	uniqueMacs := md.Get_UniqueMacs()
+	sort.Strings(uniqueMacs)
 
+	// both for clusters and complete list of macs in every fingerprint
 	for fpTime,fp := range fingerprints {
+		//mac2RssMain := make(map[string]int) // komeil
+		mainMacs := []string{} // komeil
+
 		for _,rt := range fp.WifiFingerprint{ //rt ==> Router = mac + RSS of an Access Point
 			if (rt.Rssi >= MinClusterRSS){
 				clusters[rt.Mac] = append(clusters[rt.Mac],fpTime)
+
+				//mac2RssMain[rt.Mac] = rt.Rssi
+				mainMacs = append(mainMacs, rt.Mac)
+			}
+		}
+		for _,mac :=  range uniqueMacs{
+			if !glb.StringInSlice(mac,mainMacs){
+				tempRt := parameters.Router{Mac:mac,Rssi:glb.MinRssiOpt}
+				fp.WifiFingerprint = append(fp.WifiFingerprint,tempRt)
+
+				fingerprints[fpTime]=fp
+				//mac2RssMain[mac] = glb.MinRssiOpt
 			}
 		}
 	}
@@ -108,7 +140,7 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//	}
 	//	fmt.Println("---------------------------------")
 	//}
-
+	glb.Debug.Println("testing learn")
 	// Add to knnData in db
 
 	var tempKnnFingerprints parameters.KnnFingerprints
