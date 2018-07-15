@@ -1117,6 +1117,7 @@ func CalcCompletionLevel(c *gin.Context) {
 }
 
 func BuildGroup(c *gin.Context) {
+	glb.Debug.Println("############# enetered BuildGroup #############")
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
