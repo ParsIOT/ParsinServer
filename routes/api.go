@@ -1020,6 +1020,85 @@ func Getfiltermacs(c *gin.Context) {
 
 }
 
+// Set graph
+// POST parameters: graph
+func Setgraph(c *gin.Context) { // not complete
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	var filterMacs parameters.FilterMacs
+
+	//x, _ := ioutil.ReadAll(c.Request.Body)
+	//Warning.Println("%s", string(x))
+
+	if glb.BindJSON(&filterMacs, c) == nil {
+		if len(filterMacs.Macs) == 0 {
+			//glb.RuntimeArgs.NeedToFilter[filterMacs.Group] = false
+			//glb.RuntimeArgs.NotNullFilterList[filterMacs.Group] = false
+			dbm.SetRuntimePrf(filterMacs.Group, "NeedToFilter", false)
+			dbm.SetRuntimePrf(filterMacs.Group, "NotNullFilterList", false)
+		} else {
+			//glb.RuntimeArgs.NeedToFilter[filterMacs.Group] = true
+			//glb.RuntimeArgs.NotNullFilterList[filterMacs.Group] = true
+			dbm.SetRuntimePrf(filterMacs.Group, "NeedToFilter", true)
+			dbm.SetRuntimePrf(filterMacs.Group, "NotNullFilterList", true)
+		}
+
+		//err := dbm.SetFilterMacDB(filterMacs.Group, filterMacs.Macs)
+		err := dbm.SetSharedPrf(filterMacs.Group, "FilterMacsMap", filterMacs.Macs)
+		if err == nil {
+			//glb.RuntimeArgs.FilterMacsMap[filterMacs.Group] = filterMacs.Macs
+			glb.Debug.Println("MacFilter set successfully ")
+			if len(filterMacs.Macs) == 0 {
+				c.JSON(http.StatusOK, gin.H{"message": "MacFilter Cleared.", "success": true})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"message": "MacFilter set successfully", "success": true})
+			}
+		} else {
+			glb.Warning.Println(err)
+			c.JSON(http.StatusOK, gin.H{"message": "setFilterMacDB problem", "success": false})
+		}
+	} else {
+		glb.Warning.Println("Can't bind json")
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json"})
+		//c.JSON(http.StatusOK, gin.H{"message": "Nums of the FilterMacs are zero", "success": false})
+	}
+}
+
+// Get filterMacs
+// Get parameters: group
+func Getgraph(c *gin.Context) { // not complete
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	group := c.DefaultQuery("group", "noneasdf")
+	var err error
+	var FilterMacs []string
+	if group != "noneasdf" {
+		//err, FilterMacs = dbm.GetFilterMacDB(group)
+		//glb.Debug.Println("filterMacs")
+		FilterMacs = dbm.GetSharedPrf(group).FilterMacsMap
+	} else {
+		c.JSON(http.StatusOK, gin.H{"message": "group field is null", "success": false})
+	}
+
+	if err == nil {
+		glb.Debug.Println("FilterMacs: ", FilterMacs)
+		c.JSON(http.StatusOK, gin.H{"message": FilterMacs, "success": true})
+	} else {
+		glb.Warning.Println(err)
+		c.JSON(http.StatusOK, gin.H{"message": err.Error(), "success": false})
+	}
+
+}
+
 // Get uniquemacs
 // Get parameters: group
 func GetUniqueMacs(c *gin.Context) {
@@ -1117,7 +1196,7 @@ func CalcCompletionLevel(c *gin.Context) {
 }
 
 func BuildGroup(c *gin.Context) {
-	glb.Debug.Println("############# enetered BuildGroup #############")
+	//glb.Debug.Println("############# enetered BuildGroup #############")
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")

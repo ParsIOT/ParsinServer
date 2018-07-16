@@ -16,7 +16,6 @@ import (
 	"strings"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
-
 	"ParsinServer/algorithms"
 	"ParsinServer/dbm"
 	"time"
@@ -337,6 +336,7 @@ func main() {
 			needToLoadSettings.GET("/lastfingerprint", routes.GetLastFingerprint)
 			needToLoadSettings.GET("/reformdb", routes.ReformDB)
 			needToLoadSettings.GET("/macfilterform/:group", routes.Macfilterform)
+			needToLoadSettings.GET("/graphform/:group", routes.Graphform) //komeil: page to enter graph
 			needToLoadSettings.POST("/setfiltermacs", routes.Setfiltermacs)
 			needToLoadSettings.GET("/getfiltermacs", routes.Getfiltermacs)
 			needToLoadSettings.GET("/getuniquemacs", routes.GetUniqueMacs)

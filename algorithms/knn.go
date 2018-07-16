@@ -83,7 +83,6 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//var fingerprintsOrdering []string
 	clusters := make(map[string][]string) // komeil: key of map: Mac - value: fpTime
 	//var err error
-
 	fingerprints := rd.Fingerprints
 	fingerprintsOrdering := rd.FingerprintsOrdering // komeil: timestamps of fingerprints as id
 
@@ -116,7 +115,6 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 		for _,rt := range fp.WifiFingerprint{ //rt ==> Router = mac + RSS of an Access Point
 			if (rt.Rssi >= MinClusterRSS){
 				clusters[rt.Mac] = append(clusters[rt.Mac],fpTime)
-
 				//mac2RssMain[rt.Mac] = rt.Rssi
 				mainMacs = append(mainMacs, rt.Mac)
 			}
@@ -125,7 +123,6 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 			if !glb.StringInSlice(mac,mainMacs){
 				tempRt := parameters.Router{Mac:mac,Rssi:glb.MinRssiOpt}
 				fp.WifiFingerprint = append(fp.WifiFingerprint,tempRt)
-
 				fingerprints[fpTime]=fp
 				//mac2RssMain[mac] = glb.MinRssiOpt
 			}
@@ -140,7 +137,7 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//	}
 	//	fmt.Println("---------------------------------")
 	//}
-	glb.Debug.Println("testing learn")
+	//glb.Debug.Println("################### testing learn ##################")
 	// Add to knnData in db
 
 	var tempKnnFingerprints parameters.KnnFingerprints
@@ -149,7 +146,6 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	tempKnnFingerprints.Clusters = clusters
 
 	//dbm.GM.GetGroup(groupName).Get_AlgoData().Set_KnnFPs(tempKnnFingerprints)
-
 	//err = dbm.SetKnnFingerprints(tempKnnFingerprints, groupName)
 	//if err != nil {
 	//	glb.Error.Println(err)
