@@ -256,8 +256,8 @@ func main() {
 	})
 
 	// r.PUT("/message", putMessage)
-	//privateRoutes := r.Group("/", glb.SessionManager.AuthenticatedOnly())
-	privateRoutes := r
+	privateRoutes := r.Group("/", glb.SessionManager.AuthenticatedOnly())
+	//privateRoutes := r
 	{
 		privateRoutes.GET("/logout", glb.SessionManager.Logout)
 		//routes.PreLoadSettings(
@@ -349,8 +349,8 @@ func main() {
 
 			needToLoadSettings.PUT("/choosemap", routes.ChooseMap) // komeil: choose a map for group
 			//Arbitrary locations
-			needToLoadSettings.GET("/addArbitLocations", routes.AddArbitLocations)
-			needToLoadSettings.GET("/delArbitLocations", routes.DelArbitLocations)
+			needToLoadSettings.POST("/addArbitLocations", routes.AddArbitLocations)
+			needToLoadSettings.POST("/delArbitLocations", routes.DelArbitLocations)
 			needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
 		}
 	}
