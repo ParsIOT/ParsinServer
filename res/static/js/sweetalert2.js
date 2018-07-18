@@ -1551,4 +1551,4 @@ sweetAlert.default = sweetAlert;
 return sweetAlert;
 
 })));
-if (window.Sweetalert2) window.sweetAlert = window.swal = window.Sweetalert2;
+if (window.Sweetalert2) window.sweetAlert2 = window.swal2 = window.Sweetalert2;

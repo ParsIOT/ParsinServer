@@ -60,10 +60,13 @@
     </style>
 
 
-    {{/*<script src="/static/js/sweetalert.min.js"></script>*/}}
+
     <script src="/static/js/d3.min.js"></script>
     <script src="/static/js/d3.tip.v0.6.3.js"></script>
-    {{/*<link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">*/}}
+
+    <script src="/static/js/sweetalert.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
+
     <link href="/static/css/sweetalert2.css" rel="stylesheet"/>
     <script src="/static/js/sweetalert2.js"></script>
 
@@ -98,14 +101,14 @@
                     // console.log(result);
                     var res = result['message']
                     console.log(res);
-                    if(res !="No calculation is running"){
-                          var p = Math.round(res*100) ;
+                    if (res != "No calculation is running") {
+                        var p = Math.round(res * 100);
 
 
-                                        var elem = document.getElementById("pb");
+                        var elem = document.getElementById("pb");
 
-                                        elem.style.width = p + '%';
-                                        elem.innerHTML = p + '%';
+                        elem.style.width = p + '%';
+                        elem.innerHTML = p + '%';
 
                     }
 
@@ -277,7 +280,7 @@
                         </button>
                     </div>
                 </div>
-                    <!-- Komeil: -->
+                <!-- Komeil: -->
                 <br/>
                 <div class="row">
                     <div class="col-sm-2 col-xs-6">
@@ -285,7 +288,6 @@
                             Choose map
                         </button>
                     </div>
-                </div>
                 </div>
             </div>
         </div>
@@ -301,7 +303,8 @@
                     <div class="panel-heading">
                         <h3 class="panel-title">
                         {{ $element }}
-                            <a id="{{ $element }}" class="editnetworkloc" title="Click to change this networks name">&nbsp;<span
+                            <a id="{{ $element }}" class="editnetworkloc"
+                               title="Click to change this networks name">&nbsp;<span
                                     class="fa fa-pencil-square-o"></span></a>
                             (Mixin = {{ index $.Dash.Mixin $element }}, Cutoff
                             = {{ index $.Dash.VarabilityCutoff $element }})
@@ -333,25 +336,24 @@
                             </dd>
                         </dl>
                     {{ end }}
-                         <dl>
-                                <dt>
-                                    <div>
-                                        Accuracy:
-                                    </div>
-                                    &nbsp;
-                                </dt>
-                                <dd>
-                                    <div>
-                                        {{ index $.Dash.LocationAccuracy "all" }}
-                                    </div>
-                                </dd>
-                            </dl>
+                        <dl>
+                            <dt>
+                                <div>
+                                    Accuracy:
+                                </div>
+                                &nbsp;
+                            </dt>
+                            <dd>
+                                <div>
+                                {{ index $.Dash.LocationAccuracy "all" }}
+                                </div>
+                            </dd>
+                        </dl>
                     </div>
                 </div>
             </div>
 
         {{ end}}
-
 
         </div>
     </div>
@@ -617,34 +619,6 @@
         userInterval = setInterval(userLocPolling, 1500)
     });
 
-    $('#recalculateAll').click(function () {
-        swal({
-                    title: "Recalculate priors and analyze accuracy",
-                    type: "info",
-                    html: true,
-                    text: '<div class="row"><div class="col-md-12" style="margin-top: 50px"><div class="progress"><div id="pb" class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="color:black;">0%</div></div></div></div>',
-                    showCancelButton: true,
-                    closeOnConfirm: false,
-                    showLoaderOnConfirm: true,
-
-                },
-                function () {
-                    preConfirm: setInterval(getdata, 1000)
-                    $.get("/calculate", {
-                                "group": "{{ .Group }}",
-                            },
-                            function (data) {
-                                console.log(data);
-                                if (data['success']) {
-                                    swal("Recalculating priors successful!");
-                                    location.reload();
-                                }
-                            }
-                    );
-                });
-
-
-    });
 
     $('.editloc').click(function () {
         var place = $(this).attr('id');
@@ -942,14 +916,14 @@
     //  });
     //});
 
-/*    $('#buildGroup').click(function () { /// OLD SWEETALERT, DOESNT WORK WITH SWEETALERT2
+    $('#buildGroup').click(function () { /// OLD SWEETALERT, DOESNT WORK WITH SWEETALERT2
 
         swal({
                     title: "Build and recalculate group from raw learned data",
                     text: "Transfer fingerprints from raw db to group cache or build the group, the recalculate it",
                     type: "info",
                     showCancelButton: true,
-
+                    closeOnConfirm: false,
                     showLoaderOnConfirm: true,
                 },
                 function () {
@@ -966,7 +940,36 @@
                             }
                     );
                 });
-    });*/
+    });
+
+    $('#recalculateAll').click(function () {
+        swal({
+                    title: "Recalculate priors and analyze accuracy",
+                    type: "info",
+                    html: true,
+                    text: '<div class="row"><div class="col-md-12" style="margin-top: 50px"><div class="progress"><div id="pb" class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="color:black;">0%</div></div></div></div>',
+                    showCancelButton: true,
+                    closeOnConfirm: false,
+                    showLoaderOnConfirm: true,
+
+                },
+                function () {
+                    preConfirm: setInterval(getdata, 1000)
+                    $.get("/calculate", {
+                                "group": "{{ .Group }}",
+                            },
+                            function (data) {
+                                console.log(data);
+                                if (data['success']) {
+                                    swal("Recalculating priors successful!");
+                                    location.reload();
+                                }
+                            }
+                    );
+                });
+
+
+    });
     /*swal({
         title: 'Are you sure?',
         text: "You won't be able to revert this!",
@@ -984,19 +987,20 @@
             )
         }
     })*/
-    $('#buildGroup').click(function () {
 
-        swal({
-                    title: "Build and recalculate group from raw learned data",
-                    text: "Transfer fingerprints from raw db to group cache or build the group, the recalculate it",
-                    type: "info",
-                    showCancelButton: true,
-                    showLoaderOnConfirm: true
-        }).then((result) => {
+    /*   $('#buildGroup').click(function () {
 
-                    console.log("########## entered build button #########");
-                    $.get("/buildgroup", {
-                                "group": "{{ .Group }}",
+           swal({
+                       title: "Build and recalculate group from raw learned data",
+                       text: "Transfer fingerprints from raw db to group cache or build the group, the recalculate it",
+                       type: "info",
+                       showCancelButton: true,
+                       showLoaderOnConfirm: true
+           }).then((result) => {
+
+                       console.log("########## entered build button #########");
+                       $.get("/buildgroup", {
+                                   "group": "{{ .Group }}",
                             },
                             function (data) {
                                 console.log(data);
@@ -1007,7 +1011,7 @@
                             }
                     );
                 })
-    });
+    });*/
 
     $('#setMaxMovement').click(function () {
         swal({
@@ -1161,7 +1165,7 @@
     });
 
     $('#chooseMap').click(function () {
-        swal({
+        swal2({
             title: "put your map in map folder, Then choose here",
             input: 'select',
             inputOptions: {
@@ -1181,7 +1185,7 @@
                             success: function (data) {
                                 console.log(data);
                                 if (data['success']) {
-                                    swal({
+                                    swal2({
                                         title: "Updated!",
                                         text: data['message'],
                                         timer: 2000,
@@ -1190,7 +1194,7 @@
                                         location.reload();
                                     });
                                 } else {
-                                    swal("Something went wrong.", data['message'], "error");
+                                    swal2("Something went wrong.", data['message'], "error");
                                 }
                             }
                         });
@@ -1200,11 +1204,11 @@
                 });
             }
         }).then(function (result) {
-            swal({
+            swal2({
                 type: 'success',
                 html: 'You selected: ' + result
             });
-        }).catch(swal.noop);
+        }).catch(swal2.noop);
     });
 
 </script>
