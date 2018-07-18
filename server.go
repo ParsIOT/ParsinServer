@@ -16,7 +16,6 @@ import (
 	"strings"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
-
 	"ParsinServer/algorithms"
 	"ParsinServer/dbm"
 	"time"
@@ -257,7 +256,8 @@ func main() {
 	})
 
 	// r.PUT("/message", putMessage)
-	privateRoutes := r.Group("/", glb.SessionManager.AuthenticatedOnly())
+	//privateRoutes := r.Group("/", glb.SessionManager.AuthenticatedOnly())
+	privateRoutes := r
 	{
 		privateRoutes.GET("/logout", glb.SessionManager.Logout)
 		//routes.PreLoadSettings(
@@ -284,7 +284,12 @@ func main() {
 		//needToLoadSettings := r
 		{
 			//Todo: Url must be same format to mention group name (now, group can be url param or be GET param)
-			needToLoadSettings.GET("/dashboard/:group", routes.SlashDashboard)
+			//needToLoadSettings.GET("/dashboard/:group", routes.SlashDashboard)
+			needToLoadSettings.GET("/dashboard/:group", func(context *gin.Context) {
+				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
+				routes.SlashDashboard(context)
+			})
+
 			needToLoadSettings.GET("/explore/:group/:network/:location", routes.GetLocationMacs)
 			//needToLoadSettings.GET("/explore/:group/:network/:location", routes.SlashExplore2)
 			//needToLoadSettings.GET("/pie/:group/:network/:location", routes.SlashPie)
@@ -337,16 +342,17 @@ func main() {
 			needToLoadSettings.GET("/lastfingerprint", routes.GetLastFingerprint)
 			needToLoadSettings.GET("/reformdb", routes.ReformDB)
 			needToLoadSettings.GET("/macfilterform/:group", routes.Macfilterform)
+			needToLoadSettings.GET("/graphform/:group", routes.Graphform) //komeil: page to enter graph
 			needToLoadSettings.POST("/setfiltermacs", routes.Setfiltermacs)
 			needToLoadSettings.GET("/getfiltermacs", routes.Getfiltermacs)
 			needToLoadSettings.GET("/getuniquemacs", routes.GetUniqueMacs)
 
+			needToLoadSettings.PUT("/choosemap", routes.ChooseMap) // komeil: choose a map for group
 			//Arbitrary locations
 			needToLoadSettings.GET("/addArbitLocations", routes.AddArbitLocations)
 			needToLoadSettings.GET("/delArbitLocations", routes.DelArbitLocations)
 			needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
 		}
-
 	}
 
 	//r.POST("/addArbitLocations", routes.AddArbitLocations)

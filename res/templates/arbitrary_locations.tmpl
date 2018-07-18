@@ -97,8 +97,8 @@
         crs: L.CRS.Simple,
         minZoom: -100,
     });
-    var bounds = [[-1700, -1800], [1700, 1800]];
-    var image = L.imageOverlay('/static/img/MapFull.png', bounds).addTo(map);
+    var bounds = [[-1*('{{.MapHeight}}'/2),-1*('{{.MapWidth}}'/2)], [('{{.MapHeight}}'/2),('{{.MapWidth}}'/2)]];
+    var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
     map.setView([0, 0], -2);
 
 

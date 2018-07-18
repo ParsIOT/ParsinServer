@@ -3,7 +3,6 @@ package algorithms
 import (
 	"ParsinServer/glb"
 	"strings"
-
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
@@ -312,6 +311,8 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 
 func CalculateLearn(groupName string) {
 	// Now performance isn't important in learning, just care about performance on track (it helps to code easily!)
+
+	glb.Debug.Println("################### enetered CalculateLearn ##################")
 	groupName = strings.ToLower(groupName)
 	gp := dbm.GM.GetGroup(groupName)
 

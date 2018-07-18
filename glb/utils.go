@@ -28,6 +28,10 @@ import (
 	"errors"
 	"strconv"
 	"math/big"
+	"path/filepath"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 )
 
 var (
@@ -246,6 +250,7 @@ func Exists(path string) bool {
 	}
 	return true
 }
+
 
 // CopyFile copies a file from src to dst. If src and dst files exist, and are
 // the same, then return success. Otherise, attempt to create a hard link
@@ -695,4 +700,63 @@ func Median(arr []int) int {
 	} else {
 		return arr[(l+1)/2]
 	}
+}
+
+// komeil: listing png images from map directory
+// good source: https://flaviocopes.com/go-list-files/
+func ListMaps() map[string][]int {
+	filesAndDimensions := make(map[string][]int)
+	var files []string
+
+	err := filepath.Walk(RuntimeArgs.MapDirectory, func(path string, info os.FileInfo, err error) error {
+		if filepath.Ext(path) == ".png" {
+			files = append(files, info.Name())
+			//Debug.Println("path: "+path)
+			width, height := getImageDimension(path)
+			filesAndDimensions [info.Name()] = []int{width, height}
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	//Debug.Println("list of map filesAndDimensions: ", filesAndDimensions)
+	sort.Sort(sort.StringSlice(files))
+	return filesAndDimensions
+}
+
+func getImageDimension(imagePath string) (int, int) {
+
+	fileName := filepath.Base(imagePath)
+
+	if strings.Index(fileName, "dims") != -1 {
+		var width, height int
+		indexDims := strings.Index(fileName, "dims")
+		indexDot := strings.Index(fileName, ".")
+		dimStr := fileName[indexDims+5 : indexDot]
+		hwIndex := strings.Index(dimStr, "_")
+		width, err1 := strconv.Atoi(dimStr[:hwIndex])
+		height, err2 := strconv.Atoi(dimStr[hwIndex+1:])
+
+		if err1 != nil || err2 != nil {
+			Error.Println(err1)
+			Error.Println(err2)
+			return 0, 0
+		} else {
+			return width, height
+		}
+
+	} else {
+		file, err := os.Open(imagePath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+		}
+
+		image, _, err := image.DecodeConfig(file)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s: %v\n", imagePath, err)
+		}
+		return image.Width, image.Height
+	}
+
 }

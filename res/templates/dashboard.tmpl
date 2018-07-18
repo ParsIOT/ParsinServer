@@ -60,11 +60,12 @@
     </style>
 
 
-    <script src="/static/js/sweetalert.min.js"></script>
+    {{/*<script src="/static/js/sweetalert.min.js"></script>*/}}
     <script src="/static/js/d3.min.js"></script>
     <script src="/static/js/d3.tip.v0.6.3.js"></script>
-    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
-
+    {{/*<link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">*/}}
+    <link href="/static/css/sweetalert2.css" rel="stylesheet"/>
+    <script src="/static/js/sweetalert2.js"></script>
 
     <link rel="stylesheet" href="/static/css/jquery-ui.css">
     <script src="/static/js/jquery-ui.js"></script>
@@ -275,6 +276,16 @@
                             Min RSS
                         </button>
                     </div>
+                </div>
+                    <!-- Komeil: -->
+                <br/>
+                <div class="row">
+                    <div class="col-sm-2 col-xs-6">
+                        <button type="submit" class="btn btn-warning btn-block" id="chooseMap" title="chooseMap">
+                            Choose map
+                        </button>
+                    </div>
+                </div>
                 </div>
             </div>
         </div>
@@ -931,16 +942,18 @@
     //  });
     //});
 
-    $('#buildGroup').click(function () {
+/*    $('#buildGroup').click(function () { /// OLD SWEETALERT, DOESNT WORK WITH SWEETALERT2
+
         swal({
                     title: "Build and recalculate group from raw learned data",
                     text: "Transfer fingerprints from raw db to group cache or build the group, the recalculate it",
                     type: "info",
                     showCancelButton: true,
-                    closeOnConfirm: false,
+
                     showLoaderOnConfirm: true,
                 },
                 function () {
+                    console.log("########## entered build button #########");
                     $.get("/buildgroup", {
                                 "group": "{{ .Group }}",
                             },
@@ -953,6 +966,47 @@
                             }
                     );
                 });
+    });*/
+    /*swal({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.value) {
+            swal(
+                    'Deleted!',
+                    'Your file has been deleted.',
+                    'success'
+            )
+        }
+    })*/
+    $('#buildGroup').click(function () {
+
+        swal({
+                    title: "Build and recalculate group from raw learned data",
+                    text: "Transfer fingerprints from raw db to group cache or build the group, the recalculate it",
+                    type: "info",
+                    showCancelButton: true,
+                    showLoaderOnConfirm: true
+        }).then((result) => {
+
+                    console.log("########## entered build button #########");
+                    $.get("/buildgroup", {
+                                "group": "{{ .Group }}",
+                            },
+                            function (data) {
+                                console.log(data);
+                                if (data['success']) {
+                                    swal("building is successful!");
+                                    location.reload();
+                                }
+                            }
+                    );
+                })
     });
 
     $('#setMaxMovement').click(function () {
@@ -1105,6 +1159,54 @@
                     });
                 });
     });
+
+    $('#chooseMap').click(function () {
+        swal({
+            title: "put your map in map folder, Then choose here",
+            input: 'select',
+            inputOptions: {
+            {{ range $mapIndex, $mapName := index $.mapNamesList }}
+                '{{$mapIndex}}': '{{$mapIndex}}',
+            {{ end }}
+            },
+            showCancelButton: true,
+            closeOnConfirm: false,
+            animation: "slide-from-top",
+            inputValidator: function (value) {
+                return new Promise(function (resolve, reject) {
+                    if (value !== '') {
+                        $.ajax({
+                            url: "/choosemap?group={{ .Group }}&mapName=" + value,
+                            type: "PUT",
+                            success: function (data) {
+                                console.log(data);
+                                if (data['success']) {
+                                    swal({
+                                        title: "Updated!",
+                                        text: data['message'],
+                                        timer: 2000,
+                                        showConfirmButton: true
+                                    }, function () {
+                                        location.reload();
+                                    });
+                                } else {
+                                    swal("Something went wrong.", data['message'], "error");
+                                }
+                            }
+                        });
+                    } else {
+                        reject('You need to select a Tier');
+                    }
+                });
+            }
+        }).then(function (result) {
+            swal({
+                type: 'success',
+                html: 'You selected: ' + result
+            });
+        }).catch(swal.noop);
+    });
+
 </script>
 
 
