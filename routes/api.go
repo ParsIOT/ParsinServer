@@ -1409,7 +1409,6 @@ func FingerprintLikeness(c *gin.Context) {
 		maxFPDist, err := strconv.ParseFloat(maxFPDistStr, 64)
 		if err == nil {
 			resultMap, fingerprintRssDetails := dbm.FingerprintLikeness(groupName, location, maxFPDist)
-
 			rssDetailsStr := ""
 			for _, fpRSSs := range fingerprintRssDetails {
 				line := ""
