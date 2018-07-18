@@ -310,7 +310,7 @@ func main() {
 			needToLoadSettings.GET("/locationsmap/:group", routes.LocationsOnMap)
 			needToLoadSettings.GET("/locations", routes.GetLocationList)
 			needToLoadSettings.GET("/editloc", routes.EditLoc)
-			needToLoadSettings.GET("/editlocBaseDb", routes.EditLocBaseDb)
+			needToLoadSettings.GET("/editlocBaseDB", routes.EditLocBaseDB)
 			needToLoadSettings.GET("/editMac", routes.EditMac)
 			needToLoadSettings.GET("/editusername", routes.EditUserName)
 			needToLoadSettings.GET("/arbitraryLocations/:group", routes.ArbitraryLocations)
@@ -318,6 +318,7 @@ func main() {
 			needToLoadSettings.DELETE("/location", routes.DeleteLocation)
 			needToLoadSettings.DELETE("/locationBaseDB", routes.DeleteLocationBaseDB)
 			needToLoadSettings.DELETE("/locations", routes.DeleteLocations)
+			needToLoadSettings.DELETE("/locationsBaseDB", routes.DeleteLocationsBaseDB)
 			needToLoadSettings.DELETE("/user", routes.DeleteUser)
 			needToLoadSettings.DELETE("/database", routes.DeleteDatabase)
 			//needToLoadSettings.DELETE("/delresults", routes.DelResults)
@@ -351,13 +352,13 @@ func main() {
 			//Arbitrary locations
 			needToLoadSettings.POST("/addArbitLocations", routes.AddArbitLocations)
 			needToLoadSettings.POST("/delArbitLocations", routes.DelArbitLocations)
-			needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
+			//needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
 		}
 	}
 
 	//r.POST("/addArbitLocations", routes.AddArbitLocations)
 	//r.POST("/delArbitLocations", routes.DelArbitLocations)
-	//r.GET("/getArbitLocations", routes.GetArbitLocations)
+	r.GET("/getArbitLocations", routes.GetArbitLocations)
 
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", algorithms.LearnFingerprintPOST)

@@ -716,6 +716,36 @@ func DeleteLocationsDB(locations []string, groupName string)int {
 	return numChanges
 }
 
+func DeleteLocationsBaseDB(locations []string, groupName string) int {
+	numChanges := 0
+
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
+	defer db.Close()
+	if err != nil {
+		glb.Error.Println(err)
+	}
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("fingerprints"))
+		if b == nil {
+			return errors.New("fingerprints dont exist")
+		}
+		c := b.Cursor()
+		for k, v := c.Last(); k != nil; k, v = c.Prev() {
+			v2 := LoadFingerprint(v, false)
+			if glb.StringInSlice(v2.Location, locations) {
+				b.Delete(k)
+				numChanges++
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		glb.Error.Println(err)
+	}
+	return numChanges
+}
 
 
 //func DeleteLocationsDB(locations []string,group string) int{

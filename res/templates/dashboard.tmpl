@@ -548,35 +548,36 @@
 
     $('.deleteloc').click(function () {
         var placeToDelete = $(this).attr('id');
-        swal({
-                    title: "Delete location",
-                    text: "Are you sure you want to delete " + placeToDelete,
-                    type: "warning",
-                    showCancelButton: true,
-                    confirmButtonColor: "#DD6B55",
-                    confirmButtonText: "Yes, delete it!",
-                    cancelButtonText: "No, cancel pls!",
-                    closeOnConfirm: false,
-                    closeOnCancel: false
-                },
-                function (isConfirm) {
-                    if (isConfirm) {
-                        var req = $.ajax({
-                            method: "DELETE",
-                            url: "/location" + '?' + $.param({"group": "{{ .Group }}", "location": placeToDelete})
-                        })
-                        req.done(function (data) {
-                            console.log(data)
-                            swal("Deleted!", data['message'], "success");
-                            location.reload();
-                        });
-                        req.fail(function (data) {
-                            swal("Sorry", data['message'], "error");
-                        });
-                    } else {
-                        swal("Cancelled", "Your data is safe :)", "error");
-                    }
-                });
+        swal2({
+            title: "Delete location",
+            text: "Are you sure you want to delete " + placeToDelete,
+            inputPlaceholder: " Also Delete from BaseDB",
+            input: "checkbox",
+            showCancelButton: true,
+            confirmButtonColor: "#DD6B55",
+            confirmButtonText: "Yes, delete it!",
+            cancelButtonText: "No, cancel pls!",
+            closeOnConfirm: false,
+            closeOnCancel: false
+        }).then(function (is_checked) {
+            var req = $.ajax({
+                method: "DELETE",
+                url: "/location" + (is_checked ? "BaseDB" : "") + '?' + $.param({
+                    "group": "{{ .Group }}",
+                    "location": placeToDelete
+                })
+            });
+            req.done(function (data) {
+                console.log(data)
+                swal("Deleted!", data['message'], "success");
+                location.reload();
+            });
+            req.fail(function (data) {
+                swal("Sorry", data['message'], "error");
+            });
+        }, function (stat) {
+            swal2("Cancelled", "Your data is safe :)", "error");
+        });
 
     });
 

@@ -27,6 +27,9 @@
     <script src='/static/js/leaflet.usermarker.js'></script>
     <script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
 
+    <link href="/static/css/sweetalert2.css" rel="stylesheet"/>
+    <script src="/static/js/sweetalert2.js"></script>
+
     <!-- Font Awesome CSS -->
     <link rel="stylesheet" href="/static/css/font-awesome.min.css">
     <style>
@@ -148,8 +151,9 @@
         });
         markers.addTo(map);
         markers.eachLayer(function (marker) {
-            let dragStartPoint, dragEndPoint;
+            let dragStartPoint, dragEndPoint, startLatLng;
             marker.on('dragstart', function (e) {
+                startLatLng = e.target.getLatLng();
                 dragStartPoint = (e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0";
                 console.log("START:");
                 console.log(dragStartPoint);
@@ -158,23 +162,41 @@
                 dragEndPoint = (e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0";
                 console.log("END:");
                 console.log(dragEndPoint);
+                console.log(e.target);
 
-
-                $.get("/editloc", {
-                            "group": {{ .Group }},
-                            "oldloc": dragStartPoint,
-                            "newloc": dragEndPoint
-                        },
-                        function (data) {
-                            console.log(data);
-                            if (data['success']) {
-                                swal("Edited!", data['message'], "success");
-                                location.reload()
-                            } else {
-                                swal("Something went wrong.", data['message'], "error");
+                swal2({
+                    title: "Move location",
+                    text: "Are you sure you want to move '" + dragStartPoint + "' to '" + dragEndPoint + "'",
+                    inputPlaceholder: " Also Move in BaseDB",
+                    input: "checkbox",
+                    showCancelButton: true,
+                    confirmButtonColor: "#6cdd87",
+                    confirmButtonText: "Yes, move it!",
+                    cancelButtonText: "No, cancel pls!",
+                    closeOnConfirm: false,
+                    closeOnCancel: false
+                }).then(function (is_checked) {
+                    $.get("/editloc" + (is_checked ? "BaseDB" : ""), {
+                                "group": {{ .Group }},
+                                "oldloc": dragStartPoint,
+                                "newloc": dragEndPoint
+                            },
+                            function (data) {
+                                console.log(data);
+                                if (data['success']) {
+                                    swal("Edited!", data['message'], "success");
+                                    location.reload()
+                                } else {
+                                    swal("Something went wrong.", data['message'], "error");
+                                }
                             }
-                        }
-                );
+                    );
+                }, function (stat) {
+                    e.target.setLatLng(startLatLng);
+                    swal2("Cancelled", "Your data is unchanged :)", "error");
+                });
+
+
             });
 
         });

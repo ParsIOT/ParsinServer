@@ -800,7 +800,7 @@ func EditLoc(c *gin.Context) {
 	}
 }
 
-func EditLocBaseDb(c *gin.Context) {
+func EditLocBaseDB(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -929,9 +929,35 @@ func DeleteLocationBaseDB(c *gin.Context) {
 	}
 }
 
+func DeleteLocations(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "DELETE, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	locationsQuery := strings.ToLower(c.DefaultQuery("names", "none"))
+	if groupName != "noneasdf" && locationsQuery != "none" {
+		locations := strings.Split(strings.ToLower(locationsQuery), ",")
+		numChangesBaseDB := dbm.DeleteLocationsBaseDB(locations, groupName)
+		numChangesGpCache := dbm.DeleteLocationsDB(locations, groupName)
+		if (numChangesBaseDB != numChangesGpCache) {
+			glb.Error.Printf("number of deletation from (baseDB,groupCache) are not equal: (%d,%d)\n", numChangesBaseDB, numChangesGpCache)
+		}
+		// todo: can't calculateLearn( there is problem with goroutine)
+		algorithms.CalculateLearn(groupName)
+		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
+		c.JSON(http.StatusOK, gin.H{"message": "Deleted " + strconv.Itoa(numChangesBaseDB) + " locations", "success": true})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Need to provide groupName and location list. DELETE /locations?groupName=X&names=Y,Z,W"})
+	}
+}
+
 // Is like deleteLocation(), deletes a list of locations instead.
 // GET parameters: group, names
-func DeleteLocations(c *gin.Context) {
+func DeleteLocationsBaseDB(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
