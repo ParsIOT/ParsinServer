@@ -693,8 +693,16 @@ func CalcDist(x1, y1, x2, y2 float64) float64 {
 }
 
 func Median(arr []int) int {
-	sort.Ints(arr)
 	l := len(arr)
+
+	if l == 0 {
+		Error.Println("empty array")
+		return 123456789
+	} else if l == 1 {
+		return arr[0]
+	}
+
+	sort.Ints(arr)
 	if l%2 == 0 {
 		return int((arr[l/2] + arr[l/2+1]) / 2)
 	} else {
