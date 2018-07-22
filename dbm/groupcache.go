@@ -1546,7 +1546,13 @@ func (rs *ResultDataStruct) Set_AlgoAccuracy(algoName string, distError int){
 	defer rs.SetDirtyBit()
 
 	rs.Lock()
-	rs.AlgoAccuracy[algoName] = distError
+
+	if _,ok := rs.AlgoAccuracy[algoName];ok{
+		rs.AlgoAccuracy[algoName] = distError
+	}else{
+		rs.AlgoAccuracy = make(map[string]int)
+		rs.AlgoAccuracy[algoName] = distError
+	}
 	rs.Unlock()
 }
 
