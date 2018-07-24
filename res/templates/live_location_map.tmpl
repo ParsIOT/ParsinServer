@@ -74,6 +74,23 @@
                 <div class="panel-body" id="live-users-table-container">
                     <div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
                         <div class="col-md-12">
+                            <a href="#location-mode" data-toggle="collapse"><h4 style="text-decoration: underline;">
+                                Location mode</h4></a>
+                            <div id="location-mode" class="collapse">
+                                <label class="radio">
+                                    <input type="radio" name="locMode" value="pdrMode" checked>PDR Location
+                                </label>
+                                <label class="radio">
+                                    <input type="radio" name="locMode" value="fpMode">Fingerprint Location
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <hr/>
+                        </div>
+
+                        <div class="col-md-12">
                             <a href="#filter-users" data-toggle="collapse"><h4 style="text-decoration: underline;">Filter Users</h4></a>
                             <div id="filter-users" class="collapse">
                                 <div class="form-group">
@@ -159,7 +176,15 @@
             var items = [];
             $.each(data.users, function (key, val) {
 
-                let match = pattern.exec(val[0].location);
+                let locMode = $('input[name=locMode]:checked').val();
+                let location = "";
+                if (locMode == "fpMode") {
+                    location = val[0].location;
+                } else if (locMode == "pdrMode") {
+                    location = val[0].pdrlocation;
+                }
+
+                let match = pattern.exec(location);
                 if (match && match[1] && match[2]) {
                     if (filter_user != false) {
                         if (filter_user == key) {
