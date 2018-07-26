@@ -293,7 +293,10 @@ func main() {
 			needToLoadSettings.GET("/explore/:group/:network/:location", routes.GetLocationMacs)
 			//needToLoadSettings.GET("/explore/:group/:network/:location", routes.SlashExplore2)
 			//needToLoadSettings.GET("/pie/:group/:network/:location", routes.SlashPie)
-			needToLoadSettings.GET("/livemap/:group", routes.LiveLocationMap)
+			needToLoadSettings.GET("/livemap/:group", func(context *gin.Context) {
+				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
+				routes.LiveLocationMap(context)
+			})
 			//needToLoadSettings.GET("/userhistory/:group", routes.UserHistoryMap)
 			needToLoadSettings.GET("/userhistory/:group", func(context *gin.Context) {
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
@@ -323,7 +326,6 @@ func main() {
 			needToLoadSettings.DELETE("/database", routes.DeleteDatabase)
 			//needToLoadSettings.DELETE("/delresults", routes.DelResults)
 
-			needToLoadSettings.DELETE("/delresults", routes.DelResults)
 			needToLoadSettings.GET("/location", routes.GetUserLocations)
 			needToLoadSettings.GET("/fingerprintLikeness", routes.FingerprintLikeness)
 
@@ -359,6 +361,9 @@ func main() {
 	//r.POST("/addArbitLocations", routes.AddArbitLocations)
 	//r.POST("/delArbitLocations", routes.DelArbitLocations)
 	r.GET("/getArbitLocations", routes.GetArbitLocations)
+	r.DELETE("/delresults", routes.DelResults)
+
+
 
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", algorithms.LearnFingerprintPOST)
@@ -375,7 +380,6 @@ func main() {
 		auth.GET("/login", routes.SlashLogin)
 		auth.POST("/login", routes.SlashLoginPOST)
 	}
-
 
 	// Load and display the logo
 	dat, _ := ioutil.ReadFile("./res/static/logo.txt")
