@@ -24,6 +24,10 @@
     <script src='/static/js/leaflet.js'></script>
     <script src='/static/js/leaflet.usermarker.js'></script>
     <script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
+    <script src="/static/js/sweetalert.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
+    <link href="/static/css/sweetalert2.css" rel="stylesheet"/>
+    <script src="/static/js/sweetalert2.js"></script>
 
     <!-- Font Awesome CSS -->
     <link rel="stylesheet" href="/static/css/font-awesome.min.css">
@@ -124,6 +128,14 @@
                                     <input id="refresh-interval" type="number" min="1000" step="100" value="2000" class="form-control" disabled/>
                                 </div>
                             </div>
+                        </div>
+                        <div class="col-md-12">
+                            <hr/>
+                        </div>
+                        <div class="col-md-12">
+                            <button onclick="deleteResults()" class="btn btn-warning btn-sm btn-block">Delete user
+                                history
+                            </button>
                         </div>
                     </div>
                     <table id="live-users-table"
@@ -264,6 +276,67 @@
         filter_user = false;
         updateUsersLocation();
     }
+
+
+    function deleteResults() {
+        user = $('#filter-user').val();
+        if (user.length === 0) {
+            return;
+        }
+        swal2({
+            title: "Delete User history",
+            text: "Are you sure you want to delete " + user + " history",
+            showCancelButton: true,
+            confirmButtonColor: "#DD6B55",
+            confirmButtonText: "Yes, delete it!",
+            cancelButtonText: "No, cancel pls!",
+            closeOnConfirm: false,
+            closeOnCancel: false
+        }).then(function (is_checked) {
+            var req = $.ajax({
+                method: "DELETE",
+                url: "/delresults?group={{ .Group }}&user=" + user,
+            });
+            req.done(function (data) {
+                console.log(data)
+                swal("Deleted!", data['message'], "success");
+                location.reload();
+            });
+            req.fail(function (data) {
+                swal("Sorry", data['message'], "error");
+            });
+        }, function (stat) {
+            swal2("Cancelled", "Your data is safe :)", "error");
+        });
+    }
+
+    /*  function deleteResults() {
+
+          $.getJSON("/delresults?group={{ .Group }}&user="+user, function (data) {
+
+            $.each(data.locations, function (key, val) {
+                let match = pattern.exec(key);
+                if (match) {
+                    // items.push("<tr><td>" + match[1] + "</td><td>" + match[2] + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
+
+                    L.userMarker([match[1], match[2]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+                        title: key,
+                        smallIcon: true
+                    }).bindPopup("<b>" + match[1] + "," + match[2] + "</b>").addTo(locationMarkers);
+                }
+            });
+            locationMarkers.addTo(map);
+            locationMarkers.eachLayer(function (marker) {
+                marker.on('click', function (e) {
+                    $('#locName').val((e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0");
+                    UpdateTraceMap();
+                });
+
+            });
+        });
+    }*/
 
     function createMarker(key, match) {
         if (key in markers) {
