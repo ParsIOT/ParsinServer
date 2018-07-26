@@ -326,7 +326,7 @@ func main() {
 			needToLoadSettings.DELETE("/database", routes.DeleteDatabase)
 			//needToLoadSettings.DELETE("/delresults", routes.DelResults)
 
-			needToLoadSettings.GET("/location", routes.GetUserLocations)
+			//needToLoadSettings.GET("/location", routes.GetUserLocations)
 			needToLoadSettings.GET("/fingerprintLikeness", routes.FingerprintLikeness)
 
 			needToLoadSettings.GET("/calculate", routes.Calculate)
@@ -362,7 +362,7 @@ func main() {
 	//r.POST("/delArbitLocations", routes.DelArbitLocations)
 	r.GET("/getArbitLocations", routes.GetArbitLocations)
 	r.DELETE("/delresults", routes.DelResults)
-
+	r.GET("/location", routes.GetUserLocations)
 
 
 	// Routes for performing fingerprinting (fingerprint.go)
