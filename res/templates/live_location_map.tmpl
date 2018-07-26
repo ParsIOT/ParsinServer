@@ -277,8 +277,8 @@
 //                    accuracy: 200,
                 title: key,
                 smallIcon: true
-            }).bindPopup("<b>" + key + "</b><br>" + e.target.getLatLng().lat
-                    + "," + e.target.getLatLng().lng).addTo(map);
+            }).bindPopup("<b>" + key + "</b><br>" + match[1]
+                    + "," + match[2]).addTo(map);
 
         }
     }
