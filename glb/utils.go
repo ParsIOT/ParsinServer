@@ -704,9 +704,9 @@ func Median(arr []int) int {
 
 	sort.Ints(arr)
 	if l%2 == 0 {
-		return int((arr[l/2] + arr[l/2+1]) / 2)
+		return int((arr[l/2-1] + arr[l/2]) / 2)
 	} else {
-		return arr[(l+1)/2]
+		return arr[(l+1)/2-1]
 	}
 }
 
