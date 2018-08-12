@@ -305,6 +305,11 @@ func main() {
 				routes.FingerprintAmbiguity(context)
 			})
 
+			needToLoadSettings.GET("/heatmap/:group", func(context *gin.Context) { //komeil: heatmap
+				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
+				routes.Heatmap(context)
+			})
+
 			//needToLoadSettings.GET("/location", routes.GetUserLocations)
 			needToLoadSettings.GET("/getfingerprint/", routes.GetFingerprint)
 			needToLoadSettings.GET("/locationsmap/:group", routes.LocationsOnMap)

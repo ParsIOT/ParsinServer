@@ -768,3 +768,18 @@ func getImageDimension(imagePath string) (int, int) {
 	}
 
 }
+
+func GetLocationOfFingerprint (location string) (float64,float64){ // komeil: gets location return from a fingerprint and returns two float64 numbers
+	x_y := strings.Split(location, ",")
+	if !(len(x_y) == 2) {
+		err := errors.New("Location names aren't in the format of x,y")
+		panic(err)
+	}
+	locXstr := x_y[0]
+	locYstr := x_y[1]
+	locX, _ := strconv.ParseFloat(locXstr,64)
+	locY, _ := strconv.ParseFloat(locYstr,64)
+	locX = Round(locX, 5)
+	locY = Round(locY, 5)
+	return locX,locY
+}
