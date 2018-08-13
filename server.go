@@ -346,6 +346,7 @@ func main() {
 			needToLoadSettings.GET("/reformdb", routes.ReformDB)
 			needToLoadSettings.GET("/macfilterform/:group", routes.Macfilterform)
 			needToLoadSettings.GET("/graphform/:group", routes.Graphform) //komeil: page to enter graph
+			needToLoadSettings.GET("/getMostSeenMacs", routes.GetMostSeenMacsAPI)
 			needToLoadSettings.POST("/setfiltermacs", routes.Setfiltermacs)
 			needToLoadSettings.GET("/getfiltermacs", routes.Getfiltermacs)
 			needToLoadSettings.GET("/getuniquemacs", routes.GetUniqueMacs)

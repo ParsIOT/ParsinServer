@@ -1475,3 +1475,21 @@ func GetFingerprint(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or id not mentioned"})
 	}
 }
+
+func GetMostSeenMacsAPI(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	if groupName != "noneasdf" {
+		mostSeenMacs := dbm.GetMostSeenMacs(groupName)
+		c.JSON(http.StatusOK, gin.H{"success": true, "macs": mostSeenMacs})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or id not mentioned"})
+	}
+
+}

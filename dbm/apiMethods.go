@@ -1099,3 +1099,33 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 
 	return resultMap, fingerprintRssDetails
 }
+
+func GetMostSeenMacs(groupName string) []string {
+	macCount := make(map[string]float64)
+
+	rd := GM.GetGroup(groupName).Get_RawData()
+	fpData := rd.Fingerprints
+
+	for _, fp := range fpData {
+		for _, rt := range fp.WifiFingerprint {
+			if val, ok := macCount[rt.Mac]; ok {
+				macCount[rt.Mac] = val + 1
+			} else {
+				macCount[rt.Mac] = 1
+			}
+		}
+	}
+
+	macSorted := glb.SortDictByVal(macCount)
+
+	// get N of most seen macs
+	NumOfMustSeenMacs := 40
+
+	glb.Debug.Println(macSorted)
+
+	if (len(macSorted) < NumOfMustSeenMacs) {
+		return macSorted
+	} else {
+		return macSorted[:NumOfMustSeenMacs]
+	}
+}
