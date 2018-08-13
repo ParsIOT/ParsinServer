@@ -6,30 +6,18 @@
 	<title>PARSIN</title>
 	<link rel="shortcut icon" sizes="16x16 24x24 32x32 48x48 64x64" href="/static/img/favicon.ico"/>
 	<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
-
-	<!-- Bootstrap and JQuery JS -->
-	<script src="/static/js/jquery-2.0.0.min.js"></script>
-	<script src='/static/js/bootstrap.js'></script>
-
 	<!-- Bootstrap Core CSS -->
 	<link href="/static/css/bootstrap.min.css" rel="stylesheet">
-
 	<!-- Custom CSS -->
 	<link href="/static/css/2-col-portfolio.css" rel="stylesheet">
 	<link href="/static/css/custom.css" rel="stylesheet">
-
-
 	<link href="/static/css/leaflet.css" rel="stylesheet">
 	<link href="/static/css/leaflet.usermarker.css" rel="stylesheet">
-	<script src='/static/js/leaflet.js'></script>
-	<script src='/static/js/leaflet.usermarker.js'></script>
-	<script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
 
-	<script src="/static/js/sweetalert.min.js"></script>
-	<script src="/static/js/d3.min.js"></script>
-	<script src="/static/js/d3.tip.v0.6.3.js"></script>
+	<!--
+	<link href="/static/css/plugins/leaflet/heatmap/commons.css" rel="stylesheet">
+	<link href="/static/css/plugins/leaflet/heatmap/prism.css" rel="stylesheet">  -->
 	<link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
-
 	<!-- Font Awesome CSS -->
 	<link rel="stylesheet" href="/static/css/font-awesome.min.css">
 	<style>
@@ -88,14 +76,17 @@
 								</div>
 								<div class="form-group">
 									<label for="refresh-interval">Enter MaxFPDist(0 to 50.0)</label>
-									<input id="maxFPDist" class="form-control" placeholder="Max RSS Vector distance" value="5"/>
+									<input id="maxFPDist" class="form-control" placeholder="Max RSS Vector distance"
+									       value="5"/>
 								</div>
 								<div class="col-md-12">
 									<div class="form-group">
-										<button id="get-similar-fp" onclick="getFPAmbiguity()" class="btn btn-success btn-block">
+										<button id="get-similar-fp" onclick="getFPAmbiguity()"
+										        class="btn btn-success btn-block">
 											Get similar FP
 										</button>
-										<button id="resetMapBtn" onclick="getMapLocations()" class="btn btn-warning btn-block">
+										<button id="resetMapBtn" onclick="getMapLocations()"
+										        class="btn btn-warning btn-block">
 											Reset Map
 										</button>
 									</div>
@@ -122,9 +113,53 @@
 
 </div>
 
+<!-- Bootstrap and JQuery JS -->
+<script src="/static/js/jquery-2.0.0.min.js"></script>
+<script src='/static/js/bootstrap.js'></script>
+<script src='/static/js/leaflet.js'></script>
+<!-- <script src="/static/js/heatmap.js"></script> -->
+<!-- leaflet heatmap JS -->
+<!-- <script src="/static/js/leaflet-heatmap.js"></script>
+<script src="/static/js/plugins/leaflet/heatmap/prism.js"></script>  -->
+
+
+<script src='/static/js/leaflet.usermarker.js'></script>
+<script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
+<script src="/static/js/sweetalert.min.js"></script>
+<script src="/static/js/d3.min.js"></script>
+<script src="/static/js/d3.tip.v0.6.3.js"></script>
+<script src="/static/js/plugins/leaflet/heatmap/leaflet-heat.js"></script>
+<script src="/static/js/plugins/leaflet/heatmap/HeatLayer.js"></script>
 <script type="application/javascript">
 	var filter_user = false;
 	var reloadDataInterval;
+
+/*	//komeil: heatmap
+	var testData = {
+		max: 8,
+		data: [{lat: 24.6408, lng: 46.7728, count: 3}, {lat: 50.75, lng: -1.55, count: 1}]
+	};
+	var cfg = {
+		// radius should be small ONLY if scaleRadius is true (or small radius is intended)
+		// if scaleRadius is false it will be the constant radius used in pixels
+		"radius": 2,
+		"maxOpacity": .8,
+		// scales the radius based on map zoom
+		"scaleRadius": true,
+		// if set to false the heatmap uses the global maximum for colorization
+		// if activated: uses the data maximum within the current map boundaries
+		//   (there will always be a red spot with useLocalExtremas true)
+		"useLocalExtrema": true,
+		// which field name in your data represents the latitude - default "lat"
+		latField: 'lat',
+		// which field name in your data represents the longitude - default "lng"
+		lngField: 'lng',
+		// which field name in your data represents the data value - default "value"
+		valueField: 'count'
+	};
+	var heatmapLayer = new HeatmapOverlay(cfg);
+
+	//end of heatmap*/
 
 	$('#live-map').css('height', $(window.top).height() - 275);
 	$('#locations-table-container').css('height', $(window.top).height() - 245);
@@ -132,11 +167,31 @@
 		crs: L.CRS.Simple,
 		minZoom: -100,
 //        maxZoom: 4
+		//layers: [baseLayer, heatmapLayer] //heatmap
 	});
 	var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
 	//    var bounds = [[-400, -300], [400, 300]];
 	var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
 	map.setView([0, 0], -2);
+
+	//heatmapLayer.setData(testData); // heatmap
+	var heat = L.heatLayer([
+		[50.5, 30.5, 0.25], // lat, lng, intensity
+		[50.6, 30.4, 0.25],
+		[50.6, 30.4, 50.25],
+		[50.6, 30.4, 10.25],
+		[50.6, 30.4, 10.25],
+		[50.6, 30.4, 10.25],
+		[50.6, 30.4, 10.25],
+		[50.6, 30.4, 10.25],
+		[50.6, 30.4, 10.25],
+		[50.6, 30.4, 10.25],
+		[50.6, 30.4, 10.25],
+		[50.6, 30.4, 10.25],
+		[50.6, 30.4, 10.25],
+
+	], {radius: 100}).addTo(map);
+	//map.addLayer(heat);
 
 	lineLayer = L.featureGroup();
 	map.addLayer(lineLayer);
@@ -171,9 +226,9 @@
 	}
 
 	function getMapLocations() {
-		console.group("remove")
+		/*console.group("remove") // just for testing the pattern of markers
 		console.log(markers)
-		console.groupEnd()
+		console.groupEnd()*/
 		for (var marker in markers) {  // delete fingerprint locations from map
 			map.removeLayer(markers[marker]);
 		}
@@ -187,6 +242,11 @@
 				let match = pattern.exec(key);
 				if (match) {
 					// items.push("<tr><td>" + match[1] + "</td><td>" + match[2] + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
+
+					var heat = L.heatLayer([ // heat map test
+						[match[1], match[2], 0.2], // lat, lng, intensity
+						[match[1]+10, match[2]+10, 0.25],
+					], {radius: 50}, {0.1: 'blue', 0.2: 'lime', 0.25: 'red'}).addTo(map);
 
 					L.userMarker([match[1], match[2]], {
 //                    pulsing: true,
@@ -267,8 +327,8 @@
 			// Remove lines
 			// map.removeLayer(lineLayer);
 		}
-		$('#resetMapBtn').attr('disabled',"")
-		$('#get-similar-fp').attr('disabled',"")
+		$('#resetMapBtn').attr('disabled', "")
+		$('#get-similar-fp').attr('disabled', "")
 		markers = {};
 		UpdateTraceMap()
 	}
@@ -296,6 +356,7 @@
 
 	}
 </script>
+
 </body>
 
 </html>

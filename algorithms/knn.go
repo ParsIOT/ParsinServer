@@ -67,7 +67,7 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//jsonFingerprint = calcMacRate(jsonFingerprint,false)
 	//K := hyperParameters[0].(int)
 	MinClusterRSS := hyperParameters[1].(int) //komeil: min threshold for determining whether ...
-												// a fingerprint is in the cluster of a beacon or not
+	// a fingerprint is in the cluster of a beacon or not
 	//glb.Debug.Printf("Knn is running (K:%d, MinClusterRss:%d)\n",K,MinClusterRSS)
 	//jsonFingerprint = calcMacJustRate(jsonFingerprint,false)
 
@@ -83,6 +83,7 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//var fingerprintsOrdering []string
 	clusters := make(map[string][]string) // komeil: key of map: Mac - value: fpTime
 	//var err error
+
 	fingerprints := rd.Fingerprints
 	fingerprintsOrdering := rd.FingerprintsOrdering // komeil: timestamps of fingerprints as id
 
@@ -90,41 +91,11 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//if err!=nil {
 	//	return err
 	//}
-	/*uniqueMacs := md.Get_UniqueMacs()
-	sort.Strings(uniqueMacs)
-	for _, fpMain := range locFingerprintsData {
-		mac2RssMain := make(map[string]int)
-		mainMacs := []string{}
-		for _, rt := range fpMain.WifiFingerprint {
-			mac2RssMain[rt.Mac] = rt.Rssi
-			mainMacs = append(mainMacs, rt.Mac)
-		}
-		for _,mac :=  range uniqueMacs{
-			if !glb.StringInSlice(mac,mainMacs){
-				mac2RssMain[mac] = glb.MinRssiOpt
-			}
-		}*/
-	uniqueMacs := md.Get_UniqueMacs()
-	sort.Strings(uniqueMacs)
 
-	// both for clusters and complete list of macs in every fingerprint
 	for fpTime,fp := range fingerprints {
-		//mac2RssMain := make(map[string]int) // komeil
-		mainMacs := []string{} // komeil
-
 		for _,rt := range fp.WifiFingerprint{ //rt ==> Router = mac + RSS of an Access Point
 			if (rt.Rssi >= MinClusterRSS){
 				clusters[rt.Mac] = append(clusters[rt.Mac],fpTime)
-				//mac2RssMain[rt.Mac] = rt.Rssi
-				mainMacs = append(mainMacs, rt.Mac)
-			}
-		}
-		for _,mac :=  range uniqueMacs{
-			if !glb.StringInSlice(mac,mainMacs){
-				tempRt := parameters.Router{Mac:mac,Rssi:glb.MinRssiOpt}
-				fp.WifiFingerprint = append(fp.WifiFingerprint,tempRt)
-				fingerprints[fpTime]=fp
-				//mac2RssMain[mac] = glb.MinRssiOpt
 			}
 		}
 	}
@@ -137,7 +108,7 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//	}
 	//	fmt.Println("---------------------------------")
 	//}
-	//glb.Debug.Println("################### testing learn ##################")
+
 	// Add to knnData in db
 
 	var tempKnnFingerprints parameters.KnnFingerprints
@@ -146,6 +117,7 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	tempKnnFingerprints.Clusters = clusters
 
 	//dbm.GM.GetGroup(groupName).Get_AlgoData().Set_KnnFPs(tempKnnFingerprints)
+
 	//err = dbm.SetKnnFingerprints(tempKnnFingerprints, groupName)
 	//if err != nil {
 	//	glb.Error.Println(err)
@@ -555,7 +527,7 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 		weight := glb.Round(float64(1.0)/(float64(1.0)+distance), 5)
 
 		//glb.Debug.Println("distance: ",distance)
- 		//glb.Debug.Println("weight: ",weight)
+		//glb.Debug.Println("weight: ",weight)
 		results <- resultW{fpTime: job.fpTime,
 			weight: weight}
 	}

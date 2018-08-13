@@ -927,11 +927,17 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 	locFingerprintsOrdering := []string{}
 	locFingerprintsData := make(map[string]parameters.Fingerprint)
 
+	//locCalculatedDistance := []float64{} // a final distance used to sort and choose the one that should be deleted. =avg(physicalDistance/knnDistance)
+										// its size must be the size of locFingerprintOrdering which is the number of fingerprints in each location
 	totalFingerprintsOrdering := []string{}
 	totalFingerprintsData := make(map[string]parameters.Fingerprint)
 
+
+	CalculatedDistanceOverall := make(map[string][]float64)
+
 	for _, fpTime := range FingerprintsOrdering {
 		if FingerprintsData[fpTime].Location == loc {
+			//glb.Debug.Println("format of loc: ",FingerprintsData[fpTime].Location ) // komeil, Just for test
 			locFingerprintsOrdering = append(locFingerprintsOrdering, fpTime)
 			locFingerprintsData[fpTime] = FingerprintsData[fpTime]
 			resultWithMainFP = append(resultWithMainFP, FingerprintsData[fpTime])
@@ -943,12 +949,10 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 
 	//Distance calculating
 	resultFPs := make(map[string]parameters.Fingerprint)
-
-
-
 	uniqueMacs := md.Get_UniqueMacs()
+
 	sort.Strings(uniqueMacs)
-	for _, fpMain := range locFingerprintsData {
+	for _, fpMain := range locFingerprintsData { // it loops over each fingerprint in selected location
 		mac2RssMain := make(map[string]int)
 		mainMacs := []string{}
 		for _, rt := range fpMain.WifiFingerprint {
@@ -961,12 +965,17 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 			}
 		}
 
-
-		for _, fpTime := range totalFingerprintsOrdering {
+		for _, fpTime := range totalFingerprintsOrdering { // loops over fingerprints of other locations all.
 			//glb.Debug.Println(totalFingerprintsData[fpTime])
 			fp := totalFingerprintsData[fpTime]
 			mac2Rss := make(map[string]int)
 			macs := []string{}
+
+			// here we want to calculate physical distance between current locFingerprint and all other fingerprints in every location
+			otherLocX, otherLocY := glb.GetLocationOfFingerprint(fp.Location)
+			mainLocX, mainLocY := glb.GetLocationOfFingerprint(fpMain.Location)
+
+
 			for _, rt := range fp.WifiFingerprint {
 				mac2Rss[rt.Mac] = rt.Rssi
 				macs = append(macs,rt.Mac)
@@ -1004,7 +1013,6 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 			distance = glb.Round(math.Pow(distance, float64(1.0)/2), precision)
 			glb.Debug.Println("distance with 8 precision: ", distance)*/
 
-
 			if distance == float64(0) {
 				//glb.Error.Println("Distance zero")
 				//glb.Error.Println(job.mac2RssCur)
@@ -1015,10 +1023,16 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 			if distance <= maxFPDist {
 				//glb.Debug.Println(fp)
 				resultFPs[fpTime] = fp
+
+				physicalDistance := glb.CalcDist(mainLocX,mainLocY,otherLocX,otherLocY)
+				//glb.Debug.Println("### physical: ",physicalDistance,"knndistance:",distance)
+				CalculatedDistanceOverall [fpMain.Location] = append(CalculatedDistanceOverall [fpMain.Location],physicalDistance/distance)
 			}
 		}
 	}
-
+	//glb.Debug.Println("**** calculated distance overall:\n", CalculatedDistanceOverall)
+	//sortedCalculatedDistanceOverall := glb.SortDictByVal(CalculatedDistanceOverall)
+	//glb.Debug.Println("**** calculated distance overall:\n", sortedCalculatedDistanceOverall)
 	resultMap := make(map[string][]string)
 	for _, fp := range resultFPs {
 		resultWithMainFP = append(resultWithMainFP, fp)
@@ -1030,19 +1044,18 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 			resultMap[fp.Location] = []string{fp.GetTimestamp()}
 		}
 	}
-
 	fingerprintRssDetails := [][]string{}
 
 	//var uniqueMacs []string
 	firstLine := []string{"x,y"}
-	/*for _, fp := range resultWithMainFP {
+	for _, fp := range resultWithMainFP {
 		for _, rt := range fp.WifiFingerprint {
 			if !glb.StringInSlice(rt.Mac, uniqueMacs) {
 				uniqueMacs = append(uniqueMacs, rt.Mac)
 			}
 		}
 	}
-	sort.Strings(uniqueMacs)*/
+	sort.Strings(uniqueMacs)
 	for _, mac := range uniqueMacs {
 		firstLine = append(firstLine, mac)
 	}
@@ -1096,6 +1109,8 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 	//	glb.Debug.Println(line)
 	//}
 
+	//glb.Debug.Println("$$$ check:",FingerprintsData["1501761048281042197"].Location)
+	//fingerprintRssDetails = append(fingerprintRssDetails,sortedCalculatedDistanceOverall)
 
 	return resultMap, fingerprintRssDetails
 }
