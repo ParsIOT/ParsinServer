@@ -128,8 +128,13 @@
 <script src="/static/js/sweetalert.min.js"></script>
 <script src="/static/js/d3.min.js"></script>
 <script src="/static/js/d3.tip.v0.6.3.js"></script>
-<script src="/static/js/plugins/leaflet/heatmap/leaflet-heat.js"></script>
-<script src="/static/js/plugins/leaflet/heatmap/HeatLayer.js"></script>
+{{/*<script src="/static/js/plugins/leaflet/heatmap/leaflet-heat.js"></script>*/}}
+{{/*<script src="/static/js/plugins/leaflet/heatmap/HeatLayer.js"></script>*/}}
+<script src="/static/js/plugins/leaflet/heatmap/leaflet-div-heatmap.js"></script>
+
+{{/*<script src="/static/js/plugins/leaflet/heatmap/heatmap.min.js"></script>*/}}
+{{/*<script src="/static/js/plugins/leaflet/heatmap/leaflet-heatmap.js"></script>*/}}
+
 <script type="application/javascript">
 	var filter_user = false;
 	var reloadDataInterval;
@@ -174,24 +179,70 @@
 	var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
 	map.setView([0, 0], -2);
 
-	//heatmapLayer.setData(testData); // heatmap
-	var heat = L.heatLayer([
-		[50.5, 30.5, 0.25], // lat, lng, intensity
-		[50.6, 30.4, 0.25],
-		[50.6, 30.4, 50.25],
-		[50.6, 30.4, 10.25],
-		[50.6, 30.4, 10.25],
-		[50.6, 30.4, 10.25],
-		[50.6, 30.4, 10.25],
-		[50.6, 30.4, 10.25],
-		[50.6, 30.4, 10.25],
-		[50.6, 30.4, 10.25],
-		[50.6, 30.4, 10.25],
-		[50.6, 30.4, 10.25],
-		[50.6, 30.4, 10.25],
+    {{/*dots = [];*/}}
+    {{/*for (var i = 0; i < 1000; i++) {*/}}
+    {{/*dots.push({lat: 24.6408, lng:46.7728, count: 0.1});*/}}
+    {{/*}*/}}
+    {{/*for (var i = 0; i < 10; i++) {*/}}
+    {{/*dots.push({lat: 1.6408, lng:46.7728, count: 80});*/}}
+    {{/*}*/}}
+    {{/*var testData = {*/}}
+    {{/*max: 8,*/}}
+    {{/*data: dots*/}}
+    {{/*};*/}}
+    {{/*var cfg = {*/}}
+    {{/*// radius should be small ONLY if scaleRadius is true (or small radius is intended)*/}}
+    {{/*// if scaleRadius is false it will be the constant radius used in pixels*/}}
+    {{/*"radius": 20,*/}}
+    {{/*"maxOpacity": .8,*/}}
+    {{/*// scales the radius based on map zoom*/}}
+    {{/*"scaleRadius": true,*/}}
+    {{/*// if set to false the heatmap uses the global maximum for colorization*/}}
+    {{/*// if activated: uses the data maximum within the current map boundaries*/}}
+    {{/*//   (there will always be a red spot with useLocalExtremas true)*/}}
+    {{/*"useLocalExtrema": true,*/}}
+    {{/*// which field name in your data represents the latitude - default "lat"*/}}
+    {{/*latField: 'lat',*/}}
+    {{/*// which field name in your data represents the longitude - default "lng"*/}}
+    {{/*lngField: 'lng',*/}}
+    {{/*// which field name in your data represents the data value - default "value"*/}}
+    {{/*valueField: 'count'*/}}
+    {{/*};*/}}
 
-	], {radius: 100}).addTo(map);
-	//map.addLayer(heat);
+    {{/*var heatmapLayer = new HeatmapOverlay(cfg);*/}}
+
+    {{/*var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];*/}}
+
+    {{/*var baseLayer = L.imageOverlay('{{.MapPath}}', bounds)*/}}
+    {{/*var map = new L.Map('live-map', {*/}}
+    {{/*crs: L.CRS.Simple,*/}}
+    {{/*minZoom: -100,*/}}
+    {{/*layers: [baseLayer,heatmapLayer]*/}}
+    {{/*});*/}}
+
+    {{/*map.setView([0, 0], -2);*/}}
+
+    // heatmapLayer.setData(testData);
+
+    var heatmap = new L.DivHeatmapLayer();
+    heatmap.addTo(map);
+    heatmap.testAddData();
+
+    // dots = [];
+    // for (var i = 0; i < 2000; i++) {
+    //     dots.push([50.5, 30.5,0.1]);
+    // }
+    // for (var i = 0; i < 2000; i++) {
+    //     dots.push([40.5, 30.5,1]);
+    // }
+    // // console.log(dots);
+    // dots1 = dots.map(function (p) { return [p[0], p[1]]; });
+    // //heatmapLayer.setData(testData); // heatmap
+    // var heat = L.heatLayer(
+    //     dots1
+    // , {radius: 100}).addTo(map);
+    // map.addLayer(heat);
+
 
 	lineLayer = L.featureGroup();
 	map.addLayer(lineLayer);
@@ -234,7 +285,7 @@
 		}
 
 		markers = {};
-
+        /*
 		$.getJSON("/locations?group={{ .Group }}", function (data) {
 			// var items = [];
 
@@ -264,7 +315,7 @@
 				});
 
 			});
-		});
+		});*/
 	}
 
 	function UpdateTraceMap() {
