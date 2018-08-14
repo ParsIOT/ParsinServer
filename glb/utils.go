@@ -113,6 +113,16 @@ func StringInSlice(s string, strings []string) bool {
 	return false
 }
 
+func Int64InSlice(item int64, itemList []int64) bool {
+	for _, k := range itemList {
+		if item == k {
+			return true
+		}
+	}
+	return false
+}
+
+
 // timeTrack can be defered to provide function timing.
 func TimeTrack(start time.Time, name string) {
 	elapsed := time.Since(start)
@@ -682,6 +692,7 @@ func IsValidXY(dot string) bool {
 
 func GetDotFromString(dotStr string) (float64, float64) {
 	x_y := strings.Split(dotStr, ",")
+	Error.Println(x_y)
 	locXstr := x_y[0]
 	locYstr := x_y[1]
 	locX, _ := strconv.ParseFloat(locXstr, 64)
@@ -782,4 +793,23 @@ func GetLocationOfFingerprint (location string) (float64,float64){ // komeil: ge
 	locX = Round(locX, 5)
 	locY = Round(locY, 5)
 	return locX,locY
+}
+
+func SortedInsert(s []int64, f int64) []int64 {
+	l := len(s)
+	if l == 0 {
+		return []int64{f}
+	}
+
+	newS := []int64{}
+	for i, vali := range s {
+		if (vali > f) {
+			newS = s[:i+1]
+			newS = append(newS, f)
+			newS = append(newS, s[i+1:]...)
+			return newS
+		}
+	}
+	newS = append(s, f)
+	return newS
 }

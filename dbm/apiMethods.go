@@ -13,6 +13,9 @@ import (
 	"errors"
 	"math"
 	"sort"
+	"os"
+	"log"
+	"bufio"
 )
 
 func TrackFingerprintsEmptyPosition(group string) (map[string]parameters.UserPositionJSON, map[string]parameters.Fingerprint, error) {
@@ -1144,3 +1147,130 @@ func GetMostSeenMacs(groupName string) []string {
 		return macSorted[:NumOfMustSeenMacs]
 	}
 }
+
+func RelocateFPLoc(groupName string) error {
+	file, err := os.Open(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/"+groupName+".log"))
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	defer file.Close()
+
+	// Get location logs from uploaded true location logs
+	locationLogs := make(map[string]map[int64][]string) // tag:timestamp:location(x,y,z)
+	allLocationLogs := make(map[int64][]string)         // timestamp:location(x,y,z)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		locLogStr := scanner.Text()
+
+		// spliting the line
+		locLog := strings.Split(locLogStr, ",")
+		for i, item := range locLog {
+			locLog[i] = strings.TrimSpace(item)
+		}
+
+		if (len(locLog) != 5) {
+			return errors.New("Uploaded file doesn't have true location log format(timestamp,tag_name,x,y,z)")
+		}
+		tagName := locLog[1]
+		if (tagName == "None") { // x,y,z are None too.
+			glb.Debug.Println("None location")
+			continue
+		}
+
+		// converting timestamp from string to int64
+		timeStamp, err := strconv.ParseInt(locLog[0], 10, 64)
+		if err != nil {
+			glb.Error.Println(err)
+		}
+
+		xyz := locLog[2:]
+
+		if log, ok := locationLogs[tagName]; ok {
+			log[timeStamp] = xyz
+			locationLogs[tagName] = log
+		} else {
+			locationLogs[tagName] = make(map[int64][]string)
+			locationLogs[tagName][timeStamp] = xyz
+		}
+
+		// add to allLocationLogs
+
+		allLocationLogs[timeStamp] = xyz
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	//glb.Debug.Print(locationLogs)
+	//glb.Debug.Print(allLocationLogs)
+
+	// Get fingerprints from db
+	gp := GM.GetGroup(groupName)
+	rd := gp.Get_RawData()
+	fpO := rd.Get_FingerprintsOrdering()
+	fpData := rd.Get_Fingerprints()
+
+	for _, fpTime := range fpO {
+		fp := fpData[fpTime]
+
+		//correct fp location
+		fp, err = CorrectFPloc(fp, allLocationLogs)
+		if err == nil {
+			fpData[fpTime] = fp
+		} else {
+			glb.Error.Println(err)
+			delete(fpData, fpTime) // deleting the invalid fp
+			continue;
+		}
+	}
+	rd.Set_Fingerprints(fpData)
+
+	return nil
+}
+
+// find best fp location according to
+func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string) (parameters.Fingerprint, error) {
+	fpTimeStamp := fp.Timestamp
+	newLoc := ""
+
+	timeStamps := make([]int64, len(allLocationLogs))
+	for timestamp, _ := range allLocationLogs {
+		timeStamps = glb.SortedInsert(timeStamps, timestamp)
+	}
+
+	lessUntil := 0
+	for i, timeStamp := range timeStamps {
+		if timeStamp > fpTimeStamp {
+			lessUntil = i
+		} else {
+			if lessUntil != 0 {
+				if timeStamp == fpTimeStamp {
+					xy := allLocationLogs[timeStamp][:2]
+					newLoc = xy[0] + "," + xy[1]
+				} else {
+					timeStamp1 := timeStamps[i-1]
+					timeStamp2 := timeStamp
+					if (timeStamp2-fpTimeStamp > int64(1*math.Pow(10, 9))) && (fpTimeStamp-timeStamp1 > int64(1*math.Pow(10, 9))) {
+						break
+					}
+					if timeStamp2-fpTimeStamp > fpTimeStamp-timeStamp1 { // set first timestamp location
+						xy := allLocationLogs[timeStamp1][:2]
+						newLoc = xy[1] + "," + xy[0]
+						glb.Debug.Println(newLoc)
+					} else { //set second timestamp location
+						xy := allLocationLogs[timeStamp2][:2]
+						newLoc = xy[1] + "," + xy[0]
+					}
+				}
+			}
+		}
+	}
+	if (newLoc != "") {
+		fp.Location = newLoc
+	}
+
+	return fp, nil
+}
+

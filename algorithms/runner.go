@@ -453,6 +453,7 @@ func CalculateLearn(groupName string) {
 							trackedPointsNum++
 						}
 
+						glb.Debug.Println(fp.Timestamp)
 						resx, resy := glb.GetDotFromString(resultDot)
 						x, y := glb.GetDotFromString(testLocation)
 						//if fp.Timestamp==int64(1516794991872647445){

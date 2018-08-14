@@ -363,7 +363,8 @@ func main() {
 			//needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
 		}
 	}
-
+	r.POST("/uploadTrueLocationLog", routes.UploadTrueLocationLog)
+	r.GET("/relocateFPLoc", routes.RelocateFPLocAPI)
 	//r.POST("/addArbitLocations", routes.AddArbitLocations)
 	//r.POST("/delArbitLocations", routes.DelArbitLocations)
 	r.GET("/getArbitLocations", routes.GetArbitLocations)

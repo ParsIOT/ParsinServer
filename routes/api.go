@@ -20,6 +20,8 @@ import (
 	"ParsinServer/algorithms"
 	"ParsinServer/dbm"
 	"ParsinServer/dbm/parameters"
+	"log"
+	"io"
 )
 
 var startTime time.Time
@@ -1493,3 +1495,45 @@ func GetMostSeenMacsAPI(c *gin.Context) {
 	}
 
 }
+
+func UploadTrueLocationLog(c *gin.Context) {
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	file, header, err := c.Request.FormFile("file")
+	//filename := header.Filename
+	fmt.Println(header.Filename)
+	out, err := os.Create(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/"+groupName+".log"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer out.Close()
+	_, err = io.Copy(out, file)
+	if err != nil {
+		log.Fatal(err)
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": err})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	}
+}
+
+func RelocateFPLocAPI(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	if groupName != "noneasdf" {
+		err := dbm.RelocateFPLoc(groupName)
+		if err == nil {
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": true, "message": err.Error()})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or id not mentioned"})
+	}
+
+}
+
