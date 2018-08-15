@@ -125,7 +125,7 @@ func easyjson7b60966aDecodeParsinServerDbmParameters1(in *jlexer.Lexer, out *Fin
 			out.Username = string(in.String())
 		case "location":
 			out.Location = string(in.String())
-		case "timestamp":
+		case "time":
 			out.Timestamp = int64(in.Int64())
 		case "wifi-fingerprint":
 			if in.IsNull() {
@@ -195,7 +195,7 @@ func easyjson7b60966aEncodeParsinServerDbmParameters1(out *jwriter.Writer, in Fi
 		out.String(string(in.Location))
 	}
 	{
-		const prefix string = ",\"timestamp\":"
+		const prefix string = ",\"time\":"
 		if first {
 			first = false
 			out.RawString(prefix[1:])

@@ -108,6 +108,7 @@ func BulkLearnFingerprintPOST(c *gin.Context) {
 	var bulkJsonFingerprint parameters.BulkFingerprint
 	var returnMessage string
 	var returnSuccess string
+	//glb.Debug.Println(c)
 	if glb.BindJSON(&bulkJsonFingerprint, c) == nil {
 		glb.Debug.Println("BulkFingerPrints:")
 		glb.Debug.Println(bulkJsonFingerprint)
@@ -453,7 +454,7 @@ func CalculateLearn(groupName string) {
 							trackedPointsNum++
 						}
 
-						glb.Debug.Println(fp.Timestamp)
+						//glb.Debug.Println(fp.Timestamp)
 						resx, resy := glb.GetDotFromString(resultDot)
 						x, y := glb.GetDotFromString(testLocation)
 						//if fp.Timestamp==int64(1516794991872647445){

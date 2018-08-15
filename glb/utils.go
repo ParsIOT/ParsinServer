@@ -804,11 +804,13 @@ func SortedInsert(s []int64, f int64) []int64 {
 	newS := []int64{}
 	for i, vali := range s {
 		if (vali > f) {
-			newS = s[:i+1]
 			newS = append(newS, f)
-			newS = append(newS, s[i+1:]...)
+			newS = append(newS, s[i:]...)
 			return newS
+		} else {
+			newS = append(newS, vali)
 		}
+
 	}
 	newS = append(s, f)
 	return newS

@@ -23,7 +23,7 @@ type Fingerprint struct {
 	Group           string   `json:"group"`
 	Username        string   `json:"username"`
 	Location        string   `json:"location"`
-	Timestamp       int64    `json:"timestamp"`
+	Timestamp       int64    `json:"time"`
 	WifiFingerprint []Router `json:"wifi-fingerprint"`
 }
 

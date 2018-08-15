@@ -7,7 +7,6 @@ import (
 	"ParsinServer/glb"
 	"log"
 	"fmt"
-	"time"
 	"strconv"
 	"os"
 	"sort"
@@ -27,9 +26,9 @@ func PutFingerprintIntoDatabase(res parameters.Fingerprint, database string) err
 			return fmt.Errorf("create bucket: %s", err2)
 		}
 
-		if res.Timestamp == 0 {
-			res.Timestamp = time.Now().UnixNano()
-		}
+		//if res.Timestamp == 0 {
+		//	res.Timestamp = time.Now().UnixNano()
+		//}
 		err2 = bucket.Put([]byte(strconv.FormatInt(res.Timestamp, 10)), parameters.DumpFingerprint(res))
 		if err2 != nil {
 			return fmt.Errorf("could add to bucket: %s", err2)

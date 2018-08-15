@@ -144,7 +144,7 @@ func GetLocationList(c *gin.Context) {
 //	"group": "test_1",
 //	"username": "hadi",
 //	"location": "-10,-46",
-//	"timestamp": 1502544850139171556,
+//	"time": 1502544850139171556,
 //	"wifi-fingerprint": [
 //	{
 //		"mac": "FA:CF:CB:5D:0E:B0",

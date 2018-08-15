@@ -1214,7 +1214,6 @@ func RelocateFPLoc(groupName string) error {
 
 	for _, fpTime := range fpO {
 		fp := fpData[fpTime]
-
 		//correct fp location
 		fp, err = CorrectFPloc(fp, allLocationLogs)
 		if err == nil {
@@ -1235,39 +1234,48 @@ func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string)
 	fpTimeStamp := fp.Timestamp
 	newLoc := ""
 
-	timeStamps := make([]int64, len(allLocationLogs))
+	timeStamps := []int64{}
 	for timestamp, _ := range allLocationLogs {
 		timeStamps = glb.SortedInsert(timeStamps, timestamp)
 	}
-
+	glb.Debug.Println(timeStamps)
 	lessUntil := 0
 	for i, timeStamp := range timeStamps {
-		if timeStamp > fpTimeStamp {
+		//glb.Debug.Println(timeStamp-fpTimeStamp)
+		if fpTimeStamp > timeStamp {
 			lessUntil = i
+			//glb.Debug.Println(i)
 		} else {
+			//glb.Debug.Println("ok ",i)
 			if lessUntil != 0 {
-				if timeStamp == fpTimeStamp {
 					xy := allLocationLogs[timeStamp][:2]
-					newLoc = xy[0] + "," + xy[1]
-				} else {
-					timeStamp1 := timeStamps[i-1]
-					timeStamp2 := timeStamp
-					if (timeStamp2-fpTimeStamp > int64(1*math.Pow(10, 9))) && (fpTimeStamp-timeStamp1 > int64(1*math.Pow(10, 9))) {
-						break
-					}
-					if timeStamp2-fpTimeStamp > fpTimeStamp-timeStamp1 { // set first timestamp location
-						xy := allLocationLogs[timeStamp1][:2]
-						newLoc = xy[1] + "," + xy[0]
-						glb.Debug.Println(newLoc)
-					} else { //set second timestamp location
-						xy := allLocationLogs[timeStamp2][:2]
-						newLoc = xy[1] + "," + xy[0]
-					}
-				}
+				newLoc = xy[1] + "," + xy[0]
+				//if timeStamp == fpTimeStamp {
+				//	xy := allLocationLogs[timeStamp][:2]
+				//	newLoc = xy[1] + "," + xy[0]
+				//} else {
+				//	timeStamp1 := timeStamps[i-1]
+				//	timeStamp2 := timeStamp
+				//	if (timeStamp2-fpTimeStamp > int64(1*math.Pow(10, 9))) && (fpTimeStamp-timeStamp1 > int64(1*math.Pow(10, 9))) {
+				//		break
+				//	}
+				//	if timeStamp2-fpTimeStamp > fpTimeStamp-timeStamp1 { // set first timestamp location
+				//		xy := allLocationLogs[timeStamp1][:2]
+				//		newLoc = xy[1] + "," + xy[0]
+				//		glb.Debug.Println(newLoc)
+				//	} else { //set second timestamp location
+				//		xy := allLocationLogs[timeStamp2][:2]
+				//		newLoc = xy[1] + "," + xy[0]
+				//	}
+				//}
+				break
+			} else {
+				glb.Error.Println("FP timestamp is before the uwb log timestamps")
 			}
 		}
 	}
 	if (newLoc != "") {
+		glb.Debug.Println(newLoc)
 		fp.Location = newLoc
 	}
 

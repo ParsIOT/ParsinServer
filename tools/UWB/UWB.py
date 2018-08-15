@@ -64,7 +64,7 @@ while 1:
     out = ''
     # let's wait one second before reading output (let's give device time to answer)
     time.sleep(0.2)
-    timestamp = int(time.time()*10**9)
+    timestamp = int(time.time()*10**3)
     # print(timestamp)
     while ser.inWaiting() > 0:
         out += ser.read(1).decode()
