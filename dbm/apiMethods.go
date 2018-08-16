@@ -1151,7 +1151,8 @@ func GetMostSeenMacs(groupName string) []string {
 func RelocateFPLoc(groupName string) error {
 	file, err := os.Open(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/"+groupName+".log"))
 	if err != nil {
-		log.Fatal(err)
+		//log.Fatal(err)
+		glb.Debug.Println(err)
 		return err
 	}
 	defer file.Close()
