@@ -563,8 +563,12 @@ func RoundLocationDim(loc string) string{
 
 func FloatToString(input_num float64) string {
 	// to convert a float number to a string
-	return strconv.FormatFloat(input_num, 'f', 6, 64)
+	return strconv.FormatFloat(input_num, 'f', 3, 64)
 }
+func StringToFloat(input_str string) (float64, error) {
+	return strconv.ParseFloat(input_str, 64)
+}
+
 func IntToString(input_num int) string {
 	// to convert a float number to a string
 	return strconv.Itoa(input_num)
@@ -815,3 +819,4 @@ func SortedInsert(s []int64, f int64) []int64 {
 	newS = append(s, f)
 	return newS
 }
+

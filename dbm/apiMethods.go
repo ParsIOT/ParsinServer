@@ -938,6 +938,7 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 
 	CalculatedDistanceOverall := make(map[string][]float64)
 
+	//glb.Debug.Println(len(FingerprintsOrdering))
 	for _, fpTime := range FingerprintsOrdering {
 		if FingerprintsData[fpTime].Location == loc {
 			//glb.Debug.Println("format of loc: ",FingerprintsData[fpTime].Location ) // komeil, Just for test
@@ -1252,7 +1253,14 @@ func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string)
 				//newLoc = xy[1] + "," + xy[0]
 				if timeStamp == fpTimeStamp {
 					xy := allLocationLogs[timeStamp][:2]
-					newLoc = xy[1] + "," + xy[0]
+					x, err1 := glb.StringToFloat(xy[0])
+					y, err2 := glb.StringToFloat(xy[1])
+					if err1 != nil || err2 != nil {
+						glb.Error.Println(err1)
+						glb.Error.Println(err2)
+						return fp, errors.New("Converting string 2 float problem")
+					}
+					newLoc = glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0"
 				} else {
 					timeStamp1 := timeStamps[i-1]
 					timeStamp2 := timeStamp
@@ -1261,11 +1269,25 @@ func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string)
 					}
 					if timeStamp2-fpTimeStamp > fpTimeStamp-timeStamp1 { // set first timestamp location
 						xy := allLocationLogs[timeStamp1][:2]
-						newLoc = xy[1] + "," + xy[0]
+						x, err1 := glb.StringToFloat(xy[0])
+						y, err2 := glb.StringToFloat(xy[1])
+						if err1 != nil || err2 != nil {
+							glb.Error.Println(err1)
+							glb.Error.Println(err2)
+							return fp, errors.New("Converting string 2 float problem")
+						}
+						newLoc = glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0"
 						glb.Debug.Println(newLoc)
 					} else { //set second timestamp location
 						xy := allLocationLogs[timeStamp2][:2]
-						newLoc = xy[1] + "," + xy[0]
+						x, err1 := glb.StringToFloat(xy[0])
+						y, err2 := glb.StringToFloat(xy[1])
+						if err1 != nil || err2 != nil {
+							glb.Error.Println(err1)
+							glb.Error.Println(err2)
+							return fp, errors.New("Converting string 2 float problem")
+						}
+						newLoc = glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0"
 					}
 				}
 				break
