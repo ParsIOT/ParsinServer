@@ -1238,7 +1238,6 @@ func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string)
 	for timestamp, _ := range allLocationLogs {
 		timeStamps = glb.SortedInsert(timeStamps, timestamp)
 	}
-	glb.Debug.Println(timeStamps)
 	lessUntil := 0
 	for i, timeStamp := range timeStamps {
 		//glb.Debug.Println(timeStamp-fpTimeStamp)
@@ -1248,29 +1247,29 @@ func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string)
 		} else {
 			//glb.Debug.Println("ok ",i)
 			if lessUntil != 0 {
-					xy := allLocationLogs[timeStamp][:2]
-				newLoc = xy[1] + "," + xy[0]
-				//if timeStamp == fpTimeStamp {
 				//	xy := allLocationLogs[timeStamp][:2]
-				//	newLoc = xy[1] + "," + xy[0]
-				//} else {
-				//	timeStamp1 := timeStamps[i-1]
-				//	timeStamp2 := timeStamp
-				//	if (timeStamp2-fpTimeStamp > int64(1*math.Pow(10, 9))) && (fpTimeStamp-timeStamp1 > int64(1*math.Pow(10, 9))) {
-				//		break
-				//	}
-				//	if timeStamp2-fpTimeStamp > fpTimeStamp-timeStamp1 { // set first timestamp location
-				//		xy := allLocationLogs[timeStamp1][:2]
-				//		newLoc = xy[1] + "," + xy[0]
-				//		glb.Debug.Println(newLoc)
-				//	} else { //set second timestamp location
-				//		xy := allLocationLogs[timeStamp2][:2]
-				//		newLoc = xy[1] + "," + xy[0]
-				//	}
-				//}
+				//newLoc = xy[1] + "," + xy[0]
+				if timeStamp == fpTimeStamp {
+					xy := allLocationLogs[timeStamp][:2]
+					newLoc = xy[1] + "," + xy[0]
+				} else {
+					timeStamp1 := timeStamps[i-1]
+					timeStamp2 := timeStamp
+					if (timeStamp2-fpTimeStamp > int64(1*math.Pow(10, 9))) && (fpTimeStamp-timeStamp1 > int64(1*math.Pow(10, 9))) {
+						break
+					}
+					if timeStamp2-fpTimeStamp > fpTimeStamp-timeStamp1 { // set first timestamp location
+						xy := allLocationLogs[timeStamp1][:2]
+						newLoc = xy[1] + "," + xy[0]
+						glb.Debug.Println(newLoc)
+					} else { //set second timestamp location
+						xy := allLocationLogs[timeStamp2][:2]
+						newLoc = xy[1] + "," + xy[0]
+					}
+				}
 				break
 			} else {
-				glb.Error.Println("FP timestamp is before the uwb log timestamps")
+				//glb.Error.Println("FP timestamp is before the uwb log timestamps")
 			}
 		}
 	}
