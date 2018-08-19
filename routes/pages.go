@@ -527,8 +527,14 @@ func Graphform(c *gin.Context) {
 		})
 		return
 	}
+	MapName := dbm.GetSharedPrf(groupName).MapName
+	MapPath := path.Join(glb.RuntimeArgs.MapPath,MapName)
+	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
 	c.HTML(http.StatusOK, "graph.tmpl", gin.H{
 		"Group": groupName,
+		"MapPath": MapPath,
+		"MapWidth":MapDimensions[0],
+		"MapHeight":MapDimensions[1],
 	})
 }
 
