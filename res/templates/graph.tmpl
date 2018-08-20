@@ -33,7 +33,6 @@
     <link rel="stylesheet" href="/static/css/font-awesome.min.css">
     <style>
 
-
         textarea {
             overflow: auto;
             max-width: 100%;
@@ -55,23 +54,32 @@
 
     <div class="row">
         <div class="col-lg-12">
-            <h2 class="page-header">Mac Filter
-                <small>set macs to be filtered</small>
+            <h2 class="page-header">Graph
+                <small>set graphs to be used in localisation</small>
             </h2>
         </div>
     </div>
 
     <!--<div class="well">-->
     <div class="row">
-        <div class="col-md-8 col-sm-12">
-            <div class="panel panel-primary">
+        <div class="col-md-5 col-sm-12">
+            <div class="panel panel-info">
                 <div class="panel-heading">
-                    Mac List
+                    graph List
                 </div>
                 <div class="panel-body">
                     <h5> New Graph: </h5>
-                    <textarea placeholder='[&#10;   "9c:d6:43:72:0e:83",&#10;   "e4:8d:8c:c1:f2:a9"&#10;]'
-                              class="bootbox-input bootbox-input-textarea form-control" id="macList"
+                    <div class="bs-callout bs-callout-info" style="margin: 0 0 15px;padding-bottom: 5px;">
+                        <h4>Settings</h4>
+                        <div class="form-group">
+                            <input id="click-x" type="text" disabled value="X" class="form-control"/>
+                        </div>
+                        <div class="form-group">
+                            <input id="click-y" type="text" disabled value="Y" class="form-control"/>
+                        </div>
+                    </div>
+                    <textarea style="height: 80%" placeholder='[&#10;   "9c:d6:43:72:0e:83",&#10;   "e4:8d:8c:c1:f2:a9"&#10;]'
+                              class="bootbox-input bootbox-input-textarea form-control" id="graphList"
                               rows="10"></textarea>
                     <div class="panel-body">
                         <div class="col-md-6 col-sm-12">
@@ -88,7 +96,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4 col-sm-12">
+        {{/*<div class="col-md-7 col-sm-12">
             <div class="panel panel-warning" id="map-panel">
                 <div class="panel-heading">
                     Current mac filter List
@@ -104,6 +112,17 @@
                             </thead>
                         </table>
                     </div>
+                </div>
+            </div>
+        </div>*/}}
+        <div class="col-md-7 col-sm-12">
+            <div class="panel panel-primary" id="map-panel">
+                <div class="panel-heading">
+                    Map
+                </div>
+                <div class="panel-body">
+
+                    <div id="live-map"></div>
                 </div>
             </div>
         </div>
@@ -146,7 +165,7 @@
                     url: "/setfiltermacs?group={{ .Group }}",
                     data: JSON.stringify({
                         "group": "{{.Group}}",
-                        "macs": JSON.parse($("#macList").val())
+                        "macs": JSON.parse($("#graphList").val())
                     }),
                     success: function (data) {
                         console.log(data);
@@ -214,6 +233,104 @@
             });
     });
 
+</script>
+<script type="application/javascript">
+    $('#live-map').css('height', $(window.top).height() - 275);
+    $('#graphList').parent().css('height', $(window.top).height() - 245);
+    var map = L.map('live-map', {
+        crs: L.CRS.Simple,
+        minZoom: -100,
+//        maxZoom: 4
+    });
+    var bounds = [[-1*('{{.MapHeight}}'/2),-1*('{{.MapWidth}}'/2)], [('{{.MapHeight}}'/2),('{{.MapWidth}}'/2)]];
+    //    var bounds = [[-400, -300], [400, 300]];
+    var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
+    map.setView([0, 0], -2);
+
+    markers = L.featureGroup();
+    var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
+
+    map.on('click', function (e) {
+//        console.log(e.latlng.lat + "," + e.latlng.lng);
+        $('#click-x').val(Math.round(e.latlng.lat) + ".0");
+        $('#click-y').val(Math.round(e.latlng.lng) + ".0");
+        console.log($("#click-x").val());
+    });
+
+    $.getJSON("/locations?group={{ .Group }}", function (data) {
+        var items = [];
+
+        $.each(data.locations, function (key, val) {
+            let match = pattern.exec(key);
+            if (match) {
+                items.push("<tr><td>" + match[1] + "</td><td>" + match[2] + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
+
+                L.userMarker([match[1], match[2]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+                    title: key,
+                    draggable: true,
+                    smallIcon: true
+                }).bindPopup("<b>" + match[1] + "," + match[2] + "</b>").addTo(markers);
+            } else {
+                items.push("<tr><td colspan='2' class='text-center'>" + key + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
+            }
+        });
+        markers.addTo(map);
+        markers.eachLayer(function (marker) {
+            let dragStartPoint, dragEndPoint, startLatLng;
+            marker.on('dragstart', function (e) {
+                startLatLng = e.target.getLatLng();
+                dragStartPoint = (e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0";
+                console.log("START:");
+                console.log(dragStartPoint);
+            });
+            marker.on('dragend', function (e) {
+                dragEndPoint = (e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0";
+                console.log("END:");
+                console.log(dragEndPoint);
+                console.log(e.target);
+
+                swal2({
+                    title: "Move location",
+                    text: "Are you sure you want to move '" + dragStartPoint + "' to '" + dragEndPoint + "'",
+                    inputPlaceholder: " Also Move in BaseDB",
+                    input: "checkbox",
+                    showCancelButton: true,
+                    confirmButtonColor: "#6cdd87",
+                    confirmButtonText: "Yes, move it!",
+                    cancelButtonText: "No, cancel pls!",
+                    closeOnConfirm: false,
+                    closeOnCancel: false
+                }).then(function (is_checked) {
+                    $.get("/editloc" + (is_checked ? "BaseDB" : ""), {
+                                "group": {{ .Group }},
+                                "oldloc": dragStartPoint,
+                                "newloc": dragEndPoint
+                            },
+                            function (data) {
+                                console.log(data);
+                                if (data['success']) {
+                                    swal("Edited!", data['message'], "success");
+                                    location.reload()
+                                } else {
+                                    swal("Something went wrong.", data['message'], "error");
+                                }
+                            }
+                    );
+                }, function (stat) {
+                    e.target.setLatLng(startLatLng);
+                    swal2("Cancelled", "Your data is unchanged :)", "error");
+                });
+            });
+        });
+
+        //table
+        $("<tbody/>", {
+            "class": "tab-content",
+            html: items.join("")
+        }).appendTo("#users-table");
+    });
 </script>
 </body>
 
