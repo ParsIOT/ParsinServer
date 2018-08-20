@@ -182,7 +182,7 @@ func DumpFingerprints(group string) error {
 }
 
 // make a folder that is named dump-groupName and dump track and learn db's data to files
-func DumpRawFingerprints(group string) error {
+func DumpRawFingerprintsBaseDB(group string) error {
 	// glb.Debug.Println("Making dump-" + group + " directory")
 	err := os.MkdirAll(path.Join(glb.RuntimeArgs.SourcePath, "dumpraw-"+group), 0777)
 	if err != nil {
@@ -258,6 +258,105 @@ func DumpRawFingerprints(group string) error {
 		}
 		return nil
 	})
+	f.Close()
+
+	//// glb.Debug.Println("Opening file for tracking fingerprints")
+	//f, err = os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "tracking"), os.O_WRONLY|os.O_CREATE, 0664)
+	//if err != nil {
+	//	return err
+	//}
+	//// glb.Debug.Println("Writing fingerprints to file")
+	//db.View(func(tx *bolt.Tx) error {
+	//	b := tx.Bucket([]byte("results"))
+	//	c := b.Cursor()
+	//	for k, v := c.First(); k != nil; k, v = c.Next() {
+	//		if _, err = f.WriteString(string(glb.DecompressByte(v)) + "\n"); err != nil {
+	//			panic(err)
+	//		}
+	//	}
+	//	return nil
+	//})
+	//f.Close()
+	// glb.Debug.Println("Returning")
+
+	return nil
+}
+
+// make a folder that is named dump-groupName and dump track and learn db's data to files
+func DumpRawFingerprints(group string) error {
+	// glb.Debug.Println("Making dump-" + group + " directory")
+	err := os.MkdirAll(path.Join(glb.RuntimeArgs.SourcePath, "dumpraw-"+group), 0777)
+	if err != nil {
+		return err
+	}
+
+	// glb.Debug.Println("Opening file for learning fingerprints")
+	// glb.Debug.Println(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "learning"))
+	f, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dumpraw-"+group, "learning.csv"), os.O_WRONLY|os.O_CREATE, 0664)
+	if err != nil {
+		return err
+	}
+
+	//var fingerprints []parameters.Fingerprint
+	//
+	//db.View(func(tx *bolt.Tx) error {
+	//	b := tx.Bucket([]byte("fingerprints"))
+	//	c := b.Cursor()
+	//	for k, v := c.First(); k != nil; k, v = c.Next() {
+	//		fp := parameters.LoadRawFingerprint(v)
+	//		fingerprints = append(fingerprints, fp)
+	//	}
+	//	return nil
+	//})
+
+	rd := GM.GetGroup(group).Get_RawData()
+	fingerprints := rd.Get_Fingerprints()
+
+	var uniqueMacs []string
+	firstLine := "x,y,"
+	for _, fp := range fingerprints {
+		for _, rt := range fp.WifiFingerprint {
+			if !glb.StringInSlice(rt.Mac, uniqueMacs) {
+				uniqueMacs = append(uniqueMacs, rt.Mac)
+				firstLine += rt.Mac + ","
+			}
+		}
+	}
+
+	if _, err = f.WriteString(firstLine); err != nil {
+		panic(err)
+	}
+
+	// glb.Debug.Println("Writing fingerprints to file")
+	//db.View(func(tx *bolt.Tx) error {
+	//	b := tx.Bucket([]byte("fingerprints"))
+	//	c := b.Cursor()a
+	//	for k, v := c.First(); k != nil; k, v = c.Next() {
+	//		fp := parameters.LoadRawFingerprint(v)
+	for _, fp := range fingerprints {
+
+		line := fp.Location + ","
+
+		for _, mac := range uniqueMacs {
+			found := 0
+			for _, rt := range fp.WifiFingerprint {
+				if rt.Mac == mac {
+					line += fmt.Sprintf("%v", rt.Rssi) + ","
+					found = 1
+					break
+				}
+			}
+			if found != 1 {
+				line += "-100,"
+			}
+		}
+
+		if _, err = f.WriteString("\n" + line); err != nil {
+			panic(err)
+		}
+	}
+	//return nil
+	//})
 	f.Close()
 
 	//// glb.Debug.Println("Opening file for tracking fingerprints")

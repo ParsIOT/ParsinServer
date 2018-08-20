@@ -5,7 +5,7 @@ import signal
 resultFileName = "result.log"
 
 open(resultFileName, 'w').close()
-
+print("Rerun if location data not provided!")
 
 class SIGINT_handler():
     def __init__(self):

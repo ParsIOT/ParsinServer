@@ -54,7 +54,7 @@
 					Map
 				</div>
 				<div class="panel-body">
-					<div id="live-map"></div>
+					<div id="heat-map"></div>
 
 				</div>
 			</div>
@@ -117,58 +117,23 @@
 <script src="/static/js/jquery-2.0.0.min.js"></script>
 <script src='/static/js/bootstrap.js'></script>
 <script src='/static/js/leaflet.js'></script>
-<!-- <script src="/static/js/heatmap.js"></script> -->
-<!-- leaflet heatmap JS -->
-<!-- <script src="/static/js/leaflet-heatmap.js"></script>
-<script src="/static/js/plugins/leaflet/heatmap/prism.js"></script>  -->
-
 
 <script src='/static/js/leaflet.usermarker.js'></script>
 <script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
 <script src="/static/js/sweetalert.min.js"></script>
-<script src="/static/js/d3.min.js"></script>
-<script src="/static/js/d3.tip.v0.6.3.js"></script>
-{{/*<script src="/static/js/plugins/leaflet/heatmap/leaflet-heat.js"></script>*/}}
-{{/*<script src="/static/js/plugins/leaflet/heatmap/HeatLayer.js"></script>*/}}
-<script src="/static/js/plugins/leaflet/heatmap/leaflet-div-heatmap.js"></script>
 
-{{/*<script src="/static/js/plugins/leaflet/heatmap/heatmap.min.js"></script>*/}}
-{{/*<script src="/static/js/plugins/leaflet/heatmap/leaflet-heatmap.js"></script>*/}}
+<script src="/static/js/plugins/leaflet/heatmap/maplet-heatmap.js"></script>
 
 <script type="application/javascript">
 	var filter_user = false;
 	var reloadDataInterval;
 
-/*	//komeil: heatmap
-	var testData = {
-		max: 8,
-		data: [{lat: 24.6408, lng: 46.7728, count: 3}, {lat: 50.75, lng: -1.55, count: 1}]
-	};
-	var cfg = {
-		// radius should be small ONLY if scaleRadius is true (or small radius is intended)
-		// if scaleRadius is false it will be the constant radius used in pixels
-		"radius": 2,
-		"maxOpacity": .8,
-		// scales the radius based on map zoom
-		"scaleRadius": true,
-		// if set to false the heatmap uses the global maximum for colorization
-		// if activated: uses the data maximum within the current map boundaries
-		//   (there will always be a red spot with useLocalExtremas true)
-		"useLocalExtrema": true,
-		// which field name in your data represents the latitude - default "lat"
-		latField: 'lat',
-		// which field name in your data represents the longitude - default "lng"
-		lngField: 'lng',
-		// which field name in your data represents the data value - default "value"
-		valueField: 'count'
-	};
-	var heatmapLayer = new HeatmapOverlay(cfg);
 
-	//end of heatmap*/
-
-	$('#live-map').css('height', $(window.top).height() - 275);
+	$('#heat-map').css('height', $(window.top).height() - 275);
 	$('#locations-table-container').css('height', $(window.top).height() - 245);
-	var map = L.map('live-map', {
+
+
+	var map = L.map('heat-map', {
 		crs: L.CRS.Simple,
 		minZoom: -100,
 //        maxZoom: 4
@@ -179,233 +144,41 @@
 	var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
 	map.setView([0, 0], -2);
 
-    {{/*dots = [];*/}}
-    {{/*for (var i = 0; i < 1000; i++) {*/}}
-    {{/*dots.push({lat: 24.6408, lng:46.7728, count: 0.1});*/}}
-    {{/*}*/}}
-    {{/*for (var i = 0; i < 10; i++) {*/}}
-    {{/*dots.push({lat: 1.6408, lng:46.7728, count: 80});*/}}
-    {{/*}*/}}
-    {{/*var testData = {*/}}
-    {{/*max: 8,*/}}
-    {{/*data: dots*/}}
-    {{/*};*/}}
-    {{/*var cfg = {*/}}
-    {{/*// radius should be small ONLY if scaleRadius is true (or small radius is intended)*/}}
-    {{/*// if scaleRadius is false it will be the constant radius used in pixels*/}}
-    {{/*"radius": 20,*/}}
-    {{/*"maxOpacity": .8,*/}}
-    {{/*// scales the radius based on map zoom*/}}
-    {{/*"scaleRadius": true,*/}}
-    {{/*// if set to false the heatmap uses the global maximum for colorization*/}}
-    {{/*// if activated: uses the data maximum within the current map boundaries*/}}
-    {{/*//   (there will always be a red spot with useLocalExtremas true)*/}}
-    {{/*"useLocalExtrema": true,*/}}
-    {{/*// which field name in your data represents the latitude - default "lat"*/}}
-    {{/*latField: 'lat',*/}}
-    {{/*// which field name in your data represents the longitude - default "lng"*/}}
-    {{/*lngField: 'lng',*/}}
-    {{/*// which field name in your data represents the data value - default "value"*/}}
-    {{/*valueField: 'count'*/}}
-    {{/*};*/}}
 
-    {{/*var heatmapLayer = new HeatmapOverlay(cfg);*/}}
+	my_data = [
+		{lat: -20, lng: -30, value: 0, opacity: 1},
+		{lat: -20, lng: -15, value: 10, opacity: 1},
+		{lat: -20, lng: 0, value: 20, opacity: 1},
+		{lat: -20, lng: 15, value: 30, opacity: 1},
+		{lat: -20, lng: 30, value: 40, opacity: 1},
+		{lat: -30, lng: 45, value: 50, opacity: 1},
+		{lat: 20, lng: -30, value: 60, opacity: 1},
+		{lat: 20, lng: -15, value: 70, opacity: 1},
+		{lat: 20, lng: 0, value: 80, opacity: 1},
+		{lat: 20, lng: 15, value: 90, opacity: 1},
+		{lat: 20, lng: 30, value: 100, opacity: 1}
+	];
+	// http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
+	L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+		maxZoom: 18,
+	}).addTo(map);
 
-    {{/*var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];*/}}
+    var heatmap = new L.MultiColorDivHeatmapLayer({
+        radius: 100,
+        gradient: {
+            0: 'blue',
+            1: 'red'
+        }
+    });
 
-    {{/*var baseLayer = L.imageOverlay('{{.MapPath}}', bounds)*/}}
-    {{/*var map = new L.Map('live-map', {*/}}
-    {{/*crs: L.CRS.Simple,*/}}
-    {{/*minZoom: -100,*/}}
-    {{/*layers: [baseLayer,heatmapLayer]*/}}
-    {{/*});*/}}
+	heatmap.addTo(map);
 
-    {{/*map.setView([0, 0], -2);*/}}
+	heatmap.setData(my_data);
 
-    // heatmapLayer.setData(testData);
+	map.on('click', function (e) {
+		console.log(e.latlng.lat + ',' + e.latlng.lng)
+	});
 
-    var heatmap = new L.DivHeatmapLayer();
-    heatmap.addTo(map);
-    heatmap.testAddData();
-
-    // dots = [];
-    // for (var i = 0; i < 2000; i++) {
-    //     dots.push([50.5, 30.5,0.1]);
-    // }
-    // for (var i = 0; i < 2000; i++) {
-    //     dots.push([40.5, 30.5,1]);
-    // }
-    // // console.log(dots);
-    // dots1 = dots.map(function (p) { return [p[0], p[1]]; });
-    // //heatmapLayer.setData(testData); // heatmap
-    // var heat = L.heatLayer(
-    //     dots1
-    // , {radius: 100}).addTo(map);
-    // map.addLayer(heat);
-
-
-	lineLayer = L.featureGroup();
-	map.addLayer(lineLayer);
-	locationMarkers = L.featureGroup();
-	var markers = {};
-	var markersLoc = {};
-	var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
-
-	//    var marker = L.userMarker([0, 0], {pulsing: true, accuracy: 100, smallIcon: true});
-	//    marker.addTo(map);
-	getMapLocations();
-
-	// UpdateTraceMap();
-
-	function Line(p1x, p1y, p2x, p2y) {
-
-		// return p1 * p2;
-		// console.log(p1x,",", p1y,",", p2x,",", p2y)
-		var pointA = new L.LatLng(p1x, p1y);
-		var pointB = new L.LatLng(p2x, p2y);
-		var pointList = [pointA, pointB];
-
-
-		var line = new L.Polyline(pointList, {
-			color: 'blue',
-			weight: 10,
-			opacity: 0.5,
-			smoothFactor: 1,
-			// symbol: L.Symbol.arrowHead({pixelSize: 15, polygon: false, pathOptions: {stroke: true}})
-		});
-		line.addTo(lineLayer);
-	}
-
-	function getMapLocations() {
-		/*console.group("remove") // just for testing the pattern of markers
-		console.log(markers)
-		console.groupEnd()*/
-		for (var marker in markers) {  // delete fingerprint locations from map
-			map.removeLayer(markers[marker]);
-		}
-
-		markers = {};
-        /*
-		$.getJSON("/locations?group={{ .Group }}", function (data) {
-			// var items = [];
-
-			$.each(data.locations, function (key, val) {
-				let match = pattern.exec(key);
-				if (match) {
-					// items.push("<tr><td>" + match[1] + "</td><td>" + match[2] + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
-
-					var heat = L.heatLayer([ // heat map test
-						[match[1], match[2], 0.2], // lat, lng, intensity
-						[match[1]+10, match[2]+10, 0.25],
-					], {radius: 50}, {0.1: 'blue', 0.2: 'lime', 0.25: 'red'}).addTo(map);
-
-					L.userMarker([match[1], match[2]], {
-//                    pulsing: true,
-//                    accuracy: 200,
-						title: key,
-						smallIcon: true
-					}).bindPopup("<b>" + match[1] + "," + match[2] + "</b>").addTo(locationMarkers);
-				}
-			});
-			locationMarkers.addTo(map);
-			locationMarkers.eachLayer(function (marker) {
-				marker.on('click', function (e) {
-					$('#locName').val((e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0");
-					UpdateTraceMap();
-				});
-
-			});
-		});*/
-	}
-
-	function UpdateTraceMap() {
-		map.removeLayer(locationMarkers);
-
-		locName = $('#locName').val();
-		maxFPDist = $('#maxFPDist').val();
-
-		let mainLoc = pattern.exec(locName);
-		addMainMarker(mainLoc);
-
-		var items = [];
-
-		$.getJSON("/fingerprintLikeness?group={{ .Group }}&location=" + locName + "&maxFPDist=" + maxFPDist, function (data) {
-			// console.log(data.users[user])
-			if (data.success == true) {
-				let count = 1;
-				if (data.resultMap) {
-					$.each(data.resultMap, function (location, fingerprints) {
-						let match = pattern.exec(location);
-						if (match && match[1] && match[2]) {
-							items.push("<tr class='bg-info'><td>" + location + "</td><td>" + fingerprints.length + "</td></tr>");
-							// console.log(match)
-							createMarker(count, match, fingerprints);
-							// markers[key]=match;
-						} else {
-							items.push("<tr class='bg-info'><td>" + location + "</td><td colspan='2' class='text-center'> NO DATA </td></tr>");
-						}
-						count++;
-					});
-				}
-
-
-				$("#locations-table").find("tbody").remove();
-				console.log(items);
-				$("<tbody/>", {
-					"class": "tab-content",
-					html: items.join("")
-				}).appendTo("#locations-table");
-
-				$("#show-details-link").find("a").remove();//remove show rss details link
-				$("<a/>", {
-					"target": "_blank",
-					"onclick": "window.open('" + "/fingerprintLikeness?group={{ .Group }}&location=" + locName + "&maxFPDist=" + maxFPDist + "','pagename','resizable,height=420,width=1000'); return false;",
-					html: "See Rss details"
-				}).appendTo("#show-details-link");
-			}
-
-			$('#resetMapBtn').prop("disabled", false)
-			$('#get-similar-fp').prop("disabled", false)
-		});
-	}
-
-	function getFPAmbiguity() {
-		// console.log(user,n);
-		for (var marker in markers) {
-			// if (marker != filter_user) {
-			//     console.log(marker);
-			map.removeLayer(markers[marker]);
-			// Remove lines
-			// map.removeLayer(lineLayer);
-		}
-		$('#resetMapBtn').attr('disabled', "")
-		$('#get-similar-fp').attr('disabled', "")
-		markers = {};
-		UpdateTraceMap()
-	}
-
-
-	function createMarker(key, match, message) {
-
-		markers[key] = L.marker([match[1], match[2]], {
-//                    pulsing: true,
-//                    accuracy: 200,
-			title: match[0] + " : " + message.length,
-			smallIcon: true
-		}).bindPopup(match[0] + " : " + message.length).addTo(map);
-
-	}
-
-	function addMainMarker(match) {
-
-		markers[-1] = L.userMarker([match[1], match[2]], {
-//                    pulsing: true,
-//                    accuracy: 200,
-			title: match[0],
-			smallIcon: true
-		}).bindPopup(match[0]).addTo(map);
-
-	}
 </script>
 
 </body>

@@ -142,7 +142,7 @@ package bayes
 //
 //// (1/FoldCrossValidation) of the learned fingerprints are predicted with ps data, then results are wrote in ps.BayesResults
 //func crossValidation(group string, n string,gp *dbm.Group, fingerprintsInMemory map[string]parameters.Fingerprint, fingerprintsOrdering []string) float64 {
-//	//mainGp := dbm.GM.GetGroup(group)
+//	//mainGp := dbm.GM.GethGroup(group)
 //	//gp := dbm.GM.GetGroup(group).Get()
 //	//defer mainGp
 //

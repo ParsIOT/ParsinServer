@@ -20,7 +20,6 @@ import (
 	"ParsinServer/algorithms"
 	"ParsinServer/dbm"
 	"ParsinServer/dbm/parameters"
-	"log"
 	"io"
 )
 
@@ -1274,7 +1273,7 @@ func BuildGroup(c *gin.Context) {
 	if groupName != "noneasdf" {
 		dbm.ReformDBDB(groupName)
 		dbm.BuildGroupDB(groupName)
-		algorithms.PreProcess(groupName)
+		//algorithms.PreProcess(groupName) //added to calculate learn
 		algorithms.CalculateLearn(groupName)
 		glb.Debug.Println("Struct reformed successfully")
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "struct renewed"})
@@ -1500,15 +1499,23 @@ func UploadTrueLocationLog(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
 	file, header, err := c.Request.FormFile("file")
 	//filename := header.Filename
-	fmt.Println(header.Filename)
+	if err != nil {
+		glb.Error.Println(err)
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": err})
+		return
+	} else {
+		glb.Debug.Println(header.Filename)
+	}
+
+
 	out, err := os.Create(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/"+groupName+".log"))
 	if err != nil {
-		log.Fatal(err)
+		glb.Error.Println(err)
 	}
 	defer out.Close()
 	_, err = io.Copy(out, file)
 	if err != nil {
-		log.Fatal(err)
+		glb.Error.Println(err)
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": err})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": true})
@@ -1536,4 +1543,30 @@ func RelocateFPLocAPI(c *gin.Context) {
 	}
 
 }
+
+func GetRSSDataAPI(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	mac := c.DefaultQuery("mac", "noneasdf")
+
+	if groupName != "noneasdf" && mac != "noneasdf" {
+		uniqueMacs := dbm.GM.GetGroup(groupName).Get_MiddleData().Get_UniqueMacs()
+		if !glb.StringInSlice(mac, uniqueMacs) {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "mac doesn't exist"})
+		} else {
+			LatLngRSS := dbm.GetRSSData(groupName, mac)
+			c.JSON(http.StatusOK, gin.H{"success": true, "LatLngRSS": LatLngRSS}) // list  of (x,y,rss)
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or id not mentioned"})
+	}
+
+}
+
 
