@@ -20,7 +20,6 @@ import (
 	"ParsinServer/algorithms"
 	"ParsinServer/dbm"
 	"ParsinServer/dbm/parameters"
-	"log"
 	"io"
 )
 
@@ -1500,15 +1499,23 @@ func UploadTrueLocationLog(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
 	file, header, err := c.Request.FormFile("file")
 	//filename := header.Filename
-	fmt.Println(header.Filename)
+	if err != nil {
+		glb.Error.Println(err)
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": err})
+		return
+	} else {
+		glb.Debug.Println(header.Filename)
+	}
+
+
 	out, err := os.Create(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/"+groupName+".log"))
 	if err != nil {
-		log.Fatal(err)
+		glb.Error.Println(err)
 	}
 	defer out.Close()
 	_, err = io.Copy(out, file)
 	if err != nil {
-		log.Fatal(err)
+		glb.Error.Println(err)
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": err})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": true})
