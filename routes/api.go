@@ -1274,7 +1274,7 @@ func BuildGroup(c *gin.Context) {
 	if groupName != "noneasdf" {
 		dbm.ReformDBDB(groupName)
 		dbm.BuildGroupDB(groupName)
-		algorithms.PreProcess(groupName)
+		//algorithms.PreProcess(groupName) //added to calculate learn
 		algorithms.CalculateLearn(groupName)
 		glb.Debug.Println("Struct reformed successfully")
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "struct renewed"})

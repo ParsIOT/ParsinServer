@@ -696,7 +696,7 @@ func IsValidXY(dot string) bool {
 
 func GetDotFromString(dotStr string) (float64, float64) {
 	x_y := strings.Split(dotStr, ",")
-	Error.Println(x_y)
+	//Debug.Println(x_y)
 	locXstr := x_y[0]
 	locYstr := x_y[1]
 	locX, _ := strconv.ParseFloat(locXstr, 64)

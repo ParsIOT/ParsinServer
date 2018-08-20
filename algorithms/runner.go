@@ -28,7 +28,6 @@ type KnnJobResult struct{
 	KnnErrHyperParameters []interface{}
 }
 
-
 // track api that calls trackFingerprint() function
 func TrackFingerprintPOST(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
@@ -312,6 +311,9 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 
 func CalculateLearn(groupName string) {
 	// Now performance isn't important in learning, just care about performance on track (it helps to code easily!)
+
+	// Preprocess
+	PreProcess(groupName)
 
 	glb.Debug.Println("################### enetered CalculateLearn ##################")
 	groupName = strings.ToLower(groupName)
@@ -977,7 +979,80 @@ func PreProcess(groupName string) {
 
 	}
 
+	////Average Rss vector of adjacent fingerprints
+	//maxValidFPDistAVG := float64(100); // 300 cm
+	//
+	//tempFingerprintsData2 := make(map[string]parameters.Fingerprint)
+	//for fpOMain,fpMain := range tempFingerprintsData{
+	//	adjacentFPs := []parameters.Fingerprint{}
+	//	for fpO,fp := range tempFingerprintsData{
+	//		if(fpO == fpOMain){
+	//			continue
+	//		}
+	//		xyMain := strings.Split(fpMain.Location,",")
+	//		xy := strings.Split(fp.Location,",")
+	//
+	//		xMain, err1 := glb.StringToFloat(xyMain[0])
+	//		yMain, err2 := glb.StringToFloat(xyMain[1])
+	//		x, err3 := glb.StringToFloat(xy[0])
+	//		y, err4 := glb.StringToFloat(xy[1])
+	//		if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
+	//			glb.Error.Println(err1)
+	//			glb.Error.Println(err2)
+	//			glb.Error.Println(err3)
+	//			glb.Error.Println(err4)
+	//			break
+	//		}
+	//		//glb.Debug.Println(x,",",y)
+	//		//glb.Debug.Println(xMain,",",yMain)
+	//
+	//		dist := glb.CalcDist(x,y,xMain,yMain)
+	//
+	//		//glb.Debug.Println(dist)
+	//		if dist < maxValidFPDistAVG{
+	//			adjacentFPs = append(adjacentFPs,fp)
+	//		}
+	//	}
+	//	glb.Error.Println(len(adjacentFPs))
+	//
+	//	//Average rss
+	//	newRouteWithAvgRss := []parameters.Router{}
+	//	mac2RssList := make(map[string][]int) // todo: problem with fingerprints that doesn't have some mac in their list
+	//	for _,rt := range fpMain.WifiFingerprint{
+	//		mac2RssList[rt.Mac] = []int{rt.Rssi}
+	//	}
+	//
+	//	if len(adjacentFPs) != 0{
+	//		for _,fp := range adjacentFPs{
+	//			for _,rt := range fp.WifiFingerprint{
+	//				if rssList,ok := mac2RssList[rt.Mac];ok{
+	//					mac2RssList[rt.Mac] = append(rssList,rt.Rssi)
+	//				}
+	//			}
+	//		}
+	//
+	//		glb.Debug.Println(mac2RssList)
+	//		for mac,rssList := range mac2RssList{
+	//			avgRss := 0
+	//			for _,rss := range rssList{
+	//				avgRss += rss
+	//			}
+	//			avgRss /= len(rssList)
+	//			glb.Debug.Println(avgRss)
+	//			rt := parameters.Router{Mac:mac,Rssi:avgRss}
+	//			newRouteWithAvgRss = append(newRouteWithAvgRss,rt)
+	//		}
+	//		fpMainTemp := fpMain
+	//		fpMainTemp.WifiFingerprint = newRouteWithAvgRss //change mac,rss list
+	//		tempFingerprintsData2[fpOMain] = fpMainTemp
+	//	}else{
+	//		tempFingerprintsData2[fpOMain] = fpMain
+	//	}
+	//
+	//}
+
 	// save proccessed data to rd
+	//gp.Get_RawData().Set_Fingerprints(tempFingerprintsData2)
 	gp.Get_RawData().Set_Fingerprints(tempFingerprintsData)
 	gp.Get_RawData().Set_FingerprintsOrdering(tempFingerprintsOrdering)
 
