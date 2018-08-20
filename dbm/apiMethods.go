@@ -1226,6 +1226,7 @@ func RelocateFPLoc(groupName string) error {
 			continue;
 		}
 	}
+	glb.Debug.Println("RelocateFPLoc ended!")
 	rd.Set_Fingerprints(fpData)
 
 	return nil
@@ -1277,7 +1278,7 @@ func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string)
 							return fp, errors.New("Converting string 2 float problem")
 						}
 						newLoc = glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0"
-						glb.Debug.Println(newLoc)
+						//glb.Debug.Println(newLoc)
 					} else { //set second timestamp location
 						xy := allLocationLogs[timeStamp2][:2]
 						x, err1 := glb.StringToFloat(xy[0])
@@ -1297,10 +1298,33 @@ func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string)
 		}
 	}
 	if (newLoc != "") {
-		glb.Debug.Println(newLoc)
+		//glb.Debug.Println(newLoc)
 		fp.Location = newLoc
 	}
-
+	glb.Debug.Println("CorrectFPloc on " + fp.Location + " ended")
 	return fp, nil
 }
 
+func GetRSSData(groupName string, mac string) [][]int {
+	gp := GM.GetGroup(groupName)
+	fpData := gp.Get_RawData().Get_Fingerprints()
+
+	LatLngRSS := [][]int{}
+
+	for _, fp := range fpData {
+		for _, rt := range fp.WifiFingerprint {
+			if (rt.Mac == mac) {
+				xy := strings.Split(fp.Location, ",")
+				x, err1 := glb.StringToFloat(xy[0])
+				y, err2 := glb.StringToFloat(xy[1])
+				if err1 != nil || err2 != nil {
+					glb.Error.Println(err1)
+					glb.Error.Println(err2)
+				}
+				LatLngRSS = append(LatLngRSS, []int{int(x), int(y), rt.Rssi})
+			}
+		}
+	}
+	return LatLngRSS
+
+}

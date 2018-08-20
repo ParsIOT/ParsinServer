@@ -961,11 +961,11 @@ func PreProcess(groupName string) {
 	}
 
 	// regulating rss data
-	if glb.RssRegulation {
-		for loc, rdData := range locRDMap {
-			locRDMap[loc] = RemoveOutlines(rdData)
-		}
-	}
+	//if glb.RssRegulation {
+	//	for loc, rdData := range locRDMap {
+	//		locRDMap[loc] = RemoveOutlines(rdData)
+	//	}
+	//}
 
 
 	// converting locRDMap to rd
@@ -979,7 +979,7 @@ func PreProcess(groupName string) {
 
 	}
 
-	////Average Rss vector of adjacent fingerprints
+	//Average Rss vector of adjacent fingerprints
 	//maxValidFPDistAVG := float64(100); // 300 cm
 	//
 	//tempFingerprintsData2 := make(map[string]parameters.Fingerprint)
@@ -1013,7 +1013,7 @@ func PreProcess(groupName string) {
 	//			adjacentFPs = append(adjacentFPs,fp)
 	//		}
 	//	}
-	//	glb.Error.Println(len(adjacentFPs))
+	//	//glb.Error.Println(len(adjacentFPs))
 	//
 	//	//Average rss
 	//	newRouteWithAvgRss := []parameters.Router{}
@@ -1031,14 +1031,14 @@ func PreProcess(groupName string) {
 	//			}
 	//		}
 	//
-	//		glb.Debug.Println(mac2RssList)
+	//		//glb.Debug.Println(mac2RssList)
 	//		for mac,rssList := range mac2RssList{
 	//			avgRss := 0
 	//			for _,rss := range rssList{
 	//				avgRss += rss
 	//			}
 	//			avgRss /= len(rssList)
-	//			glb.Debug.Println(avgRss)
+	//			//glb.Debug.Println(avgRss)
 	//			rt := parameters.Router{Mac:mac,Rssi:avgRss}
 	//			newRouteWithAvgRss = append(newRouteWithAvgRss,rt)
 	//		}
@@ -1050,8 +1050,8 @@ func PreProcess(groupName string) {
 	//	}
 	//
 	//}
-
-	// save proccessed data to rd
+	//
+	//// save proccessed data to rd
 	//gp.Get_RawData().Set_Fingerprints(tempFingerprintsData2)
 	gp.Get_RawData().Set_Fingerprints(tempFingerprintsData)
 	gp.Get_RawData().Set_FingerprintsOrdering(tempFingerprintsOrdering)
