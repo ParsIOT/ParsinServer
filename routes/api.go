@@ -1544,3 +1544,29 @@ func RelocateFPLocAPI(c *gin.Context) {
 
 }
 
+func GetRSSDataAPI(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	mac := c.DefaultQuery("mac", "noneasdf")
+
+	if groupName != "noneasdf" && mac != "noneasdf" {
+		uniqueMacs := dbm.GM.GetGroup(groupName).Get_MiddleData().Get_UniqueMacs()
+		if !glb.StringInSlice(mac, uniqueMacs) {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "mac doesn't exist"})
+		} else {
+			LatLngRSS := dbm.GetRSSData(groupName, mac)
+			c.JSON(http.StatusOK, gin.H{"success": true, "LatLngRSS": LatLngRSS}) // list  of (x,y,rss)
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or id not mentioned"})
+	}
+
+}
+
+
