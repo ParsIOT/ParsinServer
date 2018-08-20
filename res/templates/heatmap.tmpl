@@ -117,31 +117,12 @@
 <script src="/static/js/jquery-2.0.0.min.js"></script>
 <script src='/static/js/bootstrap.js'></script>
 <script src='/static/js/leaflet.js'></script>
-<!-- <script src="/static/js/heatmap.js"></script> -->
-<!-- leaflet heatmap JS -->
-<!-- <script src="/static/js/leaflet-heatmap.js"></script>
-<script src="/static/js/plugins/leaflet/heatmap/prism.js"></script>  -->
-
 
 <script src='/static/js/leaflet.usermarker.js'></script>
 <script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
 <script src="/static/js/sweetalert.min.js"></script>
-<script src="/static/js/d3.min.js"></script>
-<script src="/static/js/d3.tip.v0.6.3.js"></script>
-{{/*
-<script src="/static/js/plugins/leaflet/heatmap/leaflet-heat.js"></script>
-*/}}
-{{/*
-<script src="/static/js/plugins/leaflet/heatmap/HeatLayer.js"></script>
-*/}}
-<script src="/static/js/plugins/leaflet/heatmap/leaflet-div-heatmap.js"></script>
 
-{{/*
-<script src="/static/js/plugins/leaflet/heatmap/heatmap.min.js"></script>
-*/}}
-{{/*
-<script src="/static/js/plugins/leaflet/heatmap/leaflet-heatmap.js"></script>
-*/}}
+<script src="/static/js/plugins/leaflet/heatmap/maplet-heatmap.js"></script>
 
 <script type="application/javascript">
 	var filter_user = false;
@@ -177,14 +158,18 @@
 		{lat: 20, lng: 15, value: 90, opacity: 1},
 		{lat: 20, lng: 30, value: 100, opacity: 1}
 	];
-	var map = L.map('map').setView([35.70132428054478, 51.40498638153076], 14);
-
 	// http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
 	L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
 		maxZoom: 18,
 	}).addTo(map);
 
-	var heatmap = new L.MultiColorDivHeatmapLayer({radius: 100}, true);
+    var heatmap = new L.MultiColorDivHeatmapLayer({
+        radius: 100,
+        gradient: {
+            0: 'blue',
+            1: 'red'
+        }
+    });
 
 	heatmap.addTo(map);
 
