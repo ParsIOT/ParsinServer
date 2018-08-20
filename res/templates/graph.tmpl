@@ -68,33 +68,56 @@
 					graph List
 				</div>
 				<div class="panel-body">
-					<div id="controller" >
+					<div id="controller">
 						<div class="row">
 							<div class="col-md-12">
 								<div class="bs-callout bs-callout-info" style="margin: 0 0 15px;padding-bottom: 5px;">
 									<h4>vertex input</h4>
 									<div class="row">
-										<div class="col-md-4">
+										<div class="col-md-3">
 											<div class="form-group">
 												<input id="click-x" type="text" disabled value="X"
 												       class="form-control"/>
 											</div>
 										</div>
-										<div class="col-md-4">
+										<div class="col-md-3">
 											<div class="form-group">
 												<input id="click-y" type="text" disabled value="Y"
 												       class="form-control"/>
 											</div>
 										</div>
-										<div class="col-md-4">
+										<div class="col-md-3">
 											<button type="submit" class="btn btn-info" id="addVertex"
 											        title="Add Vertex">Add Vertex
+											</button>
+										</div>
+										<div class="col-md-3">
+											<button type="submit" class="btn btn-info" id="deleteSelected"
+											        title="Delete selected">Delete
 											</button>
 										</div>
 
 
 									</div>
-
+									<div class="row">
+                                    {{/*<div class="panel panel-warning" id="map-panel">*/}}
+                                    {{/*<div class="panel-heading">*/}}
+                                    {{/*Current mac filter List*/}}
+                                    {{/*</div>*/}}
+										<div class="panel-body" id="mac-filter-table-container">
+											<div rows="10">
+												<table id="vertex-list-table"
+												       class="table table-responsive table-hover table-condensed table-bordered">
+													<thead>
+													<tr>
+														<td>Select</td><td>X</td><td>Y</td>
+													</tr>
+													</thead>
+												</table>
+											</div>
+										</div>
+                                    {{/*</div>*/}}
+									</div>
 								</div>
 							</div>
 							<div class="col-md-12">
@@ -121,43 +144,60 @@
 				</div>
 			</div>
 		</div>
-    {{/*<div class="col-md-7 col-sm-12">
-            <div class="panel panel-warning" id="map-panel">
-                <div class="panel-heading">
-                    Current mac filter List
-                </div>
-                <div class="panel-body" id="mac-filter-table-container">
-                    <div rows="10">
-                        <table id="mac-list-table"
-                               class="table table-responsive table-hover table-condensed table-bordered">
-                            <thead>
-                            <tr>
-                                <td>MAC Address</td>
-                            </tr>
-                            </thead>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>*/}}
+
 		<div class="col-md-7 col-sm-12">
 			<div class="panel panel-primary" id="map-panel">
 				<div class="panel-heading">
 					Map
 				</div>
 				<div class="panel-body">
-
 					<div id="live-map"></div>
 				</div>
 			</div>
 		</div>
 	</div>
 	<!--</div>-->
-
-
 </div>
 
 <script type="application/javascript">
+	var vertices = []; // list of vertices enetered by map
+	var markers = []
+
+	$('#addVertex').click(function () {
+		var vertex = ("<tr><td><input type='checkbox' name='record'></td><td>" + $('#click-x').val() + "</td><td>" + $('#click-y').val() + "</td></tr>");
+		vertices.push(vertex);
+
+		$("<tbody/>", {
+			"class": "tab-content",
+			html: vertex
+		}).appendTo("#vertex-list-table");
+
+		L.userMarker( [$('#click-x').val(), $('#click-y').val()],{
+//                    pulsing: true,
+//                    accuracy: 200,
+// 			title: key,
+			draggable: true,
+			smallIcon: true
+		}).bindPopup("<b>" + $('#click-x').val() + "," + $('#click-y').val() + "</b>").addTo(markers);
+		//console.log(newMarker);
+
+		//caution: it put the marker just by adding to markers list. it may be needed to edit it if extra code from past get deleted
+	});
+
+
+	// Find and remove selected table rows
+	$("#deleteSelected").click(function(){
+		$("table tbody").find('input[name="record"]').each(function(){
+			if($(this).is(":checked")){
+
+				$(this).parents("tr").remove();
+			}
+		});
+		console.log(markers)
+		//map.removeLayer(L.userMarker( [$('#click-x').val(), $('#click-y').val()]));
+		//todo: delete marker from map. it needs to get the one from the markers list then remove it from map
+	});
+
 
 	$.getJSON("/getfiltermacs?group={{ .Group }}", function (data) {
 		var items = [];
@@ -257,7 +297,6 @@
 					});
 				});
 	});
-
 </script>
 <script type="application/javascript">
 	$('#live-map').css('height', $(window.top).height() - 275);
