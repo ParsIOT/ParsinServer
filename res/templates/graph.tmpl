@@ -2,47 +2,47 @@
 <html>
 
 <head>
-    <meta charset=utf-8/>
-    <title>PARSIN</title>
-    <link rel="shortcut icon" sizes="16x16 24x24 32x32 48x48 64x64" href="/static/img/favicon.ico"/>
-    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
+	<meta charset=utf-8/>
+	<title>PARSIN</title>
+	<link rel="shortcut icon" sizes="16x16 24x24 32x32 48x48 64x64" href="/static/img/favicon.ico"/>
+	<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
 
-    <!-- Bootstrap and JQuery JS -->
-    <script src="/static/js/jquery-2.0.0.min.js"></script>
-    <script src='/static/js/bootstrap.js'></script>
+	<!-- Bootstrap and JQuery JS -->
+	<script src="/static/js/jquery-2.0.0.min.js"></script>
+	<script src='/static/js/bootstrap.js'></script>
 
-    <!-- Bootstrap Core CSS -->
-    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+	<!-- Bootstrap Core CSS -->
+	<link href="/static/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Custom CSS -->
-    <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
-    <link href="/static/css/custom.css" rel="stylesheet">
-
-
-    <link href="/static/css/leaflet.css" rel="stylesheet">
-    <link href="/static/css/leaflet.usermarker.css" rel="stylesheet">
-    <script src='/static/js/leaflet.js'></script>
-    <script src='/static/js/leaflet.usermarker.js'></script>
-    <script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
+	<!-- Custom CSS -->
+	<link href="/static/css/2-col-portfolio.css" rel="stylesheet">
+	<link href="/static/css/custom.css" rel="stylesheet">
 
 
-    <script src="/static/js/sweetalert.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
+	<link href="/static/css/leaflet.css" rel="stylesheet">
+	<link href="/static/css/leaflet.usermarker.css" rel="stylesheet">
+	<script src='/static/js/leaflet.js'></script>
+	<script src='/static/js/leaflet.usermarker.js'></script>
+	<script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
 
-    <!-- Font Awesome CSS -->
-    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
-    <style>
 
-        textarea {
-            overflow: auto;
-            max-width: 100%;
-            min-width: 100%;
-        }
+	<script src="/static/js/sweetalert.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
 
-        #mac-filter-table-container {
-            overflow: scroll;
-        }
-    </style>
+	<!-- Font Awesome CSS -->
+	<link rel="stylesheet" href="/static/css/font-awesome.min.css">
+	<style>
+
+		textarea {
+			overflow: auto;
+			max-width: 100%;
+			min-width: 100%;
+		}
+
+		#mac-filter-table-container {
+			overflow: scroll;
+		}
+	</style>
 </head>
 
 <body>
@@ -52,51 +52,76 @@
 <!-- Page Content -->
 <div class="container-fluid">
 
-    <div class="row">
-        <div class="col-lg-12">
-            <h2 class="page-header">Graph
-                <small>set graphs to be used in localisation</small>
-            </h2>
-        </div>
-    </div>
+	<div class="row">
+		<div class="col-lg-12">
+			<h2 class="page-header">Graph
+				<small>set graphs to be used in localisation</small>
+			</h2>
+		</div>
+	</div>
 
-    <!--<div class="well">-->
-    <div class="row">
-        <div class="col-md-5 col-sm-12">
-            <div class="panel panel-info">
-                <div class="panel-heading">
-                    graph List
-                </div>
-                <div class="panel-body">
-                    <h5> New Graph: </h5>
-                    <div class="bs-callout bs-callout-info" style="margin: 0 0 15px;padding-bottom: 5px;">
-                        <h4>Settings</h4>
-                        <div class="form-group">
-                            <input id="click-x" type="text" disabled value="X" class="form-control"/>
-                        </div>
-                        <div class="form-group">
-                            <input id="click-y" type="text" disabled value="Y" class="form-control"/>
-                        </div>
-                    </div>
-                    <textarea style="height: 80%" placeholder='[&#10;   "9c:d6:43:72:0e:83",&#10;   "e4:8d:8c:c1:f2:a9"&#10;]'
-                              class="bootbox-input bootbox-input-textarea form-control" id="graphList"
-                              rows="10"></textarea>
-                    <div class="panel-body">
-                        <div class="col-md-6 col-sm-12">
-                            <button type="submit" class="btn btn-warning btn-block" id="setMacFilter"
-                                    title="Click to set.">Set
-                            </button>
-                        </div>
-                        <div class="col-md-6 col-sm-12">
-                            <button type="submit" class="btn btn-danger btn-block" id="clearMacFilter"
-                                    title="Click to clear.">Clear
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {{/*<div class="col-md-7 col-sm-12">
+	<!--<div class="well">-->
+	<div class="row">
+		<div class="col-md-5 col-sm-12">
+			<div class="panel panel-info">
+				<div class="panel-heading">
+					graph List
+				</div>
+				<div class="panel-body">
+					<div id="controller" >
+						<div class="row">
+							<div class="col-md-12">
+								<div class="bs-callout bs-callout-info" style="margin: 0 0 15px;padding-bottom: 5px;">
+									<h4>vertex input</h4>
+									<div class="row">
+										<div class="col-md-4">
+											<div class="form-group">
+												<input id="click-x" type="text" disabled value="X"
+												       class="form-control"/>
+											</div>
+										</div>
+										<div class="col-md-4">
+											<div class="form-group">
+												<input id="click-y" type="text" disabled value="Y"
+												       class="form-control"/>
+											</div>
+										</div>
+										<div class="col-md-4">
+											<button type="submit" class="btn btn-info" id="addVertex"
+											        title="Add Vertex">Add Vertex
+											</button>
+										</div>
+
+
+									</div>
+
+								</div>
+							</div>
+							<div class="col-md-12">
+                                <textarea style="height: 70%; margin-bottom: 10px"
+                                          placeholder='[&#10;   "9c:d6:43:72:0e:83",&#10;   "e4:8d:8c:c1:f2:a9"&#10;]'
+                                          class="bootbox-input bootbox-input-textarea form-control" id="graphList"
+                                          rows="10">
+
+                        </textarea>
+							</div>
+
+							<div class="col-md-6 col-sm-12">
+								<button type="submit" class="btn btn-warning btn-block" id="setMacFilter"
+								        title="Click to set.">Set
+								</button>
+							</div>
+							<div class="col-md-6 col-sm-12">
+								<button type="submit" class="btn btn-danger btn-block" id="clearMacFilter"
+								        title="Click to clear.">Clear
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+    {{/*<div class="col-md-7 col-sm-12">
             <div class="panel panel-warning" id="map-panel">
                 <div class="panel-heading">
                     Current mac filter List
@@ -115,222 +140,222 @@
                 </div>
             </div>
         </div>*/}}
-        <div class="col-md-7 col-sm-12">
-            <div class="panel panel-primary" id="map-panel">
-                <div class="panel-heading">
-                    Map
-                </div>
-                <div class="panel-body">
+		<div class="col-md-7 col-sm-12">
+			<div class="panel panel-primary" id="map-panel">
+				<div class="panel-heading">
+					Map
+				</div>
+				<div class="panel-body">
 
-                    <div id="live-map"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!--</div>-->
+					<div id="live-map"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!--</div>-->
 
 
 </div>
 
 <script type="application/javascript">
 
-    $.getJSON("/getfiltermacs?group={{ .Group }}", function (data) {
-        var items = [];
+	$.getJSON("/getfiltermacs?group={{ .Group }}", function (data) {
+		var items = [];
 
-        if (data.success) {
-            $.each(data.message, function (key, val) {
-                console.log(key);
-                console.log(val);
-                items.push("<tr><td>" + val + "</td></tr>");
-            });
-        }
+		if (data.success) {
+			$.each(data.message, function (key, val) {
+				console.log(key);
+				console.log(val);
+				items.push("<tr><td>" + val + "</td></tr>");
+			});
+		}
 
-        $("<tbody/>", {
-            "class": "tab-content",
-            html: items.join("")
-        }).appendTo("#mac-list-table");
-    });
+		$("<tbody/>", {
+			"class": "tab-content",
+			html: items.join("")
+		}).appendTo("#mac-list-table");
+	});
 
-    $('#setMacFilter').click(function () {
-        swal({
-                title: "Set mac filter",
-                type: "info",
-                showCancelButton: true,
-                closeOnConfirm: false,
-                showLoaderOnConfirm: true,
-            },
-            function () {
-                $.ajax({
-                    type: 'POST',
-                    url: "/setfiltermacs?group={{ .Group }}",
-                    data: JSON.stringify({
-                        "group": "{{.Group}}",
-                        "macs": JSON.parse($("#graphList").val())
-                    }),
-                    success: function (data) {
-                        console.log(data);
+	$('#setMacFilter').click(function () {
+		swal({
+					title: "Set mac filter",
+					type: "info",
+					showCancelButton: true,
+					closeOnConfirm: false,
+					showLoaderOnConfirm: true,
+				},
+				function () {
+					$.ajax({
+						type: 'POST',
+						url: "/setfiltermacs?group={{ .Group }}",
+						data: JSON.stringify({
+							"group": "{{.Group}}",
+							"macs": JSON.parse($("#graphList").val())
+						}),
+						success: function (data) {
+							console.log(data);
 
-                        if (data['success']) {
-                            swal({
-                                title: "Updated!",
-                                text: data['message'],
-                                timer: 2000,
-                                showConfirmButton: true
-                            }, function () {
-                                location.reload();
-                            });
-                        } else {
-                            swal("Something went wrong.", data['message'], "error");
-                        }
+							if (data['success']) {
+								swal({
+									title: "Updated!",
+									text: data['message'],
+									timer: 2000,
+									showConfirmButton: true
+								}, function () {
+									location.reload();
+								});
+							} else {
+								swal("Something went wrong.", data['message'], "error");
+							}
 
-                    },
+						},
 //                    error: function (jqXHR, textStatus, errorThrown) {
 //                        console.warn(jqXHR);
 //                        console.warn(textStatus);
 //                        console.warn(errorThrown);
 //                    },
-                    contentType: "application/json",
-                    dataType: 'json'
-                });
-            });
-    });
+						contentType: "application/json",
+						dataType: 'json'
+					});
+				});
+	});
 
-    $('#clearMacFilter').click(function () {
-        swal({
-                title: "Set mac filter",
-                type: "info",
-                showCancelButton: true,
-                closeOnConfirm: false,
-                showLoaderOnConfirm: true,
-            },
-            function () {
-                $.ajax({
-                    type: 'POST',
-                    url: "/setfiltermacs?group={{ .Group }}",
-                    data: JSON.stringify({
-                        "group": "{{.Group}}",
-                        "macs": JSON.parse("[]")
-                    }),
-                    success: function (data) {
-                        console.log(data);
+	$('#clearMacFilter').click(function () {
+		swal({
+					title: "Set mac filter",
+					type: "info",
+					showCancelButton: true,
+					closeOnConfirm: false,
+					showLoaderOnConfirm: true,
+				},
+				function () {
+					$.ajax({
+						type: 'POST',
+						url: "/setfiltermacs?group={{ .Group }}",
+						data: JSON.stringify({
+							"group": "{{.Group}}",
+							"macs": JSON.parse("[]")
+						}),
+						success: function (data) {
+							console.log(data);
 
-                        if (data['success'] && data['message'] == "MacFilter Cleared.") {
-                            swal({
-                                title: "Updated!",
-                                text: data['message'],
-                                timer: 2000,
-                                showConfirmButton: true
-                            }, function () {
-                                location.reload();
-                            });
-                        } else {
-                            swal("Something went wrong.", data['message'], "error");
-                        }
-                    },
-                    contentType: "application/json",
-                    dataType: 'json'
-                });
-            });
-    });
+							if (data['success'] && data['message'] == "MacFilter Cleared.") {
+								swal({
+									title: "Updated!",
+									text: data['message'],
+									timer: 2000,
+									showConfirmButton: true
+								}, function () {
+									location.reload();
+								});
+							} else {
+								swal("Something went wrong.", data['message'], "error");
+							}
+						},
+						contentType: "application/json",
+						dataType: 'json'
+					});
+				});
+	});
 
 </script>
 <script type="application/javascript">
-    $('#live-map').css('height', $(window.top).height() - 275);
-    $('#graphList').parent().css('height', $(window.top).height() - 245);
-    var map = L.map('live-map', {
-        crs: L.CRS.Simple,
-        minZoom: -100,
+	$('#live-map').css('height', $(window.top).height() - 275);
+	$('#controller').css('height', $(window.top).height() - 245);
+	var map = L.map('live-map', {
+		crs: L.CRS.Simple,
+		minZoom: -100,
 //        maxZoom: 4
-    });
-    var bounds = [[-1*('{{.MapHeight}}'/2),-1*('{{.MapWidth}}'/2)], [('{{.MapHeight}}'/2),('{{.MapWidth}}'/2)]];
-    //    var bounds = [[-400, -300], [400, 300]];
-    var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
-    map.setView([0, 0], -2);
+	});
+	var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
+	//    var bounds = [[-400, -300], [400, 300]];
+	var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
+	map.setView([0, 0], -2);
 
-    markers = L.featureGroup();
-    var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
+	markers = L.featureGroup();
+	var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
 
-    map.on('click', function (e) {
+	map.on('click', function (e) {
 //        console.log(e.latlng.lat + "," + e.latlng.lng);
-        $('#click-x').val(Math.round(e.latlng.lat) + ".0");
-        $('#click-y').val(Math.round(e.latlng.lng) + ".0");
-        console.log($("#click-x").val());
-    });
+		$('#click-x').val(Math.round(e.latlng.lat) + ".0");
+		$('#click-y').val(Math.round(e.latlng.lng) + ".0");
+		console.log($("#click-x").val());
+	});
 
-    $.getJSON("/locations?group={{ .Group }}", function (data) {
-        var items = [];
+	$.getJSON("/locations?group={{ .Group }}", function (data) {
+		var items = [];
 
-        $.each(data.locations, function (key, val) {
-            let match = pattern.exec(key);
-            if (match) {
-                items.push("<tr><td>" + match[1] + "</td><td>" + match[2] + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
+		$.each(data.locations, function (key, val) {
+			let match = pattern.exec(key);
+			if (match) {
+				items.push("<tr><td>" + match[1] + "</td><td>" + match[2] + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
 
-                L.userMarker([match[1], match[2]], {
+				L.userMarker([match[1], match[2]], {
 //                    pulsing: true,
 //                    accuracy: 200,
-                    title: key,
-                    draggable: true,
-                    smallIcon: true
-                }).bindPopup("<b>" + match[1] + "," + match[2] + "</b>").addTo(markers);
-            } else {
-                items.push("<tr><td colspan='2' class='text-center'>" + key + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
-            }
-        });
-        markers.addTo(map);
-        markers.eachLayer(function (marker) {
-            let dragStartPoint, dragEndPoint, startLatLng;
-            marker.on('dragstart', function (e) {
-                startLatLng = e.target.getLatLng();
-                dragStartPoint = (e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0";
-                console.log("START:");
-                console.log(dragStartPoint);
-            });
-            marker.on('dragend', function (e) {
-                dragEndPoint = (e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0";
-                console.log("END:");
-                console.log(dragEndPoint);
-                console.log(e.target);
+					title: key,
+					draggable: true,
+					smallIcon: true
+				}).bindPopup("<b>" + match[1] + "," + match[2] + "</b>").addTo(markers);
+			} else {
+				items.push("<tr><td colspan='2' class='text-center'>" + key + "</td><td>" + val.accuracy + "</td><td>" + val.count + "</td></tr>");
+			}
+		});
+		markers.addTo(map);
+		markers.eachLayer(function (marker) {
+			let dragStartPoint, dragEndPoint, startLatLng;
+			marker.on('dragstart', function (e) {
+				startLatLng = e.target.getLatLng();
+				dragStartPoint = (e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0";
+				console.log("START:");
+				console.log(dragStartPoint);
+			});
+			marker.on('dragend', function (e) {
+				dragEndPoint = (e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0";
+				console.log("END:");
+				console.log(dragEndPoint);
+				console.log(e.target);
 
-                swal2({
-                    title: "Move location",
-                    text: "Are you sure you want to move '" + dragStartPoint + "' to '" + dragEndPoint + "'",
-                    inputPlaceholder: " Also Move in BaseDB",
-                    input: "checkbox",
-                    showCancelButton: true,
-                    confirmButtonColor: "#6cdd87",
-                    confirmButtonText: "Yes, move it!",
-                    cancelButtonText: "No, cancel pls!",
-                    closeOnConfirm: false,
-                    closeOnCancel: false
-                }).then(function (is_checked) {
-                    $.get("/editloc" + (is_checked ? "BaseDB" : ""), {
-                                "group": {{ .Group }},
-                                "oldloc": dragStartPoint,
-                                "newloc": dragEndPoint
-                            },
-                            function (data) {
-                                console.log(data);
-                                if (data['success']) {
-                                    swal("Edited!", data['message'], "success");
-                                    location.reload()
-                                } else {
-                                    swal("Something went wrong.", data['message'], "error");
-                                }
-                            }
-                    );
-                }, function (stat) {
-                    e.target.setLatLng(startLatLng);
-                    swal2("Cancelled", "Your data is unchanged :)", "error");
-                });
-            });
-        });
+				swal2({
+					title: "Move location",
+					text: "Are you sure you want to move '" + dragStartPoint + "' to '" + dragEndPoint + "'",
+					inputPlaceholder: " Also Move in BaseDB",
+					input: "checkbox",
+					showCancelButton: true,
+					confirmButtonColor: "#6cdd87",
+					confirmButtonText: "Yes, move it!",
+					cancelButtonText: "No, cancel pls!",
+					closeOnConfirm: false,
+					closeOnCancel: false
+				}).then(function (is_checked) {
+					$.get("/editloc" + (is_checked ? "BaseDB" : ""), {
+								"group": {{ .Group }},
+								"oldloc": dragStartPoint,
+								"newloc": dragEndPoint
+							},
+							function (data) {
+								console.log(data);
+								if (data['success']) {
+									swal("Edited!", data['message'], "success");
+									location.reload()
+								} else {
+									swal("Something went wrong.", data['message'], "error");
+								}
+							}
+					);
+				}, function (stat) {
+					e.target.setLatLng(startLatLng);
+					swal2("Cancelled", "Your data is unchanged :)", "error");
+				});
+			});
+		});
 
-        //table
-        $("<tbody/>", {
-            "class": "tab-content",
-            html: items.join("")
-        }).appendTo("#users-table");
-    });
+		//table
+		$("<tbody/>", {
+			"class": "tab-content",
+			html: items.join("")
+		}).appendTo("#users-table");
+	});
 </script>
 </body>
 
