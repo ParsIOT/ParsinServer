@@ -565,9 +565,15 @@ func FloatToString(input_num float64) string {
 	// to convert a float number to a string
 	return strconv.FormatFloat(input_num, 'f', 3, 64)
 }
+
 func StringToFloat(input_str string) (float64, error) {
 	return strconv.ParseFloat(input_str, 64)
 }
+
+func StringToInt(input_str string) (int, error) {
+	return strconv.Atoi(input_str)
+}
+
 
 func IntToString(input_num int) string {
 	// to convert a float number to a string
