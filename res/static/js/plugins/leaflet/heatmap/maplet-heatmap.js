@@ -11,12 +11,15 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 		min_value: 0,
 		radius: 70,
 		use_gradient: true,
-		clickable: false
+		clickable: false,// heatmap.on('click',function() {...});
+		animation_delay: 20,
+		default_opacity: 1,
 	},
 
 	initialize: function (options, show_canvas) {
 		//set the options
-		L.Util.setOptions(this, options);
+		//L.Util.setOptions(this, options);
+		this.setOptions(options);
 
 		this._layers = {};
 
@@ -24,6 +27,7 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 
 		// generate the gradient
 		canvas = this._generateGradient(this.options.gradient);
+
 		if (show_canvas)
 			document.body.insertBefore(canvas, document.body.firstChild);
 
@@ -41,7 +45,9 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 		}
 
 		if (opacity > 1 || opacity < 0) {
-			throw new Error('Opacity should be beetween 0 and 1');
+			// throw new Error('Opacity should be beetween 0 and 1');
+			console.error("Opacity should be beetween 0 and 1");
+			console.error("using default Opacity:" + this.options.default_opacity);
 		}
 
 		// Define the marker
@@ -77,7 +83,7 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 		this.clearData();
 		var self = this;
 		data.forEach(function (point) {
-			point.opacity = point.opacity > 1 || point.opacity < 0 ? 1 : point.opacity;
+			point.opacity = !point.opacity || point.opacity > 1 || point.opacity < 0 ? this.options.default_opacity : point.opacity;
 			var marker = self._addZone(point.lat, point.lng, point.value, point.opacity);
 			self._markerset.push(marker);
 			self._dataset.push({
@@ -103,13 +109,24 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 		this._dataset = [];
 	},
 
+	// remove all layers and draw theme again
+	reDraw: function () {
+		this.clearLayers();
+		this._markerset = [];
+		var self = this;
+		this._dataset.forEach(function (point) {
+			var marker = self._addZone(point.lat, point.lng, point.value, point.opacity);
+			self._markerset.push(marker);
+		});
+		return this;
+	},
+
 	// animates points on map by changing the opacity
 	_animateZone: function (lat, lng, value, start_opacity, end_opacity, marker, fadeCallback) {
 		var self = this;
 		if (!marker) var marker;
 
 		var o = start_opacity;
-		var delay = 50; // millis
 		var step = start_opacity < end_opacity ? 0.1 : -0.1;
 
 		var seed = setInterval(function () {
@@ -122,7 +139,7 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 				window.clearInterval(seed);
 				if (fadeCallback) fadeCallback(marker);
 			}
-		}, delay);
+		}, this.options.animation_delay);
 
 	},
 
@@ -130,13 +147,14 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 	morphData: function (new_data) {
 		this.fadeOutData();
 		this.fadeInData(new_data);
+		return this;
 	},
 
 	// fades in new data and add them to data set
 	fadeInData: function (data) {
 		var self = this;
 		data.forEach(function (point) {
-			point.opacity = point.opacity > 1 ? 1 : point.opacity;
+			point.opacity = !point.opacity || point.opacity > 1 || point.opacity < 0 ? this.options.default_opacity : point.opacity;
 			self._animateZone(point.lat, point.lng, point.value, 0, point.opacity, null, function (marker) {
 				self._markerset.push(marker);
 				self._dataset.push({
@@ -208,14 +226,29 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 
 	// sets new max value
 	setMaxValue: function (max) {
-		this.options.max_value = max;
-		this._denominator = this.options.max_value - this.options.min_value;
+		this.setOptions({max_value: min});
 		return this;
 	},
 
 	// sets new min value
 	setMinValue: function (min) {
-		this.options.min_value = min;
+		this.setOptions({min_value: min});
+		return this;
+	},
+
+	// changes value of given option name
+	setOption(name, value) {
+		o = {};
+		o[name] = value;
+		this.setOptions(o);
+		return this;
+	},
+
+	// change options
+	setOptions(options) {
+		L.Util.setOptions(this, options);
+
+		// calculates the value of denominator for color indexing
 		this._denominator = this.options.max_value - this.options.min_value;
 		return this;
 	},

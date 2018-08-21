@@ -3,33 +3,30 @@
 package main
 
 import (
+	"ParsinServer/algorithms"
+	"ParsinServer/dbm"
+	"ParsinServer/glb"
+	"ParsinServer/routes"
 	"flag"
 	"fmt"
+	"github.com/MA-Heshmatkhah/SimpleAuth"
+	"github.com/gin-gonic/contrib/sessions"
+	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
-	"ParsinServer/routes"
-	"ParsinServer/glb"
-	"strings"
-	"github.com/gin-gonic/contrib/sessions"
-	"github.com/gin-gonic/gin"
-	"ParsinServer/algorithms"
-	"ParsinServer/dbm"
-	"time"
 	"runtime/debug"
-	"github.com/MA-Heshmatkhah/SimpleAuth"
+	"strings"
+	"time"
 )
-
-
 
 // VersionNum keeps track of the version
 var VersionNum string
 var BuildTime string
 var Build string
-
 
 // init initiates the paths in gvar.RuntimeArgs
 func init() {
@@ -49,7 +46,7 @@ func main() {
 		LoginSuccessfulRedirectURL: "/change-db",
 	})
 
-	go func(){
+	go func() {
 		for {
 			time.Sleep(20 * time.Second)
 			fmt.Println("Free up memory...")
@@ -61,7 +58,6 @@ func main() {
 	dbm.Wg.Add(1)
 	defer dbm.Wg.Wait()
 	go dbm.GM.Flusher()
-
 
 	// _, executableFile, _, _ := runtime.Caller(0) // get full path of this file
 	if len(Build) == 0 {
@@ -176,7 +172,7 @@ func main() {
 		}
 		os.Exit(1)
 	}
-		//err := dbm.DumpFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
+	//err := dbm.DumpFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
 	//err := dbm.DumpRawFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
 	//if err == nil {
 	//	fmt.Println("Successfully dumped.")
@@ -184,9 +180,6 @@ func main() {
 	//	log.Fatal(err)
 	//}
 	//os.Exit(1)
-
-
-
 
 	// Useradded command
 	// Check whether we are just dumping the database
@@ -237,7 +230,6 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
-
 	// Load templates
 	r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
 
@@ -265,11 +257,11 @@ func main() {
 		privateRoutes.GET("/", routes.Slash)
 		privateRoutes.GET("/change-db", routes.SlashChangeDb)
 		privateRoutes.POST("/change-db", routes.SlashChangeDbPOST)
-			/*
-		r.GET("/livemap/:group", func(context *gin.Context) {
-			r.LoadHTMLGlob(path.Join(gvar.RuntimeArgs.Cwd, "templates/*"))
-			LiveLocationMap(context)
-		})
+		/*
+			r.GET("/livemap/:group", func(context *gin.Context) {
+				r.LoadHTMLGlob(path.Join(gvar.RuntimeArgs.Cwd, "templates/*"))
+				LiveLocationMap(context)
+			})
 		*/
 		//privateRoutes.PUT("/mqtt", routes.PutMQTT) // Routes for MQTT (mqtt.go)
 
@@ -280,7 +272,7 @@ func main() {
 		privateRoutes.Static("data/", path.Join(glb.RuntimeArgs.Cwd, "data/")) // Load db files
 		privateRoutes.GET("/status", routes.GetStatus)
 
-		needToLoadSettings := privateRoutes.Group("/",routes.PreLoadSettings)
+		needToLoadSettings := privateRoutes.Group("/", routes.PreLoadSettings)
 		//needToLoadSettings := r
 		{
 			//Todo: Url must be same format to mention group name (now, group can be url param or be GET param)
@@ -293,23 +285,14 @@ func main() {
 			needToLoadSettings.GET("/explore/:group/:network/:location", routes.GetLocationMacs)
 			//needToLoadSettings.GET("/explore/:group/:network/:location", routes.SlashExplore2)
 			//needToLoadSettings.GET("/pie/:group/:network/:location", routes.SlashPie)
-			needToLoadSettings.GET("/livemap/:group", func(context *gin.Context) {
-				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
-				routes.LiveLocationMap(context)
-			})
+			needToLoadSettings.GET("/livemap/:group", routes.LiveLocationMap)
 			//needToLoadSettings.GET("/userhistory/:group", routes.UserHistoryMap)
-			needToLoadSettings.GET("/userhistory/:group", func(context *gin.Context) {
-				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
-				routes.UserHistoryMap(context)
-			})
+			needToLoadSettings.GET("/userhistory/:group", routes.UserHistoryMap)
 
-			needToLoadSettings.GET("/fingerprintAmbiguity/:group", func(context *gin.Context) {
-				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
-				routes.FingerprintAmbiguity(context)
-			})
+			needToLoadSettings.GET("/fingerprintAmbiguity/:group", routes.FingerprintAmbiguity)
 
-			needToLoadSettings.GET("/heatmap/:group", func(context *gin.Context) { //komeil: heatmap
-				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
+			needToLoadSettings.GET("/heatmap/:group", func(context *gin.Context) {
+				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*")) // TODO: remove this for performance
 				routes.Heatmap(context)
 			})
 
@@ -372,7 +355,6 @@ func main() {
 	r.GET("/getArbitLocations", routes.GetArbitLocations)
 	r.DELETE("/delresults", routes.DelResults)
 	r.GET("/location", routes.GetUserLocations)
-
 
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", algorithms.LearnFingerprintPOST)

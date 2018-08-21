@@ -21,11 +21,11 @@
 	<!-- Font Awesome CSS -->
 	<link rel="stylesheet" href="/static/css/font-awesome.min.css">
 	<style>
-		#live-map {
+		#heat-map {
 			height: 500px;
 		}
 
-		#locations-table-container {
+		#sidebar-container {
 			overflow: scroll;
 		}
 	</style>
@@ -62,48 +62,65 @@
 		<div class="col-md-3 col-sm-12">
 			<div class="panel panel-success" id="users-list-panel">
 				<div class="panel-heading">
-					Users
+					Options
 				</div>
-				<div class="panel-body" id="locations-table-container">
-					<div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
+				<div class="panel-body" id="sidebar-container">
+					<div id="data-panel" class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
 						<div class="col-md-12">
-							<a href="#location" data-toggle="collapse"><h4 style="text-decoration: underline;">
-								Select Location</h4></a>
-							<div id="location" class="collapse in">
+							<a href="#data" data-toggle="collapse">
+								<h4 style="text-decoration: underline;">Data</h4>
+							</a>
+							<div id="data" class="collapse in">
 								<div class="form-group">
-									<label for="refresh-interval">Enter location</label>
-									<input id="locName" class="form-control" placeholder="Location Num"/>
+									<label for="mac-list">Select MAC Address</label>
+									<select id="mac-list" class="form-control">
+										<option name="select">Select One MAC</option>
+									</select>
 								</div>
 								<div class="form-group">
-									<label for="refresh-interval">Enter MaxFPDist(0 to 50.0)</label>
-									<input id="maxFPDist" class="form-control" placeholder="Max RSS Vector distance"
-									       value="5"/>
+									<label for="opacity">Circle Opacity (0 - 1)</label>
+									<input id="opacity" type="number" step="0.01" max="1" min="0" class="form-control"
+									       placeholder="Circle Opacity (0 - 1)" value="1"/>
 								</div>
 								<div class="col-md-12">
 									<div class="form-group">
-										<button id="get-similar-fp" onclick="getFPAmbiguity()"
-										        class="btn btn-success btn-block">
-											Get similar FP
-										</button>
-										<button id="resetMapBtn" onclick="getMapLocations()"
-										        class="btn btn-warning btn-block">
-											Reset Map
+										<button id="get-data" onclick="getHeatMapData()" class="btn btn-success btn-block" disabled="">
+											Get Data
 										</button>
 									</div>
 								</div>
 							</div>
 						</div>
 					</div>
-					<table id="locations-table"
-					       class="table table-responsive table-hover table-condensed table-bordered">
-						<thead>
-						<tr>
-							<td>Location</td>
-							<td>Num</td>
-						</tr>
-						</thead>
-					</table>
-					<h4 id="show-details-link" class="text-center"/>
+
+					<div id="options-panel" class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
+						<div class="col-md-12">
+							<a href="#options" data-toggle="collapse">
+								<h4 style="text-decoration: underline;">Options</h4>
+							</a>
+							<div id="options" class="collapse">
+								<div class="form-group">
+									<label for="minrssval">Enter Min RSS Value</label>
+									<input id="minrssval" type="number" step="5" class="form-control" placeholder="Min RSS Value" value="-30"/>
+								</div>
+								<div class="form-group">
+									<label for="maxrssval">Enter Max RSS Value</label>
+									<input id="maxrssval" type="number" step="5" class="form-control" placeholder="Max RSS Value" value="-100"/>
+								</div>
+								<div class="form-group">
+									<label for="radius">Circle Radius</label>
+									<input id="radius" type="number" step="5" class="form-control" placeholder="Circle Radius" value="100"/>
+								</div>
+								<div class="col-md-12">
+									<div class="form-group">
+										<button id="apply-settings" onclick="applyHeatMapSettings()" class="btn btn-success btn-block" disabled="">
+											Apply Settings
+										</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -125,59 +142,106 @@
 <script src="/static/js/plugins/leaflet/heatmap/maplet-heatmap.js"></script>
 
 <script type="application/javascript">
-	var filter_user = false;
-	var reloadDataInterval;
+	var map, heatmap, heatmapdata = [];
+
+	$(document).ready(function () {
+		// set height of elements on the page
+		$('#heat-map').css('height', $(window.top).height() - 275);
+		$('#sidebar-container').css('height', $(window.top).height() - 245);
+
+		// initialize the map
+		map = L.map('heat-map', {
+			crs: L.CRS.Simple,
+			minZoom: -50,
+			maxZoom: 10
+		});
+
+		var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
+		// var bounds = [[-400, -300], [400, 300]];
+		L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
+		map.setView([0, 0], -2);
+
+		// initialize the heat-map
+		heatmap = new L.MultiColorDivHeatmapLayer({
+			radius: 100,
+			min_value: -30,
+			max_value: -100,
+			gradient: {
+				0: 'blue',
+				1: 'red'
+			},
+			animation_delay: 5,
+			// clickable: true,
+		});
+
+		// add heat-map to the map
+		heatmap.addTo(map);
 
 
-	$('#heat-map').css('height', $(window.top).height() - 275);
-	$('#locations-table-container').css('height', $(window.top).height() - 245);
+		// heatmap.on('click', function (e) {
+		// 	console.log(e)
+		// });
+
+		// click', function (e) {
+		// 	console.log(e.latlng.lat + ',' + e.latlng.lng)
+		// });
 
 
-	var map = L.map('heat-map', {
-		crs: L.CRS.Simple,
-		minZoom: -100,
-//        maxZoom: 4
-		//layers: [baseLayer, heatmapLayer] //heatmap
+		$("#data-panel").addClass('bs-callout-danger').removeClass('bs-callout-info');
+		$.getJSON("/getuniquemacs?group={{ .Group }}", function (data, textStatus, jqXHR) {
+			if (data.success == true) {
+				data.message.forEach(function (element) {
+					$('#mac-list').append(new Option(element, element));
+				});
+				$("#data-panel").addClass('bs-callout-success').removeClass('bs-callout-danger');
+			}
+
+			$('#get-data').prop("disabled", false);
+		});
 	});
-	var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
-	//    var bounds = [[-400, -300], [400, 300]];
-	var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
-	map.setView([0, 0], -2);
 
+	function getHeatMapData() {
+		$('#get-data').prop("disabled", true);
+		$("#data-panel").addClass('bs-callout-danger').removeClass('bs-callout-success');
 
-	my_data = [
-		{lat: -20, lng: -30, value: 0, opacity: 1},
-		{lat: -20, lng: -15, value: 10, opacity: 1},
-		{lat: -20, lng: 0, value: 20, opacity: 1},
-		{lat: -20, lng: 15, value: 30, opacity: 1},
-		{lat: -20, lng: 30, value: 40, opacity: 1},
-		{lat: -30, lng: 45, value: 50, opacity: 1},
-		{lat: 20, lng: -30, value: 60, opacity: 1},
-		{lat: 20, lng: -15, value: 70, opacity: 1},
-		{lat: 20, lng: 0, value: 80, opacity: 1},
-		{lat: 20, lng: 15, value: 90, opacity: 1},
-		{lat: 20, lng: 30, value: 100, opacity: 1}
-	];
-	// http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
-	L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-		maxZoom: 18,
-	}).addTo(map);
+		selected = $('#mac-list').val();
 
-    var heatmap = new L.MultiColorDivHeatmapLayer({
-        radius: 100,
-        gradient: {
-            0: 'blue',
-            1: 'red'
-        }
-    });
+		if (selected != 'select') {
+			$.getJSON("/getRSSData?group={{ .Group }}&mac=" + selected, function (data, textStatus, jqXHR) {
+				if (data.success == true) {
+					opacity = $('#opacity').val();
+					heatmapdata = [];
+					for (i = 0; i < data.LatLngRSS.length; i++) {
+						// create data set
+						heatmapdata.push({lat: data.LatLngRSS[i][0], lng: data.LatLngRSS[i][1], value: data.LatLngRSS[i][2], opacity: opacity});
+					}
+					// replace old data with new one
+					heatmap.morphData(heatmapdata)
 
-	heatmap.addTo(map);
+				}
 
-	heatmap.setData(my_data);
+				$('#get-data').prop("disabled", false);
+				$('#apply-settings').prop("disabled", false);
+				$("#data-panel").addClass('bs-callout-success').removeClass('bs-callout-danger');
+				$("#options-panel").addClass('bs-callout-success').removeClass('bs-callout-info');
+			});
+		}
+	}
 
-	map.on('click', function (e) {
-		console.log(e.latlng.lat + ',' + e.latlng.lng)
-	});
+	function applyHeatMapSettings() {
+		$("#options-panel").addClass('bs-callout-danger').removeClass('bs-callout-success');
+		$('#apply-settings').prop("disabled", true);
+
+		heatmap.setOptions({
+			radius: $('#radius').val(),
+			max_value: $('#maxrssval').val() * 1, // convert to int
+			min_value: $('#minrssval').val() * 1, // convert to int
+		}).reDraw();
+
+		$('#apply-settings').prop("disabled", false);
+		$("#options-panel").addClass('bs-callout-success').removeClass('bs-callout-danger');
+	}
+
 
 </script>
 
