@@ -350,7 +350,11 @@ func main() {
 			needToLoadSettings.GET("/lastfingerprint", routes.GetLastFingerprint)
 			needToLoadSettings.GET("/reformdb", routes.ReformDB)
 			needToLoadSettings.GET("/macfilterform/:group", routes.Macfilterform)
-			needToLoadSettings.GET("/Graphform/:group", routes.Graphform) //komeil: page to enter graph
+			//needToLoadSettings.GET("/Graphform/:group", routes.Graphform) //komeil: page to enter graph
+			needToLoadSettings.GET("/Graphform/:group",func(context *gin.Context) { //komeil: graph map
+				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
+				routes.Graphform(context)
+			})
 			needToLoadSettings.GET("/getMostSeenMacs", routes.GetMostSeenMacsAPI)
 			needToLoadSettings.POST("/setfiltermacs", routes.Setfiltermacs)
 			needToLoadSettings.GET("/getfiltermacs", routes.Getfiltermacs)
