@@ -1465,13 +1465,22 @@ func GetFingerprint(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
 	fpId := strings.ToLower(c.DefaultQuery("id", "none"))
 
-	if groupName != "noneasdf" && fpId != "none" {
+	if groupName != "noneasdf" {
 		fpData := dbm.GM.GetGroup(groupName).Get_RawData().Get_Fingerprints()
-		if fp, ok := fpData[fpId]; ok {
-			c.JSON(http.StatusOK, gin.H{"success": true, "fingerprint": fp})
+		if fpId != "none" {
+			if fp, ok := fpData[fpId]; ok {
+				c.JSON(http.StatusOK, gin.H{"success": true, "fingerprints": fp})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": "Invalid fingerprint id"})
+			}
 		} else {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Invalid fingerprint id"})
+			fps := []parameters.Fingerprint{}
+			for _, fp := range fpData {
+				fps = append(fps, fp)
+			}
+			c.JSON(http.StatusOK, gin.H{"success": false, "fingerprints": fps})
 		}
+
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or id not mentioned"})
 	}
