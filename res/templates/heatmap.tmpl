@@ -216,7 +216,9 @@
 						heatmapdata.push({lat: data.LatLngRSS[i][0], lng: data.LatLngRSS[i][1], value: data.LatLngRSS[i][2], opacity: opacity});
 					}
 					// replace old data with new one
-					heatmap.morphData(heatmapdata)
+					// heatmap.morphData(heatmapdata);
+					heatmap.clearData();
+					heatmap.setData(heatmapdata);
 
 				}
 
