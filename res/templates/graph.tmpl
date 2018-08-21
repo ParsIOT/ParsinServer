@@ -94,7 +94,7 @@
 										<div class="col-md-3">
 											<button type="submit" class="btn btn-info" id="deleteSelected"
 											        title="Delete selected">Delete
-											</button> 
+											</button>
 										</div>
 
 
@@ -124,9 +124,7 @@
                                 <textarea style="height: 70%; margin-bottom: 10px"
                                           placeholder='[&#10;   "9c:d6:43:72:0e:83",&#10;   "e4:8d:8c:c1:f2:a9"&#10;]'
                                           class="bootbox-input bootbox-input-textarea form-control" id="graphList"
-                                          rows="10">
-
-                        </textarea>
+                                          rows="10"></textarea>
 							</div>
 
 							<div class="col-md-6 col-sm-12">
@@ -165,8 +163,8 @@
 
 	$('#addVertex').click(function () {
 		var vertex = ("<tr><td><input type='checkbox' name='record'></td><td>" + $('#click-x').val() + "</td><td>" + $('#click-y').val() + "</td></tr>");
-		vertices.push(vertex);
-
+		vertices.push($('#click-x').val() + "," + $('#click-y').val());
+        console.log(vertices);
 		$("<tbody/>", {
 			"class": "tab-content",
 			html: vertex
@@ -189,7 +187,6 @@
 	$("#deleteSelected").click(function(){
 		$("table tbody").find('input[name="record"]').each(function(){
 			if($(this).is(":checked")){
-
 				$(this).parents("tr").remove();
 			}
 		});

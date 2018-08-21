@@ -150,6 +150,8 @@ func easyjson7b60966aDecodeParsinServerDbmParameters1(in *jlexer.Lexer, out *Fin
 				}
 				in.Delim(']')
 			}
+		case "test-validation":
+			out.TestValidation = bool(in.Bool())
 		default:
 			in.SkipRecursive()
 		}
@@ -224,6 +226,16 @@ func easyjson7b60966aEncodeParsinServerDbmParameters1(out *jwriter.Writer, in Fi
 			}
 			out.RawByte(']')
 		}
+	}
+	{
+		const prefix string = ",\"test-validation\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(in.TestValidation))
 	}
 	out.RawByte('}')
 }
