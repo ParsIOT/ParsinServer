@@ -25,6 +25,7 @@ type Fingerprint struct {
 	Location        string   `json:"location"`
 	Timestamp       int64    `json:"time"`
 	WifiFingerprint []Router `json:"wifi-fingerprint"`
+	TestValidation  bool     `json:"test-validation"`
 }
 
 func (fp *Fingerprint) GetTimestamp() string {
