@@ -18,6 +18,7 @@ var MinApNum int
 var PreprocessOutlinePercent float64 // percentage of a location fingerprints that its received rss considered as outline
 var NormalRssDev int                 // Normal deviation rss from median
 var RssRegulation bool               // permit to rss outlines deleting
+var AvgRSSAdjacentDots bool          // permit to set average of rss of adjacent dots instead of raw rss; according to heatmap it's not good to do this!
 
 var ProgressBarLength,ProgressBarCurLevel int
 
@@ -62,6 +63,7 @@ func init() {
 	PreprocessOutlinePercent = float64(0.333) // third part of fingerprints are considered as outline
 	NormalRssDev = 5
 	RssRegulation = true
+	AvgRSSAdjacentDots = true
 
 	DefaultMapName = "DefaultMap.png"
 	DefaultMapDimensions = []int{3400,3600}
