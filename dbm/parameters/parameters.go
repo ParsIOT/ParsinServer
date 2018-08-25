@@ -120,6 +120,11 @@ type UserPositionJSON struct {
 	Fingerprint Fingerprint        `json:"fingerprint"` // raw fingerprint data
 }
 
+type TestUserPos struct {
+	TrueLocation string           `json:"truelocation"`
+	UserPosition UserPositionJSON `json:"userposition"`
+}
+
 //	filterMacs is used for set filtermacs
 type FilterMacs struct {
 	Group string   `json:"group"`

@@ -112,10 +112,16 @@ type ResultDataStruct struct{
 	mutex           *sync.RWMutex
 	group           *Group
 	//Results         map[string]parameters.Fingerprint
-	AlgoAccuracy    map[string]int
-	AlgoAccuracyLoc map[string]map[string]int
+	AlgoAccuracy    map[string]int            // crossValidation results
+	AlgoAccuracyLoc map[string]map[string]int // from crossValidation results
+
 	UserHistory     map[string][]parameters.UserPositionJSON // it's temprary
 	UserResults     map[string][]parameters.UserPositionJSON // it saves in db
+
+	// TestValid FPs field:
+	AlgoTestErrorAccuracy map[string]int                           // algorithmName --> error
+	TestValidUserPos      map[string][]parameters.UserPositionJSON // keeps testValid userPosition according to user
+	TestUserPos           map[string][]parameters.TestUserPos      // keeps testValid userPosition and the true location according to user
 }
 
 func (st *ResultDataStruct) Lock() {
@@ -888,10 +894,13 @@ func (gp *Group) NewResultDataStruct() *ResultDataStruct {
 		mutex:           &sync.RWMutex{},
 		group:           gp,
 		//Results:         make(map[string]parameters.Fingerprint),
-		AlgoAccuracy:    make(map[string]int),
-		AlgoAccuracyLoc: make(map[string]map[string]int),
-		UserHistory:     make(map[string][]parameters.UserPositionJSON),
-		UserResults:     make(map[string][]parameters.UserPositionJSON),
+		AlgoAccuracy:          make(map[string]int),
+		AlgoAccuracyLoc:       make(map[string]map[string]int),
+		UserHistory:           make(map[string][]parameters.UserPositionJSON),
+		UserResults:           make(map[string][]parameters.UserPositionJSON),
+		AlgoTestErrorAccuracy: make(map[string]int),
+		TestValidUserPos:      make(map[string][]parameters.UserPositionJSON),
+		TestUserPos:           make(map[string][]parameters.TestUserPos),
 	}
 }
 
@@ -1600,7 +1609,6 @@ func (rs *ResultDataStruct) Append_UserHistory(user string, userPos parameters.U
 	}
 	rs.Unlock()
 }
-
 func (rs *ResultDataStruct) Get_UserHistory(user string) []parameters.UserPositionJSON {
 	//defer rs.SetDirtyBit()
 
@@ -1614,7 +1622,6 @@ func (rs *ResultDataStruct) Get_UserHistory(user string) []parameters.UserPositi
 	rs.RUnlock()
 	return history
 }
-
 func (rs *ResultDataStruct) Get_AllHistory() map[string][]parameters.UserPositionJSON {
 	//defer rs.SetDirtyBit()
 
@@ -1624,6 +1631,7 @@ func (rs *ResultDataStruct) Get_AllHistory() map[string][]parameters.UserPositio
 	rs.RUnlock()
 	return history
 }
+
 
 func (rs *ResultDataStruct) Append_UserResults(user string, userPos parameters.UserPositionJSON) {
 	defer rs.SetDirtyBit()
@@ -1648,7 +1656,6 @@ func (rs *ResultDataStruct) Append_UserResults(user string, userPos parameters.U
 	}
 	rs.Unlock()
 }
-
 func (rs *ResultDataStruct) Get_UserResults(user string) []parameters.UserPositionJSON {
 	//defer rs.SetDirtyBit()
 
@@ -1662,7 +1669,6 @@ func (rs *ResultDataStruct) Get_UserResults(user string) []parameters.UserPositi
 	rs.RUnlock()
 	return results
 }
-
 func (rs *ResultDataStruct) Get_AllUserResults() map[string][]parameters.UserPositionJSON {
 	//defer rs.SetDirtyBit()
 
@@ -1672,7 +1678,6 @@ func (rs *ResultDataStruct) Get_AllUserResults() map[string][]parameters.UserPos
 	rs.RUnlock()
 	return results
 }
-
 func (rs *ResultDataStruct) Clear_UserResults(user string) error {
 	defer rs.SetDirtyBit()
 
@@ -1686,3 +1691,126 @@ func (rs *ResultDataStruct) Clear_UserResults(user string) error {
 		return errors.New("There are no results for this user")
 	}
 }
+
+func (rs *ResultDataStruct) Get_AlgoTestErrorAccuracy() map[string]int {
+	rs.RLock()
+	item := rs.AlgoTestErrorAccuracy
+	rs.RUnlock()
+	return item
+}
+func (rs *ResultDataStruct) Set_AlgoTestErrorAccuracy(algoName string, distError int) {
+	defer rs.SetDirtyBit()
+
+	rs.Lock()
+
+	if _, ok := rs.AlgoTestErrorAccuracy[algoName]; ok {
+		rs.AlgoTestErrorAccuracy[algoName] = distError
+	} else {
+		rs.AlgoTestErrorAccuracy = make(map[string]int)
+		rs.AlgoTestErrorAccuracy[algoName] = distError
+	}
+	rs.Unlock()
+}
+
+func (rs *ResultDataStruct) Append_TestValidUserPos(user string, userPos parameters.UserPositionJSON) {
+	defer rs.SetDirtyBit()
+
+	rs.Lock()
+	if _, ok := rs.TestValidUserPos[user]; ok {
+		rs.TestValidUserPos[user] = append(rs.TestValidUserPos[user], userPos)
+	} else {
+		//Todo: must provide standard way when new item added to groupcache structs
+		if rs.TestValidUserPos == nil {
+			rs.TestValidUserPos = make(map[string][]parameters.UserPositionJSON)
+		}
+		rs.TestValidUserPos[user] = []parameters.UserPositionJSON{userPos}
+	}
+	rs.Unlock()
+}
+func (rs *ResultDataStruct) Get_TestValidUserPos(user string) []parameters.UserPositionJSON {
+	//defer rs.SetDirtyBit()
+
+	results := []parameters.UserPositionJSON{}
+	rs.RLock()
+	if testValidUserPos, ok := rs.TestValidUserPos[user]; ok {
+		results = testValidUserPos
+	} else {
+		results = []parameters.UserPositionJSON{}
+	}
+	rs.RUnlock()
+	return results
+}
+func (rs *ResultDataStruct) Get_AllTestValidUserPos() map[string][]parameters.UserPositionJSON {
+	//defer rs.SetDirtyBit()
+
+	results := make(map[string][]parameters.UserPositionJSON)
+	rs.RLock()
+	results = rs.TestValidUserPos
+	rs.RUnlock()
+	return results
+}
+func (rs *ResultDataStruct) Clear_TestValidUserPos(user string) error {
+	defer rs.SetDirtyBit()
+
+	rs.Lock()
+	if val, ok := rs.TestValidUserPos[user]; (ok && len(val) != 0) {
+		rs.TestValidUserPos[user] = []parameters.UserPositionJSON{}
+		rs.Unlock()
+		return nil
+	} else {
+		rs.Unlock()
+		return errors.New("There are no test-valid tracked userposition")
+	}
+}
+
+func (rs *ResultDataStruct) Append_TestUserPos(user string, userPos parameters.TestUserPos) {
+	defer rs.SetDirtyBit()
+
+	rs.Lock()
+	if _, ok := rs.TestUserPos[user]; ok {
+		rs.TestUserPos[user] = append(rs.TestUserPos[user], userPos)
+	} else {
+		//Todo: must provide standard way when new item added to groupcache structs
+		if rs.TestUserPos == nil {
+			rs.TestUserPos = make(map[string][]parameters.TestUserPos)
+		}
+		rs.TestUserPos[user] = []parameters.TestUserPos{userPos}
+	}
+	rs.Unlock()
+}
+func (rs *ResultDataStruct) Get_TestUserPos(user string) []parameters.TestUserPos {
+
+	results := []parameters.TestUserPos{}
+	rs.RLock()
+	if testUserPos, ok := rs.TestUserPos[user]; ok {
+		results = testUserPos
+	} else {
+		results = []parameters.TestUserPos{}
+	}
+	rs.RUnlock()
+	return results
+}
+func (rs *ResultDataStruct) Get_AllTestUserPos() map[string][]parameters.TestUserPos {
+	//defer rs.SetDirtyBit()
+
+	results := make(map[string][]parameters.TestUserPos)
+	rs.RLock()
+	results = rs.TestUserPos
+	rs.RUnlock()
+	return results
+}
+func (rs *ResultDataStruct) Clear_TestUserPos(user string) error {
+	defer rs.SetDirtyBit()
+
+	rs.Lock()
+	if val, ok := rs.TestUserPos[user]; (ok && len(val) != 0) {
+		rs.TestUserPos[user] = []parameters.TestUserPos{}
+		rs.Unlock()
+		return nil
+	} else {
+		rs.Unlock()
+		return errors.New("There are no test-valid tracked TestUserPos")
+	}
+}
+
+

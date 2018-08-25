@@ -281,6 +281,9 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	go gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userJSON)
 	go gp.Get_ResultData().Append_UserResults(curFingerprint.Username, userJSON)
 
+	if curFingerprint.TestValidation {
+		go gp.Get_ResultData().Append_TestValidUserPos(curFingerprint.Username, userJSON)
+	}
 
 	//glb.Debug.Println(len(gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)))
 
@@ -992,6 +995,10 @@ func PreProcess(groupName string) {
 				}
 				xyMain := strings.Split(fpMain.Location, ",")
 				xy := strings.Split(fp.Location, ",")
+				if len(xyMain) != 2 || len(xy) != 2 {
+					glb.Error.Println("location value doesn't have x,y format: xyMain:" + fpMain.Location + " & xy:" + fp.Location)
+					break
+				}
 
 				xMain, err1 := glb.StringToFloat(xyMain[0])
 				yMain, err2 := glb.StringToFloat(xyMain[1])
@@ -1054,8 +1061,7 @@ func PreProcess(groupName string) {
 		tempFingerprintsData = tempFingerprintsData2
 	}
 
-	//// save proccessed data to rd
-	//gp.Get_RawData().Set_Fingerprints(tempFingerprintsData2)
+	//// save processed data
 	gp.Get_RawData().Set_Fingerprints(tempFingerprintsData)
 	gp.Get_RawData().Set_FingerprintsOrdering(tempFingerprintsOrdering)
 

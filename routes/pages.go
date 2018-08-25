@@ -290,7 +290,7 @@ func ArbitraryLocations(c *gin.Context) {
 	})
 }
 
-// slashDashboard displays the Users on a map
+// Displays the Users on a map
 func UserHistoryMap(c *gin.Context) {
 	groupName := c.Param("group")
 	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
@@ -309,6 +309,26 @@ func UserHistoryMap(c *gin.Context) {
 		"MapHeight":MapDimensions[1],
 	})
 }
+
+func UserTestValidFPs(c *gin.Context) {
+	groupName := c.Param("group")
+	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+		})
+		return
+	}
+	MapName := dbm.GetSharedPrf(groupName).MapName
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
+	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
+	c.HTML(http.StatusOK, "test_valid_fp_map.tmpl", gin.H{
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
+	})
+}
+
 
 func FingerprintAmbiguity(c *gin.Context) {
 	groupName := c.Param("group")

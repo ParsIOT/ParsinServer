@@ -20,6 +20,7 @@ import (
 	"ParsinServer/algorithms"
 	"ParsinServer/dbm"
 	"ParsinServer/dbm/parameters"
+	"io/ioutil"
 	"io"
 )
 
@@ -417,6 +418,58 @@ func GetUserLocations(c *gin.Context) {
 	}
 }
 
+func GetTestValidFP(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	user := strings.ToLower(c.DefaultQuery("user", "none"))
+
+	if groupName != "none" && user == "none" {
+		if !dbm.GroupExists(groupName) {
+			c.JSON(http.StatusOK, gin.H{"message": "You should insert test-valid fingerprints while tracking, see documentation", "success": false})
+			return
+		}
+		testValidUserPos := dbm.GM.GetGroup(groupName).Get_ResultData().Get_TestUserPos(user)
+		c.JSON(http.StatusOK, gin.H{"success": true, "testuserpos": testValidUserPos})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or user isn't given"})
+	}
+}
+
+func CalculateErrorByTrueLocation(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		if !dbm.GroupExists(groupName) {
+			c.JSON(http.StatusOK, gin.H{"message": "You should insert test-valid fingerprints while tracking, see documentation", "success": false})
+			return
+		}
+
+		err := dbm.CalculateTestError(groupName)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or user isn't given"})
+	}
+}
+
+
+
 // copies a DB
 // GET parameters: from, to
 func MigrateDatabase(c *gin.Context) {
@@ -678,8 +731,6 @@ func PutMaxMovement(c *gin.Context) {
 	}
 }
 
-
-
 func ChooseMap(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -702,12 +753,12 @@ func ChooseMap(c *gin.Context) {
 		mapNamesList := glb.ListMaps()
 		MapWidth := mapNamesList[mapName][0]
 		MapHeight := mapNamesList[mapName][1]
-		MapDimensions := []int {MapWidth,MapHeight}
-		glb.Debug.Println("***MapDimensions : ",MapDimensions)
+		MapDimensions := []int{MapWidth, MapHeight}
+		glb.Debug.Println("***MapDimensions : ", MapDimensions)
 		err2 := dbm.SetSharedPrf(group, "MapName", mapName)
 		err3 := dbm.SetSharedPrf(group, "MapDimensions", MapDimensions)
 
-		if err2 == nil && err3==nil {
+		if err2 == nil && err3 == nil {
 
 			//optimizePriorsThreaded(strings.ToLower(group))
 			glb.Debug.Println(dbm.GetSharedPrf(group).MapName)
@@ -717,8 +768,6 @@ func ChooseMap(c *gin.Context) {
 		}
 	}
 }
-
-
 
 // Calls setCutoffOverride() and then calls optimizePriorsThreaded()
 // GET parameters: group, cutoff
@@ -823,8 +872,6 @@ func EditLocBaseDB(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
 }
-
-
 
 // Changes a mac name in db(fingerprints and fingerprints-track buckets)
 // GET parameters: group, oldmac, newmac
@@ -1506,32 +1553,93 @@ func GetMostSeenMacsAPI(c *gin.Context) {
 
 func UploadTrueLocationLog(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
-	//method := strings.ToLower(c.DefaultQuery("method", "none"))
+	method := c.DefaultQuery("method", "none") // must be learn,learnAppend,test,testAppend
 
-	//if groupName != "none"
-	file, header, err := c.Request.FormFile("file")
-	//filename := header.Filename
-	if err != nil {
-		glb.Error.Println(err)
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": err})
-		return
+	if groupName != "none" && method != "none" {
+
+		// Set file path according to method
+		filePath := "/" + groupName + ".log"
+
+		if method == "learn" || method == "learnAppend" {
+			filePath = "/TrueLocationLogs/learn" + filePath
+		} else if method == "test" || method == "testAppend" {
+			filePath = "/TrueLocationLogs/test" + filePath
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "method must be learn,learnAppend,test or testAppend"})
+			return
+		}
+
+		// Get uploaded file
+		file, _, err := c.Request.FormFile("file")
+		defer file.Close()
+		//filename := header.Filename
+		if err != nil {
+			glb.Error.Println(err)
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			return
+		}
+
+		// Append to last file or replace it
+		if method == "learnAppend" || method == "testAppend" { // Append to existent file if exists
+			//Read old file
+			out, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, filePath), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+			defer out.Close()
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				return
+			}
+
+			//Read uploaded file
+			newDataByte, err := ioutil.ReadAll(file)
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				return
+			}
+			//glb.Debug.Println(string(newDataByte))
+
+			if _, err = out.Write(newDataByte); err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				return
+			} else {
+				glb.Debug.Println("New log file was created or appended to " + filePath)
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			}
+
+		} else if method == "learn" || method == "test" { //replace new file instead of last file
+
+			//todo: why os.openFile can't replace file!?
+			//out, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, filePath), os.O_CREATE|os.O_RDWR, 0666)
+			//defer out.Close()
+			//if err != nil {
+			//	glb.Error.Println(err)
+			//	c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			//	return
+			//}
+			out, err := os.Create(path.Join(glb.RuntimeArgs.SourcePath, filePath))
+			defer out.Close()
+
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				return
+			}
+
+			_, err = io.Copy(out, file) // copy file
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			} else {
+				glb.Debug.Println("New log file was created or replaced with " + filePath)
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			}
+		}
 	} else {
-		glb.Debug.Println(header.Filename)
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or method isn't mentioned"})
 	}
 
-
-	out, err := os.Create(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/"+groupName+".log"))
-	if err != nil {
-		glb.Error.Println(err)
-	}
-	defer out.Close()
-	_, err = io.Copy(out, file)
-	if err != nil {
-		glb.Error.Println(err)
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": err})
-	} else {
-		c.JSON(http.StatusOK, gin.H{"success": true})
-	}
 }
 
 func RelocateFPLocAPI(c *gin.Context) {
@@ -1580,5 +1688,3 @@ func GetRSSDataAPI(c *gin.Context) {
 	}
 
 }
-
-

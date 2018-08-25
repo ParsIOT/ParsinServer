@@ -288,6 +288,7 @@ func main() {
 			needToLoadSettings.GET("/livemap/:group", routes.LiveLocationMap)
 			//needToLoadSettings.GET("/userhistory/:group", routes.UserHistoryMap)
 			needToLoadSettings.GET("/userhistory/:group", routes.UserHistoryMap)
+			needToLoadSettings.GET("/userTestValidFPs/:group", routes.UserTestValidFPs)
 
 			needToLoadSettings.GET("/fingerprintAmbiguity/:group", routes.FingerprintAmbiguity)
 
@@ -359,6 +360,8 @@ func main() {
 	r.GET("/getArbitLocations", routes.GetArbitLocations)
 	r.DELETE("/delresults", routes.DelResults)
 	r.GET("/location", routes.GetUserLocations)
+	r.GET("/getTestValidFPs", routes.GetTestValidFP)
+	r.GET("/calculateErrorByTrueLocation", routes.CalculateErrorByTrueLocation)
 
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", algorithms.LearnFingerprintPOST)

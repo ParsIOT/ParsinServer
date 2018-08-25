@@ -1150,7 +1150,7 @@ func GetMostSeenMacs(groupName string) []string {
 }
 
 func RelocateFPLoc(groupName string) error {
-	file, err := os.Open(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/"+groupName+".log"))
+	file, err := os.Open(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/learn/"+groupName+".log"))
 	if err != nil {
 		//log.Fatal(err)
 		glb.Debug.Println(err)
@@ -1211,31 +1211,36 @@ func RelocateFPLoc(groupName string) error {
 	// Get fingerprints from db
 	gp := GM.GetGroup(groupName)
 	rd := gp.Get_RawData()
-	fpO := rd.Get_FingerprintsOrdering()
+	//fpO := rd.Get_FingerprintsOrdering()
 	fpData := rd.Get_Fingerprints()
 
-	for _, fpTime := range fpO {
-		fp := fpData[fpTime]
+	tempfpO := []string{}
+	tempfpData := make(map[string]parameters.Fingerprint)
+
+	for fpTime, fp := range fpData {
 		//correct fp location
-		fp, err = CorrectFPloc(fp, allLocationLogs)
+		newLoc, err := FindTrueFPloc(fp, allLocationLogs)
 		if err == nil {
-			fpData[fpTime] = fp
+			tempfpO = append(tempfpO, fpTime)
+			fp.Location = newLoc
+			tempfpData[fpTime] = fp
 		} else {
 			glb.Error.Println(err)
-			delete(fpData, fpTime) // deleting the invalid fp
-			continue;
 		}
 	}
+
+	rd.Set_FingerprintsOrdering(tempfpO)
+	rd.Set_Fingerprints(tempfpData)
+
 	glb.Debug.Println("RelocateFPLoc ended!")
-	rd.Set_Fingerprints(fpData)
 
 	return nil
 }
 
 // find best fp location according to
-func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string) (parameters.Fingerprint, error) {
+func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string) (string, error) {
 	fpTimeStamp := fp.Timestamp
-	newLoc := ""
+	//newLoc := ""
 
 	timeStamps := []int64{}
 	for timestamp, _ := range allLocationLogs {
@@ -1259,9 +1264,9 @@ func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string)
 					if err1 != nil || err2 != nil {
 						glb.Error.Println(err1)
 						glb.Error.Println(err2)
-						return fp, errors.New("Converting string 2 float problem")
+						return "", errors.New("Converting string 2 float problem")
 					}
-					newLoc = glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0"
+					return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", nil
 				} else {
 					timeStamp1 := timeStamps[i-1]
 					timeStamp2 := timeStamp
@@ -1275,9 +1280,9 @@ func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string)
 						if err1 != nil || err2 != nil {
 							glb.Error.Println(err1)
 							glb.Error.Println(err2)
-							return fp, errors.New("Converting string 2 float problem")
+							return "", errors.New("Converting string 2 float problem")
 						}
-						newLoc = glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0"
+						return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", nil
 						//glb.Debug.Println(newLoc)
 					} else { //set second timestamp location
 						xy := allLocationLogs[timeStamp2][:2]
@@ -1286,9 +1291,9 @@ func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string)
 						if err1 != nil || err2 != nil {
 							glb.Error.Println(err1)
 							glb.Error.Println(err2)
-							return fp, errors.New("Converting string 2 float problem")
+							return "", errors.New("Converting string 2 float problem")
 						}
-						newLoc = glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0"
+						return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", nil
 					}
 				}
 				break
@@ -1297,12 +1302,9 @@ func CorrectFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string)
 			}
 		}
 	}
-	if (newLoc != "") {
-		//glb.Debug.Println(newLoc)
-		fp.Location = newLoc
-	}
-	glb.Debug.Println("CorrectFPloc on " + fp.Location + " ended")
-	return fp, nil
+	glb.Error.Println("FindTrueFPloc on " + fp.Location + " ended but timestamp ranges doesn't match to relocate this fp")
+	return "", errors.New("Timestamp range problem")
+
 }
 
 func GetRSSData(groupName string, mac string) [][]int {
@@ -1327,4 +1329,114 @@ func GetRSSData(groupName string, mac string) [][]int {
 	}
 	return LatLngRSS
 
+}
+
+func CalculateTestError(groupName string) error { //todo: create a page to show test-valid test fingerprint on map
+	file, err := os.Open(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/test/"+groupName+".log"))
+	defer file.Close()
+	if err != nil {
+		glb.Error.Println(err)
+		return errors.New("no such file or directory")
+	}
+
+	// Get location logs from uploaded true location logs
+	locationLogs := make(map[string]map[int64][]string) // tag:timestamp:location(x,y,z)
+	allLocationLogs := make(map[int64][]string)         // timestamp:location(x,y,z)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		locLogStr := scanner.Text()
+
+		// spliting the line
+		locLog := strings.Split(locLogStr, ",")
+		for i, item := range locLog {
+			locLog[i] = strings.TrimSpace(item)
+		}
+
+		if (len(locLog) != 5) {
+			return errors.New("Uploaded file doesn't have true location log format(timestamp,tag_name,x,y,z)")
+		}
+		tagName := locLog[1]
+		if (tagName == "None") { // x,y,z are None too.
+			glb.Debug.Println("None location")
+			continue
+		}
+
+		// converting timestamp from string to int64
+		timeStamp, err := strconv.ParseInt(locLog[0], 10, 64)
+		if err != nil {
+			glb.Error.Println(err)
+		}
+
+		xyz := locLog[2:]
+
+		if log, ok := locationLogs[tagName]; ok {
+			log[timeStamp] = xyz
+			locationLogs[tagName] = log
+		} else {
+			locationLogs[tagName] = make(map[int64][]string)
+			locationLogs[tagName][timeStamp] = xyz
+		}
+
+		// add to allLocationLogs
+
+		allLocationLogs[timeStamp] = xyz
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	// Get fingerprints from db
+	gp := GM.GetGroup(groupName)
+	rsd := gp.Get_ResultData()
+	allTestValidUserPos := rsd.Get_AllTestValidUserPos()
+
+	for user, testValidUserPos := range allTestValidUserPos {
+		AlgoError := make(map[string]float64)
+		numValidTestFPs := 0
+
+		AlgoError["knn"] = float64(0)
+		//AlgoError["bayes"] = float64(0)
+		//AlgoError["svm"] = float64(0)
+
+		testUserPosList := []parameters.TestUserPos{}
+		for _, userPos := range testValidUserPos {
+			//correct fp location
+			testValidUserPos := parameters.TestUserPos{}
+			TrueLoc, err := FindTrueFPloc(userPos.Fingerprint, allLocationLogs)
+			if err == nil {
+				testValidUserPos.TrueLocation = TrueLoc
+				testValidUserPos.UserPosition = userPos
+				testUserPosList = append(testUserPosList, testValidUserPos)
+				numValidTestFPs++
+				trueX, trueY := glb.GetDotFromString(TrueLoc)
+
+				// Knn guess error:
+				fpKnnX, fpKnnY := glb.GetDotFromString(userPos.KnnGuess)
+				AlgoError["knn"] += glb.CalcDist(fpKnnX, fpKnnY, trueX, trueY)
+
+				//fpBayesX, fpBayesY := glb.GetDotFromString(userPos.BayesGuess)
+				//AlgoError["bayes"] += glb.CalcDist(fpBayesX, fpBayesY, trueX, trueY)
+
+				//fpSvmX, fpSvmY := glb.GetDotFromString(userPos.SvmGuess)
+				//AlgoError["svm"] += glb.CalcDist(fpSvmX, fpSvmY, trueX, trueY)
+
+			} else {
+				glb.Error.Println(err)
+			}
+		}
+
+		rsd.Clear_TestUserPos(user) // Clear last calculated saved TestUserPos
+		for _, testUserPos := range testUserPosList {
+			rsd.Append_TestUserPos(user, testUserPos)
+		}
+
+		// Set AlgoTestError Accuracy
+		for algoName, algoError := range AlgoError {
+			glb.Debug.Println("TestValid "+algoName+" Error = ", algoError/float64(numValidTestFPs))
+			rsd.Set_AlgoTestErrorAccuracy(algoName, int(algoError/float64(numValidTestFPs)))
+		}
+	}
+
+	return nil
 }
