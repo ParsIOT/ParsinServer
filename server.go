@@ -343,6 +343,9 @@ func main() {
 			needToLoadSettings.GET("/getfiltermacs", routes.Getfiltermacs)
 			needToLoadSettings.GET("/getuniquemacs", routes.GetUniqueMacs)
 
+			needToLoadSettings.POST("/setgraph", routes.Setgraph) // komeil: set and get for graph
+			needToLoadSettings.GET("/getgraph", routes.Getgraph)
+
 			needToLoadSettings.PUT("/choosemap", routes.ChooseMap) // komeil: choose a map for group
 			//Arbitrary locations
 			needToLoadSettings.POST("/addArbitLocations", routes.AddArbitLocations)

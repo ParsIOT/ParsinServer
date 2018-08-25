@@ -110,7 +110,7 @@
 												       class="table table-responsive table-hover table-condensed table-bordered">
 													<thead>
 													<tr>
-														<td>Select</td><td>X</td><td>Y</td>
+														<td>Select</td><td>#</td><td>X</td><td>Y</td>
 													</tr>
 													</thead>
 												</table>
@@ -122,7 +122,7 @@
 							</div>
 							<div class="col-md-12">
                                 <textarea style="height: 70%; margin-bottom: 10px"
-                                          placeholder='[&#10;   "9c:d6:43:72:0e:83",&#10;   "e4:8d:8c:c1:f2:a9"&#10;]'
+                                          placeholder='[&#10;   [0,1,0,0],&#10;   [1,0,1,1],&#10;   [0,1,0,0],&#10;   [0,1,0,0]&#10;]'
                                           class="bootbox-input bootbox-input-textarea form-control" id="graphList"
                                           rows="10"></textarea>
 							</div>
@@ -161,8 +161,30 @@
 	var vertices = []; // list of vertices enetered by map
 	var markers = []
 
+	$('#live-map').css('height', $(window.top).height() - 275);
+	$('#controller').css('height', $(window.top).height() - 245);
+	var map = L.map('live-map', {
+		crs: L.CRS.Simple,
+		minZoom: -100,
+//        maxZoom: 4
+	});
+	var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
+	//    var bounds = [[-400, -300], [400, 300]];
+	var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
+	map.setView([0, 0], -2);
+
+	markers = L.featureGroup();
+
+	map.on('click', function (e) {
+//        console.log(e.latlng.lat + "," + e.latlng.lng);
+		$('#click-x').val(Math.round(e.latlng.lat) + ".0");
+		$('#click-y').val(Math.round(e.latlng.lng) + ".0");
+		console.log($("#click-x").val());
+	});
+
+
 	$('#addVertex').click(function () {
-		var vertex = ("<tr><td><input type='checkbox' name='record'></td><td>" + $('#click-x').val() + "</td><td>" + $('#click-y').val() + "</td></tr>");
+		var vertex = ("<tr><td><input type='checkbox' name='record'></td><td>"+(vertices.length)+"</td><td>" + $('#click-x').val() + "</td><td>" + $('#click-y').val() + "</td></tr>");
 		vertices.push($('#click-x').val() + "," + $('#click-y').val());
         console.log(vertices);
 		$("<tbody/>", {
@@ -177,9 +199,7 @@
 			draggable: true,
 			smallIcon: true
 		}).bindPopup("<b>" + $('#click-x').val() + "," + $('#click-y').val() + "</b>").addTo(markers);
-		//console.log(newMarker);
-
-		//caution: it put the marker just by adding to markers list. it may be needed to edit it if extra code from past get deleted
+		markers.addTo(map);
 	});
 
 
@@ -215,7 +235,7 @@
 
 	$('#setMacFilter').click(function () {
 		swal({
-					title: "Set mac filter",
+					title: "Set adjacency matrix",
 					type: "info",
 					showCancelButton: true,
 					closeOnConfirm: false,
@@ -227,7 +247,7 @@
 						url: "/setfiltermacs?group={{ .Group }}",
 						data: JSON.stringify({
 							"group": "{{.Group}}",
-							"macs": JSON.parse($("#graphList").val())
+							"graphAdjacencyMatrix": JSON.parse($("#graphList").val())
 						}),
 						success: function (data) {
 							console.log(data);
@@ -296,27 +316,8 @@
 	});
 </script>
 <script type="application/javascript">
-	$('#live-map').css('height', $(window.top).height() - 275);
-	$('#controller').css('height', $(window.top).height() - 245);
-	var map = L.map('live-map', {
-		crs: L.CRS.Simple,
-		minZoom: -100,
-//        maxZoom: 4
-	});
-	var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
-	//    var bounds = [[-400, -300], [400, 300]];
-	var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
-	map.setView([0, 0], -2);
 
-	markers = L.featureGroup();
-	var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
-
-	map.on('click', function (e) {
-//        console.log(e.latlng.lat + "," + e.latlng.lng);
-		$('#click-x').val(Math.round(e.latlng.lat) + ".0");
-		$('#click-y').val(Math.round(e.latlng.lng) + ".0");
-		console.log($("#click-x").val());
-	});
+/*	var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
 
 	$.getJSON("/locations?group={{ .Group }}", function (data) {
 		var items = [];
@@ -391,7 +392,7 @@
 			"class": "tab-content",
 			html: items.join("")
 		}).appendTo("#users-table");
-	});
+	});*/
 </script>
 </body>
 
