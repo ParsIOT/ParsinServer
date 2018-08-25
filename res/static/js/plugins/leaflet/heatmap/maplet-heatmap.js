@@ -14,23 +14,16 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 		clickable: false,// heatmap.on('click',function() {...});
 		animation_delay: 20,
 		default_opacity: 1,
+		show_legend: true,
+		legend_position: 'bottomleft',
 	},
 
-	initialize: function (options, show_canvas) {
+	initialize: function (options) {
 		//set the options
 		//L.Util.setOptions(this, options);
 		this.setOptions(options);
 
 		this._layers = {};
-
-		this._denominator = this.options.max_value - this.options.min_value;
-
-		// generate the gradient
-		canvas = this._generateGradient(this.options.gradient);
-
-		if (show_canvas)
-			document.body.insertBefore(canvas, document.body.firstChild);
-
 	},
 
 	// adds a zone on map
@@ -94,6 +87,9 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 			});
 
 		});
+		if (this.options.show_legend && this._canvas) {
+			this.legend();
+		}
 		return this;
 	},
 
@@ -118,6 +114,9 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 			var marker = self._addZone(point.lat, point.lng, point.value, point.opacity);
 			self._markerset.push(marker);
 		});
+		if (this.options.show_legend && this._canvas) {
+			this.legend();
+		}
 		return this;
 	},
 
@@ -185,19 +184,27 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 		// create a 256x1 gradient that we'll use to turn a grayscale heatmap into a colored one
 		var canvas = this._createCanvas(),
 			ctx = canvas.getContext('2d'),
-			gradient = ctx.createLinearGradient(0, 0, 0, 256);
+			gradient = ctx.createLinearGradient(0, 0, 256, 0);
 
-		canvas.width = 10;
-		canvas.height = 256;
+		canvas.width = 256;
+		canvas.height = 30;
 
 		for (var i in grad) {
 			gradient.addColorStop(+i, grad[i]);
 		}
 
 		ctx.fillStyle = gradient;
-		ctx.fillRect(0, 0, 10, 256);
+		ctx.fillRect(0, 0, 256, 10);
 
-		this._gradient = ctx.getImageData(0, 0, 1, 256).data;
+		this._gradient = ctx.getImageData(0, 0, 256, 1).data;
+
+		ctx.font = "20px Arial";
+		ctx.fillStyle = 'black';
+		// ctx.rotate(Math.PI / 2);
+		ctx.fillText(this.options.min_value, 0, 30);
+		ctx.fillText(this.options.max_value, 256 - ctx.measureText(this.options.max_value).width, 30);
+		canvas.style.transform = "scale(0.5)";
+		// document.body.insertBefore(self._canvas, document.body.firstChild);
 
 		return canvas;
 	},
@@ -250,63 +257,41 @@ L.MultiColorDivHeatmapLayer = L.FeatureGroup.extend({
 
 		// calculates the value of denominator for color indexing
 		this._denominator = this.options.max_value - this.options.min_value;
+
+		// generate the gradient
+		this._canvas = this._generateGradient(this.options.gradient);
+
+		if (this.options.show_legend && this._canvas) {
+			this.legend();
+		}
 		return this;
 	},
 
+	legend() {
+		self = this;
 
-	/*
-	* Testing
-	*/
-	testRandomData: function (number) {
-		var data = [];
-		var count = number || 100;
-		while (count-- > 0) {
-			var size = Math.round(Math.random() * 150);	// in pixels
-			var value = Math.random();	// 0 - 1 (opacity)
-			var lat = 90 * Math.random();
-			var lng = 180 * Math.random();
-			var opacity = Math.random();
-			data.push({
-				lat: lat,
-				lng: lng,
-				value: value,
-				opacity: opacity,
-			});
+		if (!this._legend) {
+			this._legend = L.control();
+			this._legend.options.position = this.options.legend_position;
+
+			this._legend.onAdd = function (map) {
+				if (!this._div) {
+					this._div = L.DomUtil.create('div');
+					this._div.className = "leaflet-control-attribution";
+					this._div.appendChild(self._canvas);
+				}
+				return this._div;
+			};
+
+			if (this._map)
+				this._legend.addTo(this._map);
+
+		} else {
+			this._legend.remove();
+			this._legend = null;
+			this.legend();
 		}
-		return data;
-	},
 
-	testAddPoints: function (number) {
-		var count = number || 100;
-		while (count-- > 0) {
-			var size = Math.round(Math.random() * 150);	// in pixels
-			var lat = 90 * Math.random();
-			var lng = 180 * Math.random();
-			var value = 100 * Math.random();
-			var opacity = Math.random();	// 0 - 1 (opacity)
-			this._addZone(lat, lng, value, opacity);
-		}
+		return this;
 	},
-
-	testAddData: function (number) {
-		this.clearData();
-		this.setData(this.testRandomData(number));
-	},
-
-	testAnimatePoints: function (number) {
-		this.clearData();
-		var self = this;
-		var data = this.testRandomData(number);
-		data.forEach(function (point) {
-			self._animateZone(point.lat, point.lng, point.value, 0, point.opacity);
-		});
-	},
-
-	testMorphData: function (number) {
-		this.clearData();
-		this.setData(this.testRandomData(number));
-		this.morphData(this.testRandomData(number));
-	},
-
 });
-

@@ -101,12 +101,11 @@
 							<div id="options" class="collapse">
 								<div class="form-group">
 									<label for="minrssval">Enter Min RSS Value</label>
-                                    <input id="minrssval" type="number" step="5" class="form-control"
-                                           placeholder="Min RSS Value" value="-60"/>
+									<input id="minrssval" type="number" step="5" class="form-control" placeholder="Min RSS Value" value="-100"/>
 								</div>
 								<div class="form-group">
 									<label for="maxrssval">Enter Max RSS Value</label>
-									<input id="maxrssval" type="number" step="5" class="form-control" placeholder="Max RSS Value" value="-100"/>
+									<input id="maxrssval" type="number" step="5" class="form-control" placeholder="Max RSS Value" value="-50"/>
 								</div>
 								<div class="form-group">
 									<label for="radius">Circle Radius</label>
@@ -134,6 +133,7 @@
 <!-- Bootstrap and JQuery JS -->
 <script src="/static/js/jquery-2.0.0.min.js"></script>
 <script src='/static/js/bootstrap.js'></script>
+{{/*<script src='/static/js/leaflet-src.js'></script>*/}}
 <script src='/static/js/leaflet.js'></script>
 
 <script src='/static/js/leaflet.usermarker.js'></script>
@@ -157,6 +157,8 @@
 			maxZoom: 10
 		});
 
+		// L.control.scale().addTo(map);
+
 		var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
 		// var bounds = [[-400, -300], [400, 300]];
 		L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
@@ -165,19 +167,18 @@
 		// initialize the heat-map
 		heatmap = new L.MultiColorDivHeatmapLayer({
 			radius: 100,
-            min_value: -60,
-			max_value: -100,
+			min_value: -100,
+			max_value: -50,
 			gradient: {
 				0: 'blue',
 				1: 'red'
 			},
 			animation_delay: 5,
 			// clickable: true,
-		});
+		}, true);
 
 		// add heat-map to the map
 		heatmap.addTo(map);
-
 
 		// heatmap.on('click', function (e) {
 		// 	console.log(e)
@@ -186,7 +187,6 @@
 		// click', function (e) {
 		// 	console.log(e.latlng.lat + ',' + e.latlng.lng)
 		// });
-
 
 		$("#data-panel").addClass('bs-callout-danger').removeClass('bs-callout-info');
 		$.getJSON("/getuniquemacs?group={{ .Group }}", function (data, textStatus, jqXHR) {
