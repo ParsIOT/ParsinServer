@@ -429,12 +429,14 @@ func GetTestValidFP(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	user := strings.ToLower(c.DefaultQuery("user", "none"))
 
-	if groupName != "none" && user == "none" {
+	if groupName != "none" && user != "none" {
 		if !dbm.GroupExists(groupName) {
+			glb.Error.Println("You should insert test-valid fingerprints while tracking")
 			c.JSON(http.StatusOK, gin.H{"message": "You should insert test-valid fingerprints while tracking, see documentation", "success": false})
 			return
 		}
 		testValidUserPos := dbm.GM.GetGroup(groupName).Get_ResultData().Get_TestUserPos(user)
+		glb.Debug.Println(testValidUserPos)
 		c.JSON(http.StatusOK, gin.H{"success": true, "testuserpos": testValidUserPos})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or user isn't given"})
@@ -453,7 +455,7 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 
 	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
-			c.JSON(http.StatusOK, gin.H{"message": "You should insert test-valid fingerprints while tracking, see documentation", "success": false})
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "You should insert test-valid fingerprints while tracking, see documentation"})
 			return
 		}
 
@@ -464,7 +466,30 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"success": true})
 		}
 	} else {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or user isn't given"})
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group isn't given"})
+	}
+}
+
+func GetTestErrorAlgoAccuracy(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		if !dbm.GroupExists(groupName) {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "You should insert test-valid fingerprints while tracking, see documentation"})
+			return
+		}
+
+		algosAccuracy := dbm.GM.GetGroup(groupName).Get_ResultData().Get_AlgoTestErrorAccuracy()
+		c.JSON(http.StatusOK, gin.H{"success": true, "algosAccuracy": algosAccuracy})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group isn't given"})
 	}
 }
 

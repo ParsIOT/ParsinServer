@@ -37,7 +37,7 @@
             height: 500px;
         }
 
-        #users-table-container {
+        #true-location-table-container {
             overflow: scroll;
         }
     </style>
@@ -52,8 +52,8 @@
 
     <div class="row">
         <div class="col-lg-12">
-            <h2 class="page-header">Trace Route Map
-                <small>view users tracking history on map</small>
+            <h2 class="page-header">Algorithm Error Calculation
+                <small>view users test-valid tracking on map</small>
             </h2>
         </div>
     </div>
@@ -76,48 +76,92 @@
                 <div class="panel-heading">
                     Users
                 </div>
-                <div class="panel-body" id="users-table-container">
+                <div class="panel-body" id="true-location-table-container">
+                    <div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
+                        <div class="col-md-12">
+                            <a href="#error-calculation" data-toggle="collapse"><h4
+                                    style="text-decoration: underline; margin-bottom: 10px;">
+                                Error Calculation</h4></a>
+                            <div id="error-calculation" class="collapse in">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <button onclick="calculateErrorByTrueLocation()"
+                                                class="btn btn-success btn-sm btn-block">
+                                            Calculate Error
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <button onclick="uploadTrueLocationLog()"
+                                                class="btn btn-warning btn-sm btn-block">
+                                            Upload True Location File
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="algo-results" class="col-md-12">
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
                     <div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
                         <div class="col-md-12">
                             <a href="#filter-users" data-toggle="collapse"><h4 style="text-decoration: underline;">
-                                User trace</h4></a>
-                            <div id="filter-users" class="collapse in">
+                                User test-valid tracks</h4></a>
+                            <div id="filter-users" class="collapse">
                                 <div class="form-group">
                                     <label for="refresh-interval">Enter user </label>
-                                    <input id="user" class="form-control" placeholder="user to filter"/>
-                                </div>
-                                <div class="form-group">
-                                    <label for="refresh-interval">Enter N</label>
-                                    <input id="n" class="form-control" placeholder="num of history track"/>
+                                    <input id="user" class="form-control" placeholder="User"/>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <button onclick="userTrace()" class="btn btn-success btn-sm btn-block">
-                                            GetTrace
+                                        <button onclick="testValidTrackMap()" class="btn btn-success btn-sm btn-block">
+                                            Get
                                         </button>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <button onclick="clearHistory()" class="btn btn-warning btn-sm btn-block">Clear
-                                            History
                                         </button>
+                                    </div>
+                                </div>
+                                <br>
+                                <div class="form-group">
+                                    <label>Select Algorithms</label>
+                                    <select id="algo-list" class="form-control">
+                                    </select>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <button onclick="seeGuessResults()" class="btn btn-danger btn-sm btn-block">Show
+                                            Algorithm Result
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <hr>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>Details:</label>
+                                        <table id="true-location-table"
+                                               class="table table-responsive table-hover table-condensed table-bordered">
+                                            <thead>
+                                            <tr>
+                                                <td>X</td>
+                                                <td>Y</td>
+                                            </tr>
+                                            </thead>
+                                        </table>
+                                        <h4 id="show-details-link" class="text-center"/>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <table id="users-table"
-                           class="table table-responsive table-hover table-condensed table-bordered">
-                        <thead>
-                        <tr>
-                            <td>Key</td>
-                            <td>X</td>
-                            <td>Y</td>
-                        </tr>
-                        </thead>
-                    </table>
-                    <h4 id="show-details-link" class="text-center"/>
+
                 </div>
             </div>
         </div>
@@ -131,7 +175,7 @@
     var filter_user = false;
     var reloadDataInterval;
     $('#live-map').css('height', $(window.top).height() - 275);
-    $('#users-table-container').css('height', $(window.top).height() - 245);
+    $('#true-location-table-container').css('height', $(window.top).height() - 245);
     var map = L.map('live-map', {
         crs: L.CRS.Simple,
         minZoom: -100,
@@ -145,149 +189,237 @@
     lineLayer = L.featureGroup();
     map.addLayer(lineLayer);
 
-    var markers = {};
-    var markersLoc = {};
+    var trueLocMarkers = {};
+    var trueLocMarkersLoc = {};
+    var guessMarkers = {};
+    var guessMarkersLoc = {};
+    var toggleGuessMarkers = true;
+
     var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
+
+    var algoList = ["KNN", "Bayes", "SVM"];
+    var algoGuessLocations = {};
+    algoList.forEach(function (value) {
+        $('#algo-list').append("<option value=" + value + ">" + value + "</option>");
+        algoGuessLocations[value] = [];
+    });
 
     //    var marker = L.userMarker([0, 0], {pulsing: true, accuracy: 100, smallIcon: true});
     //    marker.addTo(map);
 
-    UpdateTraceMap();
+    // calculateErrorByTrueLocation();
 
-    function Line(p1x, p1y, p2x, p2y) {
+    function Line(p1, p2, color) {
 
-        // return p1 * p2;
-        // console.log(p1x,",", p1y,",", p2x,",", p2y)
-        var pointA = new L.LatLng(p1x, p1y);
-        var pointB = new L.LatLng(p2x, p2y);
+        var pointA = new L.LatLng(p1[0], p1[1]);
+        var pointB = new L.LatLng(p2[0], p2[1]);
         var pointList = [pointA, pointB];
 
 
         var line = new L.Polyline(pointList, {
-            color: 'blue',
-            weight: 10,
-            opacity: 0.5,
+            color: color,
+            dashArray: "8 8",
+            weight: 5,
+            opacity: 0.3,
             smoothFactor: 1,
             // symbol: L.Symbol.arrowHead({pixelSize: 15, polygon: false, pathOptions: {stroke: true}})
         });
         line.addTo(lineLayer);
     }
 
-    function UpdateTraceMap() {
+    function UpdateTestValidTrackMap() {
         user = $('#user').val();
         var items = [];
         var locations = [];
+        algoList.forEach(function (value) {
+            algoGuessLocations[value] = [];
+        });
 
         $.getJSON("/getTestValidFPs?group={{ .Group }}&user=" + user, function (data) {
-            // console.log(data.users[user])
-            $.each(data.testuserpos[user], function (key, val) {
-                // console.log(val.location)
-                key = data.testuserpos[user].length - key
-                let match = pattern.exec(val.truelocation);
-                if (match && match[1] && match[2]) {
-                    locations.push(match);
-                    items.push("<tr class='bg-info'><td>" + key + "</td><td>" + match[1] + "</td><td>" + match[2] + "</td></tr>");
+            // console.log(data)
+            $.each(data.testuserpos, function (key, val) {
+                // console.log(val.truelocation)
+
+                let trueloc = pattern.exec(val.truelocation);
+                let knnloc = pattern.exec(val.userposition.knnguess);
+
+                if (trueloc && trueloc[1] && trueloc[2]) {
+                    locations.push(trueloc);
+                    items.push("<tr class='bg-info'><td>" + trueloc[1] + "</td><td>" + trueloc[2] + "</td></tr>");
                     // console.log(match)
-                    createMarker(key, match);
-                    // markers[key]=match;
+                    // createTrueLocMarker(key, match);
+                    createTrueLocMarker(val.truelocation, trueloc);
+
+                    // trueLocMarkers[key]=match;
+                    algoGuessLocations["KNN"].push([trueloc, knnloc]);
+
                 } else {
-                    items.push("<tr class='bg-info'><td>" + key + "</td><td colspan='2' class='text-center'> NO DATA </td></tr>");
+                    items.push("<tr class='bg-info'><td colspan='2' class='text-center'> NO DATA </td></tr>");
                 }
+
+
             });
 
-            for (var i = 0; i < locations.length - 1; i++) {
-                Line(locations[i][1], locations[i][2], locations[i + 1][1], locations[i + 1][2])
-            }
+            // for (var i = 0; i < locations.length - 1; i++) {
+            //     Line(locations[i][1], locations[i][2], locations[i + 1][1], locations[i + 1][2])
+            // }
 
 
-            $("#users-table").find("tbody").remove();
+            $("#true-location-table").find("tbody").remove();
             console.log(items);
             $("<tbody/>", {
                 "class": "tab-content",
                 html: items.join("")
-            }).appendTo("#users-table");
+            }).appendTo("#true-location-table");
             $("#show-details-link").find("a").remove();//remove show rss details link
             $("<a/>", {
                 "target": "_blank",
                 "onclick": "window.open('" + "/getTestValidFPs?group={{ .Group }}&user=" + user + "','pagename','resizable,height=420,width=1000'); return false;",
-                html: "See Rss details"
+                html: "See User position details"
             }).appendTo("#show-details-link");
         });
     }
 
-    function userTrace() {
-        user = $('#user').val();
-        n = $('#n').val();
-        // console.log(user,n);
-        for (var marker in markers) {
-            // if (marker != filter_user) {
-            //     console.log(marker);
-            map.removeLayer(markers[marker]);
-            // Remove lines
-            // map.removeLayer(lineLayer);
+    function testValidTrackMap() {
+        clearHistory();
+        UpdateTestValidTrackMap();
+    }
+
+    function seeGuessResults() {
+        if (toggleGuessMarkers) {
+            selected = $('#algo-list').val();
+
+            algoGuessLocations[selected].forEach(function (element) {
+                trueloc = element[0];
+                knnloc = element[1];
+                console.log(element);
+                if (trueloc && trueloc[1] && trueloc[2]) {
+                    createGuessLocMarker(trueloc, knnloc);
+                    Line([trueloc[1], trueloc[2]], [knnloc[1], knnloc[2]], 'red');
+                }
+            });
+        } else {
+            for (var marker in guessMarkers) {
+                map.removeLayer(guessMarkers[marker]);
+            }
+            map.removeLayer(lineLayer);
+            lineLayer = L.featureGroup();
+            map.addLayer(lineLayer);
+            guessMarkers = {};
+            guessMarkersLoc = {};
+        }
+        toggleGuessMarkers = !toggleGuessMarkers;
+    }
+
+    function clearHistory() {
+        for (var marker in trueLocMarkers) {
+            map.removeLayer(trueLocMarkers[marker]);
+        }
+        for (var marker in guessMarkers) {
+            map.removeLayer(guessMarkers[marker]);
         }
         map.removeLayer(lineLayer);
         lineLayer = L.featureGroup();
         map.addLayer(lineLayer);
 
-        markers = {};
-        markersLoc = {};
-        UpdateTraceMap();
+        trueLocMarkers = {};
+        trueLocMarkersLoc = {};
+        guessMarkers = {};
+        guessMarkersLoc = {};
     }
 
-    function clearHistory() {
-        user = $('#user').val();
-        swal({
-                    title: "Delete History",
-                    text: "Are you sure you want to delete history of " + user,
-                    type: "warning",
-                    showCancelButton: true,
-                    confirmButtonColor: "#DD6B55",
-                    confirmButtonText: "Yes, delete it!",
-                    cancelButtonText: "No, cancel pls!",
-                    closeOnConfirm: false,
-                    closeOnCancel: false
-                },
-                function (isConfirm) {
-                    if (isConfirm) {
-                        var req = $.ajax({
-                            method: "DELETE",
-                            url: "/delresults" + '?' + $.param({"group": "{{ .Group }}", "user": user})
-                        });
-                        req.done(function (data) {
-                            console.log(data)
-                            if (data['success']) {
-                                swal("Deleted!", data['message'], "success");
-                                location.reload()
-                            } else {
-                                swal("Something went wrong.", data['message'], "error");
-                            }
-                        });
-                        req.fail(function (data) {
-                            swal("Sorry", data['message'], "error");
-                        });
-                    } else {
-                        swal("Cancelled", "Your data is safe :)", "error");
-                    }
-                });
-
-    }
-
-
-    function createMarker(key, match) {
-        if (match in markersLoc) {
-            markersLoc[match].push(key);
-            markers[markersLoc[match][0]].setPopupContent(markersLoc[match].join(","));
+    function createTrueLocMarker(key, match) {
+        if (match in trueLocMarkersLoc) {
+            trueLocMarkersLoc[match].push(key);
+            trueLocMarkers[trueLocMarkersLoc[match][0]].setPopupContent(trueLocMarkersLoc[match].join(","));
         } else {
-            markersLoc[match] = [key];
-            markers[key] = L.marker([match[1], match[2]], {
+            trueLocMarkersLoc[match] = [key];
+            trueLocMarkers[key] = L.marker([match[1], match[2]], {
 //                    pulsing: true,
 //                    accuracy: 200,
                 title: match[0],
                 smallIcon: true
-            }).bindPopup(JSON.stringify(key)).addTo(map);
+            }).bindPopup(key).addTo(map);
         }
     }
+
+    function createGuessLocMarker(key, match) {
+        if (match in guessMarkersLoc) {
+            guessMarkersLoc[match].push(key);
+            guessMarkers[trueLocMarkersLoc[match][0]].setPopupContent(guessMarkersLoc[match].join(","));
+        } else {
+            guessMarkersLoc[match] = [key];
+            guessMarkers[key] = L.marker([match[1], match[2]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+                icon: greenIcon,
+                title: match[0],
+                smallIcon: true
+            }).bindPopup(key[0] + " --> " + match[0]).addTo(map);
+        }
+    }
+
+    var greenIcon = L.icon({
+        iconUrl: '/static/css/images/marker-icon-red.png',
+        shadowUrl: '/static/css/images/marker-shadow.png',
+
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        tooltipAnchor: [16, -28],
+        shadowSize: [41, 41]
+    });
+
+    function calculateErrorByTrueLocation() {
+
+        $.getJSON("/calculateErrorByTrueLocation?group={{ .Group }}", function (data) {
+            if (data.success == true) {
+                // Getting each algorithm Error
+                $.getJSON("/getTestErrorAlgoAccuracy?group={{ .Group }}", function (data) {
+                    if (data.success == true) {
+
+                        $("#algo-results").empty();
+                        $("#algo-results").append("  <label>Results:</label>\n" +
+                                "    <table id=\"algo-result-table\"\n" +
+                                "    class=\"table table-responsive table-hover table-condensed table-bordered\">\n" +
+                                "            <thead>\n" +
+                                "            <tr>\n" +
+                                "            <td>Algorithm</td>\n" +
+                                "            <td>Error</td>\n" +
+                                "            </tr>\n" +
+                                "            </thead>\n" +
+                                "            </table>");
+
+                        $("#algo-result-table").find("tbody").remove();
+
+
+                        tbody = $("<tbody/>", {
+                            "class": "tab-content",
+                        }).appendTo("#algo-result-table");
+                        // console.log(tbody);
+
+                        $.each(data.algosAccuracy, function (algorithm, error) {
+                            tbody.append("<tr class='bg-info'><td>" + algorithm + "</td><td>" + error + "</td></tr>");
+                        });
+                    } else {
+                        $("#algo-result-table").find("tbody").remove();
+                        console.log("Err on getTestErrorAlgoAccuracy: ", data.message);
+                    }
+                });
+            } else {
+                $("#algo-result-table").find("tbody").remove();
+                console.log("Err on calculateErrorByTrueLocation: ", data.message);
+            }
+        });
+    }
+
+
+    items.push();
+
+    console.log(items);
+
+
+
 </script>
 </body>
 

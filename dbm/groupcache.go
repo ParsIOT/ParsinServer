@@ -26,6 +26,7 @@ type RawDataStruct struct{
 	//Learned data:
 	Fingerprints			map[string]parameters.Fingerprint
 	FingerprintsOrdering 	[]string
+	//Note: Run easyjson.sh after editing
 }
 
 func (st *RawDataStruct) Lock() {
@@ -57,6 +58,7 @@ type MiddleDataStruct struct{
 	UniqueLocs    			[]string                                // a list of all unique locations e.g. {P1,P2,P3}
 	UniqueMacs    			[]string                                // a list of all unique APs
 	LocCount				map[string]int							// number of fp that its Location equals to loc
+	//Note: Run easyjson.sh after editing
 }
 
 func (st *MiddleDataStruct) Lock() {
@@ -87,6 +89,7 @@ type AlgoDataStruct struct{
 	//BayesPriors   			map[string]parameters.PriorParameters   // generate BayesPriors for each network
 	//BayesResults  			map[string]parameters.ResultsParameters // generate BayesResults for each network
 	KnnFPs        			parameters.KnnFingerprints
+	//Note: Run easyjson.sh after editing
 }
 
 func (st *AlgoDataStruct) Lock() {
@@ -122,6 +125,7 @@ type ResultDataStruct struct{
 	AlgoTestErrorAccuracy map[string]int                           // algorithmName --> error
 	TestValidUserPos      map[string][]parameters.UserPositionJSON // keeps testValid userPosition according to user
 	TestUserPos           map[string][]parameters.TestUserPos      // keeps testValid userPosition and the true location according to user
+	//Note: Run easyjson.sh after editing
 }
 
 func (st *ResultDataStruct) Lock() {

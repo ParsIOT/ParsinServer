@@ -1302,7 +1302,7 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string
 			}
 		}
 	}
-	glb.Error.Println("FindTrueFPloc on " + fp.Location + " ended but timestamp ranges doesn't match to relocate this fp")
+	glb.Error.Println("FindTrueFPloc on " + fp.Location + " ended but timestamp ranges doesn't match to relocate any test-valid fp")
 	return "", errors.New("Timestamp range problem")
 
 }
@@ -1386,10 +1386,12 @@ func CalculateTestError(groupName string) error { //todo: create a page to show 
 		return err
 	}
 
+
 	// Get fingerprints from db
 	gp := GM.GetGroup(groupName)
 	rsd := gp.Get_ResultData()
 	allTestValidUserPos := rsd.Get_AllTestValidUserPos()
+	glb.Debug.Println(allTestValidUserPos)
 
 	for user, testValidUserPos := range allTestValidUserPos {
 		AlgoError := make(map[string]float64)
@@ -1432,6 +1434,7 @@ func CalculateTestError(groupName string) error { //todo: create a page to show 
 		}
 
 		// Set AlgoTestError Accuracy
+		glb.Debug.Println("Num of test-valid fp:", numValidTestFPs)
 		for algoName, algoError := range AlgoError {
 			glb.Debug.Println("TestValid "+algoName+" Error = ", algoError/float64(numValidTestFPs))
 			rsd.Set_AlgoTestErrorAccuracy(algoName, int(algoError/float64(numValidTestFPs)))

@@ -282,6 +282,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	go gp.Get_ResultData().Append_UserResults(curFingerprint.Username, userJSON)
 
 	if curFingerprint.TestValidation {
+		glb.Debug.Println("TestValid fingperprint added ")
 		go gp.Get_ResultData().Append_TestValidUserPos(curFingerprint.Username, userJSON)
 	}
 
