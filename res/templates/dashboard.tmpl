@@ -60,7 +60,6 @@
     </style>
 
 
-
     <script src="/static/js/d3.min.js"></script>
     <script src="/static/js/d3.tip.v0.6.3.js"></script>
 
@@ -917,7 +916,7 @@
     //  });
     //});
 
-    $('#buildGroup').click(function () { /// OLD SWEETALERT, DOESNT WORK WITH SWEETALERT2
+    $('#buildGroup').click(function () { /// OLD SWEETALERT, DOESN'T WORK WITH SWEETALERT2
 
         swal({
                     title: "Build and recalculate group from raw learned data",
@@ -928,7 +927,6 @@
                     showLoaderOnConfirm: true,
                 },
                 function () {
-                    console.log("########## entered build button #########");
                     $.get("/buildgroup", {
                                 "group": "{{ .Group }}",
                             },
