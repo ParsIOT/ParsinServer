@@ -344,7 +344,7 @@ func (v *UserPositionJSON) UnmarshalJSON(data []byte) error {
 func (v *UserPositionJSON) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson224c90e0DecodeParsinServerDbmParameters(l, v)
 }
-func easyjson224c90e0DecodeParsinServerDbmParameters1(in *jlexer.Lexer, out *TestUserPos) {
+func easyjson224c90e0DecodeParsinServerDbmParameters1(in *jlexer.Lexer, out *TestValidTrack) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -377,7 +377,7 @@ func easyjson224c90e0DecodeParsinServerDbmParameters1(in *jlexer.Lexer, out *Tes
 		in.Consumed()
 	}
 }
-func easyjson224c90e0EncodeParsinServerDbmParameters1(out *jwriter.Writer, in TestUserPos) {
+func easyjson224c90e0EncodeParsinServerDbmParameters1(out *jwriter.Writer, in TestValidTrack) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -405,26 +405,26 @@ func easyjson224c90e0EncodeParsinServerDbmParameters1(out *jwriter.Writer, in Te
 }
 
 // MarshalJSON supports json.Marshaler interface
-func (v TestUserPos) MarshalJSON() ([]byte, error) {
+func (v TestValidTrack) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
 	easyjson224c90e0EncodeParsinServerDbmParameters1(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
-func (v TestUserPos) MarshalEasyJSON(w *jwriter.Writer) {
+func (v TestValidTrack) MarshalEasyJSON(w *jwriter.Writer) {
 	easyjson224c90e0EncodeParsinServerDbmParameters1(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
-func (v *TestUserPos) UnmarshalJSON(data []byte) error {
+func (v *TestValidTrack) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
 	easyjson224c90e0DecodeParsinServerDbmParameters1(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *TestUserPos) UnmarshalEasyJSON(l *jlexer.Lexer) {
+func (v *TestValidTrack) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson224c90e0DecodeParsinServerDbmParameters1(l, v)
 }
 func easyjson224c90e0DecodeParsinServerDbmParameters2(in *jlexer.Lexer, out *ResultsParameters) {

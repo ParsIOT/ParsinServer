@@ -113,7 +113,8 @@ func GetLocationList(c *gin.Context) {
 		return
 	}
 	if !dbm.GroupExists(groupName) {
-		c.JSON(http.StatusOK, gin.H{"message": "You should insert a fingerprint first, see documentation", "success": false})
+		glb.Error.Println("Group doesn't exist")
+		c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
 		return
 	}
 	//ps, _ := dbm.OpenParameters(group)
@@ -167,7 +168,8 @@ func GetLastFingerprint(c *gin.Context) {
 	user := c.DefaultQuery("user", "none")
 	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
-			c.JSON(http.StatusOK, gin.H{"message": "You should insert a fingerprint first, see documentation", "success": false})
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
 			return
 		}
 		if user == "none" {
@@ -312,7 +314,8 @@ func Calculate(c *gin.Context) {
 	groupName = strings.ToLower(groupName)
 	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
-			c.JSON(http.StatusOK, gin.H{"message": "You should insert a fingerprint first, see documentation", "success": false})
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
 			return
 		}
 		algorithms.CalculateLearn(groupName)
@@ -344,7 +347,8 @@ func GetUserLocations(c *gin.Context) {
 	userQuery = strings.ToLower(userQuery)
 	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
-			c.JSON(http.StatusOK, gin.H{"message": "You should insert fingerprints before tracking, see documentation", "success": false})
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
 			return
 		}
 		people := make(map[string][]parameters.UserPositionJSON)
@@ -418,7 +422,7 @@ func GetUserLocations(c *gin.Context) {
 	}
 }
 
-func GetTestValidFP(c *gin.Context) {
+func GetTestValidTracks(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -427,21 +431,46 @@ func GetTestValidFP(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
-	user := strings.ToLower(c.DefaultQuery("user", "none"))
 
-	if groupName != "none" && user != "none" {
+	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
-			glb.Error.Println("You should insert test-valid fingerprints while tracking")
-			c.JSON(http.StatusOK, gin.H{"message": "You should insert test-valid fingerprints while tracking, see documentation", "success": false})
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
 			return
 		}
-		testValidUserPos := dbm.GM.GetGroup(groupName).Get_ResultData().Get_TestUserPos(user)
-		glb.Debug.Println(testValidUserPos)
-		c.JSON(http.StatusOK, gin.H{"success": true, "testuserpos": testValidUserPos})
+		testValidTracks := dbm.GM.GetGroup(groupName).Get_ResultData().Get_TestValidTracks()
+		glb.Debug.Println(testValidTracks)
+		c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or user isn't given"})
 	}
 }
+
+func DelTestValidTracks(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "DELETE, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		if !dbm.GroupExists(groupName) {
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
+			return
+		}
+
+		dbm.GM.GetGroup(groupName).Get_ResultData().Set_TestValidTracks([]parameters.TestValidTrack{})
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or user isn't given"})
+	}
+}
+
+
 
 func CalculateErrorByTrueLocation(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
@@ -455,7 +484,8 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 
 	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "You should insert test-valid fingerprints while tracking, see documentation"})
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist"})
 			return
 		}
 
@@ -482,7 +512,8 @@ func GetTestErrorAlgoAccuracy(c *gin.Context) {
 
 	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "You should insert test-valid fingerprints while tracking, see documentation"})
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
 			return
 		}
 

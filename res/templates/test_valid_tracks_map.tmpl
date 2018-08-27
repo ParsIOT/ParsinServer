@@ -28,6 +28,10 @@
     <script src="/static/js/sweetalert.min.js"></script>
     <script src="/static/js/d3.min.js"></script>
     <script src="/static/js/d3.tip.v0.6.3.js"></script>
+
+    <link href="/static/css/izitoast/iziToast.css" rel="stylesheet">
+    <script src="/static/js/izitoast/iziToast.js"></script>
+
     <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
 
     <!-- Font Awesome CSS -->
@@ -53,7 +57,7 @@
     <div class="row">
         <div class="col-lg-12">
             <h2 class="page-header">Algorithm Error Calculation
-                <small>view users test-valid tracking on map</small>
+                <small>view test-valid tracking on map</small>
             </h2>
         </div>
     </div>
@@ -72,9 +76,9 @@
             </div>
         </div>
         <div class="col-md-3 col-sm-12">
-            <div class="panel panel-success" id="users-list-panel">
+            <div class="panel panel-success" id="settings-list-panel">
                 <div class="panel-heading">
-                    Users
+                    Settings
                 </div>
                 <div class="panel-body" id="true-location-table-container">
                     <div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
@@ -99,6 +103,14 @@
                                         </button>
                                     </div>
                                 </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <button onclick="delTestValidTracks()"
+                                                class="btn btn-danger btn-sm btn-block">
+                                            Delete test-valid tracks
+                                        </button>
+                                    </div>
+                                </div>
                                 <div id="algo-results" class="col-md-12">
                                 </div>
 
@@ -107,13 +119,9 @@
                     </div>
                     <div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
                         <div class="col-md-12">
-                            <a href="#filter-users" data-toggle="collapse"><h4 style="text-decoration: underline;">
-                                User test-valid tracks</h4></a>
-                            <div id="filter-users" class="collapse">
-                                <div class="form-group">
-                                    <label for="refresh-interval">Enter user </label>
-                                    <input id="user" class="form-control" placeholder="User"/>
-                                </div>
+                            <a href="#test-valid-tracks" data-toggle="collapse"><h4 style="text-decoration: underline;">
+                                Test-valid tracks</h4></a>
+                            <div id="test-valid-tracks" class="collapse">
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <button onclick="testValidTrackMap()" class="btn btn-success btn-sm btn-block">
@@ -155,7 +163,7 @@
                                             </tr>
                                             </thead>
                                         </table>
-                                        <h4 id="show-details-link" class="text-center"/>
+                                        <h5 id="show-details-link" class="text-center"/>
                                     </div>
                                 </div>
                             </div>
@@ -172,8 +180,8 @@
 </div>
 
 <script type="application/javascript">
-    var filter_user = false;
-    var reloadDataInterval;
+
+
     $('#live-map').css('height', $(window.top).height() - 275);
     $('#true-location-table-container').css('height', $(window.top).height() - 245);
     var map = L.map('live-map', {
@@ -228,55 +236,63 @@
     }
 
     function UpdateTestValidTrackMap() {
-        user = $('#user').val();
         var items = [];
         var locations = [];
         algoList.forEach(function (value) {
             algoGuessLocations[value] = [];
         });
 
-        $.getJSON("/getTestValidFPs?group={{ .Group }}&user=" + user, function (data) {
+        $.getJSON("/getTestValidTracks?group={{ .Group }}", function (data) {
             // console.log(data)
-            $.each(data.testuserpos, function (key, val) {
-                // console.log(val.truelocation)
-
-                let trueloc = pattern.exec(val.truelocation);
-                let knnloc = pattern.exec(val.userposition.knnguess);
-
-                if (trueloc && trueloc[1] && trueloc[2]) {
-                    locations.push(trueloc);
-                    items.push("<tr class='bg-info'><td>" + trueloc[1] + "</td><td>" + trueloc[2] + "</td></tr>");
-                    // console.log(match)
-                    // createTrueLocMarker(key, match);
-                    createTrueLocMarker(val.truelocation, trueloc);
-
-                    // trueLocMarkers[key]=match;
-                    algoGuessLocations["KNN"].push([trueloc, knnloc]);
-
-                } else {
-                    items.push("<tr class='bg-info'><td colspan='2' class='text-center'> NO DATA </td></tr>");
-                }
+            if (data.testvalidtracks.length == 0) {
+                iziToast.error({
+                    title: "Error",
+                    message: "Error calculation didn't work properly or there aren't any test-valid tracks",
+                });
+            } else {
 
 
-            });
+                $.each(data.testvalidtracks, function (key, val) {
+                    // console.log(val.truelocation)
 
-            // for (var i = 0; i < locations.length - 1; i++) {
-            //     Line(locations[i][1], locations[i][2], locations[i + 1][1], locations[i + 1][2])
-            // }
+                    let trueloc = pattern.exec(val.truelocation);
+                    let knnloc = pattern.exec(val.userposition.knnguess);
+
+                    if (trueloc && trueloc[1] && trueloc[2]) {
+                        locations.push(trueloc);
+                        items.push("<tr class='bg-info'><td>" + trueloc[1] + "</td><td>" + trueloc[2] + "</td></tr>");
+                        // console.log(match)
+                        // createTrueLocMarker(key, match);
+                        createTrueLocMarker(val.truelocation, trueloc);
+
+                        // trueLocMarkers[key]=match;
+                        algoGuessLocations["KNN"].push([trueloc, knnloc]);
+
+                    } else {
+                        items.push("<tr class='bg-info'><td colspan='2' class='text-center'> NO DATA </td></tr>");
+                    }
 
 
-            $("#true-location-table").find("tbody").remove();
-            console.log(items);
-            $("<tbody/>", {
-                "class": "tab-content",
-                html: items.join("")
-            }).appendTo("#true-location-table");
-            $("#show-details-link").find("a").remove();//remove show rss details link
-            $("<a/>", {
-                "target": "_blank",
-                "onclick": "window.open('" + "/getTestValidFPs?group={{ .Group }}&user=" + user + "','pagename','resizable,height=420,width=1000'); return false;",
-                html: "See User position details"
-            }).appendTo("#show-details-link");
+                });
+
+                // for (var i = 0; i < locations.length - 1; i++) {
+                //     Line(locations[i][1], locations[i][2], locations[i + 1][1], locations[i + 1][2])
+                // }
+
+
+                $("#true-location-table").find("tbody").remove();
+                console.log(items);
+                $("<tbody/>", {
+                    "class": "tab-content",
+                    html: items.join("")
+                }).appendTo("#true-location-table");
+                $("#show-details-link").find("a").remove();//remove show rss details link
+                $("<a/>", {
+                    "target": "_blank",
+                    "onclick": "window.open('" + "/getTestValidTracks?group={{ .Group }}','pagename','resizable,height=420,width=1000'); return false;",
+                    html: "See TestValidTracks details"
+                }).appendTo("#show-details-link");
+            }
         });
     }
 
@@ -398,25 +414,75 @@
                         }).appendTo("#algo-result-table");
                         // console.log(tbody);
 
-                        $.each(data.algosAccuracy, function (algorithm, error) {
-                            tbody.append("<tr class='bg-info'><td>" + algorithm + "</td><td>" + error + "</td></tr>");
-                        });
+                        if (data.algosAccuracy.length == 0) {
+                            iziToast.error({
+                                title: "CalculateError didn't run properly",
+                                message: data.message,
+                            });
+                        } else {
+                            $.each(data.algosAccuracy, function (algorithm, error) {
+                                tbody.append("<tr class='bg-info'><td>" + algorithm + "</td><td>" + error + "</td></tr>");
+                            });
+                        }
                     } else {
                         $("#algo-result-table").find("tbody").remove();
                         console.log("Err on getTestErrorAlgoAccuracy: ", data.message);
+                        iziToast.error({
+                            title: 'Error on getTestErrorAlgoAccuracy',
+                            message: data.message,
+                        });
                     }
                 });
             } else {
                 $("#algo-result-table").find("tbody").remove();
                 console.log("Err on calculateErrorByTrueLocation: ", data.message);
+                iziToast.error({
+                    title: 'Error on calculateErrorByTrueLocation',
+                    message: data.message,
+                });
             }
         });
     }
 
 
-    items.push();
+    function delTestValidTracks() {
+        user = $('#user').val();
+        swal({
+                    title: "Delete test-valid tracks",
+                    text: "Are you sure you want to delete all of test-valid tracks ",
+                    type: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#DD6B55",
+                    confirmButtonText: "Yes, delete them!",
+                    cancelButtonText: "No, cancel pls!",
+                    closeOnConfirm: false,
+                    closeOnCancel: false
+                },
+                function (isConfirm) {
+                    if (isConfirm) {
+                        var req = $.ajax({
+                            method: "DELETE",
+                            url: "/delTestTestValidTracks" + '?' + $.param({"group": "{{ .Group }}"})
+                        });
+                        req.done(function (data) {
+                            console.log(data)
+                            if (data['success']) {
+                                swal("Deleted!", data['message'], "success");
+                                location.reload()
+                            } else {
+                                swal("Something went wrong.", data['message'], "error");
+                            }
+                        });
+                        req.fail(function (data) {
+                            swal("Sorry", data['message'], "error");
+                        });
+                    } else {
+                        swal("Cancelled", "Your data is safe :)", "error");
+                    }
+                });
 
-    console.log(items);
+    }
+
 
 
 

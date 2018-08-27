@@ -288,9 +288,9 @@ func main() {
 			needToLoadSettings.GET("/livemap/:group", routes.LiveLocationMap)
 			//needToLoadSettings.GET("/userhistory/:group", routes.UserHistoryMap)
 			needToLoadSettings.GET("/userhistory/:group", routes.UserHistoryMap)
-			needToLoadSettings.GET("/userTestValidFPs/:group", func(context *gin.Context) {
+			needToLoadSettings.GET("/userTestValidUserPos/:group", func(context *gin.Context) {
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*")) // TODO: remove this for performance
-				routes.UserTestValidFPs(context)
+				routes.UserTestValidUserPos(context)
 			})
 
 			needToLoadSettings.GET("/fingerprintAmbiguity/:group", routes.FingerprintAmbiguity)
@@ -366,8 +366,8 @@ func main() {
 	r.GET("/getArbitLocations", routes.GetArbitLocations)
 	r.DELETE("/delresults", routes.DelResults)
 	r.GET("/location", routes.GetUserLocations)
-	r.GET("/getTestValidFPs", routes.GetTestValidFP)
-	//r.DELETE("/delTestValidFPs",routes.DelTestValidFP)
+	r.GET("/getTestValidTracks", routes.GetTestValidTracks)
+	r.DELETE("/delTestValidTracks", routes.DelTestValidTracks)
 	r.GET("/calculateErrorByTrueLocation", routes.CalculateErrorByTrueLocation)
 	r.GET("/getTestErrorAlgoAccuracy", routes.GetTestErrorAlgoAccuracy)
 	// Routes for performing fingerprinting (fingerprint.go)

@@ -26,7 +26,7 @@ func TrackFingerprintsEmptyPosition(group string) (map[string]parameters.UserPos
 	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
-		return userPositions,userFingerprints,err
+		return userPositions, userFingerprints, err
 	}
 
 	numUsersFound := 0
@@ -56,9 +56,9 @@ func TrackFingerprintsEmptyPosition(group string) (map[string]parameters.UserPos
 	})
 	if err != nil {
 		glb.Error.Println(err)
-		return userPositions,userFingerprints,err
+		return userPositions, userFingerprints, err
 	}
-	return userPositions,userFingerprints,nil
+	return userPositions, userFingerprints, nil
 }
 
 func TrackFingeprintEmptyPosition(user string, group string) (parameters.UserPositionJSON, parameters.Fingerprint, error) {
@@ -69,7 +69,7 @@ func TrackFingeprintEmptyPosition(user string, group string) (parameters.UserPos
 	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
-		return userJSON,userFingerprint,err
+		return userJSON, userFingerprint, err
 	}
 
 	err = db.View(func(tx *bolt.Tx) error {
@@ -101,13 +101,12 @@ func TrackFingeprintEmptyPosition(user string, group string) (parameters.UserPos
 
 	if err != nil {
 		glb.Error.Println(err)
-		return userJSON,userFingerprint,err
+		return userJSON, userFingerprint, err
 	}
-	return userJSON,userFingerprint,nil
+	return userJSON, userFingerprint, nil
 }
 
-
-func TrackFingerprints(user string,n int, group string) ([]parameters.Fingerprint,error){
+func TrackFingerprints(user string, n int, group string) ([]parameters.Fingerprint, error) {
 
 	var fingerprints []parameters.Fingerprint
 
@@ -115,7 +114,7 @@ func TrackFingerprints(user string,n int, group string) ([]parameters.Fingerprin
 	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
-		return fingerprints,err
+		return fingerprints, err
 	}
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
@@ -142,20 +141,18 @@ func TrackFingerprints(user string,n int, group string) ([]parameters.Fingerprin
 				}
 			}
 		}
-		if numFound == 0{
+		if numFound == 0 {
 			return fmt.Errorf("User " + user + " not found")
-		}else{
+		} else {
 			return nil
 		}
 	})
 	if err != nil {
 		glb.Error.Println(err)
-		return fingerprints,err
+		return fingerprints, err
 	}
-	return fingerprints,nil
+	return fingerprints, nil
 }
-
-
 
 // Returns the last location of a user and the last fingerprint that was sent
 //Done: fingerprints-learn bucket isn't set but is used here! Returning the last learn fingerprint must be defined
@@ -192,11 +189,11 @@ func LastFingerprint(group string, user string) string {
 		return fmt.Errorf("User " + user + " not found")
 	})
 	db.Close()
-	_,fingerprintsInMemory,err := GetLearnFingerPrints(group,true)
+	_, fingerprintsInMemory, err := GetLearnFingerPrints(group, true)
 	if err != nil {
 		return ""
 	}
-	for fpTime,fp := range fingerprintsInMemory{
+	for fpTime, fp := range fingerprintsInMemory {
 		timestampString := fpTime
 		timestampUnixNano, _ := strconv.ParseInt(timestampString, 10, 64)
 		UTCfromUnixNano := time.Unix(0, timestampUnixNano).UnixNano()
@@ -216,7 +213,7 @@ func LastFingerprint(group string, user string) string {
 	return sentAs + string(bJson)
 }
 
-func MigrateDatabaseDB(fromDB string,toDB string){
+func MigrateDatabaseDB(fromDB string, toDB string) {
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, fromDB+".db"), 0664, nil)
 	defer db.Close()
 	if err != nil {
@@ -264,8 +261,7 @@ func MigrateDatabaseDB(fromDB string,toDB string){
 	})
 }
 
-
-func EditLocDB(oldloc string, newloc string, groupName string) int{
+func EditLocDB(oldloc string, newloc string, groupName string) int {
 	toUpdate := make(map[string]parameters.Fingerprint)
 	numChanges := 0
 	//glb.Debug.Println(groupName)
@@ -274,7 +270,7 @@ func EditLocDB(oldloc string, newloc string, groupName string) int{
 	//if err!= nil{r
 	//	return 0
 	//}
-	for fpTime,fp := range fingerprintInMemory{
+	for fpTime, fp := range fingerprintInMemory {
 		if fp.Location == oldloc {
 			tempFp := fp
 			tempFp.Location = newloc
@@ -282,7 +278,7 @@ func EditLocDB(oldloc string, newloc string, groupName string) int{
 		}
 	}
 	//glb.Debug.Println(fingerprintInMemory)
-	for fpTime,fp := range toUpdate{
+	for fpTime, fp := range toUpdate {
 		fingerprintInMemory[fpTime] = fp
 	}
 
@@ -307,8 +303,6 @@ func EditLocDB(oldloc string, newloc string, groupName string) int{
 	//	}
 	//	return nil
 	//})
-
-
 
 	toUpdateRes := make(map[string]string)
 
@@ -425,10 +419,8 @@ func EditLocBaseDB(oldloc string, newloc string, groupName string) int {
 	return numChanges
 }
 
-
-
 // Direct access to db to change Mac names in fingerprints
-func EditMacDB(oldmac string, newmac string, groupName string) int{
+func EditMacDB(oldmac string, newmac string, groupName string) int {
 	toUpdate := make(map[string]parameters.Fingerprint)
 	numChanges := 0
 	//_,fingerprintInMemory,err := GetLearnFingerPrints(groupName,false)
@@ -437,7 +429,7 @@ func EditMacDB(oldmac string, newmac string, groupName string) int{
 	//if err!= nil{
 	//	return 0
 	//}
-	for fpTime,fp := range fingerprintInMemory{
+	for fpTime, fp := range fingerprintInMemory {
 		for i, rt := range fp.WifiFingerprint {
 			if rt.Mac == oldmac {
 				tempFp := fp
@@ -447,7 +439,7 @@ func EditMacDB(oldmac string, newmac string, groupName string) int{
 		}
 	}
 
-	for fpTime,fp := range toUpdate{
+	for fpTime, fp := range toUpdate {
 		fingerprintInMemory[fpTime] = fp
 	}
 
@@ -474,7 +466,6 @@ func EditMacDB(oldmac string, newmac string, groupName string) int{
 	//	}
 	//	return nil
 	//})
-
 
 	toUpdateRes := make(map[string]string)
 
@@ -512,7 +503,7 @@ func EditMacDB(oldmac string, newmac string, groupName string) int{
 	return numChanges
 }
 
-func EditUserNameDB(user string, newname string, groupName string) int{
+func EditUserNameDB(user string, newname string, groupName string) int {
 	toUpdate := make(map[string]parameters.Fingerprint)
 	numChanges := 0
 
@@ -522,7 +513,7 @@ func EditUserNameDB(user string, newname string, groupName string) int{
 	//if err!= nil{
 	//	return 0
 	//}
-	for fpTime,fp := range fingerprintInMemory{
+	for fpTime, fp := range fingerprintInMemory {
 		if fp.Username == user {
 			tempFp := fp
 			tempFp.Username = newname
@@ -530,7 +521,7 @@ func EditUserNameDB(user string, newname string, groupName string) int{
 		}
 	}
 
-	for fpTime,fp := range toUpdate{
+	for fpTime, fp := range toUpdate {
 		fingerprintInMemory[fpTime] = fp
 	}
 
@@ -538,7 +529,6 @@ func EditUserNameDB(user string, newname string, groupName string) int{
 
 	rd.SetDirtyBit()
 	GM.InstantFlushDB(groupName)
-
 
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
 	defer db.Close()
@@ -556,8 +546,6 @@ func EditUserNameDB(user string, newname string, groupName string) int{
 	//	}
 	//	return nil
 	//})
-
-
 
 	toUpdateRes := make(map[string]string)
 
@@ -588,15 +576,13 @@ func EditUserNameDB(user string, newname string, groupName string) int{
 		return nil
 	})
 
-
 	numChanges += len(toUpdate)
 
 	return numChanges
 }
 
-func DeleteLocationDB(location string, groupName string)int {
+func DeleteLocationDB(location string, groupName string) int {
 	numChanges := 0
-
 
 	rd := GM.GetGroup(groupName).Get_RawData_Val()
 
@@ -606,9 +592,9 @@ func DeleteLocationDB(location string, groupName string)int {
 	//	glb.Error.Println(err)
 	//}
 
-	for fpTime,fp := range rd.Fingerprints{
-		if fp.Location == location{
-			delete(rd.Fingerprints,fpTime)
+	for fpTime, fp := range rd.Fingerprints {
+		if fp.Location == location {
+			delete(rd.Fingerprints, fpTime)
 			rd.FingerprintsOrdering = glb.DeleteSliceItemStr(rd.FingerprintsOrdering, fpTime)
 			numChanges++
 		}
@@ -670,10 +656,8 @@ func DeleteLocationBaseDB(location string, group string) int {
 	return numChanges
 }
 
-
-func DeleteLocationsDB(locations []string, groupName string)int {
+func DeleteLocationsDB(locations []string, groupName string) int {
 	numChanges := 0
-
 
 	rd := GM.GetGroup(groupName).Get_RawData_Val()
 
@@ -683,10 +667,10 @@ func DeleteLocationsDB(locations []string, groupName string)int {
 	//	glb.Error.Println(err)
 	//}
 
-	for _,location := range locations{
-		for fpTime,fp := range rd.Fingerprints{
-			if fp.Location == location{
-				delete(rd.Fingerprints,fpTime)
+	for _, location := range locations {
+		for fpTime, fp := range rd.Fingerprints {
+			if fp.Location == location {
+				delete(rd.Fingerprints, fpTime)
 				rd.FingerprintsOrdering = glb.DeleteSliceItemStr(rd.FingerprintsOrdering, fpTime)
 				numChanges++
 			}
@@ -750,7 +734,6 @@ func DeleteLocationsBaseDB(locations []string, groupName string) int {
 	return numChanges
 }
 
-
 //func DeleteLocationsDB(locations []string,group string) int{
 //	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 //	defer db.Close()
@@ -784,7 +767,7 @@ func DeleteLocationsBaseDB(locations []string, groupName string) int {
 //	return numChanges
 //}
 
-func DeleteUser(user string, group string)int{
+func DeleteUser(user string, group string) int {
 	numChanges := 0
 
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
@@ -809,23 +792,23 @@ func DeleteUser(user string, group string)int{
 		return nil
 
 	})
-	if err != nil{
+	if err != nil {
 		glb.Error.Println(err)
 	}
 	return numChanges
 
 }
 
-func ReformDBDB(group string)int{
+func ReformDBDB(group string) int {
 	toUpdate := make(map[string]string)
 	numChanges := 0
 
-	_,fingerprintInMemory,err := GetLearnFingerPrints(group,false)
+	_, fingerprintInMemory, err := GetLearnFingerPrints(group, false)
 	//glb.Warning.Println(fingerprintInMemory)
-	if err!= nil{
+	if err != nil {
 		return 0
 	}
-	for fpTime,fp := range fingerprintInMemory{
+	for fpTime, fp := range fingerprintInMemory {
 		tempFp := fp
 		tempFp.Group = group
 		tempFp.Location = glb.RoundLocationDim(tempFp.Location)
@@ -885,21 +868,21 @@ func ReformDBDB(group string)int{
 	return numChanges
 }
 
-func GetCVResults(groupName string) map[string]int{
+func GetCVResults(groupName string) map[string]int {
 	gp := GM.GetGroup(groupName)
 	glb.Debug.Println(gp.Get_Name())
 	return gp.Get_ResultData().Get_AlgoAccuracy()
 }
 
-func GetCalcCompletionLevel() float64{
+func GetCalcCompletionLevel() float64 {
 	level := float64(glb.ProgressBarCurLevel) / float64(glb.ProgressBarLength)
 	return level
 }
 
 func BuildGroupDB(groupName string) { //Todo: After each update in groupcache.go rerun this function
-	fingerprintOrdering,fingerprintInMemoryRaw,_ := GetLearnFingerPrints(groupName,false)
+	fingerprintOrdering, fingerprintInMemoryRaw, _ := GetLearnFingerPrints(groupName, false)
 	fingerprintInMemory := make(map[string]parameters.Fingerprint)
-	for key,fp := range fingerprintInMemoryRaw{
+	for key, fp := range fingerprintInMemoryRaw {
 		fp.Location = glb.RoundLocationDim(fp.Location)
 		//glb.Debug.Println(fp.Location)
 		fingerprintInMemory[key] = fp
@@ -931,10 +914,9 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 	locFingerprintsData := make(map[string]parameters.Fingerprint)
 
 	//locCalculatedDistance := []float64{} // a final distance used to sort and choose the one that should be deleted. =avg(physicalDistance/knnDistance)
-										// its size must be the size of locFingerprintOrdering which is the number of fingerprints in each location
+	// its size must be the size of locFingerprintOrdering which is the number of fingerprints in each location
 	totalFingerprintsOrdering := []string{}
 	totalFingerprintsData := make(map[string]parameters.Fingerprint)
-
 
 	CalculatedDistanceOverall := make(map[string][]float64)
 
@@ -963,8 +945,8 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 			mac2RssMain[rt.Mac] = rt.Rssi
 			mainMacs = append(mainMacs, rt.Mac)
 		}
-		for _,mac :=  range uniqueMacs{
-			if !glb.StringInSlice(mac,mainMacs){
+		for _, mac := range uniqueMacs {
+			if !glb.StringInSlice(mac, mainMacs) {
 				mac2RssMain[mac] = glb.MinRssiOpt
 			}
 		}
@@ -979,13 +961,12 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 			otherLocX, otherLocY := glb.GetLocationOfFingerprint(fp.Location)
 			mainLocX, mainLocY := glb.GetLocationOfFingerprint(fpMain.Location)
 
-
 			for _, rt := range fp.WifiFingerprint {
 				mac2Rss[rt.Mac] = rt.Rssi
-				macs = append(macs,rt.Mac)
+				macs = append(macs, rt.Mac)
 			}
-			for _,mac :=  range uniqueMacs{
-				if !glb.StringInSlice(mac,macs){
+			for _, mac := range uniqueMacs {
+				if !glb.StringInSlice(mac, macs) {
 					mac2Rss[mac] = glb.MinRssiOpt
 				}
 			}
@@ -1028,9 +1009,9 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 				//glb.Debug.Println(fp)
 				resultFPs[fpTime] = fp
 
-				physicalDistance := glb.CalcDist(mainLocX,mainLocY,otherLocX,otherLocY)
+				physicalDistance := glb.CalcDist(mainLocX, mainLocY, otherLocX, otherLocY)
 				//glb.Debug.Println("### physical: ",physicalDistance,"knndistance:",distance)
-				CalculatedDistanceOverall [fpMain.Location] = append(CalculatedDistanceOverall [fpMain.Location],physicalDistance/distance)
+				CalculatedDistanceOverall [fpMain.Location] = append(CalculatedDistanceOverall [fpMain.Location], physicalDistance/distance)
 			}
 		}
 	}
@@ -1102,7 +1083,6 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 			fingerprintRssDetails = append(fingerprintRssDetails, line)
 		}
 	}
-
 
 	//for _,fpRSSs := range fingerprintRssDetails{
 	//	line := ""
@@ -1386,60 +1366,56 @@ func CalculateTestError(groupName string) error { //todo: create a page to show 
 		return err
 	}
 
-
-	// Get fingerprints from db
+	// Get TestValidTracks from db
 	gp := GM.GetGroup(groupName)
 	rsd := gp.Get_ResultData()
-	allTestValidUserPos := rsd.Get_AllTestValidUserPos()
-	glb.Debug.Println(allTestValidUserPos)
-
-	for user, testValidUserPos := range allTestValidUserPos {
-		AlgoError := make(map[string]float64)
-		numValidTestFPs := 0
-
-		AlgoError["knn"] = float64(0)
-		//AlgoError["bayes"] = float64(0)
-		//AlgoError["svm"] = float64(0)
-
-		testUserPosList := []parameters.TestUserPos{}
-		for _, userPos := range testValidUserPos {
-			//correct fp location
-			testValidUserPos := parameters.TestUserPos{}
-			TrueLoc, err := FindTrueFPloc(userPos.Fingerprint, allLocationLogs)
-			if err == nil {
-				testValidUserPos.TrueLocation = TrueLoc
-				testValidUserPos.UserPosition = userPos
-				testUserPosList = append(testUserPosList, testValidUserPos)
-				numValidTestFPs++
-				trueX, trueY := glb.GetDotFromString(TrueLoc)
-
-				// Knn guess error:
-				fpKnnX, fpKnnY := glb.GetDotFromString(userPos.KnnGuess)
-				AlgoError["knn"] += glb.CalcDist(fpKnnX, fpKnnY, trueX, trueY)
-
-				//fpBayesX, fpBayesY := glb.GetDotFromString(userPos.BayesGuess)
-				//AlgoError["bayes"] += glb.CalcDist(fpBayesX, fpBayesY, trueX, trueY)
-
-				//fpSvmX, fpSvmY := glb.GetDotFromString(userPos.SvmGuess)
-				//AlgoError["svm"] += glb.CalcDist(fpSvmX, fpSvmY, trueX, trueY)
-
-			} else {
-				glb.Error.Println(err)
-			}
-		}
-
-		rsd.Clear_TestUserPos(user) // Clear last calculated saved TestUserPos
-		for _, testUserPos := range testUserPosList {
-			rsd.Append_TestUserPos(user, testUserPos)
-		}
-
-		// Set AlgoTestError Accuracy
-		glb.Debug.Println("Num of test-valid fp:", numValidTestFPs)
-		for algoName, algoError := range AlgoError {
-			glb.Debug.Println("TestValid "+algoName+" Error = ", algoError/float64(numValidTestFPs))
-			rsd.Set_AlgoTestErrorAccuracy(algoName, int(algoError/float64(numValidTestFPs)))
-		}
+	testValidTracks := rsd.Get_TestValidTracks()
+	tempTestValidTracks := []parameters.TestValidTrack{}
+	glb.Debug.Println(testValidTracks)
+	AlgoError := make(map[string]float64)
+	numValidTestFPs := 0
+	AlgoError["knn"] = float64(0)
+	//AlgoError["bayes"] = float64(0)
+	//AlgoError["svm"] = float64(0)
+	if len(testValidTracks) == 0 {
+		glb.Error.Println("empty TestValidTracks")
+		return errors.New("empty TestValidTracks")
 	}
 
+	for _, testValidTrack := range testValidTracks {
+		userPos := testValidTrack.UserPosition
+		//correct fp location
+		TrueLoc, err := FindTrueFPloc(userPos.Fingerprint, allLocationLogs)
+		if err == nil {
+			testValidTrack.TrueLocation = TrueLoc
+			numValidTestFPs++
+			trueX, trueY := glb.GetDotFromString(TrueLoc)
+
+			// Knn guess error:
+			fpKnnX, fpKnnY := glb.GetDotFromString(userPos.KnnGuess)
+			AlgoError["knn"] += glb.CalcDist(fpKnnX, fpKnnY, trueX, trueY)
+
+			//fpBayesX, fpBayesY := glb.GetDotFromString(userPos.BayesGuess)
+			//AlgoError["bayes"] += glb.CalcDist(fpBayesX, fpBayesY, trueX, trueY)
+
+			//fpSvmX, fpSvmY := glb.GetDotFromString(userPos.SvmGuess)
+			//AlgoError["svm"] += glb.CalcDist(fpSvmX, fpSvmY, trueX, trueY)
+
+			tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
+		} else {
+			glb.Error.Println(err)
+		}
+
+	}
+
+	// Set new TestValidTracks list that true locations was set
+	rsd.Set_TestValidTracks(tempTestValidTracks)
+
+	// Set AlgoTestError Accuracy
+	glb.Debug.Println("Num of test-valid fp:", numValidTestFPs)
+	for algoName, algoError := range AlgoError {
+		glb.Debug.Println("TestValid "+algoName+" Error = ", algoError/float64(numValidTestFPs))
+		rsd.Set_AlgoTestErrorAccuracy(algoName, int(algoError/float64(numValidTestFPs)))
+	}
 	return nil
 }

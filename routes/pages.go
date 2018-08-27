@@ -310,7 +310,7 @@ func UserHistoryMap(c *gin.Context) {
 	})
 }
 
-func UserTestValidFPs(c *gin.Context) {
+func UserTestValidUserPos(c *gin.Context) {
 	groupName := c.Param("group")
 	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
 		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
@@ -321,7 +321,7 @@ func UserTestValidFPs(c *gin.Context) {
 	MapName := dbm.GetSharedPrf(groupName).MapName
 	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
 	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
-	c.HTML(http.StatusOK, "test_valid_fp_map.tmpl", gin.H{
+	c.HTML(http.StatusOK, "test_valid_tracks_map.tmpl", gin.H{
 		"Group":     groupName,
 		"MapPath":   MapPath,
 		"MapWidth":  MapDimensions[0],

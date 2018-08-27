@@ -120,7 +120,7 @@ type UserPositionJSON struct {
 	Fingerprint Fingerprint        `json:"fingerprint"` // raw fingerprint data
 }
 
-type TestUserPos struct {
+type TestValidTrack struct {
 	TrueLocation string           `json:"truelocation"`
 	UserPosition UserPositionJSON `json:"userposition"`
 }
