@@ -6,41 +6,19 @@
     <title>PARSIN</title>
     <link rel="shortcut icon" sizes="16x16 24x24 32x32 48x48 64x64" href="/static/img/favicon.ico"/>
     <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
-
-    <!-- Bootstrap and JQuery JS -->
-    <script src="/static/js/jquery-2.0.0.min.js"></script>
-    <script src='/static/js/bootstrap.js'></script>
-
     <!-- Bootstrap Core CSS -->
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-
     <!-- Custom CSS -->
     <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
     <link href="/static/css/custom.css" rel="stylesheet">
-
-
     <link href="/static/css/leaflet.css" rel="stylesheet">
     <link href="/static/css/leaflet.usermarker.css" rel="stylesheet">
-    <script src='/static/js/leaflet.js'></script>
-    <script src='/static/js/leaflet.usermarker.js'></script>
-    <script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
     <link href="/static/css/plugins/leaflet/leaflet.draw.css" rel="stylesheet">
     <link href="/static/css/plugins/leaflet/easy-button.css" rel="stylesheet">
-
-
-    <script src="/static/js/sweetalert.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
-
+    <link href="/static/css/sweetalert2.css" rel="stylesheet"/>
     <!-- Font Awesome CSS -->
     <link rel="stylesheet" href="/static/css/font-awesome.min.css">
     <style>
-
-        textarea {
-            overflow: auto;
-            max-width: 100%;
-            min-width: 100%;
-        }
-
         #mac-filter-table-container {
             overflow: scroll;
         }
@@ -64,7 +42,20 @@
 
     <!--<div class="well">-->
     <div class="row">
-        <div class="col-md-5 col-sm-12">
+
+
+        <div class="col-md-8 col-sm-12">
+            <div class="panel panel-primary" id="map-panel">
+                <div class="panel-heading">
+                    Map
+                </div>
+                <div class="panel-body">
+                    <div id="graph_map"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 col-sm-12">
             <div class="panel panel-info">
                 <div class="panel-heading">
                     graph List
@@ -102,12 +93,8 @@
 
                                     </div>
                                     <div class="row">
-                                    {{/*<div class="panel panel-warning" id="map-panel">*/}}
-                                    {{/*<div class="panel-heading">*/}}
-                                    {{/*Current mac filter List*/}}
-                                    {{/*</div>*/}}
                                         <div class="panel-body" id="mac-filter-table-container">
-                                            <div rows="10">
+                                            <div>
                                                 <table id="vertices_table"
                                                        class="table table-responsive table-hover table-condensed table-bordered">
                                                     <thead>
@@ -127,42 +114,23 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-12">
-                                <textarea style="height: 70%; margin-bottom: 10px"
-                                          placeholder='[&#10;   [0,1,0,0],&#10;   [1,0,1,1],&#10;   [0,1,0,0],&#10;   [0,1,0,0]&#10;]'
-                                          class="bootbox-input bootbox-input-textarea form-control" id="graphList"
-                                          rows="10"></textarea>
-                            </div>
-
-                            <div class="col-md-6 col-sm-12">
-                                <button type="submit" class="btn btn-warning btn-block" id="setMacFilter"
-                                        title="Click to set.">Set
-                                </button>
-                            </div>
-                            <div class="col-md-6 col-sm-12">
-                                <button type="submit" class="btn btn-danger btn-block" id="clearMacFilter"
-                                        title="Click to clear.">Clear
-                                </button>
-                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-7 col-sm-12">
-            <div class="panel panel-primary" id="map-panel">
-                <div class="panel-heading">
-                    Map
-                </div>
-                <div class="panel-body">
-                    <div id="graph_map"></div>
                 </div>
             </div>
         </div>
     </div>
     <!--</div>-->
 </div>
+
+<!-- Bootstrap and JQuery JS -->
+<script src="/static/js/jquery-2.0.0.min.js"></script>
+<script src='/static/js/bootstrap.js'></script>
+
+<script src='/static/js/leaflet.js'></script>
+<script src='/static/js/leaflet.usermarker.js'></script>
+<script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
+
 
 {{/*leaflet draw*/}}
 <script src="/static/js/plugins/leaflet/leaflet.draw/Leaflet.draw.js"></script>
@@ -195,6 +163,8 @@
 <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/EditToolbar.Edit.js"></script>
 <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/EditToolbar.Delete.js"></script>
 <script src="/static/js/plugins/leaflet/easy-button.js"></script>
+
+<script src="/static/js/sweetalert2.js"></script>
 
 
 <script>
@@ -261,8 +231,8 @@
                 if (!isItemInArray(visited_vertices, end_marker_position)) {
                     var edge = new L.polyline([start_marker_position, end_marker_position], {
                         color: 'red',
-                        weight: 3,
-                        opacity: 0.5,
+                        weight: 5,
+                        opacity: 0.8,
                         smoothFactor: 1
                     }).addTo(graph_layer);
                 }
@@ -279,17 +249,32 @@
     });
 
 
-    //add edge-add-toggle button
-    L.easyButton('fa-globe', function (btn, map) {
-        if (!edge_draw_enable) {
-            edge_draw_enable = true;
+    L.easyButton({
+        states: [{
+            stateName: 'edge_draw_enable',
+            icon: 'fa-pencil',
+            title: 'Edge drawing is enabled!',
+            onClick: function (btn, map) {
+                if (!edge_draw_enable) {
+                    edge_draw_enable = true;
 
-        } else {
-            edge_draw_enable = false
-        }
+                } else {
+                    edge_draw_enable = false
+                }
+                btn.state('save_graph');    // change state on click!
+            }
+        }, {
+            stateName: 'save_graph',
+            icon: 'fa-save',
+            title: 'Save graph in db',
+            onClick: function (btn, map) {
+                console.table(test);
+                swal2('Save Graph', 'Save Graph to db?', 'success');
+                btn.state('edge_draw_enable');
+                return test;
+            }
+        }]
     }).addTo(map);
-
-
     var drawControl = new L.Control.Draw({
         position: 'topright',
         edit: {
@@ -335,28 +320,32 @@
             } else if (start_vertex !== '' && end_vertex === '') {
                 end_vertex = [e.layer.getLatLng().lat, e.layer.getLatLng().lng];
                 //vertex keys in test object (e.g "20#40")
-                var start_vertex_key = start_vertex[0] + '#' + start_vertex[0];
-                var end_vertex_key = end_vertex[0] + '#' + end_vertex[0];
+                var start_vertex_key = start_vertex[0] + '#' + start_vertex[1];
+                var end_vertex_key = end_vertex[0] + '#' + end_vertex[1];
                 //making the new edge
                 var new_edge = new L.polyline([start_vertex, end_vertex], {
                     color: 'green',
-                    weight: 3,
-                    opacity: 0.5,
+                    weight: 5,
+                    opacity: 0.8,
                     smoothFactor: 1
                 });
-                //if start_vertex has no edges
-                if (JSON.stringify(test[start_vertex_key]) == "[]") {
-                    test[start_vertex_key] = [end_vertex];
-                    test[end_vertex_key].push(start_vertex);
-                    new_edge.addTo(graph_layer);
+                //if start vertex is not the same as end vertex
+                if (((start_vertex[0] !== end_vertex[0]) && (start_vertex[1] !== end_vertex[1]))) {
+                    //if start_vertex has no edges
+                    if (JSON.stringify(test[start_vertex_key]) == "[]") {
+                        test[start_vertex_key] = [end_vertex];
+                        test[end_vertex_key].push(start_vertex);
+                        new_edge.addTo(graph_layer);
 
+                    }
+                    //if start_vertex is connected to some vertices, but has no edge to end_vertex
+                    else if (!isItemInArray(test[start_vertex_key], end_vertex)) {
+                        test[start_vertex_key].push(end_vertex);
+                        test[end_vertex_key].push(start_vertex);
+                        new_edge.addTo(graph_layer);
+                    }
                 }
-                //if start_vertex is connected to some vertices, but has no edge to end_vertex
-                else if (!isItemInArray(test[start_vertex_key], end_vertex)) {
-                    test[start_vertex_key].push(end_vertex);
-                    test[end_vertex_key].push(start_vertex);
-                    new_edge.addTo(graph_layer);
-                }
+
                 //reset start and end vertex variable
                 start_vertex = '';
                 end_vertex = '';
@@ -396,84 +385,6 @@
         //map.removeLayer(L.userMarker( [$('#map_point_x').val(), $('#map_point_y').val()]));
         //todo: delete marker from map. it needs to get the one from the graph_layer list then remove it from map
     });
-
-    /* $('#setMacFilter').click(function () {
-         swal({
-                     title: "Set adjacency matrix",
-                     type: "info",
-                     showCancelButton: true,
-                     closeOnConfirm: false,
-                     showLoaderOnConfirm: true,
-                 },
-                 function () {
-                     $.ajax({
-                         type: 'POST',
-                         url: "/setfiltermacs?group={{ .Group }}",
-                        data: JSON.stringify({
-                            "group": "{{.Group}}",
-                            "graphAdjacencyMatrix": JSON.parse($("#graphList").val())
-                        }),
-                        success: function (data) {
-                            console.log(data);
-
-                            if (data['success']) {
-                                swal({
-                                    title: "Updated!",
-                                    text: data['message'],
-                                    timer: 2000,
-                                    showConfirmButton: true
-                                }, function () {
-                                    location.reload();
-                                });
-                            } else {
-                                swal("Something went wrong.", data['message'], "error");
-                            }
-
-                        },
-                        contentType: "application/json",
-                        dataType: 'json'
-                    });
-                });
-    });
-
-    $('#clearMacFilter').click(function () {
-        swal({
-                    title: "Set mac filter",
-                    type: "info",
-                    showCancelButton: true,
-                    closeOnConfirm: false,
-                    showLoaderOnConfirm: true,
-                },
-                function () {
-                    $.ajax({
-                        type: 'POST',
-                        url: "/setfiltermacs?group={{ .Group }}",
-                        data: JSON.stringify({
-                            "group": "{{.Group}}",
-                            "macs": JSON.parse("[]")
-                        }),
-                        success: function (data) {
-                            console.log(data);
-
-                            if (data['success'] && data['message'] == "MacFilter Cleared.") {
-                                swal({
-                                    title: "Updated!",
-                                    text: data['message'],
-                                    timer: 2000,
-                                    showConfirmButton: true
-                                }, function () {
-                                    location.reload();
-                                });
-                            } else {
-                                swal("Something went wrong.", data['message'], "error");
-                            }
-                        },
-                        contentType: "application/json",
-                        dataType: 'json'
-                    });
-                });
-    });*/
-
     get_and_draw_graph(test)
 </script>
 </body>
