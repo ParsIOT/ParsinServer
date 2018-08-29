@@ -303,7 +303,7 @@
                 smallIcon: true
             });
             graph_layer.addLayer(new_marker);
-
+            //post to server
         }
     });
 
@@ -391,6 +391,8 @@
                         test[end_vertex_key].push(start_vertex);
                         new_edge.addTo(graph_layer);
                     }
+
+                    //send edge to server
                 }
 
                 //reset start and end vertex variable

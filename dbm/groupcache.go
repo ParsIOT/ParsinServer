@@ -89,6 +89,7 @@ type AlgoDataStruct struct{
 	//BayesPriors   			map[string]parameters.PriorParameters   // generate BayesPriors for each network
 	//BayesResults  			map[string]parameters.ResultsParameters // generate BayesResults for each network
 	KnnFPs        			parameters.KnnFingerprints
+	GroupGraph  			parameters.Graph
 	//Note: Run easyjson.sh after editing
 }
 
@@ -889,6 +890,7 @@ func (gp *Group) NewAlgoDataStruct() *AlgoDataStruct {
 		//BayesPriors:    		make(map[string]parameters.PriorParameters),
 		//BayesResults:   		make(map[string]parameters.ResultsParameters),
 		KnnFPs:         		parameters.NewKnnFingerprints(),
+		GroupGraph:   			parameters.NewGraph(),
 	}
 }
 
@@ -1534,6 +1536,19 @@ func (ad *AlgoDataStruct) Set_KnnFPs(new_item  parameters.KnnFingerprints){
 	ad.Unlock()
 }
 
+func (ad *AlgoDataStruct) Get_GroupGraph() parameters.Graph  {
+	ad.RLock()
+	item := ad.GroupGraph
+	ad.RUnlock()
+	return item
+}
+func (ad *AlgoDataStruct) Set_GroupGraph(new_item  parameters.Graph){
+	defer ad.SetDirtyBit()
+
+	ad.Lock()
+	ad.GroupGraph = new_item
+	ad.Unlock()
+}
 //func (rs *ResultDataStruct) AppendResult(fp parameters.Fingerprint){
 //	defer rs.SetDirtyBit()
 //	rs.Lock()

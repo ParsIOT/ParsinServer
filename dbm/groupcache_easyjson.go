@@ -1490,6 +1490,8 @@ func easyjson3b8810b5DecodeParsinServerDbm5(in *jlexer.Lexer, out *AlgoDataStruc
 		switch key {
 		case "KnnFPs":
 			(out.KnnFPs).UnmarshalEasyJSON(in)
+		case "GroupGraph":
+			(out.GroupGraph).UnmarshalEasyJSON(in)
 		default:
 			in.SkipRecursive()
 		}
@@ -1513,6 +1515,16 @@ func easyjson3b8810b5EncodeParsinServerDbm5(out *jwriter.Writer, in AlgoDataStru
 			out.RawString(prefix)
 		}
 		(in.KnnFPs).MarshalEasyJSON(out)
+	}
+	{
+		const prefix string = ",\"GroupGraph\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		(in.GroupGraph).MarshalEasyJSON(out)
 	}
 	out.RawByte('}')
 }
