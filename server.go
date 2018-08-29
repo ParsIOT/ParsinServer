@@ -358,7 +358,7 @@ func main() {
 		}
 	}
 	r.POST("/uploadTrueLocationLog", routes.UploadTrueLocationLog)
-	r.GET("/relocateFPLoc", routes.RelocateFPLocAPI)
+	r.GET("/setRelocateFPLocState", routes.SetRelocateFPLocStateAPI)
 	r.GET("/getRSSData", routes.GetRSSDataAPI)
 
 	//r.POST("/addArbitLocations", routes.AddArbitLocations)

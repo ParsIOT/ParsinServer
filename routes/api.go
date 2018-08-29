@@ -1721,7 +1721,7 @@ func UploadTrueLocationLog(c *gin.Context) {
 
 }
 
-func RelocateFPLocAPI(c *gin.Context) {
+func SetRelocateFPLocStateAPI(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")

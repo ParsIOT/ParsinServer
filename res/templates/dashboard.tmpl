@@ -11,6 +11,9 @@
     <script src="/static/js/jquery-2.0.0.min.js"></script>
     <script src='/static/js/bootstrap.js'></script>
 
+    <link href="/static/css/izitoast/iziToast.css" rel="stylesheet">
+    <script src="/static/js/izitoast/iziToast.js"></script>
+
     <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
     <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
     <!-- Bootstrap Core CSS -->
@@ -227,20 +230,35 @@
 
         <div class="panel panel-primary " id="volume-fees-panel">
             <div class="panel-body ">
-                K range = {{ $.kRange }}
-                <br>
-                Min cluster rss range = {{ $.knnMinCRssRange }}
-                <br>
-                <br>
-                bestK:{{ $.bestK }}
-                <br>
-                bestMinClusterRss:{{ $.bestMinClusterRss }}
-                <br>
-                MaxMovement: {{ $.maxMovement}}
+                <div class="pull-right">
+                    <input id="use_uwb" data-toggle="toggle" data-on="Use UWB data" data-off="Don't use UWB"
+                           type="checkbox">
+                </div>
+                <div class="pull-left">
+                    K range = {{ $.kRange }}
+                    <br>
+                    Min cluster rss range = {{ $.knnMinCRssRange }}
+                    <br>
+                    <br>
+                    bestK:{{ $.bestK }}
+                    <br>
+                    bestMinClusterRss:{{ $.bestMinClusterRss }}
+                    <br>
+                    MaxMovement: {{ $.maxMovement}}
+                </div>
             </div>
         </div>
     </div>
     <div class="well" id="volume-stats-well">
+    {{/*<div class="panel panel-body">
+            <div class="row">
+                <div class="col-sm-12 col-xs-6">
+                    <div class="pull-right">
+                        <input id="use_uwb" data-toggle="toggle" data-on="Use UWB data" data-off="Don't use UWB" type="checkbox">
+                    </div>
+                </div>
+            </div>
+        </div>*/}}
         <div class="panel panel-primary" id="volume-fees-panel">
             <div class="panel-body">
                 <div class="row">
@@ -255,8 +273,6 @@
                         </div>-->
                     </div>
                     <div class="col-sm-2 col-xs-6">
-                        <input data-toggle="toggle" data-on="Use UWB data" data-off="Normal mode" type="checkbox"
-                               checked>
                         <button type="submit" class="btn btn-success btn-block" id="buildGroup"
                                 title="Build and recalculate group from learned data.">Build group
                         </button>
@@ -1215,6 +1231,54 @@
             });
         }).catch(swal2.noop);
     });
+
+    //use_uwb toggle button
+    /*    function sleep(milliseconds) {
+            var start = new Date().getTime();
+            for (var i = 0; i < 1e7; i++) {
+                if ((new Date().getTime() - start) > milliseconds){
+                    break;
+                }
+            }
+        }*/
+
+    $(document).on('click', '[data-toggle=toggle]', function () {
+        var input = $(this).find('input')[0];
+        switch (input.id) {
+            case 'use_uwb':
+                $('#use_uwb').bootstrapToggle();
+                console.log(input.checked);
+                lastState = !input.checked;
+                $.getJSON("/setRelocateFPLocState?group={{ .Group }}&relocateFP=" + input.checked, function (data) {
+                    console.log(data);
+                    // console.log(data.users[user])
+                    if (data.success) {
+                        if (lastState == false) {
+                            iziToast.info({
+                                title: "Info",
+                                message: "Buildgroup to use uwb data",
+                            });
+                        }
+                    } else {
+                        iziToast.error({
+                            title: "Error",
+                            message: data.message,
+                        });
+                        use_uwb_toggle_back(lastState)
+                    }
+                });
+                // $('#toggle-phone').bootstrapToggle(!input.checked ? 'on' : 'off');
+                break;
+        }
+    });
+
+    function use_uwb_toggle_back(lastState) {
+        if (lastState == true) {
+            $('#use_uwb').bootstrapToggle('on');
+        } else {
+            $('#use_uwb').bootstrapToggle('off');
+        }
+    }
 
 
 </script>
