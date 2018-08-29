@@ -308,6 +308,53 @@
     });
 
 
+    map.on('draw:deleted', function (e) {
+        var removed_layers = e.layers;
+        //https://stackoverflow.com/questions/18014907/leaflet-draw-retrieve-layer-type-on-drawedited-event
+        removed_vertices = [];
+        removed_edges = [];
+        removed_layers.eachLayer(function (layer) {
+            if (layer instanceof L.Polyline) {
+                var start_vertex = [layer.getLatLngs()[0].lat, layer.getLatLngs()[0].lng];
+                var end_vertex = [layer.getLatLngs()[1].lat, layer.getLatLngs()[1].lng];
+                removed_edges.push([start_vertex, end_vertex])
+            }
+
+            if (layer instanceof L.Marker) {
+                vertex_position = (layer.getLatLng().lat).toString() + '.0' + ',' + (layer.getLatLng().lng) + '.0';
+                removed_vertices.push(vertex_position)
+            }
+        });
+        //send removed layers to server
+        $.ajax({
+            method: "POST",
+            url: "/test?group={{ .Group }}",
+            dataType: "json",
+            data: JSON.stringify({
+                "removed_vertices": removed_vertices,
+                "removed_edges": removed_edges,
+            }),
+            success: function (data, textStatus, jqXHR) {
+                if (data['success']) {
+                    swal2(
+                            'Removed!',
+                            'The selected layers have been removed.',
+                            'success'
+                    );
+                }
+            },
+            error: function (data, textStatus, jqXHR) {
+                swal2(
+                        'Error!',
+                        'The selected layers have not been removed.',
+                        'error'
+                );
+                console.log(data)
+            }
+        });
+    });
+
+
     //add edge between two vertex
     graph_layer.on('click', function (e) {
         // console.log('***************');
