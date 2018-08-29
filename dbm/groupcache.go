@@ -1351,6 +1351,8 @@ func (rd *RawDataStruct) Get_Fingerprints() map[string]parameters.Fingerprint {
 
 	return item
 }
+
+//Note: Use it just in buildgroup
 func (rd *RawDataStruct) Set_Fingerprints(new_item map[string]parameters.Fingerprint){
 	defer rd.SetDirtyBit()
 
@@ -1365,6 +1367,8 @@ func (rd *RawDataStruct) Get_FingerprintsOrdering() []string {
 	rd.RUnlock()
 	return item
 }
+
+//Note: Use it just in buildgroup
 func (rd *RawDataStruct) Set_FingerprintsOrdering(new_item []string){
 	defer rd.SetDirtyBit()
 

@@ -9,19 +9,20 @@ import (
 
 
 type RawSharedPreferences struct {
-	Mixin           float64  `json:"Mixin"`
-	Cutoff          float64  `json:"Cutoff"`
-	KnnKRange       []int    `json:"KnnKRange"`
-	KnnMinCRssRange []int    `json:"KnnMinCRssRange"`
-	MinRss          int      `json:"MinRss"`
-	MinRssOpt       int      `json:"MinRssOpt"`
-	FilterMacsMap   []string `json:"FilterMacsMap"`
-	ArbitLocations  []string `json:"ArbitLocations"`
-	MaxMovement     float64  `json:"MaxMovement"`
-	MapName			string	 `json:"MapName"`
-	MapDimensions	[]int	 `json:"MapDimensions"`
-	MapWidth		int		 `json:"MapWidth"`
-	MapHeight		int		 `json:"MapWidth"`
+	Mixin            float64  `json:"Mixin"`
+	Cutoff           float64  `json:"Cutoff"`
+	KnnKRange        []int    `json:"KnnKRange"`
+	KnnMinCRssRange  []int    `json:"KnnMinCRssRange"`
+	MinRss           int      `json:"MinRss"`
+	MinRssOpt        int      `json:"MinRssOpt"`
+	FilterMacsMap    []string `json:"FilterMacsMap"`
+	ArbitLocations   []string `json:"ArbitLocations"`
+	MaxMovement      float64  `json:"MaxMovement"`
+	MapName          string   `json:"MapName"`
+	MapDimensions    []int    `json:"MapDimensions"`
+	MapWidth         int      `json:"MapWidth"`
+	MapHeight        int      `json:"MapWidth"`
+	NeedToRelocateFP bool     `json:"NeedToRelocateFP"`
 }
 
 func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}) error{
@@ -52,6 +53,8 @@ func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}
 		shPrf.MapWidth = val.(int)
 	case "MapHeight":
 		shPrf.MapHeight = val.(int)
+	case "NeedToRelocateFP":
+		shPrf.NeedToRelocateFP = val.(bool)
 	default:
 		return errors.New("Invalid RawSharedPreferences field")
 	}
@@ -78,19 +81,20 @@ func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}
 
 func NewRawSharedPreferences() RawSharedPreferences {
 	return RawSharedPreferences{
-		Mixin:           float64(glb.DefaultMixin),
-		Cutoff:          float64(glb.DefaultCutoff),
-		KnnKRange:       glb.DefaultKnnKRange,
-		KnnMinCRssRange: glb.DefaultKnnMinCRssRange,
-		MinRss:          int(glb.MinRssi),
-		MinRssOpt:       int(glb.RuntimeArgs.MinRssOpt),
-		FilterMacsMap:   []string{},
-		ArbitLocations:  []string{},
-		MaxMovement:     float64(glb.MaxMovement),
-		MapName:		 glb.DefaultMapName,
-		MapDimensions:	 glb.DefaultMapDimensions,
-		MapWidth:		 glb.DefaultMapWidth,
-		MapHeight: 		 glb.DefaultMapHeight,
+		Mixin:            float64(glb.DefaultMixin),
+		Cutoff:           float64(glb.DefaultCutoff),
+		KnnKRange:        glb.DefaultKnnKRange,
+		KnnMinCRssRange:  glb.DefaultKnnMinCRssRange,
+		MinRss:           int(glb.MinRssi),
+		MinRssOpt:        int(glb.RuntimeArgs.MinRssOpt),
+		FilterMacsMap:    []string{},
+		ArbitLocations:   []string{},
+		MaxMovement:      float64(glb.MaxMovement),
+		MapName:          glb.DefaultMapName,
+		MapDimensions:    glb.DefaultMapDimensions,
+		MapWidth:         glb.DefaultMapWidth,
+		MapHeight:        glb.DefaultMapHeight,
+		NeedToRelocateFP: false,
 	}
 }
 

@@ -1374,10 +1374,25 @@ func BuildGroup(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 
 	if groupName != "none" {
+
+		//1: reform legacy db
 		dbm.ReformDBDB(groupName)
+		//2: form raw groupcache and rawdata initialization with raw data in db
 		dbm.BuildGroupDB(groupName)
-		//algorithms.PreProcess(groupName) //added to calculate learn
+		//3.relocate fp with true location that was uploaded
+		if dbm.GetSharedPrf(groupName).NeedToRelocateFP {
+			err := dbm.RelocateFPLoc(groupName)
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				return
+			}
+		}
+		//4. Preprocess on rss raw data
+		algorithms.PreProcess(groupName) // use preprocess just once in buildgroup(not use in calculatelearn)
+		//5. Run learning for raw data
 		algorithms.CalculateLearn(groupName)
+
 		glb.Debug.Println("Struct reformed successfully")
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "struct renewed"})
 	} else {
@@ -1692,6 +1707,14 @@ func UploadTrueLocationLog(c *gin.Context) {
 				c.JSON(http.StatusOK, gin.H{"success": true})
 			}
 		}
+
+		// After file learning file upload , set NeedToRelocateFP variable to true
+		if method == "learn" || method == "learnAppend" {
+			err := dbm.SetSharedPrf(groupName, "NeedToRelocateFP", true)
+			if err != nil {
+				glb.Error.Println(err.Error())
+			}
+		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or method isn't mentioned"})
 	}
@@ -1707,15 +1730,31 @@ func RelocateFPLocAPI(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
-	if groupName != "none" {
-		err := dbm.RelocateFPLoc(groupName)
-		if err == nil {
-			c.JSON(http.StatusOK, gin.H{"success": true})
+	relocateFP := strings.ToLower(c.DefaultQuery("relocateFP", "none"))
+
+	if groupName != "none" && relocateFP != "none" {
+		//err := dbm.RelocateFPLoc(groupName)
+		if (relocateFP == "true") {
+			err := dbm.SetSharedPrf(groupName, "NeedToRelocateFP", true)
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			}
+		} else if (relocateFP == "false") {
+			err := dbm.SetSharedPrf(groupName, "NeedToRelocateFP", false)
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			}
 		} else {
-			c.JSON(http.StatusOK, gin.H{"success": true, "message": err.Error()})
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "relocateFP must be true or false"})
 		}
 	} else {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or id not mentioned"})
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or relocateFP not mentioned"})
 	}
 
 }

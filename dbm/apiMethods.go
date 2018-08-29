@@ -1129,6 +1129,7 @@ func GetMostSeenMacs(groupName string) []string {
 	}
 }
 
+//Note:Use it before Preprocess
 func RelocateFPLoc(groupName string) error {
 	file, err := os.Open(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/learn/"+groupName+".log"))
 	if err != nil {
@@ -1405,7 +1406,6 @@ func CalculateTestError(groupName string) error { //todo: create a page to show 
 		} else {
 			glb.Error.Println(err)
 		}
-
 	}
 
 	// Set new TestValidTracks list that true locations was set

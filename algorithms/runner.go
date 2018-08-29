@@ -605,6 +605,7 @@ func CalculateLearn(groupName string) {
 
 	gp.GMutex.Lock()
 	gp.Set_MiddleData(md)
+	glb.Debug.Println(md.UniqueMacs)
 	// select best algo config
 
 	// learn algorithm
@@ -922,9 +923,9 @@ func GetParameters(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct) {
 		locations = append(locations,fp.Location)
 	}
 	md.LocCount = glb.DuplicateCountString(locations)
-
 }
 
+//Note: Use it just one time(not use it in calculatelearn, use it in buildgroup)
 func PreProcess(groupName string) {
 
 	gp := dbm.GM.GetGroup(groupName)
@@ -986,7 +987,7 @@ func PreProcess(groupName string) {
 
 	//Average Rss vector of adjacent fingerprints
 	if glb.AvgRSSAdjacentDots {
-		maxValidFPDistAVG := float64(100); // 300 cm
+		maxValidFPDistAVG := float64(100); // 100 cm
 
 		tempFingerprintsData2 := make(map[string]parameters.Fingerprint)
 		for fpOMain, fpMain := range tempFingerprintsData {
@@ -1033,8 +1034,8 @@ func PreProcess(groupName string) {
 			}
 
 			if len(adjacentFPs) != 0 {
-				for _, fp := range adjacentFPs {
-					for _, rt := range fp.WifiFingerprint {
+				for _, adjfp := range adjacentFPs {
+					for _, rt := range adjfp.WifiFingerprint {
 						if rssList, ok := mac2RssList[rt.Mac]; ok {
 							mac2RssList[rt.Mac] = append(rssList, rt.Rssi)
 						}
