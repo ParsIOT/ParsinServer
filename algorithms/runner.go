@@ -243,15 +243,14 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 
 
 	// Calculating Scikit
-	//
-	//if glb.RuntimeArgs.Scikit {
-	//	scikitData = ScikitClassify(strings.ToLower(curFingerprint.Group), curFingerprint)
-	//	glb.Debug.Println(scikitData)
-	//	for algorithm, valueXY := range scikitData{
-	//		message += " "+algorithm+":v" + valueXY
-	//	}
-	//
-	//}
+	if glb.RuntimeArgs.Scikit {
+		scikitData = ScikitClassify(groupName, curFingerprint)
+		glb.Debug.Println(scikitData)
+		for algorithm, valueXY := range scikitData {
+			message += " " + algorithm + ":" + valueXY
+		}
+
+	}
 
 	// Send out the final responses
 	var userJSON parameters.UserPositionJSON
@@ -621,6 +620,10 @@ func CalculateLearn(groupName string) {
 	ad.Set_KnnFPs(learnedKnnData)
 	gp.Set_AlgoData(ad)
 
+	if glb.RuntimeArgs.Scikit {
+		ScikitLearn(groupName)
+	}
+
 	gp.GMutex.Unlock()
 
 	glb.Debug.Println("Calculation finished.")
@@ -632,9 +635,7 @@ func CalculateLearn(groupName string) {
 	//		glb.Warning.Println(err)
 	//	}
 	//}
-	//if glb.RuntimeArgs.Scikit {
-	//	ScikitLearn(groupName)
-	//}
+
 	//runnerLock.Unlock()
 }
 
