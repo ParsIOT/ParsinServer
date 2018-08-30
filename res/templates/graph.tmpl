@@ -169,13 +169,29 @@
 
 <script>
     var vertices = []; // list of vertices entered by map
-    var test = {
-        '10#10': [[20, 20], [20, 30]],
-        '20#20': [[10, 10], [20, 30]],
-        '20#30': [[10, 10], [20, 20], [50, 50]],
-        '40#40': [],
-        '50#50': [[20, 30]],
-    };
+    // var test = {
+    //     '10#10': [[20, 20], [20, 30]],
+    //     '20#20': [[10, 10], [20, 30]],
+    //     '20#30': [[10, 10], [20, 20], [50, 50]],
+    //     '40#40': [],
+    //     '50#50': [[20, 30]],
+    // };
+    var test;
+    $.get("/getgraph", {
+			    "group": {{ .Group }},
+		    },
+		    function (result) {
+			    if (result['success']) {
+				    test = result["message"];
+				    console.log("message:",test);
+				    get_and_draw_graph(test)
+			    } else {
+				    swal("Something went wrong.", data['message'], "error");
+			    }
+		    }
+    );
+
+
     var start_vertex = '';
     var end_vertex = '';
     var edge_draw_enable = false;
@@ -197,7 +213,8 @@
     function isItemInArray(array, item) {
         for (var i = 0; i < array.length; i++) {
             // This if statement depends on the format of your array
-            if (array[i][0] == item[0] && array[i][1] == item[1]) {
+            //if (array[i][0] == item[0] && array[i][1] == item[1]) { // changed by komeil
+	        if (array[i] == item) {
                 return true;   // Found it
             }
         }
@@ -212,7 +229,8 @@
             if (!init_markers_object.hasOwnProperty(key)) continue;
 
             var start_marker_position = [parseFloat(key.split('#')[0]), parseFloat(key.split('#')[1])];
-            visited_vertices.push(start_marker_position);
+            //visited_vertices.push(start_marker_position);
+	        visited_vertices.push(key);
             var obj = init_markers_object[key];
             //add vertex
             // var marker = L.marker(start_marker_position);
@@ -226,9 +244,11 @@
                 // skip loop if the property is from prototype
                 if (!obj.hasOwnProperty(prop)) continue;
 
-                var end_marker_position = obj[prop];
+                //var end_marker_position = obj[prop];
+                console.log(obj[prop]);
+	            var end_marker_position = [parseFloat(obj[prop].split('#')[0]), parseFloat(obj[prop].split('#')[1])]
                 // if (visited_vertices.indexOf(end_marker_position) === -1) {
-                if (!isItemInArray(visited_vertices, end_marker_position)) {
+                if (!isItemInArray(visited_vertices, obj[prop])) {
                     var edge = new L.polyline([start_marker_position, end_marker_position], {
                         color: 'red',
                         weight: 5,
@@ -303,7 +323,29 @@
                 smallIcon: true
             });
             graph_layer.addLayer(new_marker);
+            //console.log("newVertexKey: ***** ", new_vertex_key)
             //post to server
+	        $.ajax({
+		        method: "POST",
+		        url: "/addNodeToGraph/?group={{ .Group }}",
+		        dataType: "json",
+		        data: JSON.stringify({
+			        "newVertexKey": new_vertex_key,
+		        }),
+		        success: function (data) {
+			        console.log("data to send to server: %%%%%%% ",data);
+			        if (data['success']) {
+				        swal2(
+						        'Created!',
+						        'The new markers have been created.',
+						        'success'
+				        )
+			        }
+		        },
+		        error: function (data) {
+			        console.log(data)
+		        }
+	        });
         }
     });
 
@@ -411,7 +453,7 @@
     $('#add_vertex_button').click(function () {
         var vertex = ("<td><input type='checkbox' name='record'></td><td>" + (vertices.length + 1).toString() + "</td><td>" + $('#map_point_x').val() + "</td><td>" + $('#map_point_y').val() + "</td>");
         vertices.push($('#map_point_x').val() + "," + $('#map_point_y').val());
-        console.log(vertices);
+        //console.log(vertices);
         $("<tr/>", {
             "class": "tab-content",
             html: vertex
@@ -430,11 +472,11 @@
                 $(this).parents("tr").remove();
             }
         });
-        console.log(graph_layer)
+        //console.log(graph_layer)
         //map.removeLayer(L.userMarker( [$('#map_point_x').val(), $('#map_point_y').val()]));
         //todo: delete marker from map. it needs to get the one from the graph_layer list then remove it from map
     });
-    get_and_draw_graph(test)
+
 </script>
 </body>
 
