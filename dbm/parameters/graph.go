@@ -56,10 +56,12 @@ func (g *Graph) GetNodeByLabel (label string) (*Node,error){
 
 // AddNode adds a node to the graph by getting string of coords
 func (g *Graph) AddNodeByLabel(coords string) {
+	//glb.Debug.Println("####### enetered AddNodeByLabel ########")
 	g.lock.Lock()
 	n := Node{coords}
 	g.nodes = append(g.nodes, &n)
 	g.lock.Unlock()
+	//glb.Debug.Println("####### exited AddNodeByLabel ########")
 }
 
 func (g *Graph) GetNodeLocation(coords string) (float64, float64){
@@ -82,6 +84,19 @@ func (g *Graph) AddEdge(n1, n2 *Node) {
 	g.lock.Unlock()
 }
 
+func (g *Graph) AddEdgeByLabel(n1, n2 string) {
+	if g.edges == nil {
+		g.edges = make(map[Node][]*Node)
+	}
+	n1Node,_ := g.GetNodeByLabel(n1)
+	n2Node,_ := g.GetNodeByLabel(n2)
+
+	g.lock.Lock()
+	g.edges[*n1Node] = append(g.edges[*n1Node], n2Node)
+	g.edges[*n2Node] = append(g.edges[*n2Node], n1Node)
+	//todo: handle the repetetive entering the same edge
+	g.lock.Unlock()
+}
 
 func (g *Graph) String() {
 	g.lock.RLock()
@@ -96,4 +111,34 @@ func (g *Graph) String() {
 	}
 	fmt.Println(s)
 	g.lock.RUnlock()
+}
+
+
+func (g *Graph) GetGraphMap() map[string][]string {
+	//g.lock.RLock()
+	graphMap := make(map[string][]string)
+	g.AddNodeByLabel("10#10")
+	g.AddNodeByLabel("20#20")
+	g.AddNodeByLabel("20#30")
+	g.AddNodeByLabel("40#40")
+	g.AddNodeByLabel("50#50")
+	g.AddEdgeByLabel("10#10", "20#20")
+	g.AddEdgeByLabel("10#10", "20#30")
+	g.AddEdgeByLabel("20#20", "10#10")
+	g.AddEdgeByLabel("20#20", "20#30")
+	g.AddEdgeByLabel("20#30", "10#10")
+	g.AddEdgeByLabel("20#30", "20#20")
+	g.AddEdgeByLabel("20#30", "50#50")
+	g.AddEdgeByLabel("50#50", "20#30")
+	//glb.Debug.Println("graphMap",graphMap)
+
+	for i := 0; i < len(g.nodes); i++ {
+		near := g.edges[*g.nodes[i]]
+		for j := 0; j < len(near); j++ {
+			graphMap[g.nodes[i].label] = append(graphMap[g.nodes[i].label], near[j].label)
+		}
+	}
+	//glb.Debug.Println(graphMap)
+	//g.lock.RUnlock()
+	return graphMap
 }
