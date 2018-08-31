@@ -36,6 +36,8 @@ func easyjson2419208eDecodeParsinServerDbmParameters(in *jlexer.Lexer, out *Node
 			continue
 		}
 		switch key {
+		case "Label":
+			out.Label = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -50,6 +52,16 @@ func easyjson2419208eEncodeParsinServerDbmParameters(out *jwriter.Writer, in Nod
 	out.RawByte('{')
 	first := true
 	_ = first
+	{
+		const prefix string = ",\"Label\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Label))
+	}
 	out.RawByte('}')
 }
 
@@ -95,6 +107,87 @@ func easyjson2419208eDecodeParsinServerDbmParameters1(in *jlexer.Lexer, out *Gra
 			continue
 		}
 		switch key {
+		case "Nodes":
+			if in.IsNull() {
+				in.Skip()
+				out.Nodes = nil
+			} else {
+				in.Delim('[')
+				if out.Nodes == nil {
+					if !in.IsDelim(']') {
+						out.Nodes = make([]*Node, 0, 8)
+					} else {
+						out.Nodes = []*Node{}
+					}
+				} else {
+					out.Nodes = (out.Nodes)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v1 *Node
+					if in.IsNull() {
+						in.Skip()
+						v1 = nil
+					} else {
+						if v1 == nil {
+							v1 = new(Node)
+						}
+						(*v1).UnmarshalEasyJSON(in)
+					}
+					out.Nodes = append(out.Nodes, v1)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "Edges":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.Edges = make(map[Node][]*Node)
+				} else {
+					out.Edges = nil
+				}
+				for !in.IsDelim('}') {
+					var key Node
+					(key).UnmarshalEasyJSON(in)
+					in.WantColon()
+					var v2 []*Node
+					if in.IsNull() {
+						in.Skip()
+						v2 = nil
+					} else {
+						in.Delim('[')
+						if v2 == nil {
+							if !in.IsDelim(']') {
+								v2 = make([]*Node, 0, 8)
+							} else {
+								v2 = []*Node{}
+							}
+						} else {
+							v2 = (v2)[:0]
+						}
+						for !in.IsDelim(']') {
+							var v3 *Node
+							if in.IsNull() {
+								in.Skip()
+								v3 = nil
+							} else {
+								if v3 == nil {
+									v3 = new(Node)
+								}
+								(*v3).UnmarshalEasyJSON(in)
+							}
+							v2 = append(v2, v3)
+							in.WantComma()
+						}
+						in.Delim(']')
+					}
+					(out.Edges)[key] = v2
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -109,6 +202,72 @@ func easyjson2419208eEncodeParsinServerDbmParameters1(out *jwriter.Writer, in Gr
 	out.RawByte('{')
 	first := true
 	_ = first
+	{
+		const prefix string = ",\"Nodes\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		if in.Nodes == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v4, v5 := range in.Nodes {
+				if v4 > 0 {
+					out.RawByte(',')
+				}
+				if v5 == nil {
+					out.RawString("null")
+				} else {
+					(*v5).MarshalEasyJSON(out)
+				}
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"Edges\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		if in.Edges == nil && (out.Flags&jwriter.NilMapAsEmpty) == 0 {
+			out.RawString(`null`)
+		} else {
+			out.RawByte('{')
+			v6First := true
+			for v6Name, v6Value := range in.Edges {
+				if v6First {
+					v6First = false
+				} else {
+					out.RawByte(',')
+				}
+				(v6Name).MarshalEasyJSON(out)
+				out.RawByte(':')
+				if v6Value == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+					out.RawString("null")
+				} else {
+					out.RawByte('[')
+					for v7, v8 := range v6Value {
+						if v7 > 0 {
+							out.RawByte(',')
+						}
+						if v8 == nil {
+							out.RawString("null")
+						} else {
+							(*v8).MarshalEasyJSON(out)
+						}
+					}
+					out.RawByte(']')
+				}
+			}
+			out.RawByte('}')
+		}
+	}
 	out.RawByte('}')
 }
 
