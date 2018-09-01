@@ -1199,7 +1199,7 @@ func AddNodeToGraph(c *gin.Context) { // not complete
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	type st struct {
-		newVertexKey string `json:"newVertexKey"`
+		NewVertexKey string `json:"NewVertexKey"`
 	}
 	gp := dbm.GM.GetGroup(groupName)
 	curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
@@ -1207,8 +1207,8 @@ func AddNodeToGraph(c *gin.Context) { // not complete
 	if groupName != "none" {
 		//glb.Debug.Println(c.Request.GetBody())
 		if err := c.ShouldBindJSON(&tempSt); err == nil {
-			glb.Debug.Println("newVertexLabel : %%%---------> ",tempSt.newVertexKey)
-			newVertexLabel := tempSt.newVertexKey
+			glb.Debug.Println("newVertexLabel : %%%---------> ", tempSt.NewVertexKey)
+			newVertexLabel := tempSt.NewVertexKey
 			glb.Debug.Println("newVertexLabel : ---------> ",newVertexLabel)
 			curGroupGraph.AddNodeByLabel(newVertexLabel)
 			gp.Get_AlgoData().Set_GroupGraph(curGroupGraph)

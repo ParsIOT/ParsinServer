@@ -294,10 +294,13 @@ func main() {
 			})
 
 			needToLoadSettings.GET("/fingerprintAmbiguity/:group", routes.FingerprintAmbiguity)
-
 			needToLoadSettings.GET("/heatmap/:group", func(context *gin.Context) {
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*")) // TODO: remove this for performance
 				routes.Heatmap(context)
+			})
+			needToLoadSettings.GET("/uwbUserMap/:group", func(context *gin.Context) {
+				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*")) // TODO: remove this for performance
+				routes.UWBUserMap(context)
 			})
 
 			//needToLoadSettings.GET("/location", routes.GetUserLocations)

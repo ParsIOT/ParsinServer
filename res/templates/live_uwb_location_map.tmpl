@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8/>
+    <title>PARSIN</title>
+    <link rel="shortcut icon" sizes="16x16 24x24 32x32 48x48 64x64" href="/static/img/favicon.ico"/>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
+
+    <!-- Bootstrap and JQuery JS -->
+    <script src="/static/js/jquery-2.0.0.min.js"></script>
+    <script src='/static/js/bootstrap.js'></script>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
+    <link href="/static/css/custom.css" rel="stylesheet">
+
+
+    <link href="/static/css/leaflet.css" rel="stylesheet">
+    <link href="/static/css/leaflet.usermarker.css" rel="stylesheet">
+    <script src='/static/js/leaflet.js'></script>
+    <script src='/static/js/leaflet.usermarker.js'></script>
+    <script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
+    <script src="/static/js/sweetalert.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
+    <link href="/static/css/sweetalert2.css" rel="stylesheet"/>
+    <script src="/static/js/sweetalert2.js"></script>
+
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+    <style>
+        #live-map {
+            height: 500px;
+        }
+
+        #live-users-table-container {
+            overflow: scroll;
+        }
+    </style>
+</head>
+
+<body>
+
+{{ template "navbar" . }}
+
+<!-- Page Content -->
+<div class="container-fluid">
+
+    <div class="row">
+        <div class="col-lg-12">
+            <h2 class="page-header">Live Location Map
+                <small>view users on map</small>
+            </h2>
+        </div>
+    </div>
+
+    <!--<div class="well">-->
+    <div class="row">
+        <div class="col-md-9 col-sm-12">
+            <div class="panel panel-primary" id="map-panel">
+                <div class="panel-heading">
+                    Map
+                </div>
+                <div class="panel-body">
+                    <div id="live-map"></div>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-12">
+            <div class="panel panel-success" id="users-list-panel">
+                <div class="panel-heading">
+                    Settings
+                </div>
+                <div class="panel-body" id="live-users-table-container">
+                    <div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
+
+                        <div class="col-md-12">
+                            <a href="#auto-refresh" data-toggle="collapse"><h4 style="text-decoration: underline;">Auto
+                                Refresh</h4></a>
+                            <div id="auto-refresh" class="collapse in">
+
+                                <div class="form-group">
+                                    <label><input id="auto-reload" type="checkbox" checked/> Enable Auto reload</label>
+                                </div>
+                                <div class="form-group">
+                                    <label for="refresh-interval">Interval (milliseconds)</label>
+                                    <input id="refresh-interval" type="number" min="10" step="10" value="200"
+                                           class="form-control" disabled/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <table id="live-users-table"
+                           class="table table-responsive table-hover table-condensed table-bordered">
+                        <thead>
+                        <tr>
+                            <td>User</td>
+                            <td>X</td>
+                            <td>Y</td>
+                        </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--</div>-->
+
+
+</div>
+
+<script type="application/javascript">
+    var filter_user = false;
+    var reloadDataInterval;
+    $('#live-map').css('height', $(window.top).height() - 275);
+    $('#live-users-table-container').css('height', $(window.top).height() - 245);
+    var map = L.map('live-map', {
+        crs: L.CRS.Simple,
+        minZoom: -100,
+//        maxZoom: 4
+    });
+    var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
+    //    var bounds = [[-400, -300], [400, 300]];
+    var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
+    map.setView([0, 0], -2);
+
+    var markers = {};
+    var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
+
+    //    var marker = L.userMarker([0, 0], {pulsing: true, accuracy: 100, smallIcon: true});
+    //    marker.addTo(map);
+
+    updateUsersLocation();
+
+    function updateUsersLocation() {
+        console.info("Loading");
+        clearInterval(reloadDataInterval);
+        $('.bs-callout').removeClass('bs-callout-info bs-callout-success').addClass('bs-callout-danger')
+        $.getJSON("http://127.0.0.1:5000/loc", function (data) {
+            var items = [];
+            console.log(data);
+            let location = data.location;
+
+            let match = pattern.exec(location);
+            if (match && match[1] && match[2]) {
+                key = location
+                items.push("<tr><td>" + key + "</td><td>" + match[2] + "</td><td>" + match[1] + "</td></tr>");
+                createMarker(key, match);
+
+            } else {
+
+                items.push("<tr><td>" + key + "</td><td colspan='2' class='text-center'> NO DATA </td></tr>");
+            }
+
+            $("#live-users-table").find("tbody").remove();
+            $("<tbody/>", {
+                "class": "tab-content",
+                html: items.join("")
+            }).appendTo("#live-users-table");
+            console.info("done");
+            setTimeout(function () {
+                $('.bs-callout').removeClass('bs-callout-danger').addClass('bs-callout-success')
+                if ($('#auto-reload').is(':checked')) {
+                    resetDataLoadInterval()
+                }
+            }, 200);
+        });
+    }
+
+    $('#auto-reload').change(function () {
+        if (this.checked) {
+            $('#refresh-interval').prop('disabled', false);
+            resetDataLoadInterval();
+        } else {
+            clearInterval(reloadDataInterval);
+            $('#refresh-interval').prop('disabled', true);
+        }
+    });
+
+    $('#refresh-interval').change("change", function () {
+        resetDataLoadInterval();
+    });
+
+    function resetDataLoadInterval(interval = null) {
+        clearInterval(reloadDataInterval);
+        if (interval) {
+            reloadDataInterval = setInterval(updateUsersLocation, interval);
+            return
+        }
+        let v = parseInt($('#refresh-interval').val());
+        let m = parseInt($('#refresh-interval').prop('min'));
+        if (m < v) {
+            reloadDataInterval = setInterval(updateUsersLocation, v);
+        } else {
+            reloadDataInterval = setInterval(updateUsersLocation, m);
+        }
+    }
+
+    function createMarker(key, match) {
+        if (key in markers) {
+            markers[key].slideTo([match[2], match[1]], {
+                duration: 100,
+                keepAtCenter: false
+            });
+        } else {
+            markers[key] = L.userMarker([match[2], match[1]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+                title: key,
+                smallIcon: true
+            }).bindPopup("<b>" + key + "</b><br>" + match[2]
+                    + "," + match[1]).addTo(map);
+
+        }
+    }
+</script>
+</body>
+
+</html>

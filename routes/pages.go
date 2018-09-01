@@ -368,6 +368,27 @@ func Heatmap(c *gin.Context) {
 	})
 }
 
+func UWBUserMap(c *gin.Context) {
+	groupName := c.Param("group")
+	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+		})
+		return
+	}
+	MapName := dbm.GetSharedPrf(groupName).MapName
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
+	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
+	c.HTML(http.StatusOK, "live_uwb_location_map.tmpl", gin.H{
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
+	})
+}
+
+
+
 // slash Location returns location (to be deprecated)
 //func SlashLocation(c *gin.Context) {
 //	groupName := c.Param("group")
