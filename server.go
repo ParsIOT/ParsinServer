@@ -294,10 +294,7 @@ func main() {
 			})
 
 			needToLoadSettings.GET("/fingerprintAmbiguity/:group", routes.FingerprintAmbiguity)
-			needToLoadSettings.GET("/heatmap/:group", func(context *gin.Context) {
-				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*")) // TODO: remove this for performance
-				routes.Heatmap(context)
-			})
+			needToLoadSettings.GET("/heatmap/:group", routes.Heatmap)
 			needToLoadSettings.GET("/uwbUserMap/:group", func(context *gin.Context) {
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*")) // TODO: remove this for performance
 				routes.UWBUserMap(context)
@@ -341,7 +338,7 @@ func main() {
 			needToLoadSettings.GET("/reformdb", routes.ReformDB)
 			needToLoadSettings.GET("/macfilterform/:group", routes.Macfilterform)
 			//needToLoadSettings.GET("/Graphform/:group", routes.Graphform) //komeil: page to enter graph
-			needToLoadSettings.GET("/Graphform/:group",func(context *gin.Context) { //komeil: graph map
+			needToLoadSettings.GET("/Graphform/:group", func(context *gin.Context) { //komeil: graph map
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
 				routes.Graphform(context)
 			})
