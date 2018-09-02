@@ -489,11 +489,12 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 			return
 		}
 
-		err := dbm.CalculateTestError(groupName)
+		err, details := dbm.CalculateTestError(groupName)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 		} else {
-			c.JSON(http.StatusOK, gin.H{"success": true})
+			glb.Debug.Println(details)
+			c.JSON(http.StatusOK, gin.H{"success": true, "details": details})
 		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group isn't given"})

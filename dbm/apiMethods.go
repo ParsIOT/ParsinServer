@@ -1312,12 +1312,13 @@ func GetRSSData(groupName string, mac string) [][]int {
 
 }
 
-func CalculateTestError(groupName string) error { //todo: create a page to show test-valid test fingerprint on map
+func CalculateTestError(groupName string) (error, [][]string) { //todo: create a page to show test-valid test fingerprint on map
+	details := [][]string{}
 	file, err := os.Open(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/test/"+groupName+".log"))
 	defer file.Close()
 	if err != nil {
 		glb.Error.Println(err)
-		return errors.New("no such file or directory")
+		return errors.New("no such file or directory"), [][]string{}
 	}
 
 	// Get location logs from uploaded true location logs
@@ -1334,7 +1335,7 @@ func CalculateTestError(groupName string) error { //todo: create a page to show 
 		}
 
 		if (len(locLog) != 5) {
-			return errors.New("Uploaded file doesn't have true location log format(timestamp,tag_name,x,y,z)")
+			return errors.New("Uploaded file doesn't have true location log format(timestamp,tag_name,x,y,z)"), [][]string{}
 		}
 		tagName := locLog[1]
 		if (tagName == "None") { // x,y,z are None too.
@@ -1364,7 +1365,7 @@ func CalculateTestError(groupName string) error { //todo: create a page to show 
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
-		return err
+		return err, [][]string{}
 	}
 
 	// Get TestValidTracks from db
@@ -1372,7 +1373,7 @@ func CalculateTestError(groupName string) error { //todo: create a page to show 
 	rsd := gp.Get_ResultData()
 	testValidTracks := rsd.Get_TestValidTracks()
 	tempTestValidTracks := []parameters.TestValidTrack{}
-	glb.Debug.Println(testValidTracks)
+	//glb.Debug.Println(testValidTracks)
 	AlgoError := make(map[string]float64)
 	numValidTestFPs := 0
 	AlgoError["knn"] = float64(0)
@@ -1380,7 +1381,7 @@ func CalculateTestError(groupName string) error { //todo: create a page to show 
 	//AlgoError["svm"] = float64(0)
 	if len(testValidTracks) == 0 {
 		glb.Error.Println("empty TestValidTracks")
-		return errors.New("empty TestValidTracks")
+		return errors.New("empty TestValidTracks"), [][]string{}
 	}
 
 	for _, testValidTrack := range testValidTracks {
@@ -1401,6 +1402,8 @@ func CalculateTestError(groupName string) error { //todo: create a page to show 
 
 			//fpSvmX, fpSvmY := glb.GetDotFromString(userPos.SvmGuess)
 			//AlgoError["svm"] += glb.CalcDist(fpSvmX, fpSvmY, trueX, trueY)
+			details = append(details, []string{TrueLoc, userPos.KnnGuess})
+			//details = append(details,[]string{TrueLoc,userPos.KnnGuess,userPos.SvmGuess})
 
 			tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
 		} else {
@@ -1417,5 +1420,5 @@ func CalculateTestError(groupName string) error { //todo: create a page to show 
 		glb.Debug.Println("TestValid "+algoName+" Error = ", algoError/float64(numValidTestFPs))
 		rsd.Set_AlgoTestErrorAccuracy(algoName, int(algoError/float64(numValidTestFPs)))
 	}
-	return nil
+	return nil, details
 }
