@@ -65,7 +65,7 @@
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="bs-callout bs-callout-info" style="margin: 0 0 15px;padding-bottom: 5px;">
-                                    <h4>vertex input</h4>
+                                    <h4>click coordinatios</h4>
                                     <div class="row">
                                         <div class="col-md-3">
                                             <div class="form-group">
@@ -79,14 +79,9 @@
                                                        class="form-control"/>
                                             </div>
                                         </div>
-                                        <div class="col-md-3">
-                                            <button type="submit" class="btn btn-info" id="add_vertex_button"
-                                                    title="Add Vertex">Add Vertex
-                                            </button>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <button type="submit" class="btn btn-info" id="deleteSelected"
-                                                    title="Delete selected">Delete
+                                        <div class="col-md-6">
+                                            <button type="submit" class="btn btn-info" id="deletewholegraph"
+                                                    title="Delete whole graph">Delete whole graph
                                             </button>
                                         </div>
 
@@ -169,28 +164,27 @@
 
 <script>
     var vertices = []; // list of vertices entered by map
-    // var test = {
-    //     '10#10': [[20, 20], [20, 30]],
-    //     '20#20': [[10, 10], [20, 30]],
-    //     '20#30': [[10, 10], [20, 20], [50, 50]],
+    // var test = { // its pattern is like:
+    //     '10#10': ["20#20", "20#20"],
+    //     '20#20': ["10#10", "20#30"],
+    //     '20#30': ["10#10", "20#20", "50#50"],
     //     '40#40': [],
-    //     '50#50': [[20, 30]],
+    //     '50#50': ["20#30"],
     // };
     var test;
     $.get("/getgraph", {
-			    "group": {{ .Group }},
-		    },
-		    function (result) {
-			    if (result['success']) {
-				    test = result["message"];
-				    console.log("message:",test);
-				    get_and_draw_graph(test)
-			    } else {
-				    swal("Something went wrong.", data['message'], "error");
-			    }
-		    }
+                "group": {{ .Group }},
+            },
+            function (result) {
+                if (result['success']) {
+                    test = result["message"];
+                    //console.log("message:",test);
+                    get_and_draw_graph(test)
+                } else {
+                    swal("Something went wrong.", data['message'], "error");
+                }
+            }
     );
-
 
     var start_vertex = '';
     var end_vertex = '';
@@ -203,7 +197,7 @@
     });
     var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
     var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
-    map.setView([50, 100], 2);
+    map.setView([50, 100], -2);
 
     var graph_layer = L.featureGroup().addTo(map);
 
@@ -213,8 +207,8 @@
     function isItemInArray(array, item) {
         for (var i = 0; i < array.length; i++) {
             // This if statement depends on the format of your array
-            //if (array[i][0] == item[0] && array[i][1] == item[1]) { // changed by komeil
-	        if (array[i] == item) {
+            //if (array[i][0] == item[0] && array[i][1] == item[1]) { // changed by komeil due to the new form of test
+            if (array[i] == item) {
                 return true;   // Found it
             }
         }
@@ -230,7 +224,7 @@
 
             var start_marker_position = [parseFloat(key.split('#')[0]), parseFloat(key.split('#')[1])];
             //visited_vertices.push(start_marker_position);
-	        visited_vertices.push(key);
+            visited_vertices.push(key);
             var obj = init_markers_object[key];
             //add vertex
             // var marker = L.marker(start_marker_position);
@@ -243,10 +237,9 @@
             for (var prop in obj) {
                 // skip loop if the property is from prototype
                 if (!obj.hasOwnProperty(prop)) continue;
-
                 //var end_marker_position = obj[prop];
-                console.log(obj[prop]);
-	            var end_marker_position = [parseFloat(obj[prop].split('#')[0]), parseFloat(obj[prop].split('#')[1])]
+                //console.log(obj[prop]);
+                var end_marker_position = [parseFloat(obj[prop].split('#')[0]), parseFloat(obj[prop].split('#')[1])]
                 // if (visited_vertices.indexOf(end_marker_position) === -1) {
                 if (!isItemInArray(visited_vertices, obj[prop])) {
                     var edge = new L.polyline([start_marker_position, end_marker_position], {
@@ -256,10 +249,8 @@
                         smoothFactor: 1
                     }).addTo(graph_layer);
                 }
-
             }
         }
-
     }
 
 
@@ -277,11 +268,11 @@
             onClick: function (btn, map) {
                 if (!edge_draw_enable) {
                     edge_draw_enable = true;
-
                 } else {
                     edge_draw_enable = false
                 }
                 btn.state('save_graph');    // change state on click!
+
             }
         }, {
             stateName: 'save_graph',
@@ -291,6 +282,19 @@
                 console.table(test);
                 swal2('Save Graph', 'Save Graph to db?', 'success');
                 btn.state('edge_draw_enable');
+                edge_draw_enable = false;
+                $.get("/saveedgestodb", {
+                            "group": {{ .Group }},
+                        },
+                        function (result) {
+                            if (result['success']) {
+                                resultFromServer = result["message"];
+                                console.log("message:", resultFromServer);
+                            } else {
+                                swal("Something went wrong.", data['message'], "error");
+                            }
+                        }
+                );
                 return test;
             }
         }]
@@ -317,35 +321,38 @@
         var layer = e.layer;
         var layerType = e.layerType;
         if (layerType === 'marker') {
-            var new_vertex_key = layer.getLatLng().lat.toString() + '#' + layer.getLatLng().lng.toString();
+            var new_vertex_key = Math.round(layer.getLatLng().lat).toString() + '#' + Math.round(layer.getLatLng().lng).toString();
             test[new_vertex_key] = [];
-            var new_marker = L.userMarker(layer.getLatLng(), {
+            // var new_marker = L.userMarker(layer.getLatLng(), {
+            //     smallIcon: true
+            // });
+            var new_marker = L.userMarker([Math.round(layer.getLatLng().lat), Math.round(layer.getLatLng().lng)], {
                 smallIcon: true
             });
             graph_layer.addLayer(new_marker);
             //console.log("newVertexKey: ***** ", new_vertex_key)
             //post to server
-	        $.ajax({
-		        method: "POST",
-		        url: "/addNodeToGraph/?group={{ .Group }}",
-		        dataType: "json",
-		        data: JSON.stringify({
-			        "newVertexKey": new_vertex_key,
-		        }),
-		        success: function (data) {
-			        console.log("data to send to server: %%%%%%% ",data);
-			        if (data['success']) {
-				        swal2(
-						        'Created!',
-						        'The new markers have been created.',
-						        'success'
-				        )
-			        }
-		        },
-		        error: function (data) {
-			        console.log(data)
-		        }
-	        });
+            $.ajax({
+                method: "POST",
+                url: "/addNodeToGraph/?group={{ .Group }}",
+                dataType: "json",
+                data: JSON.stringify({
+                    "newVertexKey": new_vertex_key,
+                }),
+                success: function (data) {
+                    //console.log("data to send to server: %%%%%%% ",data);
+                    if (data['success']) {
+                        /* swal2(
+                                 'Created!',
+                                 'The new markers have been created.',
+                                 'success'
+                         )*/
+                    }
+                },
+                error: function (data) {
+                    console.log(data)
+                }
+            });
         }
     });
 
@@ -357,20 +364,19 @@
         removed_edges = [];
         removed_layers.eachLayer(function (layer) {
             if (layer instanceof L.Polyline) {
-                var start_vertex = [layer.getLatLngs()[0].lat, layer.getLatLngs()[0].lng];
-                var end_vertex = [layer.getLatLngs()[1].lat, layer.getLatLngs()[1].lng];
-                removed_edges.push([start_vertex, end_vertex])
+                var start_vertex_key = [layer.getLatLngs()[0].lat.toString() + '#' + layer.getLatLngs()[0].lng.toString()];
+                var end_vertex_key = [layer.getLatLngs()[1].lat.toString() + '#' + layer.getLatLngs()[1].lng.toString()];
+                removed_edges.push(start_vertex_key + "&" + end_vertex_key)
             }
-
             if (layer instanceof L.Marker) {
-                vertex_position = (layer.getLatLng().lat).toString() + '.0' + ',' + (layer.getLatLng().lng) + '.0';
+                vertex_position = (layer.getLatLng().lat).toString() + '#' + (layer.getLatLng().lng); //+ ".0"
                 removed_vertices.push(vertex_position)
             }
         });
         //send removed layers to server
         $.ajax({
             method: "POST",
-            url: "/test?group={{ .Group }}",
+            url: "/RemoveEdgesOrVertices?group={{ .Group }}",
             dataType: "json",
             data: JSON.stringify({
                 "removed_vertices": removed_vertices,
@@ -405,12 +411,15 @@
             //start of edge drawing
             if (start_vertex === '' && end_vertex === '') {
                 start_vertex = [e.layer.getLatLng().lat, e.layer.getLatLng().lng];
+                console.log(start_vertex, " is selected as start_vertex")
                 //    the second vertex is clicked
             } else if (start_vertex !== '' && end_vertex === '') {
                 end_vertex = [e.layer.getLatLng().lat, e.layer.getLatLng().lng];
+                console.log(end_vertex, " is selected as end_vertex");
                 //vertex keys in test object (e.g "20#40")
                 var start_vertex_key = start_vertex[0] + '#' + start_vertex[1];
                 var end_vertex_key = end_vertex[0] + '#' + end_vertex[1];
+                console.log("it is about to add a new edge to map");
                 //making the new edge
                 var new_edge = new L.polyline([start_vertex, end_vertex], {
                     color: 'green',
@@ -418,35 +427,45 @@
                     opacity: 0.8,
                     smoothFactor: 1
                 });
+                console.log("a new edge must be added to map now");
                 //if start vertex is not the same as end vertex
-                if (((start_vertex[0] !== end_vertex[0]) && (start_vertex[1] !== end_vertex[1]))) {
+                if (start_vertex_key !== end_vertex) {
                     //if start_vertex has no edges
                     if (JSON.stringify(test[start_vertex_key]) == "[]") {
-                        test[start_vertex_key] = [end_vertex];
-                        test[end_vertex_key].push(start_vertex);
+                        test[start_vertex_key] = [end_vertex_key];
+                        test[end_vertex_key].push(start_vertex_key);
                         new_edge.addTo(graph_layer);
-
                     }
                     //if start_vertex is connected to some vertices, but has no edge to end_vertex
-                    else if (!isItemInArray(test[start_vertex_key], end_vertex)) {
-                        test[start_vertex_key].push(end_vertex);
-                        test[end_vertex_key].push(start_vertex);
+                    else if (!isItemInArray(test[start_vertex_key], end_vertex_key)) {
+                        test[start_vertex_key].push(end_vertex_key);
+                        test[end_vertex_key].push(start_vertex_key);
                         new_edge.addTo(graph_layer);
                     }
-
                     //send edge to server
-                }
+                    NewEdge = [];
+                    NewEdge.push(start_vertex_key);
+                    NewEdge.push(end_vertex_key);
 
+                    $.ajax({
+                        method: "POST",
+                        url: "/addEdgeToGraph/?group={{ .Group }}",
+                        dataType: "json",
+                        data: JSON.stringify({
+                            "NewEdge": NewEdge,
+                        }),
+                        error: function (data) {
+                            console.log(data)
+                        }
+                    });
+
+                }
                 //reset start and end vertex variable
                 start_vertex = '';
                 end_vertex = '';
             }
         }
-
-
-        // console.log('***************');
-
-
+        // console.log('***************')
     });
 
 
@@ -466,12 +485,26 @@
 
 
     // Find and remove selected table rows
-    $("#deleteSelected").click(function () {
-        $("table tbody").find('input[name="record"]').each(function () {
-            if ($(this).is(":checked")) {
-                $(this).parents("tr").remove();
-            }
-        });
+    $("#deletewholegraph").click(function () {
+        // $("table tbody").find('input[name="record"]').each(function () {
+        //     if ($(this).is(":checked")) {
+        //         $(this).parents("tr").remove();
+        //     }
+        // });
+        console.log("### it is about to send a api ###")
+        $.get("/deletewholegraph", {
+                    "group": {{ .Group }},
+                },
+                function (result) {
+                    if (result['success']) {
+                        resultOfremoving = result["message"];
+                        console.log("message:", resultOfremoving);
+                        swal2('Delete Graph', 'Delete whole Graph?', 'warning');
+                    } else {
+                        swal("Something went wrong.", data['message'], "error");
+                    }
+                }
+        );
         //console.log(graph_layer)
         //map.removeLayer(L.userMarker( [$('#map_point_x').val(), $('#map_point_y').val()]));
         //todo: delete marker from map. it needs to get the one from the graph_layer list then remove it from map

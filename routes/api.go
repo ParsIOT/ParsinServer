@@ -1200,7 +1200,7 @@ func AddNodeToGraph(c *gin.Context) { // not complete
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	type st struct {
-		NewVertexKey string `json:"NewVertexKey"`
+		NewVertexKey string `json:newVertexKey`
 	}
 	gp := dbm.GM.GetGroup(groupName)
 	curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
@@ -1208,13 +1208,15 @@ func AddNodeToGraph(c *gin.Context) { // not complete
 	if groupName != "none" {
 		//glb.Debug.Println(c.Request.GetBody())
 		if err := c.ShouldBindJSON(&tempSt); err == nil {
-			glb.Debug.Println("newVertexLabel : %%%---------> ", tempSt.NewVertexKey)
+			//glb.Debug.Println("newVertexLabel : %%%---------> ",tempSt.NewVertexKey)
 			newVertexLabel := tempSt.NewVertexKey
-			glb.Debug.Println("newVertexLabel : ---------> ",newVertexLabel)
+			//glb.Debug.Println("newVertexLabel : ---------> ",newVertexLabel)
 			curGroupGraph.AddNodeByLabel(newVertexLabel)
-			gp.Get_AlgoData().Set_GroupGraph(curGroupGraph)
-			glb.Debug.Println("####### exited AddNodeByLabel in the bindJson ########")
-			//err := dbm.AddArbitLocations(groupName, new_vertex_key)
+			//curGroupGraph.DeleteGraph()
+			//glb.Debug.Println("graph after adding : ---------> ",curGroupGraph.GetGraphMap())
+			ad := gp.Get_AlgoData()
+			ad.Set_GroupGraph(curGroupGraph)
+			//glb.Debug.Println("####### exited AddNodeByLabel in the bindJson ########")
 			if err != nil {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			} else {
@@ -1226,6 +1228,153 @@ func AddNodeToGraph(c *gin.Context) { // not complete
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:" + err.Error()})
 			//c.JSON(http.StatusOK, gin.H{"message": "Nums of the FilterMacs are zero", "success": false})
 		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
+	}
+}
+
+func SaveEdgesToDB (c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	group := c.DefaultQuery("group", "none")
+	var err error
+
+	if group != "none" {
+		gp := dbm.GM.GetGroup(group)
+		curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
+		ad := gp.Get_AlgoData()
+		ad.Set_GroupGraph(curGroupGraph)
+		//glb.Debug.Println("$$$$ the graph is saved to DB")
+		//graphMap = curGraphMap.GetGraphMap()
+		//glb.Debug.Println(graphMap)
+	} else {
+		c.JSON(http.StatusOK, gin.H{"message": "group field is null", "success": false})
+	}
+
+	if err == nil {
+		//glb.Debug.Println("graphMap:",graphMap)
+		c.JSON(http.StatusOK, gin.H{"message": "edges saved to DB", "success": true})
+	} else {
+		glb.Warning.Println(err)
+		c.JSON(http.StatusOK, gin.H{"message": err.Error(), "success": false})
+	}
+
+}
+
+func DeleteWholeGraph (c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	group := c.DefaultQuery("group", "none")
+	var err error
+	//glb.Debug.Println("### entered delete whole graph api ###")
+	if group != "none" {
+		gp := dbm.GM.GetGroup(group)
+		curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
+		curGroupGraph.DeleteGraph()
+		ad := gp.Get_AlgoData()
+		ad.Set_GroupGraph(curGroupGraph)
+		//glb.Debug.Println("$$$$ the graph is removed from DB")
+	} else {
+		c.JSON(http.StatusOK, gin.H{"message": "group field is null", "success": false})
+	}
+
+	if err == nil {
+		//glb.Debug.Println("graphMap:",graphMap)
+		c.JSON(http.StatusOK, gin.H{"message": "the graph has been removed", "success": true})
+	} else {
+		glb.Warning.Println(err)
+		c.JSON(http.StatusOK, gin.H{"message": err.Error(), "success": false})
+	}
+
+}
+
+func AddEdgeToGraph(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	type st struct {
+		NewEdge []string `json:NewEdge`
+	}
+	gp := dbm.GM.GetGroup(groupName)
+	curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
+	var tempSt st
+	if groupName != "none" {
+		if err := c.ShouldBindJSON(&tempSt); err == nil {
+			newEdgeLabel := tempSt.NewEdge
+			//glb.Debug.Println("newVertexLabel : ---------> ",newEdgeLabel)
+			curGroupGraph.AddEdgeByLabel(newEdgeLabel[0],newEdgeLabel[1])
+			//glb.Debug.Println("graph after adding : ---------> ",curGroupGraph.GetGraphMap())
+			//ad := gp.Get_AlgoData() // saving to DB has been moved to another function
+			//ad.Set_GroupGraph(curGroupGraph)
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			}
+		} else {
+			glb.Warning.Println("Can't bind json")
+			glb.Error.Println(err)
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:" + err.Error()})
+			}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
+	}
+}
+
+func RemoveEdgesOrVertices(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	type st struct {
+		RemovedVertices []string `json:"removed_vertices"`
+		RemovedEdges []string `json:"removed_edges"`
+	}
+	gp := dbm.GM.GetGroup(groupName)
+	curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
+	var tempSt st
+	if groupName != "none" {
+		if err := c.ShouldBindJSON(&tempSt); err == nil {
+			ToBeRemovedVertices := tempSt.RemovedVertices
+			ToBeRemovedEdges := tempSt.RemovedEdges
+			glb.Debug.Println(ToBeRemovedEdges,ToBeRemovedVertices,curGroupGraph)
+			for k,_ := range ToBeRemovedVertices {
+				//glb.Debug.Println("%%% ToBeRemovedVertices[k] %%%",ToBeRemovedVertices[k])
+				curGroupGraph.RemoveNodeByLabel(ToBeRemovedVertices[k])
+			}
+			for k,_ := range ToBeRemovedEdges {
+				//glb.Debug.Println("%%% ToBeRemovedEdges[k] %%%",ToBeRemovedEdges[k])
+				curGroupGraph.RemoveEdgeByLabel(ToBeRemovedEdges[k])
+			}
+			ad := gp.Get_AlgoData()
+			ad.Set_GroupGraph(curGroupGraph)
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			}
+		} else {
+			glb.Warning.Println("Can't bind json")
+			glb.Error.Println(err)
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:" + err.Error()})
+			}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
 	}

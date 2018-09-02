@@ -350,8 +350,12 @@ func main() {
 			needToLoadSettings.GET("/getfiltermacs", routes.Getfiltermacs)
 			needToLoadSettings.GET("/getuniquemacs", routes.GetUniqueMacs)
 
-			//needToLoadSettings.POST("/addNodeToGraph", routes.AddNodeToGraph) // komeil: set and get for graph
+			needToLoadSettings.POST("/addNodeToGraph", routes.AddNodeToGraph) // komeil: set and get for graph
 			needToLoadSettings.GET("/getgraph", routes.Getgraph)
+			needToLoadSettings.POST("/addEdgeToGraph", routes.AddEdgeToGraph)
+			needToLoadSettings.GET("/saveedgestodb", routes.SaveEdgesToDB)
+			needToLoadSettings.POST("/RemoveEdgesOrVertices", routes.RemoveEdgesOrVertices)
+			needToLoadSettings.GET("/deletewholegraph", routes.DeleteWholeGraph)
 
 			needToLoadSettings.PUT("/choosemap", routes.ChooseMap) // komeil: choose a map for group
 			//Arbitrary locations
@@ -361,7 +365,7 @@ func main() {
 		}
 	}
 
-	r.POST("/addNodeToGraph", routes.AddNodeToGraph)
+	//r.POST("/addNodeToGraph", routes.AddNodeToGraph)
 	r.POST("/uploadTrueLocationLog", routes.UploadTrueLocationLog)
 	r.GET("/setRelocateFPLocState", routes.SetRelocateFPLocStateAPI)
 	r.GET("/getRSSData", routes.GetRSSDataAPI)
