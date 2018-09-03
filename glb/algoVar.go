@@ -40,6 +40,9 @@ var CalculateTestError bool
 
 var MaxMovement float64
 
+var PDREnabledForDynamicSubareaMethod bool
+
+var GraphEnabled bool
 var MaxEuclideanRssVectorDist float64
 
 func init() {
@@ -72,4 +75,6 @@ func init() {
 	DefaultMapHeight = 3400
 	DefaultMapWidth = 3600
 	CalculateTestError = true
+	GraphEnabled = true
+	PDREnabledForDynamicSubareaMethod = false
 }

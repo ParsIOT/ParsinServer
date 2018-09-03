@@ -19,6 +19,7 @@ type KnnFingerprints struct {
 	Clusters             map[string][]string    `json:"Clusters"`
 	K                    int                    `json:"K"`
 	MinClusterRss        int                    `json:"MinClusterRss"`
+	Node2FPs			 map[string][]string	`json:"Node2FPs"`
 }
 
 func NewKnnFingerprints() KnnFingerprints {
@@ -28,6 +29,7 @@ func NewKnnFingerprints() KnnFingerprints {
 		Clusters:             make(map[string][]string),
 		K:                    10,
 		MinClusterRss:        -70,
+		Node2FPs:			make(map[string][]string),
 	}
 }
 

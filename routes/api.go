@@ -1188,9 +1188,8 @@ func Getfiltermacs(c *gin.Context) {
 
 }
 
-// Set graph
 // POST parameters: graph
-func AddNodeToGraph(c *gin.Context) { // not complete
+func AddNodeToGraph(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -1204,6 +1203,12 @@ func AddNodeToGraph(c *gin.Context) { // not complete
 	}
 	gp := dbm.GM.GetGroup(groupName)
 	curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
+
+	//glb.Debug.Println(curGroupGraph.GetNearestNode("-1248#201").Label)
+	//glb.Debug.Println(curGroupGraph.GetNearestNode("-252#-1223").Label)
+	//glb.Debug.Println(curGroupGraph.GetNearestNode("-246#1534").Label)
+
+
 	var tempSt st
 	if groupName != "none" {
 		//glb.Debug.Println(c.Request.GetBody())
@@ -1355,14 +1360,15 @@ func RemoveEdgesOrVertices(c *gin.Context) {
 			ToBeRemovedVertices := tempSt.RemovedVertices
 			ToBeRemovedEdges := tempSt.RemovedEdges
 			glb.Debug.Println(ToBeRemovedEdges,ToBeRemovedVertices,curGroupGraph)
-			for k,_ := range ToBeRemovedVertices {
-				//glb.Debug.Println("%%% ToBeRemovedVertices[k] %%%",ToBeRemovedVertices[k])
-				curGroupGraph.RemoveNodeByLabel(ToBeRemovedVertices[k])
-			}
 			for k,_ := range ToBeRemovedEdges {
 				//glb.Debug.Println("%%% ToBeRemovedEdges[k] %%%",ToBeRemovedEdges[k])
 				curGroupGraph.RemoveEdgeByLabel(ToBeRemovedEdges[k])
 			}
+			for k,_ := range ToBeRemovedVertices {
+				//glb.Debug.Println("%%% ToBeRemovedVertices[k] %%%",ToBeRemovedVertices[k])
+				curGroupGraph.RemoveNodeByLabel(ToBeRemovedVertices[k])
+			}
+
 			ad := gp.Get_AlgoData()
 			ad.Set_GroupGraph(curGroupGraph)
 			if err != nil {
@@ -1402,11 +1408,18 @@ func Getgraph(c *gin.Context) {
 	//graphMap["40#40"] = make([]string, 0)
 	//graphMap["50#50"] = append(graphMap["50#50"], "20#30")
 
+
+
 	if group != "none" {
 		gp := dbm.GM.GetGroup(group)
 		graphMapPointer := gp.Get_AlgoData().Get_GroupGraph()
 		graphMap = graphMapPointer.GetGraphMap()
 		//glb.Debug.Println(graphMap)
+		//glb.Debug.Println(graphMap)
+		//root,_ := graphMapPointer.GetNodeByLabel("368#-161")
+		//graphMapPointer.BFSTraverse(root,func(n *parameters.Node) {
+		//	glb.Debug.Printf("%v\n", n)
+		//})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "group field is null", "success": false})
 	}

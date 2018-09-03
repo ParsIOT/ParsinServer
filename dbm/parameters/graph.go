@@ -8,6 +8,7 @@ import (
 	"strings"
 	"strconv"
 	"ParsinServer/glb"
+	"math"
 )
 
 
@@ -84,9 +85,19 @@ func (g *Graph) AddNodeByLabel(coords string) {
 	//glb.Debug.Println("####### exited AddNodeByLabel ########")
 }
 
-func (g *Graph) GetNodeLocation(coords string) (float64, float64){
+func (node *Node) GetNodeLocation() (float64, float64){
 	//n := g.GetNodeByLabel(coords)
+	coords := node.Label
 	result := strings.Split(coords,"#")
+	x,err := strconv.ParseFloat(result[0],64)
+	if err!=nil {fmt.Println(err)}
+	y,err := strconv.ParseFloat(result[1],64)
+	return x,y
+}
+
+func ConvertStringLocToXY(coords string) (float64, float64){
+	//n := g.GetNodeByLabel(coords)
+	result := strings.Split(coords,"#") // this function is for locations from hadi
 	x,err := strconv.ParseFloat(result[0],64)
 	if err!=nil {fmt.Println(err)}
 	y,err := strconv.ParseFloat(result[1],64)
@@ -213,4 +224,60 @@ func (g *Graph) DeleteGraph() {
 	g.lock.Unlock()
 	glb.Debug.Println("exiting from deleteGraph")
 	glb.Debug.Println(g.Nodes)
+}
+
+
+
+func (g *Graph) GetNearestNode(location string) *Node {
+	//g.lock.RLock()
+	curX, curY := ConvertStringLocToXY(location)
+	minimumDist := math.MaxFloat64 // maybe should define a variable like the one hadi made for maxEucleadian distance
+	var ownerOfMinimumDist *Node
+	var curDist float64
+	for i := 0; i < len(g.Nodes); i++ {
+		x,y := g.Nodes[i].GetNodeLocation()
+		curDist = glb.CalcDist(curX,curY,x,y)
+		if curDist<minimumDist{
+			minimumDist = curDist
+			ownerOfMinimumDist = g.Nodes[i]
+		}
+	}
+	//glb.Debug.Println(graphMap)
+	//g.lock.RUnlock()
+	return ownerOfMinimumDist
+}
+
+
+// Traverse implements the BFS traversing algorithm
+func (g *Graph) BFSTraverse(startNode *Node, f func(*Node)) {
+	g.lock.RLock()
+	q := NodeQueue{}
+	q.New()
+	//n := g.Nodes[0]
+	n := startNode
+	q.Enqueue(*n)
+	//visited := make(map[*Node]bool)
+	visited := make(map[string]bool)
+	//i:=0
+	for {
+		//glb.Debug.Println("visited is ",visited,"in ",i,"th step")
+		if q.IsEmpty() {
+			break
+		}
+		node := q.Dequeue()
+		visited[node.Label] = true
+		near := g.Edges[*node]
+
+		for i := 0; i < len(near); i++ {
+			j := near[i]
+			if !visited[j.Label] {
+				q.Enqueue(*j)
+				visited[j.Label] = true
+			}
+		}
+		if f != nil {
+			f(node)
+		}
+	}
+	g.lock.RUnlock()
 }
