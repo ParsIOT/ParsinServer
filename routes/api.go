@@ -1789,13 +1789,17 @@ func UploadTrueLocationLog(c *gin.Context) {
 
 	if groupName != "none" && method != "none" {
 
+		//1:File upload:
+
 		// Set file path according to method
 		filePath := "/" + groupName + ".log"
-
+		mainMethod := ""
 		if method == "learn" || method == "learnAppend" {
 			filePath = "/TrueLocationLogs/learn" + filePath
+			mainMethod = "learn"
 		} else if method == "test" || method == "testAppend" {
 			filePath = "/TrueLocationLogs/test" + filePath
+			mainMethod = "test"
 		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "method must be learn,learnAppend,test or testAppend"})
 			return
@@ -1837,7 +1841,14 @@ func UploadTrueLocationLog(c *gin.Context) {
 				return
 			} else {
 				glb.Debug.Println("New log file was created or appended to " + filePath)
-				c.JSON(http.StatusOK, gin.H{"success": true})
+
+				//2(A): insert logs from uploaded file to groupcache
+				err := dbm.SetTrueLocationFromLog(groupName, mainMethod)
+				if err != nil {
+					c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				} else {
+					c.JSON(http.StatusOK, gin.H{"success": true})
+				}
 			}
 
 		} else if method == "learn" || method == "test" { //replace new file instead of last file
@@ -1865,11 +1876,18 @@ func UploadTrueLocationLog(c *gin.Context) {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			} else {
 				glb.Debug.Println("New log file was created or replaced with " + filePath)
-				c.JSON(http.StatusOK, gin.H{"success": true})
+
+				//2(B): insert logs from uploaded file to groupcache
+				err := dbm.SetTrueLocationFromLog(groupName, mainMethod)
+				if err != nil {
+					c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				} else {
+					c.JSON(http.StatusOK, gin.H{"success": true})
+				}
 			}
 		}
 
-		// After file learning file upload , set NeedToRelocateFP variable to true
+		// 3:After file learning file upload , set NeedToRelocateFP variable to true
 		if method == "learn" || method == "learnAppend" {
 			err := dbm.SetSharedPrf(groupName, "NeedToRelocateFP", true)
 			if err != nil {

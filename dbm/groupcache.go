@@ -26,6 +26,9 @@ type RawDataStruct struct{
 	//Learned data:
 	Fingerprints			map[string]parameters.Fingerprint
 	FingerprintsOrdering 	[]string
+
+	LearnTrueLocations     map[int64]string
+	TestValidTrueLocations map[int64]string //timestamp:location
 	//Note: Run easyjson.sh after editing
 }
 
@@ -861,10 +864,12 @@ func (gm *GroupManger) InstantFlushDB(groupName string){
 
 func (gp *Group) NewRawDataStruct() *RawDataStruct {
 	return &RawDataStruct{
-		mutex:                &sync.RWMutex{},
-		group:                gp,
-		Fingerprints:         make(map[string]parameters.Fingerprint),
-		FingerprintsOrdering: []string{},
+		mutex:                  &sync.RWMutex{},
+		group:                  gp,
+		Fingerprints:           make(map[string]parameters.Fingerprint),
+		FingerprintsOrdering:   []string{},
+		LearnTrueLocations:     make(map[int64]string),
+		TestValidTrueLocations: make(map[int64]string),
 	}
 }
 
@@ -1041,6 +1046,7 @@ func (gp *Group) Get_RawData_Filtered_Val() RawDataStruct {
 	return item
 }
 
+//Note: Use it just in buildgroup
 func (gp *Group) Set_RawData(newItem *RawDataStruct) {
 	gp.RLock()
 	item := gp.RawData
@@ -1074,6 +1080,7 @@ func (gp *Group) Set_RawData(newItem *RawDataStruct) {
 	GM.SetDirtyBit(gp.Get_Name())
 }
 
+//Note: Use it just in buildgroup
 func (gp *Group) Set_RawData_Val(newItem RawDataStruct) {
 	gp.RLock()
 	item := gp.RawData
@@ -1379,6 +1386,33 @@ func (rd *RawDataStruct) Set_FingerprintsOrdering(new_item []string){
 	rd.Unlock()
 }
 
+func (rd *RawDataStruct) Get_LearnTrueLocations() map[int64]string {
+	rd.RLock()
+	item := rd.LearnTrueLocations
+	rd.RUnlock()
+	return item
+}
+func (rd *RawDataStruct) Set_LearnTrueLocations(new_item map[int64]string) {
+	defer rd.SetDirtyBit()
+
+	rd.Lock()
+	rd.LearnTrueLocations = new_item
+	rd.Unlock()
+}
+
+func (rd *RawDataStruct) Get_TestValidTrueLocations() map[int64]string {
+	rd.RLock()
+	item := rd.TestValidTrueLocations
+	rd.RUnlock()
+	return item
+}
+func (rd *RawDataStruct) Set_TestValidTrueLocations(new_item map[int64]string) {
+	defer rd.SetDirtyBit()
+
+	rd.Lock()
+	rd.TestValidTrueLocations = new_item
+	rd.Unlock()
+}
 
 
 func (md *MiddleDataStruct) Get_NetworkMacs()  map[string]map[string]bool {

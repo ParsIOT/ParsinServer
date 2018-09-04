@@ -513,7 +513,7 @@ func CalculateLearn(groupName string) {
 	for _, res := range totalErrorList {
 		glb.Debug.Println(knnErrHyperParameters[res], " : ", res)
 	}
-	glb.Debug.Println()
+	//glb.Debug.Println()
 	glb.Debug.Println("Best K : ",bestK)
 	glb.Debug.Println("Best MinClusterRss : ",bestMinClusterRss)
 	glb.Debug.Println("Minimum error = ",bestResult)
@@ -987,83 +987,86 @@ func PreProcess(groupName string) {
 	}
 
 	//Average Rss vector of adjacent fingerprints
-	if glb.AvgRSSAdjacentDots {
-		maxValidFPDistAVG := float64(100); // 100 cm
+	if dbm.GetSharedPrf(groupName).NeedToRelocateFP {
+		if glb.AvgRSSAdjacentDots {
+			maxValidFPDistAVG := float64(100); // 100 cm
 
-		tempFingerprintsData2 := make(map[string]parameters.Fingerprint)
-		for fpOMain, fpMain := range tempFingerprintsData {
-			adjacentFPs := []parameters.Fingerprint{}
-			for fpO, fp := range tempFingerprintsData {
-				if (fpO == fpOMain) {
-					continue
+			tempFingerprintsData2 := make(map[string]parameters.Fingerprint)
+			for fpOMain, fpMain := range tempFingerprintsData {
+				adjacentFPs := []parameters.Fingerprint{}
+				for fpO, fp := range tempFingerprintsData {
+					if (fpO == fpOMain) {
+						continue
+					}
+					xyMain := strings.Split(fpMain.Location, ",")
+					xy := strings.Split(fp.Location, ",")
+					if len(xyMain) != 2 || len(xy) != 2 {
+						glb.Error.Println("location value doesn't have x,y format: xyMain:" + fpMain.Location + " & xy:" + fp.Location)
+						break
+					}
+
+					xMain, err1 := glb.StringToFloat(xyMain[0])
+					yMain, err2 := glb.StringToFloat(xyMain[1])
+					x, err3 := glb.StringToFloat(xy[0])
+					y, err4 := glb.StringToFloat(xy[1])
+					if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
+						glb.Error.Println(err1)
+						glb.Error.Println(err2)
+						glb.Error.Println(err3)
+						glb.Error.Println(err4)
+						break
+					}
+					//glb.Debug.Println(x,",",y)
+					//glb.Debug.Println(xMain,",",yMain)
+
+					dist := glb.CalcDist(x, y, xMain, yMain)
+
+					//glb.Debug.Println(dist)
+					if dist < maxValidFPDistAVG {
+						adjacentFPs = append(adjacentFPs, fp)
+					}
 				}
-				xyMain := strings.Split(fpMain.Location, ",")
-				xy := strings.Split(fp.Location, ",")
-				if len(xyMain) != 2 || len(xy) != 2 {
-					glb.Error.Println("location value doesn't have x,y format: xyMain:" + fpMain.Location + " & xy:" + fp.Location)
-					break
+				//glb.Error.Println(len(adjacentFPs))
+
+				//Average rss
+				newRouteWithAvgRss := []parameters.Router{}
+				mac2RssList := make(map[string][]int) // todo: problem with fingerprints that doesn't have some mac in their list
+				for _, rt := range fpMain.WifiFingerprint {
+					mac2RssList[rt.Mac] = []int{rt.Rssi}
 				}
 
-				xMain, err1 := glb.StringToFloat(xyMain[0])
-				yMain, err2 := glb.StringToFloat(xyMain[1])
-				x, err3 := glb.StringToFloat(xy[0])
-				y, err4 := glb.StringToFloat(xy[1])
-				if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
-					glb.Error.Println(err1)
-					glb.Error.Println(err2)
-					glb.Error.Println(err3)
-					glb.Error.Println(err4)
-					break
-				}
-				//glb.Debug.Println(x,",",y)
-				//glb.Debug.Println(xMain,",",yMain)
-
-				dist := glb.CalcDist(x, y, xMain, yMain)
-
-				//glb.Debug.Println(dist)
-				if dist < maxValidFPDistAVG {
-					adjacentFPs = append(adjacentFPs, fp)
-				}
-			}
-			//glb.Error.Println(len(adjacentFPs))
-
-			//Average rss
-			newRouteWithAvgRss := []parameters.Router{}
-			mac2RssList := make(map[string][]int) // todo: problem with fingerprints that doesn't have some mac in their list
-			for _, rt := range fpMain.WifiFingerprint {
-				mac2RssList[rt.Mac] = []int{rt.Rssi}
-			}
-
-			if len(adjacentFPs) != 0 {
-				for _, adjfp := range adjacentFPs {
-					for _, rt := range adjfp.WifiFingerprint {
-						if rssList, ok := mac2RssList[rt.Mac]; ok {
-							mac2RssList[rt.Mac] = append(rssList, rt.Rssi)
+				if len(adjacentFPs) != 0 {
+					for _, adjfp := range adjacentFPs {
+						for _, rt := range adjfp.WifiFingerprint {
+							if rssList, ok := mac2RssList[rt.Mac]; ok {
+								mac2RssList[rt.Mac] = append(rssList, rt.Rssi)
+							}
 						}
 					}
-				}
 
-				//glb.Debug.Println(mac2RssList)
-				for mac, rssList := range mac2RssList {
-					avgRss := 0
-					for _, rss := range rssList {
-						avgRss += rss
+					//glb.Debug.Println(mac2RssList)
+					for mac, rssList := range mac2RssList {
+						avgRss := 0
+						for _, rss := range rssList {
+							avgRss += rss
+						}
+						avgRss /= len(rssList)
+						//glb.Debug.Println(avgRss)
+						rt := parameters.Router{Mac: mac, Rssi: avgRss}
+						newRouteWithAvgRss = append(newRouteWithAvgRss, rt)
 					}
-					avgRss /= len(rssList)
-					//glb.Debug.Println(avgRss)
-					rt := parameters.Router{Mac: mac, Rssi: avgRss}
-					newRouteWithAvgRss = append(newRouteWithAvgRss, rt)
+					fpMainTemp := fpMain
+					fpMainTemp.WifiFingerprint = newRouteWithAvgRss //change mac,rss list
+					tempFingerprintsData2[fpOMain] = fpMainTemp
+				} else {
+					tempFingerprintsData2[fpOMain] = fpMain
 				}
-				fpMainTemp := fpMain
-				fpMainTemp.WifiFingerprint = newRouteWithAvgRss //change mac,rss list
-				tempFingerprintsData2[fpOMain] = fpMainTemp
-			} else {
-				tempFingerprintsData2[fpOMain] = fpMain
-			}
 
+			}
+			tempFingerprintsData = tempFingerprintsData2
 		}
-		tempFingerprintsData = tempFingerprintsData2
 	}
+
 
 	//// save processed data
 	gp.Get_RawData().Set_Fingerprints(tempFingerprintsData)

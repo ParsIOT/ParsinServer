@@ -14,7 +14,6 @@ import (
 	"math"
 	"sort"
 	"os"
-	"log"
 	"bufio"
 )
 
@@ -1131,68 +1130,12 @@ func GetMostSeenMacs(groupName string) []string {
 
 //Note:Use it before Preprocess
 func RelocateFPLoc(groupName string) error {
-	file, err := os.Open(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/learn/"+groupName+".log"))
-	if err != nil {
-		//log.Fatal(err)
-		glb.Debug.Println(err)
-		return err
-	}
-	defer file.Close()
-
-	// Get location logs from uploaded true location logs
-	locationLogs := make(map[string]map[int64][]string) // tag:timestamp:location(x,y,z)
-	allLocationLogs := make(map[int64][]string)         // timestamp:location(x,y,z)
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		locLogStr := scanner.Text()
-
-		// spliting the line
-		locLog := strings.Split(locLogStr, ",")
-		for i, item := range locLog {
-			locLog[i] = strings.TrimSpace(item)
-		}
-
-		if (len(locLog) != 5) {
-			return errors.New("Uploaded file doesn't have true location log format(timestamp,tag_name,x,y,z)")
-		}
-		tagName := locLog[1]
-		if (tagName == "None") { // x,y,z are None too.
-			glb.Debug.Println("None location")
-			continue
-		}
-
-		// converting timestamp from string to int64
-		timeStamp, err := strconv.ParseInt(locLog[0], 10, 64)
-		if err != nil {
-			glb.Error.Println(err)
-		}
-
-		xyz := locLog[2:]
-
-		if log, ok := locationLogs[tagName]; ok {
-			log[timeStamp] = xyz
-			locationLogs[tagName] = log
-		} else {
-			locationLogs[tagName] = make(map[int64][]string)
-			locationLogs[tagName][timeStamp] = xyz
-		}
-
-		// add to allLocationLogs
-
-		allLocationLogs[timeStamp] = xyz
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-		return err
-	}
-
-	//glb.Debug.Print(locationLogs)
-	//glb.Debug.Print(allLocationLogs)
-
-	// Get fingerprints from db
 	gp := GM.GetGroup(groupName)
 	rd := gp.Get_RawData()
-	//fpO := rd.Get_FingerprintsOrdering()
+	// Get True Location logs from db
+	allLocationLogs := rd.Get_LearnTrueLocations()
+	glb.Debug.Println("TrueLocationLog :", allLocationLogs)
+	// Get fingerprints from db
 	fpData := rd.Get_Fingerprints()
 
 	tempfpO := []string{}
@@ -1203,6 +1146,7 @@ func RelocateFPLoc(groupName string) error {
 		newLoc, err := FindTrueFPloc(fp, allLocationLogs)
 		if err == nil {
 			tempfpO = append(tempfpO, fpTime)
+			glb.Debug.Println(fp.Location, "-->", newLoc)
 			fp.Location = newLoc
 			tempfpData[fpTime] = fp
 		} else {
@@ -1219,7 +1163,7 @@ func RelocateFPLoc(groupName string) error {
 }
 
 // find best fp location according to
-func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string) (string, error) {
+func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string) (string, error) {
 	fpTimeStamp := fp.Timestamp
 	//newLoc := ""
 
@@ -1239,7 +1183,12 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string
 				//	xy := allLocationLogs[timeStamp][:2]
 				//newLoc = xy[1] + "," + xy[0]
 				if timeStamp == fpTimeStamp {
-					xy := allLocationLogs[timeStamp][:2]
+					xy := strings.Split(allLocationLogs[timeStamp], ",")
+					if !(len(xy) == 2) {
+						err := errors.New("Location names aren't in the format of x,y")
+						glb.Error.Println(err)
+					}
+
 					x, err1 := glb.StringToFloat(xy[0])
 					y, err2 := glb.StringToFloat(xy[1])
 					if err1 != nil || err2 != nil {
@@ -1255,7 +1204,14 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string
 						break
 					}
 					if timeStamp2-fpTimeStamp > fpTimeStamp-timeStamp1 { // set first timestamp location
-						xy := allLocationLogs[timeStamp1][:2]
+						//xy := allLocationLogs[timeStamp1][:2]
+
+						xy := strings.Split(allLocationLogs[timeStamp1], ",")
+						if !(len(xy) == 2) {
+							err := errors.New("Location names aren't in the format of x,y")
+							glb.Error.Println(err)
+						}
+
 						x, err1 := glb.StringToFloat(xy[0])
 						y, err2 := glb.StringToFloat(xy[1])
 						if err1 != nil || err2 != nil {
@@ -1266,7 +1222,13 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64][]string
 						return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", nil
 						//glb.Debug.Println(newLoc)
 					} else { //set second timestamp location
-						xy := allLocationLogs[timeStamp2][:2]
+						//xy := allLocationLogs[timeStamp2][:2]
+						xy := strings.Split(allLocationLogs[timeStamp2], ",")
+						if !(len(xy) == 2) {
+							err := errors.New("Location names aren't in the format of x,y")
+							glb.Error.Println(err)
+						}
+
 						x, err1 := glb.StringToFloat(xy[0])
 						y, err2 := glb.StringToFloat(xy[1])
 						if err1 != nil || err2 != nil {
@@ -1314,62 +1276,14 @@ func GetRSSData(groupName string, mac string) [][]int {
 
 func CalculateTestError(groupName string) (error, [][]string) { //todo: create a page to show test-valid test fingerprint on map
 	details := [][]string{}
-	file, err := os.Open(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/test/"+groupName+".log"))
-	defer file.Close()
-	if err != nil {
-		glb.Error.Println(err)
-		return errors.New("no such file or directory"), [][]string{}
-	}
 
-	// Get location logs from uploaded true location logs
-	locationLogs := make(map[string]map[int64][]string) // tag:timestamp:location(x,y,z)
-	allLocationLogs := make(map[int64][]string)         // timestamp:location(x,y,z)
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		locLogStr := scanner.Text()
+	gp := GM.GetGroup(groupName)
 
-		// spliting the line
-		locLog := strings.Split(locLogStr, ",")
-		for i, item := range locLog {
-			locLog[i] = strings.TrimSpace(item)
-		}
-
-		if (len(locLog) != 5) {
-			return errors.New("Uploaded file doesn't have true location log format(timestamp,tag_name,x,y,z)"), [][]string{}
-		}
-		tagName := locLog[1]
-		if (tagName == "None") { // x,y,z are None too.
-			glb.Debug.Println("None location")
-			continue
-		}
-
-		// converting timestamp from string to int64
-		timeStamp, err := strconv.ParseInt(locLog[0], 10, 64)
-		if err != nil {
-			glb.Error.Println(err)
-		}
-
-		xyz := locLog[2:]
-
-		if log, ok := locationLogs[tagName]; ok {
-			log[timeStamp] = xyz
-			locationLogs[tagName] = log
-		} else {
-			locationLogs[tagName] = make(map[int64][]string)
-			locationLogs[tagName][timeStamp] = xyz
-		}
-
-		// add to allLocationLogs
-
-		allLocationLogs[timeStamp] = xyz
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-		return err, [][]string{}
-	}
+	// Get True Location logs from db
+	allLocationLogs := gp.Get_RawData().Get_TestValidTrueLocations()
+	glb.Debug.Println("TrueLocationLog :", allLocationLogs)
 
 	// Get TestValidTracks from db
-	gp := GM.GetGroup(groupName)
 	rsd := gp.Get_ResultData()
 	testValidTracks := rsd.Get_TestValidTracks()
 	tempTestValidTracks := []parameters.TestValidTrack{}
@@ -1421,4 +1335,75 @@ func CalculateTestError(groupName string) (error, [][]string) { //todo: create a
 		rsd.Set_AlgoTestErrorAccuracy(algoName, int(algoError/float64(numValidTestFPs)))
 	}
 	return nil, details
+}
+
+func SetTrueLocationFromLog(groupName string, method string) error {
+	if method != "learn" && method != "test" {
+		return errors.New("runnig SetTrueLocationFromLog with invalid method")
+	}
+
+	file, err := os.Open(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/"+method+"/"+groupName+".log"))
+	defer file.Close()
+	if err != nil {
+		glb.Error.Println(err)
+		return errors.New("no such file or directory")
+	}
+
+	// Get location logs from uploaded true location logs
+	locationLogs := make(map[string]map[int64][]string) // tag:timestamp:location(x,y,z)
+	allLocationLogs := make(map[int64]string)           // timestamp:location(x,y,z)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		locLogStr := scanner.Text()
+
+		// spliting the line
+		locLog := strings.Split(locLogStr, ",")
+		for i, item := range locLog {
+			locLog[i] = strings.TrimSpace(item)
+		}
+
+		if (len(locLog) != 5) {
+			return errors.New("Uploaded file doesn't have true location log format(timestamp,tag_name,x,y,z)")
+		}
+		tagName := locLog[1]
+		if (tagName == "None") { // x,y,z are None too.
+			glb.Debug.Println("None location")
+			continue
+		}
+
+		// converting timestamp from string to int64
+		timeStamp, err := strconv.ParseInt(locLog[0], 10, 64)
+		if err != nil {
+			glb.Error.Println(err)
+		}
+
+		xy := locLog[2:][:2] // get x,y from line str
+
+		if log, ok := locationLogs[tagName]; ok {
+			log[timeStamp] = xy
+			locationLogs[tagName] = log
+		} else {
+			locationLogs[tagName] = make(map[int64][]string)
+			locationLogs[tagName][timeStamp] = xy
+		}
+
+		// add to allLocationLogs
+
+		allLocationLogs[timeStamp] = strings.Join(xy, ",")
+	}
+	if err := scanner.Err(); err != nil {
+		glb.Error.Println(err)
+		return err
+	}
+
+	rd := GM.GetGroup(groupName).Get_RawData()
+	if method == "test" {
+		rd.Set_TestValidTrueLocations(allLocationLogs)
+		glb.Debug.Println(allLocationLogs)
+	} else { //learn
+		rd.Set_LearnTrueLocations(allLocationLogs)
+		glb.Debug.Println(allLocationLogs)
+	}
+
+	return nil
 }

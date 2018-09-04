@@ -1300,6 +1300,47 @@ func easyjson224c90e0DecodeParsinServerDbmParameters4(in *jlexer.Lexer, out *Knn
 			out.K = int(in.Int())
 		case "MinClusterRss":
 			out.MinClusterRss = int(in.Int())
+		case "Node2FPs":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.Node2FPs = make(map[string][]string)
+				} else {
+					out.Node2FPs = nil
+				}
+				for !in.IsDelim('}') {
+					key := string(in.String())
+					in.WantColon()
+					var v47 []string
+					if in.IsNull() {
+						in.Skip()
+						v47 = nil
+					} else {
+						in.Delim('[')
+						if v47 == nil {
+							if !in.IsDelim(']') {
+								v47 = make([]string, 0, 4)
+							} else {
+								v47 = []string{}
+							}
+						} else {
+							v47 = (v47)[:0]
+						}
+						for !in.IsDelim(']') {
+							var v48 string
+							v48 = string(in.String())
+							v47 = append(v47, v48)
+							in.WantComma()
+						}
+						in.Delim(']')
+					}
+					(out.Node2FPs)[key] = v47
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -1326,16 +1367,16 @@ func easyjson224c90e0EncodeParsinServerDbmParameters4(out *jwriter.Writer, in Kn
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v47First := true
-			for v47Name, v47Value := range in.FingerprintsInMemory {
-				if v47First {
-					v47First = false
+			v49First := true
+			for v49Name, v49Value := range in.FingerprintsInMemory {
+				if v49First {
+					v49First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v47Name))
+				out.String(string(v49Name))
 				out.RawByte(':')
-				(v47Value).MarshalEasyJSON(out)
+				(v49Value).MarshalEasyJSON(out)
 			}
 			out.RawByte('}')
 		}
@@ -1352,11 +1393,11 @@ func easyjson224c90e0EncodeParsinServerDbmParameters4(out *jwriter.Writer, in Kn
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v48, v49 := range in.FingerprintsOrdering {
-				if v48 > 0 {
+			for v50, v51 := range in.FingerprintsOrdering {
+				if v50 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v49))
+				out.String(string(v51))
 			}
 			out.RawByte(']')
 		}
@@ -1373,24 +1414,24 @@ func easyjson224c90e0EncodeParsinServerDbmParameters4(out *jwriter.Writer, in Kn
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v50First := true
-			for v50Name, v50Value := range in.Clusters {
-				if v50First {
-					v50First = false
+			v52First := true
+			for v52Name, v52Value := range in.Clusters {
+				if v52First {
+					v52First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v50Name))
+				out.String(string(v52Name))
 				out.RawByte(':')
-				if v50Value == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+				if v52Value == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 					out.RawString("null")
 				} else {
 					out.RawByte('[')
-					for v51, v52 := range v50Value {
-						if v51 > 0 {
+					for v53, v54 := range v52Value {
+						if v53 > 0 {
 							out.RawByte(',')
 						}
-						out.String(string(v52))
+						out.String(string(v54))
 					}
 					out.RawByte(']')
 				}
@@ -1417,6 +1458,43 @@ func easyjson224c90e0EncodeParsinServerDbmParameters4(out *jwriter.Writer, in Kn
 			out.RawString(prefix)
 		}
 		out.Int(int(in.MinClusterRss))
+	}
+	{
+		const prefix string = ",\"Node2FPs\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		if in.Node2FPs == nil && (out.Flags&jwriter.NilMapAsEmpty) == 0 {
+			out.RawString(`null`)
+		} else {
+			out.RawByte('{')
+			v55First := true
+			for v55Name, v55Value := range in.Node2FPs {
+				if v55First {
+					v55First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v55Name))
+				out.RawByte(':')
+				if v55Value == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+					out.RawString("null")
+				} else {
+					out.RawByte('[')
+					for v56, v57 := range v55Value {
+						if v56 > 0 {
+							out.RawByte(',')
+						}
+						out.String(string(v57))
+					}
+					out.RawByte(']')
+				}
+			}
+			out.RawByte('}')
+		}
 	}
 	out.RawByte('}')
 }
@@ -1481,9 +1559,9 @@ func easyjson224c90e0DecodeParsinServerDbmParameters5(in *jlexer.Lexer, out *Fil
 					out.Macs = (out.Macs)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v53 string
-					v53 = string(in.String())
-					out.Macs = append(out.Macs, v53)
+					var v58 string
+					v58 = string(in.String())
+					out.Macs = append(out.Macs, v58)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -1524,11 +1602,11 @@ func easyjson224c90e0EncodeParsinServerDbmParameters5(out *jwriter.Writer, in Fi
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v54, v55 := range in.Macs {
-				if v54 > 0 {
+			for v59, v60 := range in.Macs {
+				if v59 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v55))
+				out.String(string(v60))
 			}
 			out.RawByte(']')
 		}
