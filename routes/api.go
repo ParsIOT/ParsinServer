@@ -470,8 +470,6 @@ func DelTestValidTracks(c *gin.Context) {
 	}
 }
 
-
-
 func CalculateErrorByTrueLocation(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -524,8 +522,6 @@ func GetTestErrorAlgoAccuracy(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group isn't given"})
 	}
 }
-
-
 
 // copies a DB
 // GET parameters: from, to
@@ -1208,7 +1204,6 @@ func AddNodeToGraph(c *gin.Context) {
 	//glb.Debug.Println(curGroupGraph.GetNearestNode("-252#-1223").Label)
 	//glb.Debug.Println(curGroupGraph.GetNearestNode("-246#1534").Label)
 
-
 	var tempSt st
 	if groupName != "none" {
 		//glb.Debug.Println(c.Request.GetBody())
@@ -1238,7 +1233,7 @@ func AddNodeToGraph(c *gin.Context) {
 	}
 }
 
-func SaveEdgesToDB (c *gin.Context) {
+func SaveEdgesToDB(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -1270,7 +1265,7 @@ func SaveEdgesToDB (c *gin.Context) {
 
 }
 
-func DeleteWholeGraph (c *gin.Context) {
+func DeleteWholeGraph(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -1320,7 +1315,7 @@ func AddEdgeToGraph(c *gin.Context) {
 		if err := c.ShouldBindJSON(&tempSt); err == nil {
 			newEdgeLabel := tempSt.NewEdge
 			//glb.Debug.Println("newVertexLabel : ---------> ",newEdgeLabel)
-			curGroupGraph.AddEdgeByLabel(newEdgeLabel[0],newEdgeLabel[1])
+			curGroupGraph.AddEdgeByLabel(newEdgeLabel[0], newEdgeLabel[1])
 			//glb.Debug.Println("graph after adding : ---------> ",curGroupGraph.GetGraphMap())
 			//ad := gp.Get_AlgoData() // saving to DB has been moved to another function
 			//ad.Set_GroupGraph(curGroupGraph)
@@ -1333,7 +1328,7 @@ func AddEdgeToGraph(c *gin.Context) {
 			glb.Warning.Println("Can't bind json")
 			glb.Error.Println(err)
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:" + err.Error()})
-			}
+		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
 	}
@@ -1350,7 +1345,7 @@ func RemoveEdgesOrVertices(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	type st struct {
 		RemovedVertices []string `json:"removed_vertices"`
-		RemovedEdges []string `json:"removed_edges"`
+		RemovedEdges    []string `json:"removed_edges"`
 	}
 	gp := dbm.GM.GetGroup(groupName)
 	curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
@@ -1359,12 +1354,12 @@ func RemoveEdgesOrVertices(c *gin.Context) {
 		if err := c.ShouldBindJSON(&tempSt); err == nil {
 			ToBeRemovedVertices := tempSt.RemovedVertices
 			ToBeRemovedEdges := tempSt.RemovedEdges
-			glb.Debug.Println(ToBeRemovedEdges,ToBeRemovedVertices,curGroupGraph)
-			for k,_ := range ToBeRemovedEdges {
+			glb.Debug.Println(ToBeRemovedEdges, ToBeRemovedVertices, curGroupGraph)
+			for k, _ := range ToBeRemovedEdges {
 				//glb.Debug.Println("%%% ToBeRemovedEdges[k] %%%",ToBeRemovedEdges[k])
 				curGroupGraph.RemoveEdgeByLabel(ToBeRemovedEdges[k])
 			}
-			for k,_ := range ToBeRemovedVertices {
+			for k, _ := range ToBeRemovedVertices {
 				//glb.Debug.Println("%%% ToBeRemovedVertices[k] %%%",ToBeRemovedVertices[k])
 				curGroupGraph.RemoveNodeByLabel(ToBeRemovedVertices[k])
 			}
@@ -1380,7 +1375,7 @@ func RemoveEdgesOrVertices(c *gin.Context) {
 			glb.Warning.Println("Can't bind json")
 			glb.Error.Println(err)
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:" + err.Error()})
-			}
+		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
 	}
@@ -1407,8 +1402,6 @@ func Getgraph(c *gin.Context) {
 	//graphMap["20#30"] = append(graphMap["20#30"], "50#50")
 	//graphMap["40#40"] = make([]string, 0)
 	//graphMap["50#50"] = append(graphMap["50#50"], "20#30")
-
-
 
 	if group != "none" {
 		gp := dbm.GM.GetGroup(group)
@@ -1923,6 +1916,25 @@ func SetRelocateFPLocStateAPI(c *gin.Context) {
 		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or relocateFP not mentioned"})
+	}
+
+}
+
+func GetRelocateFPLocStateAPI(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		needToRelocateFP := dbm.GetSharedPrf(groupName).NeedToRelocateFP
+		c.JSON(http.StatusOK, gin.H{"success": true, "needToRelocateFP": needToRelocateFP})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group is not mentioned"})
 	}
 
 }

@@ -365,6 +365,7 @@ func main() {
 	//r.POST("/addNodeToGraph", routes.AddNodeToGraph)
 	r.POST("/uploadTrueLocationLog", routes.UploadTrueLocationLog)
 	r.GET("/setRelocateFPLocState", routes.SetRelocateFPLocStateAPI)
+	r.GET("/getRelocateFPLocState", routes.GetRelocateFPLocStateAPI)
 	r.GET("/getRSSData", routes.GetRSSDataAPI)
 
 	//r.POST("/addArbitLocations", routes.AddArbitLocations)

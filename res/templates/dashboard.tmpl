@@ -307,7 +307,44 @@
                             Choose map
                         </button>
                     </div>
+                    <div class="col-sm-2 col-xs-6">
+                        <button type="submit" class="btn btn-info btn-block" data-toggle="modal"
+                                data-target="#uploadUWBLogModal">
+                            Upload UWB Log
+                        </button>
+                        <div class="modal fade" id="uploadUWBLogModal" tabindex="-1" role="dialog">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Upload UWB learn log</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="form-group">
+                                            <label><input id="append_uwb_log_file_check" type="checkbox">Append to
+                                                existence file</label>
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="file" accept="text/*" class="swal2-file"
+                                                   id="uwb_log_file_to_upload"
+                                                   placeholder="Upload true location log">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close
+                                        </button>
+                                        <button type="button" class="btn btn-primary" onclick="uploadUWBLog()">Save
+                                            changes
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
             </div>
         </div>
 
@@ -1232,16 +1269,38 @@
         }).catch(swal2.noop);
     });
 
-    //use_uwb toggle button
-    /*    function sleep(milliseconds) {
-            var start = new Date().getTime();
-            for (var i = 0; i < 1e7; i++) {
-                if ((new Date().getTime() - start) > milliseconds){
-                    break;
-                }
-            }
-        }*/
 
+    function uploadUWBLog() {
+        var fd = new FormData();
+        fd.append('file', $('#uwb_log_file_to_upload')[0].files[0]);
+
+        $.ajax({
+            url: "/uploadTrueLocationLog?group={{ .Group }}&method=" + ($('#append_uwb_log_file_check').is(":checked") ? "learnAppend" : "learn"),
+            data: fd,
+            type: "POST",
+            // file: file,
+            processData: false,  // tell jQuery not to process the data
+            contentType: false   // tell jQuery not to set contentType
+        }).done(function (data) {
+            if (data.success == true) {
+                iziToast.success({
+                    title: "Done",
+                    message: "Uploaded Successfully",
+                });
+                $('#uploadUWBLogModal').modal('hide');
+            } else {
+                iziToast.error({
+                    title: "Error",
+                    message: data.message,
+                });
+            }
+            console.log("Server Output:");
+            console.log(data);
+        });
+
+    }
+
+    //use_uwb toggle button
     $(document).on('click', '[data-toggle=toggle]', function () {
         var input = $(this).find('input')[0];
         switch (input.id) {
@@ -1264,7 +1323,7 @@
                             title: "Error",
                             message: data.message,
                         });
-                        use_uwb_toggle_back(lastState)
+                        use_uwb_toggle(lastState)
                     }
                 });
                 // $('#toggle-phone').bootstrapToggle(!input.checked ? 'on' : 'off');
@@ -1272,14 +1331,30 @@
         }
     });
 
-    function use_uwb_toggle_back(lastState) {
-        if (lastState == true) {
+    function use_uwb_toggle(state) {
+        if (state == true) {
             $('#use_uwb').bootstrapToggle('on');
         } else {
             $('#use_uwb').bootstrapToggle('off');
         }
     }
 
+    init();
+
+    function init() {
+        $.getJSON("/getRelocateFPLocState?group={{ .Group }}", function (data) {
+            if (data.success) {
+                if (data.needToRelocateFP) {
+                    use_uwb_toggle(true);
+                }
+            } else {
+                iziToast.error({
+                    title: "Error",
+                    message: data.message,
+                });
+            }
+        });
+    }
 
 </script>
 
