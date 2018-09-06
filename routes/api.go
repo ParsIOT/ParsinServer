@@ -1200,7 +1200,7 @@ func AddNodeToGraph(c *gin.Context) {
 	gp := dbm.GM.GetGroup(groupName)
 	curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
 
-	//glb.Debug.Println(curGroupGraph.GetNearestNode("-1248#201").Label)
+	//glb.Debug.Println(curGroupGraph.GetNearestNode("998.0,1040.0").Label)
 	//glb.Debug.Println(curGroupGraph.GetNearestNode("-252#-1223").Label)
 	//glb.Debug.Println(curGroupGraph.GetNearestNode("-246#1534").Label)
 
@@ -1407,11 +1407,11 @@ func Getgraph(c *gin.Context) {
 		gp := dbm.GM.GetGroup(group)
 		graphMapPointer := gp.Get_AlgoData().Get_GroupGraph()
 		graphMap = graphMapPointer.GetGraphMap()
+		glb.Debug.Println("graphmap",graphMap)
 		//glb.Debug.Println(graphMap)
-		//glb.Debug.Println(graphMap)
-		//root,_ := graphMapPointer.GetNodeByLabel("368#-161")
-		//graphMapPointer.BFSTraverse(root,func(n *parameters.Node) {
-		//	glb.Debug.Printf("%v\n", n)
+		root,_ := graphMapPointer.GetNodeByLabel("-1152#1334")
+		glb.Debug.Println("returned value from BFSTraverse",graphMapPointer.BFSTraverse(root))
+		//	{glb.Debug.Printf("%v\n", n)
 		//})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "group field is null", "success": false})
