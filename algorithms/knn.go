@@ -59,11 +59,13 @@ type jobW struct {
 	mac2RssFP  map[string]int
 }
 
-func LearnKnn(md *dbm.MiddleDataStruct, rd dbm.RawDataStruct, hyperParameters []interface{}) (parameters.KnnFingerprints, error) {
+func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (parameters.KnnFingerprints, error) {
 	//Debug.Println(Cosine([]float64{1,2,3},[]float64{1,2,4}))
 	//jsonFingerprint = calcMacRate(jsonFingerprint,false)
 	//K := hyperParameters[0].(int)
-	MinClusterRSS := hyperParameters[1].(int) //komeil: min threshold for determining whether ...
+	rd := gp.Get_RawData()
+
+	MinClusterRSS := hyperParameters.MinClusterRss //komeil: min threshold for determining whether ...
 	// a fingerprint is in the cluster of a beacon or not
 	//glb.Debug.Printf("Knn is running (K:%d, MinClusterRss:%d)\n",K,MinClusterRSS)
 	//jsonFingerprint = calcMacJustRate(jsonFingerprint,false)
@@ -97,18 +99,18 @@ func LearnKnn(md *dbm.MiddleDataStruct, rd dbm.RawDataStruct, hyperParameters []
 		}
 	}
 
-	node2FPs := make(map[string][]string)
-	for fpTime, fp := range fingerprints{
-		gp := dbm.GM.GetGroup("arman_28_3_97_ble_1") // Note:
-		graphMapPointer := gp.Get_AlgoData().Get_GroupGraph()
-		nearNodeGraph := graphMapPointer.GetNearestNode(fp.Location)
+	/*	node2FPs := make(map[string][]string)
+		for fpTime, fp := range fingerprints{
+			gp := dbm.GM.GetGroup("arman_28_3_97_ble_1") // Note:
+			graphMapPointer := gp.Get_AlgoData().Get_GroupGraph()
+			nearNodeGraph := graphMapPointer.GetNearestNode(fp.Location)
 
-		if tempNode2FPs, ok :=node2FPs[fpTime]; ok {
-			node2FPs[nearNodeGraph.Label] = append(tempNode2FPs,fpTime)
-		}else{
-			node2FPs[nearNodeGraph.Label] = []string{fpTime}
-		}
-	}
+			if tempNode2FPs, ok :=node2FPs[fpTime]; ok {
+				node2FPs[nearNodeGraph.Label] = append(tempNode2FPs,fpTime)
+			}else{
+				node2FPs[nearNodeGraph.Label] = []string{fpTime}
+			}
+		}*/
 
 	//// Cluster print
 	//for key,val := range clusters{
@@ -125,7 +127,7 @@ func LearnKnn(md *dbm.MiddleDataStruct, rd dbm.RawDataStruct, hyperParameters []
 	tempKnnFingerprints.FingerprintsInMemory = fingerprints
 	tempKnnFingerprints.FingerprintsOrdering = fingerprintsOrdering
 	tempKnnFingerprints.Clusters = clusters
-	tempKnnFingerprints.Node2FPs = node2FPs
+	//tempKnnFingerprints.Node2FPs = node2FPs
 	//dbm.GM.GetGroup(groupName).Get_AlgoData().Set_KnnFPs(tempKnnFingerprints)
 
 	//err = dbm.SetKnnFingerprints(tempKnnFingerprints, groupName)
@@ -179,6 +181,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	fingerprintsInMemory = tempKnnFingerprints.FingerprintsInMemory
 	mainFingerprintsOrdering = tempKnnFingerprints.FingerprintsOrdering
 	clusters = tempKnnFingerprints.Clusters
+	hyperParams := tempKnnFingerprints.HyperParameters
 	//node2FPs = tempKnnFingerprints.Node2FPs
 	//tempList := []string{}
 	//tempList = append(tempList,mainFingerprintsOrdering...)
@@ -214,7 +217,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	// fingerprintOrdering Creation according to clusters and rss rates
 	highRateRssExist := false // komeil: a variable to decide if it is needed to search all fingerprints instead of one or some clusters
 	for _, rt := range curFingerprint.WifiFingerprint {
-		if (rt.Rssi >= tempKnnFingerprints.MinClusterRss) {
+		if (rt.Rssi >= hyperParams.MinClusterRss) {
 			if cluster, ok := clusters[rt.Mac]; ok {
 				highRateRssExist = true
 				fingerprintsOrdering = append(fingerprintsOrdering, cluster...)
@@ -330,7 +333,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	//	glb.Error.Println("Nums of AP must be greater than 3")
 	//}
 
-	knnK := tempKnnFingerprints.K
+	knnK := hyperParams.K
 
 	//knnK := dbm.GetSharedPrf(curFingerprint.Group).KnnK
 

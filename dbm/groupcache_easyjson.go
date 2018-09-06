@@ -1318,6 +1318,16 @@ func easyjson3b8810b5DecodeParsinServerDbm4(in *jlexer.Lexer, out *Group) {
 				}
 				(*out.RawData).UnmarshalEasyJSON(in)
 			}
+		case "ConfigData":
+			if in.IsNull() {
+				in.Skip()
+				out.ConfigData = nil
+			} else {
+				if out.ConfigData == nil {
+					out.ConfigData = new(ConfigDataStruct)
+				}
+				(*out.ConfigData).UnmarshalEasyJSON(in)
+			}
 		case "MiddleData":
 			if in.IsNull() {
 				in.Skip()
@@ -1350,6 +1360,8 @@ func easyjson3b8810b5DecodeParsinServerDbm4(in *jlexer.Lexer, out *Group) {
 			}
 		case "RawDataChanged":
 			out.RawDataChanged = bool(in.Bool())
+		case "ConfigDataChanged":
+			out.ConfigDataChanged = bool(in.Bool())
 		case "MiddleDataChanged":
 			out.MiddleDataChanged = bool(in.Bool())
 		case "AlgoDataChanged":
@@ -1419,6 +1431,20 @@ func easyjson3b8810b5EncodeParsinServerDbm4(out *jwriter.Writer, in Group) {
 		}
 	}
 	{
+		const prefix string = ",\"ConfigData\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		if in.ConfigData == nil {
+			out.RawString("null")
+		} else {
+			(*in.ConfigData).MarshalEasyJSON(out)
+		}
+	}
+	{
 		const prefix string = ",\"MiddleData\":"
 		if first {
 			first = false
@@ -1469,6 +1495,16 @@ func easyjson3b8810b5EncodeParsinServerDbm4(out *jwriter.Writer, in Group) {
 			out.RawString(prefix)
 		}
 		out.Bool(bool(in.RawDataChanged))
+	}
+	{
+		const prefix string = ",\"ConfigDataChanged\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(in.ConfigDataChanged))
 	}
 	{
 		const prefix string = ",\"MiddleDataChanged\":"
@@ -1561,7 +1597,78 @@ func easyjson3b8810b5EncodeSync(out *jwriter.Writer, in sync.RWMutex) {
 	_ = first
 	out.RawByte('}')
 }
-func easyjson3b8810b5DecodeParsinServerDbm5(in *jlexer.Lexer, out *AlgoDataStruct) {
+func easyjson3b8810b5DecodeParsinServerDbm5(in *jlexer.Lexer, out *ConfigDataStruct) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeString()
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "Test":
+			out.Test = int(in.Int())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson3b8810b5EncodeParsinServerDbm5(out *jwriter.Writer, in ConfigDataStruct) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"Test\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int(int(in.Test))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v ConfigDataStruct) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson3b8810b5EncodeParsinServerDbm5(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v ConfigDataStruct) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson3b8810b5EncodeParsinServerDbm5(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *ConfigDataStruct) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson3b8810b5DecodeParsinServerDbm5(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *ConfigDataStruct) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson3b8810b5DecodeParsinServerDbm5(l, v)
+}
+func easyjson3b8810b5DecodeParsinServerDbm6(in *jlexer.Lexer, out *AlgoDataStruct) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1594,7 +1701,7 @@ func easyjson3b8810b5DecodeParsinServerDbm5(in *jlexer.Lexer, out *AlgoDataStruc
 		in.Consumed()
 	}
 }
-func easyjson3b8810b5EncodeParsinServerDbm5(out *jwriter.Writer, in AlgoDataStruct) {
+func easyjson3b8810b5EncodeParsinServerDbm6(out *jwriter.Writer, in AlgoDataStruct) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1624,23 +1731,23 @@ func easyjson3b8810b5EncodeParsinServerDbm5(out *jwriter.Writer, in AlgoDataStru
 // MarshalJSON supports json.Marshaler interface
 func (v AlgoDataStruct) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson3b8810b5EncodeParsinServerDbm5(&w, v)
+	easyjson3b8810b5EncodeParsinServerDbm6(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v AlgoDataStruct) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson3b8810b5EncodeParsinServerDbm5(w, v)
+	easyjson3b8810b5EncodeParsinServerDbm6(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *AlgoDataStruct) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson3b8810b5DecodeParsinServerDbm5(&r, v)
+	easyjson3b8810b5DecodeParsinServerDbm6(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *AlgoDataStruct) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson3b8810b5DecodeParsinServerDbm5(l, v)
+	easyjson3b8810b5DecodeParsinServerDbm6(l, v)
 }

@@ -1245,7 +1245,7 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string) 
 			}
 		}
 	}
-	glb.Error.Println("FindTrueFPloc on " + fp.Location + " ended but timestamp ranges doesn't match to relocate any test-valid fp")
+	glb.Error.Println("FindTrueFPloc on " + fp.Location + " ended but timestamp ranges doesn't match to relocate any fp")
 	return "", errors.New("Timestamp range problem")
 
 }

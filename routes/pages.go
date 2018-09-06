@@ -182,9 +182,9 @@ func SlashDashboard(c *gin.Context) {
 	gp := dbm.GM.GetGroup(groupName)
 	md := gp.Get_MiddleData_Val()
 
-	knnAlgo := gp.Get_AlgoData().Get_KnnFPs()
-	bestK := knnAlgo.K
-	bestMinClusterRss := knnAlgo.MinClusterRss
+	knnHyperParams := gp.Get_AlgoData().Get_KnnFPs().HyperParameters
+	bestK := knnHyperParams.K
+	bestMinClusterRss := knnHyperParams.MinClusterRss
 	maxMovement := dbm.GetSharedPrf(groupName).MaxMovement
 
 	for n := range md.NetworkLocs {

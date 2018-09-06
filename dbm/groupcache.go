@@ -49,6 +49,31 @@ func (st *RawDataStruct) RUnlock() {
 	st.mutex.RUnlock()
 }
 
+type ConfigDataStruct struct {
+	mutex *sync.RWMutex
+	group *Group
+	//Learned data:
+	Test int
+	//Note: Run easyjson.sh after editing
+}
+
+func (st *ConfigDataStruct) Lock() {
+	//glb.Debug.Println("RawDataStruct Lock")
+	st.mutex.Lock()
+}
+func (st *ConfigDataStruct) Unlock() {
+	//glb.Debug.Println("RawDataStruct UnLock")
+	st.mutex.Unlock()
+}
+func (st *ConfigDataStruct) RLock() {
+	//glb.Debug.Println("RawDataStruct RLock")
+	st.mutex.RLock()
+}
+func (st *ConfigDataStruct) RUnlock() {
+	//glb.Debug.Println("RawDataStruct RUnLock")
+	st.mutex.RUnlock()
+}
+
 type MiddleDataStruct struct{
 	mutex *sync.RWMutex
 	group *Group
@@ -155,14 +180,16 @@ type Group struct {
 	Name       string
 	Permanent  bool // Some group doesn't need to be saved
 	RawData    *RawDataStruct
+	ConfigData *ConfigDataStruct
 	MiddleData *MiddleDataStruct
 	AlgoData   *AlgoDataStruct
 	ResultData *ResultDataStruct
 
-	RawDataChanged		bool
-	MiddleDataChanged	bool
-	AlgoDataChanged		bool
-	ResultDataChanged	bool
+	RawDataChanged    bool
+	ConfigDataChanged bool
+	MiddleDataChanged bool
+	AlgoDataChanged   bool
+	ResultDataChanged bool
 	//learnDB	   map[string]map[string]{}interface	// group-->algorithm-->learnedData
 }
 
@@ -190,12 +217,14 @@ func NewGroup(groupName string) *Group {
 		Name:              groupName,
 		Permanent:         true,
 		RawDataChanged:    false,
+		ConfigDataChanged: false,
 		MiddleDataChanged: false,
 		AlgoDataChanged:   false,
 		ResultDataChanged: false,
 	}
 	gp.Lock()
 	gp.RawData = gp.NewRawDataStruct()
+	gp.ConfigData = gp.NewConfigDataStruct()
 	gp.MiddleData = gp.NewMiddleDataStruct()
 	gp.AlgoData = gp.NewAlgoDataStruct()
 	gp.ResultData = gp.NewResultDataStruct()
@@ -269,7 +298,7 @@ func (gm *GroupManger) NewGroup(groupName string) *Group {
 	GM.RUnlock()
 	for gpName,gp := range groups{
 		if(groupName == gpName){
-			fmt.Errorf("There is a group exists with same Name.")
+			glb.Error.Println("There is a group exists with same Name:" + groupName)
 			return gp
 		}
 	}
@@ -318,6 +347,7 @@ func (gm *GroupManger) LoadGroup(groupName string){
 	}else {
 		gp := NewGroup(groupName)
 		rawData := gp.NewRawDataStruct()
+		configData := gp.NewConfigDataStruct()
 		middleData := gp.NewMiddleDataStruct()
 		algoData := gp.NewAlgoDataStruct()
 		resultData := gp.NewResultDataStruct()
@@ -340,46 +370,44 @@ func (gm *GroupManger) LoadGroup(groupName string){
 			//})
 			//db.Close
 			rawDataBytes, err1 := GetBytejsonResourceInBucket("rawData", "resources", groupName)
-			middleDataBytes, err2 := GetBytejsonResourceInBucket("middleData", "resources", groupName)
-			algoDataBytes, err3 := GetBytejsonResourceInBucket("algoData", "resources", groupName)
-			resultDataBytes, err4 := GetBytejsonResourceInBucket("resultData", "resources", groupName)
+		configDataBytes, err2 := GetBytejsonResourceInBucket("configData", "resources", groupName)
+		middleDataBytes, err3 := GetBytejsonResourceInBucket("middleData", "resources", groupName)
+		algoDataBytes, err4 := GetBytejsonResourceInBucket("algoData", "resources", groupName)
+		resultDataBytes, err5 := GetBytejsonResourceInBucket("resultData", "resources", groupName)
 			dblock.Unlock()
 
 		//}
 
 
 		if err1 != nil {
-			//log.Fatal(err1)
 			glb.Error.Println(err1.Error())
 		}else{
-			//jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(bytes,&gp)
 			rawData.UnmarshalJSON(rawDataBytes)
 		}
 
-
 		if err2 != nil {
-			//log.Fatal(err1)
 			glb.Error.Println(err2.Error())
 		}else{
-			//jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(bytes,&gp)
-			middleData.UnmarshalJSON(middleDataBytes)
+			rawData.UnmarshalJSON(configDataBytes)
 		}
 
 
 		if err3 != nil {
-			//log.Fatal(err1)
 			glb.Error.Println(err3.Error())
 		}else{
-			//jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(bytes,&gp)
-			algoData.UnmarshalJSON(algoDataBytes)
+			middleData.UnmarshalJSON(middleDataBytes)
 		}
 
 
-
 		if err4 != nil {
-			//log.Fatal(err1)
 			glb.Error.Println(err4.Error())
 		}else{
+			algoData.UnmarshalJSON(algoDataBytes)
+		}
+
+		if err5 != nil {
+			glb.Error.Println(err5.Error())
+		} else {
 			resultData.UnmarshalJSON(resultDataBytes)
 		}
 		//bytes,err1 := GetBytejsonResourceInBucket("parameters","resources",groupName)
@@ -398,10 +426,10 @@ func (gm *GroupManger) LoadGroup(groupName string){
 		//glb.Debug.Println(err2!=nil)
 		//glb.Debug.Println(err3!=nil)
 		//glb.Debug.Println(err4!=nil)
-		if err1!=nil && err2!=nil && err3!=nil && err4!=nil{
+		if err1 != nil && err2 != nil && err3 != nil && err4 != nil && err5 != nil {
 			gp = GM.NewGroup(groupName)
 			glb.Debug.Println("Raw group created")
-			glb.Debug.Println(gp)
+			//glb.Debug.Println(gp)
 		}else{
 			//glb.Error.Println(err1)
 			//glb.Error.Println(err2)
@@ -410,6 +438,8 @@ func (gm *GroupManger) LoadGroup(groupName string){
 			gp.Lock()
 			gp.RawData = rawData
 			gp.RawData.mutex = &sync.RWMutex{}
+			gp.ConfigData = configData
+			gp.ConfigData.mutex = &sync.RWMutex{}
 			gp.MiddleData = middleData
 			gp.MiddleData.mutex = &sync.RWMutex{}
 			gp.AlgoData = algoData
@@ -456,7 +486,7 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group){
 	if(dirtyBit) {
 		//glb.Debug.Println("Dirtybit is true")
 		if !loaded {
-			fmt.Errorf("DB isn't loaded!")
+			glb.Error.Println("DB isn't loaded!")
 			return
 		} else {
 			glb.Debug.Println("Flushing :", groupName)
@@ -466,6 +496,7 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group){
 
 			gp.RLock()
 			rdChanged := gp.RawDataChanged
+			cdChanged := gp.ConfigDataChanged
 			mdChanged := gp.MiddleDataChanged
 			adChanged := gp.AlgoDataChanged
 			rsChanged := gp.ResultDataChanged
@@ -484,6 +515,22 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group){
 				dbData["rawData"] = v
 				gp.Lock()
 				gp.RawDataChanged = false
+				gp.Unlock()
+			}
+
+			if cdChanged {
+				gp.RLock()
+				configData := gp.ConfigData
+				gp.RUnlock()
+				configData.RLock()
+				v, err := configData.MarshalJSON()
+				configData.RUnlock()
+				if err != nil {
+					fmt.Errorf(err.Error())
+				}
+				dbData["configData"] = v
+				gp.Lock()
+				gp.ConfigDataChanged = false
 				gp.Unlock()
 			}
 
@@ -561,61 +608,22 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group){
 			{
 				dblock.Lock()
 				defer dblock.Unlock()
-				//db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
-				//if err != nil {
-				//	log.Fatal(err)
-				//}
-				//db.Update(func(tx *bolt.Tx) error {
-				//	b, _ := tx.CreateBucketIfNotExists([]byte("resources"))
-				////v, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(&gp)
-
-
-				//if gp.ResultDataChanged{
-				//	v, err := gp.ResultData.MarshalJSON()
-				//	if err != nil {
-				//		fmt.Errorf(err.Error())
-				//		//return err
-				//	}
-				//	err1 := SetByteResourceInBucket(v,"resultdata","resources",groupName)
-				//	if err1 != nil{
-				//		fmt.Errorf(err.Error())
-				//	}
-				//}
 
 				for key,val := range dbData{
 					if(key == "Results"){
-						//glb.Debug.Println(resultDataList)
 						for timeStamp,fp := range resultDataList{ // must put the list to db instantly
 							err1 := SetByteResourceInBucket(parameters.DumpFingerprint(fp),timeStamp,"Results",groupName)
 							if err1 != nil{
-								fmt.Errorf(err1.Error())
+								glb.Error.Println(err1.Error())
 							}
 						}
-
 					}else{
-						//glb.Debug.Println(key)
-						//glb.Debug.Println(val)
 						err1 := SetByteResourceInBucket(val,key,"resources",groupName)
 						if err1 != nil{
-							fmt.Errorf(err1.Error())
+							glb.Error.Println(err1.Error())
 						}
 					}
 				}
-
-				//
-				//v, err := gp.MarshalJSON()
-				//if err != nil {
-				//	fmt.Errorf(err.Error())
-				//	//return err
-				//}
-				////	b.Put([]byte("parameters"), v)
-				////	return nil
-				////})
-				////db.Close()
-				//err1 := SetByteResourceInBucket(v,"parameters","resources",groupName)
-				//if err1 != nil{
-				//	fmt.Errorf(err.Error())
-				//}
 			}
 
 		}
@@ -655,7 +663,7 @@ func (gm *GroupManger) InstantFlushDB(groupName string){
 		dblock := gm.dbLock[groupName]
 		gm.RUnlock()
 		if !loaded {
-			fmt.Errorf("DB isn't loaded!")
+			glb.Error.Println("DB isn't loaded!")
 			return
 		} else{
 			//DBLock.Lock()
@@ -663,6 +671,7 @@ func (gm *GroupManger) InstantFlushDB(groupName string){
 
 			gp.RLock()
 			rdChanged := gp.RawDataChanged
+			cdChanged := gp.ConfigDataChanged
 			mdChanged := gp.MiddleDataChanged
 			adChanged := gp.AlgoDataChanged
 			rsChanged := gp.ResultDataChanged
@@ -683,6 +692,23 @@ func (gm *GroupManger) InstantFlushDB(groupName string){
 				gp.RawDataChanged = false
 				gp.Unlock()
 			}
+
+			if cdChanged {
+				gp.RLock()
+				configData := gp.ConfigData
+				gp.RUnlock()
+				configData.RLock()
+				v, err := configData.MarshalJSON()
+				configData.RUnlock()
+				if err != nil {
+					fmt.Errorf(err.Error())
+				}
+				dbData["configData"] = v
+				gp.Lock()
+				gp.ConfigDataChanged = false
+				gp.Unlock()
+			}
+
 
 			if mdChanged {
 				gp.RLock()
@@ -754,26 +780,7 @@ func (gm *GroupManger) InstantFlushDB(groupName string){
 			{
 				dblock.Lock()
 				defer dblock.Unlock()
-				//db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
-				//if err != nil {
-				//	log.Fatal(err)
-				//}
-				//db.Update(func(tx *bolt.Tx) error {
-				//	b, _ := tx.CreateBucketIfNotExists([]byte("resources"))
-				////v, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(&gp)
 
-
-				//if gp.ResultDataChanged{
-				//	v, err := gp.ResultData.MarshalJSON()
-				//	if err != nil {
-				//		fmt.Errorf(err.Error())
-				//		//return err
-				//	}
-				//	err1 := SetByteResourceInBucket(v,"resultdata","resources",groupName)
-				//	if err1 != nil{
-				//		fmt.Errorf(err.Error())
-				//	}
-				//}
 
 				for key,val := range dbData{
 					if(key == "Results"){
@@ -792,20 +799,7 @@ func (gm *GroupManger) InstantFlushDB(groupName string){
 					}
 				}
 
-				//
-				//v, err := gp.MarshalJSON()
-				//if err != nil {
-				//	fmt.Errorf(err.Error())
-				//	//return err
-				//}
-				////	b.Put([]byte("parameters"), v)
-				////	return nil
-				////})
-				////db.Close()
-				//err1 := SetByteResourceInBucket(v,"parameters","resources",groupName)
-				//if err1 != nil{
-				//	fmt.Errorf(err.Error())
-				//}
+
 			}
 
 		}
@@ -872,6 +866,14 @@ func (gp *Group) NewRawDataStruct() *RawDataStruct {
 		TestValidTrueLocations: make(map[int64]string),
 	}
 }
+func (gp *Group) NewConfigDataStruct() *ConfigDataStruct {
+	return &ConfigDataStruct{
+		mutex: &sync.RWMutex{},
+		group: gp,
+		Test:  1,
+	}
+}
+
 
 func (gp *Group) NewMiddleDataStruct() *MiddleDataStruct {
 	return &MiddleDataStruct{
@@ -1130,6 +1132,98 @@ func (gp *Group) Set_RawData_Val(newItem RawDataStruct) {
 //	md.Unlock()
 //}
 
+func (cd *ConfigDataStruct) SetDirtyBit() {
+	cd.RLock()
+	gp := cd.group
+	cd.RUnlock()
+
+	gp.Lock()
+	gpName := cd.group.Name
+	gp.ConfigDataChanged = true
+	gp.Unlock()
+	GM.SetDirtyBit(gpName)
+}
+func (gp *Group) Get_ConfigData() *ConfigDataStruct {
+	gp.RLock()
+	item := gp.ConfigData
+	gp.RUnlock()
+	return item
+}
+
+func (gp *Group) Get_ConfigData_Val() ConfigDataStruct {
+	gp.RLock()
+	item := *gp.ConfigData
+	gp.RUnlock()
+	return item
+}
+
+func (gp *Group) Set_ConfigData(newItem *ConfigDataStruct) {
+	gp.RLock()
+	item := gp.ConfigData
+	gp.RUnlock()
+	//item.Lock()
+	//newItem.RLock()
+
+	elmNew := reflect.ValueOf(newItem).Elem()
+	elm := reflect.ValueOf(item).Elem()
+	itemType := elmNew.Type()
+	//fmt.Println(elmNew.NumField())
+	for i := 0; i < elmNew.NumField(); i++ {
+		fieldNew := elmNew.Field(i)
+		field := elm.Field(i)
+		//fmt.Println(itemType.Field(i).Name)
+		//fmt.Println(fieldNew.Type())
+		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+			//newItem.RLock()
+			val := reflect.Value(fieldNew)
+			//newItem.RUnlock()
+			item.Lock()
+			field.Set(val)
+			item.Unlock()
+		}
+	}
+	//newItem.RUnlock()
+	//item.Unlock()
+	gp.Lock()
+	gp.ConfigDataChanged = true
+	gp.Unlock()
+	GM.SetDirtyBit(gp.Get_Name())
+}
+
+func (gp *Group) Set_ConfigData_Val(newItem ConfigDataStruct) {
+	gp.RLock()
+	item := gp.ConfigData
+	gp.RUnlock()
+	//item.Lock()
+	//newItem.RLock()
+
+	elmNew := reflect.ValueOf(newItem).Elem()
+	elm := reflect.ValueOf(item).Elem()
+	itemType := elmNew.Type()
+	//fmt.Println(elmNew.NumField())
+	for i := 0; i < elmNew.NumField(); i++ {
+		fieldNew := elmNew.Field(i)
+		field := elm.Field(i)
+		//fmt.Println(itemType.Field(i).Name)
+		//fmt.Println(fieldNew.Type())
+		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+			//newItem.RLock()
+			val := reflect.Value(fieldNew)
+			//newItem.RUnlock()
+			item.Lock()
+			field.Set(val)
+			item.Unlock()
+		}
+	}
+	//newItem.RUnlock()
+	//item.Unlock()
+	gp.Lock()
+	gp.ConfigDataChanged = true
+	gp.Unlock()
+	GM.SetDirtyBit(gp.Get_Name())
+}
+
+
 func (rd *MiddleDataStruct) SetDirtyBit(){
 	rd.RLock()
 	gp := rd.group
@@ -1385,6 +1479,24 @@ func (rd *RawDataStruct) Set_FingerprintsOrdering(new_item []string){
 	rd.FingerprintsOrdering = new_item
 	rd.Unlock()
 }
+func (rd *RawDataStruct) Get_FPs() ([]string, map[string]parameters.Fingerprint) {
+	rd.RLock()
+	item1 := rd.FingerprintsOrdering
+	item2 := rd.Fingerprints
+	rd.RUnlock()
+	return item1, item2
+}
+
+//Note: Use it just in buildgroup
+func (rd *RawDataStruct) Set_FPs(new_item1 []string, new_item2 map[string]parameters.Fingerprint) {
+	defer rd.SetDirtyBit()
+
+	rd.Lock()
+	rd.FingerprintsOrdering = new_item1
+	rd.Fingerprints = new_item2
+	rd.Unlock()
+}
+
 
 func (rd *RawDataStruct) Get_LearnTrueLocations() map[int64]string {
 	rd.RLock()

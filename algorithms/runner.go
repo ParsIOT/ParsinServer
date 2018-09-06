@@ -9,9 +9,8 @@ import (
 	"ParsinServer/dbm/parameters"
 	"ParsinServer/dbm"
 	"ParsinServer/algorithms/clustering"
-	"sort"
-	"runtime"
 	"math"
+	"sort"
 )
 
 var threadedCross bool = false //don't use, it's not safe now!
@@ -313,7 +312,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 
 }
 
-func CalculateLearn(groupName string) {
+/*func CalculateLearn2(groupName string) {
 	// Now performance isn't important in learning, just care about performance on track (it helps to code easily!)
 
 	// Preprocess
@@ -431,8 +430,7 @@ func CalculateLearn(groupName string) {
 					learnedKnnData,_:= LearnKnn(mdTemp,rdTemp,tempHyperParameters)
 
 					// Set hyper parameters
-					learnedKnnData.K = K
-					learnedKnnData.MinClusterRss = minClusterRss
+					learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K:K,MinClusterRss:minClusterRss}
 
 					adTemp.Set_KnnFPs(learnedKnnData)
 
@@ -534,8 +532,7 @@ func CalculateLearn(groupName string) {
 		learnedKnnData,_:= LearnKnn(mdTemp,rdTemp,tempHyperParameters)
 
 		// Set hyper parameters
-		learnedKnnData.K = bestK
-		learnedKnnData.MinClusterRss = bestMinClusterRss
+		learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K:bestK,MinClusterRss:bestMinClusterRss}
 
 		adTemp.Set_KnnFPs(learnedKnnData)
 
@@ -614,8 +611,7 @@ func CalculateLearn(groupName string) {
 	learnedKnnData,_:= LearnKnn(md,rd,bestHyperParameters)
 
 	// Set best hyper parameter values
-	learnedKnnData.K = bestK
-	learnedKnnData.MinClusterRss = bestMinClusterRss
+	learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K:bestK,MinClusterRss:bestMinClusterRss}
 
 	ad.Set_KnnFPs(learnedKnnData)
 	gp.Set_AlgoData(ad)
@@ -639,8 +635,8 @@ func CalculateLearn(groupName string) {
 	//runnerLock.Unlock()
 }
 
-
-func calcKNN(id int, knnJobs <-chan KnnJob, knnJobResults chan<- KnnJobResult) {
+*/
+/*func calcKNN(id int, knnJobs <-chan KnnJob, knnJobResults chan<- KnnJobResult) {
 	totalDistError := 0
 
 	//glb.Debug.Println("KNN K :",K)
@@ -662,9 +658,7 @@ func calcKNN(id int, knnJobs <-chan KnnJob, knnJobResults chan<- KnnJobResult) {
 			learnedKnnData,_:= LearnKnn(mdTemp,rdTemp,tempHyperParameters)
 
 			// Set hyper parameters
-			learnedKnnData.K = knnJob.K
-			learnedKnnData.MinClusterRss = knnJob.MinClusterRss
-
+			learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K:knnJob.K,MinClusterRss:knnJob.MinClusterRss}
 			adTemp.Set_KnnFPs(learnedKnnData)
 			knnJob.gp.Set_AlgoData(adTemp)
 
@@ -703,7 +697,7 @@ func calcKNN(id int, knnJobs <-chan KnnJob, knnJobResults chan<- KnnJobResult) {
 
 
 }
-
+*/
 
 type crossValidationParts struct{
 	trainSet			[]dbm.RawDataStruct
@@ -786,6 +780,7 @@ func GetCrossValidationParts(gp *dbm.Group,rd dbm.RawDataStruct) []crossValidati
 //fingerprintsOrdering:
 //updates ps with the new fingerprint.
 //(The Parameters which are manipulated: NetworkMacs,NetworkLocs,UniqueMacs,UniqueLocs,MacCount,MacCountByLoc and Loaded)
+
 func GetParameters(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct) {
 	//
 	//persistentPs, err := dbm.OpenPersistentParameters(group) //persistentPs is just like ps but with renamed network name; e.g.: "0" -> "1"
@@ -926,11 +921,152 @@ func GetParameters(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct) {
 	md.LocCount = glb.DuplicateCountString(locations)
 }
 
-//Note: Use it just one time(not use it in calculatelearn, use it in buildgroup)
-func PreProcess(groupName string) {
+// Set middleData in gp
+func GetParametersWithGP(gp *dbm.Group) {
+	//
+	//persistentPs, err := dbm.OpenPersistentParameters(group) //persistentPs is just like ps but with renamed network name; e.g.: "0" -> "1"
+	//if err != nil {
+	//	//log.Fatal(err)
+	//	glb.Error.Println(err)
+	//}
+	rd := gp.Get_RawData_Val()
+	md := gp.Get_MiddleData()
+	fingerprints := rd.Fingerprints
+	fingerprintsOrdering := rd.FingerprintsOrdering
 
-	gp := dbm.GM.GetGroup(groupName)
-	rd := gp.Get_RawData()
+	//glb.Error.Println("d")
+	md.NetworkMacs = make(map[string]map[string]bool)
+	md.NetworkLocs = make(map[string]map[string]bool)
+	md.UniqueMacs = []string{}
+	md.UniqueLocs = []string{}
+	md.MacCount = make(map[string]int)
+	md.MacCountByLoc = make(map[string]map[string]int)
+	//md.Loaded = true
+	//opening the db
+	//db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	//defer db.Close()
+	// if err != nil {
+	//	log.Fatal(err)
+	//}
+
+	macs := []string{}
+
+	// Get all parameters that don't need a network graph (?)
+	for _, v1 := range fingerprintsOrdering {
+
+		//log.Println("calculateResults=true")
+		v2 := fingerprints[v1]
+
+		// append the fingerprint location to UniqueLocs array if doesn't exist in it.
+		if !glb.StringInSlice(v2.Location, md.UniqueLocs) {
+			md.UniqueLocs = append(md.UniqueLocs, v2.Location)
+		}
+
+		// MacCountByLoc initialization for new location
+		if _, ok := md.MacCountByLoc[v2.Location]; !ok {
+			md.MacCountByLoc[v2.Location] = make(map[string]int)
+		}
+
+		//// building network
+		//macs := []string{}
+
+		for _, router := range v2.WifiFingerprint {
+			// building network
+			macs = append(macs, router.Mac)
+
+			// append the fingerprint mac to UniqueMacs array if doesn't exist in it.
+			if !glb.StringInSlice(router.Mac, md.UniqueMacs) {
+				md.UniqueMacs = append(md.UniqueMacs, router.Mac)
+			}
+
+			// mac count
+			if _, ok := md.MacCount[router.Mac]; !ok {
+				md.MacCount[router.Mac] = 0
+			}
+			md.MacCount[router.Mac]++
+
+			// mac by location count
+			if _, ok := md.MacCountByLoc[v2.Location][router.Mac]; !ok {
+				md.MacCountByLoc[v2.Location][router.Mac] = 0
+			}
+			md.MacCountByLoc[v2.Location][router.Mac]++
+		}
+
+		// building network
+		//ps.NetworkMacs = buildNetwork(ps.NetworkMacs, macs)
+	}
+	// todo: network definition and buildNetwork() must be redefined
+	md.NetworkMacs = clustring.BuildNetwork(md.NetworkMacs, macs)
+	md.NetworkMacs = clustring.MergeNetwork(md.NetworkMacs)
+
+	//Error.Println("ps.Networkmacs", ps.NetworkMacs)
+	// Rename the NetworkMacs
+	//if len(persistentPs.NetworkRenamed) > 0 {
+	//	newNames := []string{}
+	//	for k := range persistentPs.NetworkRenamed {
+	//		newNames = append(newNames, k)
+	//
+	//	}
+	//	//todo: \/ wtf? Rename procedure could be redefined better.
+	//	for n := range md.NetworkMacs {
+	//		renamed := false
+	//		for mac := range md.NetworkMacs[n] {
+	//			for renamedN := range persistentPs.NetworkRenamed {
+	//				if glb.StringInSlice(mac, persistentPs.NetworkRenamed[renamedN]) && !glb.StringInSlice(n, newNames) {
+	//					md.NetworkMacs[renamedN] = make(map[string]bool)
+	//					for k, v := range md.NetworkMacs[n] {
+	//						md.NetworkMacs[renamedN][k] = v //copy ps.NetworkMacs[n] to ps.NetworkMacs[renamedN]
+	//					}
+	//					delete(md.NetworkMacs, n)
+	//					renamed = true
+	//				}
+	//				if renamed {
+	//					break
+	//				}
+	//			}
+	//			if renamed {
+	//				break
+	//			}
+	//		}
+	//	}
+	//}
+
+	// Get the locations for each graph (Has to have network built first)
+
+	for _, v1 := range fingerprintsOrdering {
+
+		v2 := fingerprints[v1]
+		//todo: Make the macs array just once for each fingerprint instead of repeating the process
+
+		macs := []string{}
+		for _, router := range v2.WifiFingerprint {
+			macs = append(macs, router.Mac)
+		}
+		//todo: ps.NetworkMacs is created from mac array; so it seems that hasNetwork function doesn't do anything useful!
+		networkName, inNetwork := clustring.HasNetwork(md.NetworkMacs, macs)
+		if inNetwork {
+			if _, ok := md.NetworkLocs[networkName]; !ok {
+				md.NetworkLocs[networkName] = make(map[string]bool)
+			}
+			if _, ok := md.NetworkLocs[networkName][v2.Location]; !ok {
+				md.NetworkLocs[networkName][v2.Location] = true
+			}
+		}
+	}
+
+	//calculate locCount
+	locations := []string{}
+	for _, fpIndex := range fingerprintsOrdering {
+		fp := fingerprints[fpIndex]
+		locations = append(locations, fp.Location)
+	}
+	md.LocCount = glb.DuplicateCountString(locations)
+}
+
+
+//Note: Use it just one time(not use it in calculatelearn, use it in buildgroup)
+func PreProcess(rd *dbm.RawDataStruct, needToRelocateFP bool) {
+
 	fingerprintsOrdering := rd.Get_FingerprintsOrdering()
 	fingerprintsData := rd.Get_Fingerprints()
 
@@ -955,7 +1091,7 @@ func PreProcess(groupName string) {
 			fpM := make(map[string]parameters.Fingerprint)
 			fpM[index] = fp
 			fpO := []string{index}
-			templocRDMap := *gp.NewRawDataStruct()
+			templocRDMap := dbm.RawDataStruct{}
 			templocRDMap.Fingerprints = fpM
 			templocRDMap.FingerprintsOrdering = fpO
 			locRDMap[fp.Location] = templocRDMap
@@ -967,13 +1103,14 @@ func PreProcess(groupName string) {
 		}
 	}
 
-	//regulating rss data
-	if glb.RssRegulation {
-		for loc, rdData := range locRDMap {
-			locRDMap[loc] = RemoveOutlines(rdData)
+	if !glb.FastLearn {
+		//regulating rss data
+		if glb.RssRegulation {
+			for loc, rdData := range locRDMap {
+				locRDMap[loc] = RemoveOutlines(rdData)
+			}
 		}
 	}
-
 
 	// converting locRDMap to rd
 	tempFingerprintsData := make(map[string]parameters.Fingerprint)
@@ -987,91 +1124,91 @@ func PreProcess(groupName string) {
 	}
 
 	//Average Rss vector of adjacent fingerprints
-	if dbm.GetSharedPrf(groupName).NeedToRelocateFP {
-		if glb.AvgRSSAdjacentDots {
-			maxValidFPDistAVG := float64(100); // 100 cm
+	if !glb.FastLearn {
+		if needToRelocateFP {
+			if glb.AvgRSSAdjacentDots {
+				maxValidFPDistAVG := float64(100); // 100 cm
 
-			tempFingerprintsData2 := make(map[string]parameters.Fingerprint)
-			for fpOMain, fpMain := range tempFingerprintsData {
-				adjacentFPs := []parameters.Fingerprint{}
-				for fpO, fp := range tempFingerprintsData {
-					if (fpO == fpOMain) {
-						continue
+				tempFingerprintsData2 := make(map[string]parameters.Fingerprint)
+				for fpOMain, fpMain := range tempFingerprintsData {
+					adjacentFPs := []parameters.Fingerprint{}
+					for fpO, fp := range tempFingerprintsData {
+						if (fpO == fpOMain) {
+							continue
+						}
+						xyMain := strings.Split(fpMain.Location, ",")
+						xy := strings.Split(fp.Location, ",")
+						if len(xyMain) != 2 || len(xy) != 2 {
+							glb.Error.Println("location value doesn't have x,y format: xyMain:" + fpMain.Location + " & xy:" + fp.Location)
+							break
+						}
+
+						xMain, err1 := glb.StringToFloat(xyMain[0])
+						yMain, err2 := glb.StringToFloat(xyMain[1])
+						x, err3 := glb.StringToFloat(xy[0])
+						y, err4 := glb.StringToFloat(xy[1])
+						if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
+							glb.Error.Println(err1)
+							glb.Error.Println(err2)
+							glb.Error.Println(err3)
+							glb.Error.Println(err4)
+							break
+						}
+						//glb.Debug.Println(x,",",y)
+						//glb.Debug.Println(xMain,",",yMain)
+
+						dist := glb.CalcDist(x, y, xMain, yMain)
+
+						//glb.Debug.Println(dist)
+						if dist < maxValidFPDistAVG {
+							adjacentFPs = append(adjacentFPs, fp)
+						}
 					}
-					xyMain := strings.Split(fpMain.Location, ",")
-					xy := strings.Split(fp.Location, ",")
-					if len(xyMain) != 2 || len(xy) != 2 {
-						glb.Error.Println("location value doesn't have x,y format: xyMain:" + fpMain.Location + " & xy:" + fp.Location)
-						break
+					//glb.Error.Println(len(adjacentFPs))
+
+					//Average rss
+					newRouteWithAvgRss := []parameters.Router{}
+					mac2RssList := make(map[string][]int) // todo: problem with fingerprints that doesn't have some mac in their list
+					for _, rt := range fpMain.WifiFingerprint {
+						mac2RssList[rt.Mac] = []int{rt.Rssi}
 					}
 
-					xMain, err1 := glb.StringToFloat(xyMain[0])
-					yMain, err2 := glb.StringToFloat(xyMain[1])
-					x, err3 := glb.StringToFloat(xy[0])
-					y, err4 := glb.StringToFloat(xy[1])
-					if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
-						glb.Error.Println(err1)
-						glb.Error.Println(err2)
-						glb.Error.Println(err3)
-						glb.Error.Println(err4)
-						break
-					}
-					//glb.Debug.Println(x,",",y)
-					//glb.Debug.Println(xMain,",",yMain)
-
-					dist := glb.CalcDist(x, y, xMain, yMain)
-
-					//glb.Debug.Println(dist)
-					if dist < maxValidFPDistAVG {
-						adjacentFPs = append(adjacentFPs, fp)
-					}
-				}
-				//glb.Error.Println(len(adjacentFPs))
-
-				//Average rss
-				newRouteWithAvgRss := []parameters.Router{}
-				mac2RssList := make(map[string][]int) // todo: problem with fingerprints that doesn't have some mac in their list
-				for _, rt := range fpMain.WifiFingerprint {
-					mac2RssList[rt.Mac] = []int{rt.Rssi}
-				}
-
-				if len(adjacentFPs) != 0 {
-					for _, adjfp := range adjacentFPs {
-						for _, rt := range adjfp.WifiFingerprint {
-							if rssList, ok := mac2RssList[rt.Mac]; ok {
-								mac2RssList[rt.Mac] = append(rssList, rt.Rssi)
+					if len(adjacentFPs) != 0 {
+						for _, adjfp := range adjacentFPs {
+							for _, rt := range adjfp.WifiFingerprint {
+								if rssList, ok := mac2RssList[rt.Mac]; ok {
+									mac2RssList[rt.Mac] = append(rssList, rt.Rssi)
+								}
 							}
 						}
-					}
 
-					//glb.Debug.Println(mac2RssList)
-					for mac, rssList := range mac2RssList {
-						avgRss := 0
-						for _, rss := range rssList {
-							avgRss += rss
+						//glb.Debug.Println(mac2RssList)
+						for mac, rssList := range mac2RssList {
+							avgRss := 0
+							for _, rss := range rssList {
+								avgRss += rss
+							}
+							avgRss /= len(rssList)
+							//glb.Debug.Println(avgRss)
+							rt := parameters.Router{Mac: mac, Rssi: avgRss}
+							newRouteWithAvgRss = append(newRouteWithAvgRss, rt)
 						}
-						avgRss /= len(rssList)
-						//glb.Debug.Println(avgRss)
-						rt := parameters.Router{Mac: mac, Rssi: avgRss}
-						newRouteWithAvgRss = append(newRouteWithAvgRss, rt)
+						fpMainTemp := fpMain
+						fpMainTemp.WifiFingerprint = newRouteWithAvgRss //change mac,rss list
+						tempFingerprintsData2[fpOMain] = fpMainTemp
+					} else {
+						tempFingerprintsData2[fpOMain] = fpMain
 					}
-					fpMainTemp := fpMain
-					fpMainTemp.WifiFingerprint = newRouteWithAvgRss //change mac,rss list
-					tempFingerprintsData2[fpOMain] = fpMainTemp
-				} else {
-					tempFingerprintsData2[fpOMain] = fpMain
-				}
 
+				}
+				tempFingerprintsData = tempFingerprintsData2
 			}
-			tempFingerprintsData = tempFingerprintsData2
 		}
 	}
 
-
 	//// save processed data
-	gp.Get_RawData().Set_Fingerprints(tempFingerprintsData)
-	gp.Get_RawData().Set_FingerprintsOrdering(tempFingerprintsOrdering)
-
+	rd.Set_Fingerprints(tempFingerprintsData)
+	rd.Set_FingerprintsOrdering(tempFingerprintsOrdering)
 }
 
 func RemoveOutlines(rd dbm.RawDataStruct) dbm.RawDataStruct {
@@ -1204,5 +1341,296 @@ func RemoveOutlines(rd dbm.RawDataStruct) dbm.RawDataStruct {
 
 	return rd
 }
+
+func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd *dbm.ConfigDataStruct, crossValidationPartsList []crossValidationParts) parameters.KnnHyperParameters {
+	// CrossValidation
+	tempGp := dbm.GM.NewGroup(groupName)
+	tempGp.Set_Permanent(false)
+	tempGp.Set_ConfigData(cd)
+
+	totalErrorList := []int{}
+	knnErrHyperParameters := make(map[int]parameters.KnnHyperParameters)
+
+	bestResult := -1
+
+	//Set algorithm parameters range:
+
+	// KNN:
+	// Parameters list creation
+	// 1.K
+	validKs := glb.MakeRange(glb.DefaultKnnKRange[0], glb.DefaultKnnKRange[1])
+	knnKRange := shprf.KnnKRange
+	if len(knnKRange) == 1 {
+		validKs = glb.MakeRange(knnKRange[0], knnKRange[0])
+	} else if len(knnKRange) == 2 {
+		validKs = glb.MakeRange(knnKRange[0], knnKRange[1])
+	} else {
+		glb.Error.Println("Can't set valid Knn K values")
+	}
+	//2.MinClusterRSS
+	validMinClusterRSSs := glb.MakeRange(glb.DefaultKnnMinCRssRange[0], glb.DefaultKnnMinCRssRange[1])
+
+	minClusterRSSRange := shprf.KnnMinCRssRange
+	if len(minClusterRSSRange) == 1 {
+		validMinClusterRSSs = glb.MakeRange(minClusterRSSRange[0], minClusterRSSRange[0])
+	} else if len(knnKRange) == 2 {
+		validMinClusterRSSs = glb.MakeRange(minClusterRSSRange[0], minClusterRSSRange[1])
+	} else {
+		glb.Error.Println("Can't set valid Knn K values")
+	}
+
+	// Set length of calculation progress bar
+	// This is shared between all threads, so it's invalid when two calculateLearn thread run
+	glb.ProgressBarLength = len(validMinClusterRSSs) * len(validKs)
+
+	adTemp := tempGp.NewAlgoDataStruct()
+	rdTemp := tempGp.Get_RawData()
+
+	for i, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
+		for j, K := range validKs { // for over KnnK
+			glb.ProgressBarCurLevel = i*len(validKs) + j
+			totalDistError := 0
+			tempHyperParameters := parameters.KnnHyperParameters{
+				K:             K,
+				MinClusterRss: minClusterRss,
+			}
+			// 1-foldCrossValidation (each round one location select as test set)
+			for _, CVParts := range crossValidationPartsList {
+
+				// Learn:
+				trainSetTemp := CVParts.GetTrainSet(tempGp)
+				rdTemp.Set_Fingerprints(trainSetTemp.Fingerprints)
+				rdTemp.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
+
+				testFPs := CVParts.testSet.Fingerprints
+				testFPsOrdering := CVParts.testSet.FingerprintsOrdering
+
+				GetParametersWithGP(tempGp)
+
+				PreProcess(rdTemp, shprf.NeedToRelocateFP)
+
+				learnedKnnData, _ := LearnKnn(tempGp, tempHyperParameters)
+
+				// Set hyper parameters
+				learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K: K, MinClusterRss: minClusterRss}
+
+				adTemp.Set_KnnFPs(learnedKnnData)
+
+				// Set to main group
+				tempGp.GMutex.Lock() //For each group there's a lock to avoid race between concurrent calculateLearn s
+				tempGp.Set_AlgoData(adTemp)
+
+				// Error calculation for this round
+				distError := 0
+				trackedPointsNum := 0
+				testLocation := testFPs[testFPsOrdering[0]].Location
+				for _, index := range testFPsOrdering {
+					fp := testFPs[index]
+
+					resultDot := ""
+					var err error
+					err, resultDot, _ = TrackKnn(tempGp, fp, false)
+					if err != nil {
+						if err.Error() == "NumofAP_lowerThan_MinApNum" {
+							continue
+						} else if err.Error() == "NoValidFingerprints" {
+							continue
+						}
+					} else {
+						trackedPointsNum++
+					}
+
+					//glb.Debug.Println(fp.Timestamp)
+					resx, resy := glb.GetDotFromString(resultDot)
+					x, y := glb.GetDotFromString(testLocation)
+					//if fp.Timestamp==int64(1516794991872647445){
+					//	glb.Error.Println("ResultDot = ",resultDot)
+					//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
+					//}
+					distError += int(glb.CalcDist(x, y, resx, resy))
+					if distError < 0 { //print if distError is lower than zero(it's for error detection)
+						glb.Error.Println(fp)
+						glb.Error.Println(resultDot)
+						_, resultDot, _ = TrackKnn(tempGp, fp, false)
+						glb.Error.Println(x, y)
+						glb.Error.Println(resx, resy)
+					}
+				}
+				if trackedPointsNum == 0 {
+					glb.Error.Println("For loc:", testLocation, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
+				} else {
+					distError = distError / trackedPointsNum
+					totalDistError += distError
+				}
+
+				tempGp.GMutex.Unlock()
+			}
+
+			glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d) = %d \n", minClusterRss, K, totalDistError)
+
+			//if(bestResult==-1 || totalDistError<bestResult){
+			//	bestResult = totalDistError
+			//	bestK = K
+			//}
+			totalErrorList = append(totalErrorList, totalDistError)
+			knnErrHyperParameters[totalDistError] = tempHyperParameters
+		}
+	}
+
+	glb.ProgressBarCurLevel = 0 // reset progressBar level
+
+	// Select best hyperParameters
+	//glb.Debug.Println(totalErrorList)
+	sort.Ints(totalErrorList)
+	bestResult = totalErrorList[0]
+	bestErrHyperParameters := knnErrHyperParameters[bestResult]
+
+	glb.Debug.Println("CrossValidation resuts:")
+	for _, res := range totalErrorList {
+		glb.Debug.Println(knnErrHyperParameters[res], " : ", res)
+	}
+	//glb.Debug.Println()
+	glb.Debug.Println("Best K : ", bestErrHyperParameters.K)
+	glb.Debug.Println("Best MinClusterRss : ", bestErrHyperParameters.MinClusterRss)
+	glb.Debug.Println("Minimum error = ", bestResult)
+	return bestErrHyperParameters
+}
+
+func CalculateLearn(groupName string) {
+	// Now performance isn't important in learning, just care about performance on track (it helps to code easily!)
+
+	glb.Debug.Println("################### CalculateLearn ##################")
+	gp := dbm.GM.GetGroup(groupName)
+	gp.Set_Permanent(false) //for crossvalidation
+
+	rdVal := gp.Get_RawData_Val()
+	rd := gp.Get_RawData()
+	mainFPData := rd.Get_Fingerprints()
+	mainFPOrdering := rd.Get_FingerprintsOrdering()
+	cd := gp.Get_ConfigData()
+	md := gp.Get_MiddleData()
+	ad := gp.Get_AlgoData()
+	rs := gp.Get_ResultData()
+
+	knnLocAccuracy := make(map[string]int)
+	var crossValidationPartsList []crossValidationParts
+	crossValidationPartsList = GetCrossValidationParts(gp, rdVal)
+	// ToDo: Need to learn algorithms concurrently
+
+	glb.Debug.Println("crossValidationPartsList length:", len(crossValidationPartsList))
+	shprf := dbm.GetSharedPrf(groupName)
+
+	bestKnnHyperParams := GetBestKnnHyperParams(groupName+"KNNTemp", shprf, cd, crossValidationPartsList)
+
+	glb.Debug.Println(bestKnnHyperParams)
+
+	// Calculating each location detection accuracy with best hyperParameters: //todo:Avoid this extra level,do it in GetBestKnnHyperParams
+	knnDistError := 0
+	for _, CVParts := range crossValidationPartsList {
+		// Learn
+		trainSetTemp := CVParts.GetTrainSet(gp)
+		rd.Set_Fingerprints(trainSetTemp.Fingerprints)
+		rd.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
+		testFPs := CVParts.testSet.Fingerprints
+		testFPsOrdering := CVParts.testSet.FingerprintsOrdering
+		GetParametersWithGP(gp)
+
+		PreProcess(rd, shprf.NeedToRelocateFP)
+
+		learnedKnnData, _ := LearnKnn(gp, bestKnnHyperParams)
+		// Set hyper parameters
+		learnedKnnData.HyperParameters = bestKnnHyperParams
+		gp.GMutex.Lock()
+		ad.Set_KnnFPs(learnedKnnData)
+		gp.Set_AlgoData(ad)
+
+		// Error calculation for each location with best hyperParameters
+		distError := 0
+		trackedPointsNum := 0
+		testLocation := testFPs[testFPsOrdering[0]].Location
+		for _, index := range testFPsOrdering {
+
+			fp := testFPs[index]
+			resultDot := ""
+			var err error
+			err, resultDot, _ = TrackKnn(gp, fp, false)
+
+			if err != nil {
+				if err.Error() == "NumofAP_lowerThan_MinApNum" {
+					continue
+				} else if err.Error() == "NoValidFingerprints" {
+					continue
+				}
+			} else {
+				trackedPointsNum++
+			}
+			//glb.Debug.Println(fp.Location, " ==== ", resultDot)
+
+			resx, resy := glb.GetDotFromString(resultDot)
+			x, y := glb.GetDotFromString(testLocation) // testLocation is fp.Location
+			distError += int(glb.CalcDist(x, y, resx, resy))
+			if distError < 0 {
+				glb.Error.Println(fp)
+				glb.Error.Println(resultDot)
+				//_, resultDot, _ = TrackKnn(gp, fp, false)
+				glb.Error.Println(x, y)
+				glb.Error.Println(resx, resy)
+			}
+		}
+
+		if trackedPointsNum == 0 {
+			glb.Error.Println("For loc:", testLocation, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
+			knnLocAccuracy[testLocation] = -1
+		} else {
+			distError = distError / trackedPointsNum
+			knnLocAccuracy[testLocation] = distError
+			knnDistError += distError
+		}
+		gp.GMutex.Unlock()
+	}
+
+	// Set CrossValidation results
+	rs.Set_AlgoAccuracy("knn", knnDistError)
+	for loc, accuracy := range knnLocAccuracy {
+		rs.Set_AlgoLocAccuracy("knn", loc, accuracy)
+	}
+	glb.Debug.Println(dbm.GetCVResults(groupName))
+
+	// Set main parameters
+	rd.Set_Fingerprints(mainFPData)
+	rd.Set_FingerprintsOrdering(mainFPOrdering)
+	GetParametersWithGP(gp)
+
+	gp.GMutex.Lock()
+	glb.Debug.Println(md.UniqueMacs)
+
+	PreProcess(rd, shprf.NeedToRelocateFP)
+
+	// learn algorithm
+	learnedKnnData, _ := LearnKnn(gp, bestKnnHyperParams)
+	learnedKnnData.HyperParameters = bestKnnHyperParams
+
+	// Set best hyperparameter values
+	ad.Set_KnnFPs(learnedKnnData)
+	gp.Set_Permanent(true)
+	gp.GMutex.Unlock()
+
+	if glb.RuntimeArgs.Scikit {
+		ScikitLearn(groupName)
+	}
+
+	glb.Debug.Println("Calculation finished.")
+	//if glb.RuntimeArgs.Svm {
+	//	DumpFingerprintsSVM(groupName)
+	//	err := CalculateSVM(groupName)
+	//	if err != nil {
+	//		glb.Warning.Println("Encountered error when calculating SVM")
+	//		glb.Warning.Println(err)
+	//	}
+	//}
+
+	//runnerLock.Unlock()
+}
+
 
 //todo : write a function that correct(change) new fingerprint timestamp that has same name with available fps

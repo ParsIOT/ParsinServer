@@ -45,6 +45,8 @@ var PDREnabledForDynamicSubareaMethod bool
 var GraphEnabled bool
 var MaxEuclideanRssVectorDist float64
 
+var FastLearn bool //ignore some crossvalidation calculation(rss regulating & get rss avg of adjacency dots) to learn fast
+
 func init() {
 	DefaultMixin = float64(0.1)
 	DefaultCutoff = float64(0.01)
@@ -77,4 +79,6 @@ func init() {
 	CalculateTestError = true
 	GraphEnabled = true
 	PDREnabledForDynamicSubareaMethod = false
+
+	FastLearn = false
 }

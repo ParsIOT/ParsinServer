@@ -6,20 +6,31 @@
 
 package parameters
 
+import "ParsinServer/glb"
 
 // PersistentParameters are not reloaded each time
 //type PersistentParameters struct {
 //	NetworkRenamed map[string][]string // key:networkName, value:mac list; e.g.: {"1":["mac1","mac2"]}
 //}
 
+type KnnHyperParameters struct {
+	K             int `json:"K"`
+	MinClusterRss int `json:"MinClusterRss"`
+}
+
+func NewKnnHyperParameters() KnnHyperParameters {
+	return KnnHyperParameters{
+		K:             glb.DefaultKnnKRange[0],
+		MinClusterRss: glb.DefaultKnnMinCRssRange[0],
+	}
+}
 
 type KnnFingerprints struct {
 	FingerprintsInMemory map[string]Fingerprint `json:"FingerprintsInMemory"`
 	FingerprintsOrdering []string               `json:"FingerprintsOrdering"`
 	Clusters             map[string][]string    `json:"Clusters"`
-	K                    int                    `json:"K"`
-	MinClusterRss        int                    `json:"MinClusterRss"`
-	Node2FPs			 map[string][]string	`json:"Node2FPs"`
+	HyperParameters      KnnHyperParameters     `json:"HyperParameters"`
+	Node2FPs             map[string][]string    `json:"Node2FPs"`
 }
 
 func NewKnnFingerprints() KnnFingerprints {
@@ -27,9 +38,8 @@ func NewKnnFingerprints() KnnFingerprints {
 		FingerprintsInMemory: make(map[string]Fingerprint),
 		FingerprintsOrdering: []string{},
 		Clusters:             make(map[string][]string),
-		K:                    10,
-		MinClusterRss:        -70,
-		Node2FPs:			make(map[string][]string),
+		HyperParameters:      NewKnnHyperParameters(),
+		Node2FPs:             make(map[string][]string),
 	}
 }
 
