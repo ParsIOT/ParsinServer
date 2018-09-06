@@ -110,8 +110,9 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 		}else{
 			if nearNodeGraph == nil { //1383.0,258.0
 				glb.Error.Println("*********** near node was nil for ",fp.Location)
+			} else {
+				node2FPs[nearNodeGraph.Label] = []string{fpTime}
 			}
-			node2FPs[nearNodeGraph.Label] = []string{fpTime}
 		}
 	}
 
