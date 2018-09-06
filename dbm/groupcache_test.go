@@ -4,6 +4,7 @@ import (
 	"testing"
 	"github.com/stretchr/testify/assert"
 	"ParsinServer/glb"
+	"ParsinServer/dbm/parameters"
 )
 
 func TestAdd_UserHistory(t *testing.T) {
@@ -36,4 +37,16 @@ func TestAdd_UserHistory(t *testing.T) {
 	result := []parameters.UserPositionJSON{fp2, fp3}
 
 	assert.Equal(t, userHistory, result)
+}
+
+
+
+func TestGetNearestNode(t *testing.T){
+	gp := GM.GetGroup("arman_28_3_97_ble_1")
+
+	//glb.Debug.Println(len(fingerprintsInMemory1))
+	graphMapPointer := gp.Get_AlgoData().Get_GroupGraph()
+	nearNodeGraph := graphMapPointer.GetNearestNode("1383.0,258.0")
+	glb.Debug.Println(nearNodeGraph)
+	assert.Equal(t, 1, 1)
 }

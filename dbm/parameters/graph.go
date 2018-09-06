@@ -90,14 +90,15 @@ func (node *Node) GetNodeLocation() (float64, float64){
 	coords := node.Label
 	result := strings.Split(coords,"#")
 	x,err := strconv.ParseFloat(result[0],64)
-	if err!=nil {fmt.Println(err)}
+	if err!=nil {glb.Error.Println(err)}
 	y,err := strconv.ParseFloat(result[1],64)
+	if err!=nil {glb.Error.Println(err)}
 	return x,y
 }
 
 func ConvertStringLocToXY(coords string) (float64, float64){
 	//n := g.GetNodeByLabel(coords)
-	result := strings.Split(coords,"#") // this function is for locations from hadi
+	result := strings.Split(coords,",") // this function is for locations from hadi
 	x,err := strconv.ParseFloat(result[0],64)
 	if err!=nil {fmt.Println(err)}
 	y,err := strconv.ParseFloat(result[1],64)
@@ -147,7 +148,7 @@ func (g *Graph) RemoveEdgeByLabel(n string) {
 		//glb.Debug.Println(g.Nodes[i].String())
 		if g.Edges[*n1Node][i].String() == n2Label {
 			g.Edges[*n1Node] = append(g.Edges[*n1Node][:i], g.Edges[*n1Node][i+1:]...)
-			glb.Debug.Printf("found specified node for %s and removed",n2Label)
+			//glb.Debug.Printf("found specified node for %s and removed",n2Label)
 			//g.lock.Unlock()
 			// g.Nodes[i]
 		}
@@ -156,13 +157,13 @@ func (g *Graph) RemoveEdgeByLabel(n string) {
 		//glb.Debug.Println(g.Nodes[i].String())
 		if g.Edges[*n2Node][i].String() == n1Label {
 			g.Edges[*n2Node] = append(g.Edges[*n2Node][:i], g.Edges[*n2Node][i+1:]...)
-			glb.Debug.Printf("found specified node for %s and removed",n2Label)
+			//glb.Debug.Printf("found specified node for %s and removed",n2Label)
 			//g.lock.Unlock()
 			// g.Nodes[i]
 		}
 	}
 	g.lock.Unlock()
-	glb.Debug.Println("******** removing is done ********")
+	//glb.Debug.Println("******** removing is done ********")
 }
 
 func (g *Graph) String() {
@@ -184,23 +185,6 @@ func (g *Graph) String() {
 func (g *Graph) GetGraphMap() map[string][]string {
 	//g.lock.RLock()
 	graphMap := make(map[string][]string)
-	//for k := range graphMap {
-	//	delete(graphMap, k)
-	//}
-	//g.AddNodeByLabel("10#10")
-	//g.AddNodeByLabel("20#20")
-	//g.AddNodeByLabel("20#30")
-	//g.AddNodeByLabel("40#40")
-	//g.AddNodeByLabel("50#50")
-	//g.AddEdgeByLabel("10#10", "20#20")
-	//g.AddEdgeByLabel("10#10", "20#30")
-	//g.AddEdgeByLabel("20#20", "10#10")
-	//g.AddEdgeByLabel("20#20", "20#30")
-	//g.AddEdgeByLabel("20#30", "10#10")
-	//g.AddEdgeByLabel("20#30", "20#20")
-	//g.AddEdgeByLabel("20#30", "50#50")
-	//g.AddEdgeByLabel("50#50", "20#30")
-	//glb.Debug.Println("graphMap",graphMap)
 
 	for i := 0; i < len(g.Nodes); i++ {
 		near := g.Edges[*g.Nodes[i]]
@@ -231,25 +215,47 @@ func (g *Graph) DeleteGraph() {
 func (g *Graph) GetNearestNode(location string) *Node {
 	//g.lock.RLock()
 	curX, curY := ConvertStringLocToXY(location)
+	glb.Debug.Println("****** curX,curY:  ",curX,curY)
 	minimumDist := math.MaxFloat64 // maybe should define a variable like the one hadi made for maxEucleadian distance
 	var ownerOfMinimumDist *Node
 	var curDist float64
+
+	curDistants := []float64{}
+	xys := []float64{}
+	flag:=true
+	flagenter := true
+	lenlen := len(g.Nodes)
+	if lenlen==0{
+		glb.Error.Println(" WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF ")
+	}
+
 	for i := 0; i < len(g.Nodes); i++ {
+		flagenter = false
 		x,y := g.Nodes[i].GetNodeLocation()
+		xys = append(xys,x)
+		xys = append(xys,y)
 		curDist = glb.CalcDist(curX,curY,x,y)
+		curDistants = append(curDistants,curDist)
 		if curDist<minimumDist{
 			minimumDist = curDist
 			ownerOfMinimumDist = g.Nodes[i]
+			flag = false
 		}
 	}
 	//glb.Debug.Println(graphMap)
 	//g.lock.RUnlock()
+	if ownerOfMinimumDist==nil {
+		glb.Error.Println("**************** curX:",curX," curY:",curY," minDist:",minimumDist," flag:",flag," curDists:",curDistants," xys:",xys, " flagenter:",flagenter,"len(g.Nodes)",len(g.Nodes))
+		glb.Error.Println("g.nodes:", g.Nodes)
+	}
+	glb.Debug.Println("**************** curX:",curX," curY:",curY," minDist:",minimumDist," flag:",flag," curDists:",curDistants," xys:",xys, " flagenter:",flagenter,"len(g.Nodes)",len(g.Nodes))
 	return ownerOfMinimumDist
 }
 
 
 // Traverse implements the BFS traversing algorithm
-func (g *Graph) BFSTraverse(startNode *Node, f func(*Node)) {
+//func (g *Graph) BFSTraverse(startNode *Node, f func(*Node)) {
+func (g *Graph) BFSTraverse(startNode *Node) [][]*Node {
 	g.lock.RLock()
 	q := NodeQueue{}
 	q.New()
@@ -258,7 +264,16 @@ func (g *Graph) BFSTraverse(startNode *Node, f func(*Node)) {
 	q.Enqueue(*n)
 	//visited := make(map[*Node]bool)
 	visited := make(map[string]bool)
-	//i:=0
+	k:=1
+	flag := true
+	//result := make(map[int][]*Node)
+	result := [][]*Node{}
+	result = append(result,[]*Node{})
+	//result = append(result,[]*Node{})
+	//result = append(result,[]*Node{})
+	result[0] = append(result[0],startNode)
+	//glb.Debug.Println("result: ",result)
+
 	for {
 		//glb.Debug.Println("visited is ",visited,"in ",i,"th step")
 		if q.IsEmpty() {
@@ -267,17 +282,28 @@ func (g *Graph) BFSTraverse(startNode *Node, f func(*Node)) {
 		node := q.Dequeue()
 		visited[node.Label] = true
 		near := g.Edges[*node]
-
 		for i := 0; i < len(near); i++ {
 			j := near[i]
 			if !visited[j.Label] {
+				if k>=len(result){
+					//glb.Debug.Println("k is bigger than len")
+					result = append(result,[]*Node{})
+				}
+				//glb.Debug.Println("result: ",result)
+				result[k] = append(result[k],j)
 				q.Enqueue(*j)
 				visited[j.Label] = true
+				flag = true
+			}else {
+				flag = false
 			}
 		}
-		if f != nil {
-			f(node)
+		if flag {
+			k++
+			flag = true
 		}
 	}
 	g.lock.RUnlock()
+	//glb.Debug.Println(result)
+	return result
 }

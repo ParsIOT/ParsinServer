@@ -99,18 +99,21 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 		}
 	}
 
-	/*	node2FPs := make(map[string][]string)
-		for fpTime, fp := range fingerprints{
-			gp := dbm.GM.GetGroup("arman_28_3_97_ble_1") // Note:
-			graphMapPointer := gp.Get_AlgoData().Get_GroupGraph()
-			nearNodeGraph := graphMapPointer.GetNearestNode(fp.Location)
-
-			if tempNode2FPs, ok :=node2FPs[fpTime]; ok {
-				node2FPs[nearNodeGraph.Label] = append(tempNode2FPs,fpTime)
-			}else{
-				node2FPs[nearNodeGraph.Label] = []string{fpTime}
+	node2FPs := make(map[string][]string)
+	for fpTime, fp := range fingerprints{
+		// Todo: do something to remove gp name as hardcode
+		graphMapPointer := dbm.GM.GetGroup("arman_28_3_97_ble_1").Get_AlgoData().Get_GroupGraph()
+		nearNodeGraph := graphMapPointer.GetNearestNode(fp.Location)
+		//glb.Debug.Println("near node Graph: ",nearNodeGraph.Label)
+		if tempNode2FPs, ok :=node2FPs[fpTime]; ok {
+			node2FPs[nearNodeGraph.Label] = append(tempNode2FPs,fpTime)
+		}else{
+			if nearNodeGraph == nil { //1383.0,258.0
+				glb.Error.Println("*********** near node was nil for ",fp.Location)
 			}
-		}*/
+			node2FPs[nearNodeGraph.Label] = []string{fpTime}
+		}
+	}
 
 	//// Cluster print
 	//for key,val := range clusters{
@@ -127,7 +130,7 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 	tempKnnFingerprints.FingerprintsInMemory = fingerprints
 	tempKnnFingerprints.FingerprintsOrdering = fingerprintsOrdering
 	tempKnnFingerprints.Clusters = clusters
-	//tempKnnFingerprints.Node2FPs = node2FPs
+	tempKnnFingerprints.Node2FPs = node2FPs
 	//dbm.GM.GetGroup(groupName).Get_AlgoData().Set_KnnFPs(tempKnnFingerprints)
 
 	//err = dbm.SetKnnFingerprints(tempKnnFingerprints, groupName)
@@ -151,7 +154,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	var mainFingerprintsOrdering []string
 	var fingerprintsOrdering []string
 	clusters := make(map[string][]string)
-	//node2FPs := make(map[string][]string)
+	node2FPs := make(map[string][]string)
 	//
 	//tempKnnFingerprints, ok := dbm.GetKnnFPCache(curFingerprint.Group)
 	//if ok {
@@ -183,6 +186,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	clusters = tempKnnFingerprints.Clusters
 	hyperParams := tempKnnFingerprints.HyperParameters
 	//node2FPs = tempKnnFingerprints.Node2FPs
+	node2FPs = tempKnnFingerprints.Node2FPs
 	//tempList := []string{}
 	//tempList = append(tempList,mainFingerprintsOrdering...)
 	//sort.Sort(sort.StringSlice(tempList))
@@ -228,6 +232,14 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		fingerprintsOrdering = mainFingerprintsOrdering
 	}
 
+	FP2A := make(map[string]float64)
+	maxLevel := 3
+	As := []float64{10,5,2};
+	minA := float64(1);
+	for _,fpTime := range fingerprintsOrdering{
+		FP2A [fpTime] = minA
+	}
+
 	// History effect:
 	// Idea from: Dynamic Subarea Method in "A Hybrid Indoor Positioning Algorithm based on WiFi Fingerprinting and Pedestrian Dead Reckoning""
 	var tempFingerprintOrdering []string
@@ -250,31 +262,26 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		//glb.Error.Println(baseLoc)
 
 
-		//FP2A := make(map[string]float64)
 		if baseLoc != "" { // ignore when baseLoc is empty (for example there is no userhistory!)
 			if glb.GraphEnabled {
-				//graphMapPointer := gp.Get_AlgoData().Get_GroupGraph()
-				//baseNodeGraph := graphMapPointer.GetNearestNode(baseLoc)
-				//sliceOfHops := graphMapPointer.BFSTraverse(baseNodeGraph) // edit this function to return a nested slice with
-				//// nodes with correspondign hops
-				//maxLevel := 3
-				//As := []float64{10,5,2};
-				//minA := float64(1);
-				//for i,levelSliceOfHops := range sliceOfHops{
-				//		for _,node := range levelSliceOfHops{
-				//			//hopFPs := append(hopFPs,node2FPs[node]...)
-				//			hopFPs := node2FPs[node.Label]
-				//			for _,fp := range hopFPs{
-				//				if (i > maxLevel){
-				//					FP2A[fp] = minA
-				//				}else{
-				//					FP2A[fp] = As[i]
-				//				}
-				//			}
-				//		}
-				//
-				//
-				//}
+				graphMapPointer := gp.Get_AlgoData().Get_GroupGraph()
+				baseNodeGraph := graphMapPointer.GetNearestNode(baseLoc)
+				sliceOfHops := graphMapPointer.BFSTraverse(baseNodeGraph) // edit this function to return a nested slice with
+				// nodes with corresponding hops
+
+				for i,levelSliceOfHops := range sliceOfHops{
+						for _,node := range levelSliceOfHops{
+							//hopFPs := append(hopFPs,node2FPs[node]...)
+							hopFPs := node2FPs[node.Label]
+							for _,fp := range hopFPs{
+								if (i <= maxLevel){
+									FP2A[fp] = As[i]
+								}
+							}
+						}
+
+
+				}
 
 
 
@@ -483,8 +490,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				//glb.Error.Println(currentY)
 				//glb.Error.Println(currentX,"::",currentY)
 				//}
-				//curW := W[fpTime]*FP2A[fpTime]
-				curW := W[fpTime]
+				curW := W[fpTime]*FP2A[fpTime]
+				//curW := W[fpTime]
 				currentX = currentX + int64(curW*locX)
 				currentY = currentY + int64(curW*locY)
 				//Debug.Println(W[fpTime]*locX)
