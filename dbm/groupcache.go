@@ -54,6 +54,8 @@ type ConfigDataStruct struct {
 	group *Group
 	//Learned data:
 	Test int
+	GroupGraph  			parameters.Graph
+
 	//Note: Run easyjson.sh after editing
 }
 
@@ -117,7 +119,7 @@ type AlgoDataStruct struct{
 	//BayesPriors   			map[string]parameters.PriorParameters   // generate BayesPriors for each network
 	//BayesResults  			map[string]parameters.ResultsParameters // generate BayesResults for each network
 	KnnFPs        			parameters.KnnFingerprints
-	GroupGraph  			parameters.Graph
+	//GroupGraph  			parameters.Graph
 	//Note: Run easyjson.sh after editing
 }
 
@@ -871,6 +873,8 @@ func (gp *Group) NewConfigDataStruct() *ConfigDataStruct {
 		mutex: &sync.RWMutex{},
 		group: gp,
 		Test:  1,
+		GroupGraph:   			parameters.NewGraph(),
+
 	}
 }
 
@@ -897,7 +901,7 @@ func (gp *Group) NewAlgoDataStruct() *AlgoDataStruct {
 		//BayesPriors:    		make(map[string]parameters.PriorParameters),
 		//BayesResults:   		make(map[string]parameters.ResultsParameters),
 		KnnFPs:         		parameters.NewKnnFingerprints(),
-		GroupGraph:   			parameters.NewGraph(),
+		//GroupGraph:   			parameters.NewGraph(),
 	}
 }
 
@@ -1682,18 +1686,18 @@ func (ad *AlgoDataStruct) Set_KnnFPs(new_item  parameters.KnnFingerprints){
 	ad.Unlock()
 }
 
-func (ad *AlgoDataStruct) Get_GroupGraph() parameters.Graph  {
-	ad.RLock()
-	item := ad.GroupGraph
-	ad.RUnlock()
+func (confdata *ConfigDataStruct) Get_GroupGraph() parameters.Graph  {
+	confdata.RLock()
+	item := confdata.GroupGraph
+	confdata.RUnlock()
 	return item
 }
-func (ad *AlgoDataStruct) Set_GroupGraph(new_item  parameters.Graph){
-	defer ad.SetDirtyBit()
+func (confdata *ConfigDataStruct) Set_GroupGraph(new_item  parameters.Graph){
+	defer confdata.SetDirtyBit()
 
-	ad.Lock()
-	ad.GroupGraph = new_item
-	ad.Unlock()
+	confdata.Lock()
+	confdata.GroupGraph = new_item
+	confdata.Unlock()
 }
 //func (rs *ResultDataStruct) AppendResult(fp parameters.Fingerprint){
 //	defer rs.SetDirtyBit()

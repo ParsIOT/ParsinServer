@@ -102,7 +102,7 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 	node2FPs := make(map[string][]string)
 	for fpTime, fp := range fingerprints{
 		// Todo: do something to remove gp name as hardcode
-		graphMapPointer := dbm.GM.GetGroup("arman_28_3_97_ble_1").Get_AlgoData().Get_GroupGraph()
+		graphMapPointer := dbm.GM.GetGroup("arman_28_3_97_ble_1").Get_ConfigData().Get_GroupGraph()
 		nearNodeGraph := graphMapPointer.GetNearestNode(fp.Location)
 		//glb.Debug.Println("near node Graph: ",nearNodeGraph.Label)
 		if tempNode2FPs, ok :=node2FPs[fpTime]; ok {
@@ -265,7 +265,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 		if baseLoc != "" { // ignore when baseLoc is empty (for example there is no userhistory!)
 			if glb.GraphEnabled {
-				graphMapPointer := gp.Get_AlgoData().Get_GroupGraph()
+				graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
 				baseNodeGraph := graphMapPointer.GetNearestNode(baseLoc)
 				sliceOfHops := graphMapPointer.BFSTraverse(baseNodeGraph) // edit this function to return a nested slice with
 				// nodes with corresponding hops

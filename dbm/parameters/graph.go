@@ -248,7 +248,7 @@ func (g *Graph) GetNearestNode(location string) *Node {
 		glb.Error.Println("**************** curX:",curX," curY:",curY," minDist:",minimumDist," flag:",flag," curDists:",curDistants," xys:",xys, " flagenter:",flagenter,"len(g.Nodes)",len(g.Nodes))
 		glb.Error.Println("g.nodes:", g.Nodes)
 	}
-	glb.Debug.Println("**************** curX:",curX," curY:",curY," minDist:",minimumDist," flag:",flag," curDists:",curDistants," xys:",xys, " flagenter:",flagenter,"len(g.Nodes)",len(g.Nodes))
+	//glb.Debug.Println("**************** curX:",curX," curY:",curY," minDist:",minimumDist," flag:",flag," curDists:",curDistants," xys:",xys, " flagenter:",flagenter,"len(g.Nodes)",len(g.Nodes))
 	return ownerOfMinimumDist
 }
 

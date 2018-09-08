@@ -1198,7 +1198,7 @@ func AddNodeToGraph(c *gin.Context) {
 		NewVertexKey string `json:newVertexKey`
 	}
 	gp := dbm.GM.GetGroup(groupName)
-	curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
+	curGroupGraph := gp.Get_ConfigData().Get_GroupGraph()
 
 	//glb.Debug.Println(curGroupGraph.GetNearestNode("998.0,1040.0").Label)
 	//glb.Debug.Println(curGroupGraph.GetNearestNode("-252#-1223").Label)
@@ -1214,8 +1214,8 @@ func AddNodeToGraph(c *gin.Context) {
 			curGroupGraph.AddNodeByLabel(newVertexLabel)
 			//curGroupGraph.DeleteGraph()
 			//glb.Debug.Println("graph after adding : ---------> ",curGroupGraph.GetGraphMap())
-			ad := gp.Get_AlgoData()
-			ad.Set_GroupGraph(curGroupGraph)
+			cd := gp.Get_ConfigData()
+			cd.Set_GroupGraph(curGroupGraph)
 			//glb.Debug.Println("####### exited AddNodeByLabel in the bindJson ########")
 			if err != nil {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
@@ -1245,9 +1245,9 @@ func SaveEdgesToDB(c *gin.Context) {
 
 	if group != "none" {
 		gp := dbm.GM.GetGroup(group)
-		curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
-		ad := gp.Get_AlgoData()
-		ad.Set_GroupGraph(curGroupGraph)
+		curGroupGraph := gp.Get_ConfigData().Get_GroupGraph()
+		cd := gp.Get_ConfigData()
+		cd.Set_GroupGraph(curGroupGraph)
 		//glb.Debug.Println("$$$$ the graph is saved to DB")
 		//graphMap = curGraphMap.GetGraphMap()
 		//glb.Debug.Println(graphMap)
@@ -1277,10 +1277,10 @@ func DeleteWholeGraph(c *gin.Context) {
 	//glb.Debug.Println("### entered delete whole graph api ###")
 	if group != "none" {
 		gp := dbm.GM.GetGroup(group)
-		curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
+		curGroupGraph := gp.Get_ConfigData().Get_GroupGraph()
 		curGroupGraph.DeleteGraph()
-		ad := gp.Get_AlgoData()
-		ad.Set_GroupGraph(curGroupGraph)
+		cd := gp.Get_ConfigData()
+		cd.Set_GroupGraph(curGroupGraph)
 		//glb.Debug.Println("$$$$ the graph is removed from DB")
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "group field is null", "success": false})
@@ -1309,7 +1309,7 @@ func AddEdgeToGraph(c *gin.Context) {
 		NewEdge []string `json:NewEdge`
 	}
 	gp := dbm.GM.GetGroup(groupName)
-	curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
+	curGroupGraph := gp.Get_ConfigData().Get_GroupGraph()
 	var tempSt st
 	if groupName != "none" {
 		if err := c.ShouldBindJSON(&tempSt); err == nil {
@@ -1348,7 +1348,7 @@ func RemoveEdgesOrVertices(c *gin.Context) {
 		RemovedEdges    []string `json:"removed_edges"`
 	}
 	gp := dbm.GM.GetGroup(groupName)
-	curGroupGraph := gp.Get_AlgoData().Get_GroupGraph()
+	curGroupGraph := gp.Get_ConfigData().Get_GroupGraph()
 	var tempSt st
 	if groupName != "none" {
 		if err := c.ShouldBindJSON(&tempSt); err == nil {
@@ -1364,8 +1364,8 @@ func RemoveEdgesOrVertices(c *gin.Context) {
 				curGroupGraph.RemoveNodeByLabel(ToBeRemovedVertices[k])
 			}
 
-			ad := gp.Get_AlgoData()
-			ad.Set_GroupGraph(curGroupGraph)
+			cd := gp.Get_ConfigData()
+			cd.Set_GroupGraph(curGroupGraph)
 			if err != nil {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			} else {
@@ -1405,7 +1405,7 @@ func Getgraph(c *gin.Context) {
 
 	if group != "none" {
 		gp := dbm.GM.GetGroup(group)
-		graphMapPointer := gp.Get_AlgoData().Get_GroupGraph()
+		graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
 		graphMap = graphMapPointer.GetGraphMap()
 		glb.Debug.Println("graphmap",graphMap)
 		//glb.Debug.Println(graphMap)

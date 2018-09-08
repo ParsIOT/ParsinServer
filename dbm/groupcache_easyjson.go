@@ -1618,6 +1618,8 @@ func easyjson3b8810b5DecodeParsinServerDbm5(in *jlexer.Lexer, out *ConfigDataStr
 		switch key {
 		case "Test":
 			out.Test = int(in.Int())
+		case "GroupGraph":
+			(out.GroupGraph).UnmarshalEasyJSON(in)
 		default:
 			in.SkipRecursive()
 		}
@@ -1641,6 +1643,16 @@ func easyjson3b8810b5EncodeParsinServerDbm5(out *jwriter.Writer, in ConfigDataSt
 			out.RawString(prefix)
 		}
 		out.Int(int(in.Test))
+	}
+	{
+		const prefix string = ",\"GroupGraph\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		(in.GroupGraph).MarshalEasyJSON(out)
 	}
 	out.RawByte('}')
 }
@@ -1689,8 +1701,6 @@ func easyjson3b8810b5DecodeParsinServerDbm6(in *jlexer.Lexer, out *AlgoDataStruc
 		switch key {
 		case "KnnFPs":
 			(out.KnnFPs).UnmarshalEasyJSON(in)
-		case "GroupGraph":
-			(out.GroupGraph).UnmarshalEasyJSON(in)
 		default:
 			in.SkipRecursive()
 		}
@@ -1714,16 +1724,6 @@ func easyjson3b8810b5EncodeParsinServerDbm6(out *jwriter.Writer, in AlgoDataStru
 			out.RawString(prefix)
 		}
 		(in.KnnFPs).MarshalEasyJSON(out)
-	}
-	{
-		const prefix string = ",\"GroupGraph\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		(in.GroupGraph).MarshalEasyJSON(out)
 	}
 	out.RawByte('}')
 }
