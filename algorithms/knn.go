@@ -107,13 +107,14 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 		//glb.Debug.Println("near node Graph: ",nearNodeGraph.Label)
 		if tempNode2FPs, ok :=node2FPs[fpTime]; ok {
 			node2FPs[nearNodeGraph.Label] = append(tempNode2FPs,fpTime)
-		}else{
-			if nearNodeGraph == nil { //1383.0,258.0
-				glb.Error.Println("*********** near node was nil for ",fp.Location)
-			} else {
-				node2FPs[nearNodeGraph.Label] = []string{fpTime}
-			}
 		}
+		//else{
+		//	if nearNodeGraph == nil { //1383.0,258.0
+		//		//glb.Error.Println("*********** near node was nil for ",fp.Location)
+		//	} else {
+		//		node2FPs[nearNodeGraph.Label] = []string{fpTime}
+		//	}
+		//}
 	}
 
 	//// Cluster print

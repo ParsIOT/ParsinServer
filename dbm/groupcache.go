@@ -371,7 +371,7 @@ func (gm *GroupManger) LoadGroup(groupName string){
 			//	return nil
 			//})
 			//db.Close
-			rawDataBytes, err1 := GetBytejsonResourceInBucket("rawData", "resources", groupName)
+		rawDataBytes, err1 := GetBytejsonResourceInBucket("rawData", "resources", groupName)
 		configDataBytes, err2 := GetBytejsonResourceInBucket("configData", "resources", groupName)
 		middleDataBytes, err3 := GetBytejsonResourceInBucket("middleData", "resources", groupName)
 		algoDataBytes, err4 := GetBytejsonResourceInBucket("algoData", "resources", groupName)
@@ -390,7 +390,7 @@ func (gm *GroupManger) LoadGroup(groupName string){
 		if err2 != nil {
 			glb.Error.Println(err2.Error())
 		}else{
-			rawData.UnmarshalJSON(configDataBytes)
+			configData.UnmarshalJSON(configDataBytes)
 		}
 
 
@@ -874,7 +874,6 @@ func (gp *Group) NewConfigDataStruct() *ConfigDataStruct {
 		group: gp,
 		Test:  1,
 		GroupGraph:   			parameters.NewGraph(),
-
 	}
 }
 
@@ -1694,6 +1693,8 @@ func (confdata *ConfigDataStruct) Get_GroupGraph() parameters.Graph  {
 }
 func (confdata *ConfigDataStruct) Set_GroupGraph(new_item  parameters.Graph){
 	defer confdata.SetDirtyBit()
+
+	glb.Debug.Println("Set_GroupGraph")
 
 	confdata.Lock()
 	confdata.GroupGraph = new_item

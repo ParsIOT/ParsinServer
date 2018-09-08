@@ -1314,7 +1314,7 @@ func AddEdgeToGraph(c *gin.Context) {
 	if groupName != "none" {
 		if err := c.ShouldBindJSON(&tempSt); err == nil {
 			newEdgeLabel := tempSt.NewEdge
-			//glb.Debug.Println("newVertexLabel : ---------> ",newEdgeLabel)
+			glb.Debug.Println("newVertexLabel : ---------> ",newEdgeLabel)
 			curGroupGraph.AddEdgeByLabel(newEdgeLabel[0], newEdgeLabel[1])
 			//glb.Debug.Println("graph after adding : ---------> ",curGroupGraph.GetGraphMap())
 			//ad := gp.Get_AlgoData() // saving to DB has been moved to another function
@@ -1409,8 +1409,8 @@ func Getgraph(c *gin.Context) {
 		graphMap = graphMapPointer.GetGraphMap()
 		glb.Debug.Println("graphmap",graphMap)
 		//glb.Debug.Println(graphMap)
-		root,_ := graphMapPointer.GetNodeByLabel("-1152#1334")
-		glb.Debug.Println("returned value from BFSTraverse",graphMapPointer.BFSTraverse(root))
+		//root,_ := graphMapPointer.GetNodeByLabel("-1152#1334")
+		//glb.Debug.Println("returned value from BFSTraverse",graphMapPointer.BFSTraverse(root))
 		//	{glb.Debug.Printf("%v\n", n)
 		//})
 	} else {

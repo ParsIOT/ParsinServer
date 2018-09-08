@@ -14,7 +14,7 @@ import (
 
 // Node a single node that composes the tree
 type Node struct {
-	Label string
+	Label string	`json:"Label"`
 }
 
 func (n *Node) String() string {
@@ -24,8 +24,8 @@ func (n *Node) String() string {
 
 // ItemGraph the Items graph
 type Graph struct {
-	Nodes []*Node
-	Edges map[Node][]*Node
+	Nodes []*Node			`json:"Nodes"`
+	Edges map[Node][]*Node	`json:"Edges"`
 	lock  sync.RWMutex
 }
 func NewGraph() Graph {
@@ -215,7 +215,7 @@ func (g *Graph) DeleteGraph() {
 func (g *Graph) GetNearestNode(location string) *Node {
 	//g.lock.RLock()
 	curX, curY := ConvertStringLocToXY(location)
-	glb.Debug.Println("****** curX,curY:  ",curX,curY)
+	//glb.Debug.Println("****** curX,curY:  ",curX,curY)
 	minimumDist := math.MaxFloat64 // maybe should define a variable like the one hadi made for maxEucleadian distance
 	var ownerOfMinimumDist *Node
 	var curDist float64
@@ -224,10 +224,16 @@ func (g *Graph) GetNearestNode(location string) *Node {
 	xys := []float64{}
 	flag:=true
 	flagenter := true
-	lenlen := len(g.Nodes)
-	if lenlen==0{
-		glb.Error.Println(" WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF ")
-	}
+	//lenlen := len(g.Nodes)
+/*	if lenlen != 2 {
+		glb.Error.Println(lenlen)
+	} else {
+		glb.Debug.Println(lenlen)
+
+	}*/
+	//if lenlen==0{
+	//	glb.Error.Println(" WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF ")
+	//}
 
 	for i := 0; i < len(g.Nodes); i++ {
 		flagenter = false
