@@ -213,30 +213,15 @@ func (g *Graph) DeleteGraph() {
 
 
 func (g *Graph) GetNearestNode(location string) *Node {
-	//g.lock.RLock()
 	curX, curY := ConvertStringLocToXY(location)
-	//glb.Debug.Println("****** curX,curY:  ",curX,curY)
 	minimumDist := math.MaxFloat64 // maybe should define a variable like the one hadi made for maxEucleadian distance
 	var ownerOfMinimumDist *Node
 	var curDist float64
 
 	curDistants := []float64{}
 	xys := []float64{}
-	flag:=true
-	flagenter := true
-	//lenlen := len(g.Nodes)
-/*	if lenlen != 2 {
-		glb.Error.Println(lenlen)
-	} else {
-		glb.Debug.Println(lenlen)
-
-	}*/
-	//if lenlen==0{
-	//	glb.Error.Println(" WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF  WTF ")
-	//}
 
 	for i := 0; i < len(g.Nodes); i++ {
-		flagenter = false
 		x,y := g.Nodes[i].GetNodeLocation()
 		xys = append(xys,x)
 		xys = append(xys,y)
@@ -245,16 +230,8 @@ func (g *Graph) GetNearestNode(location string) *Node {
 		if curDist<minimumDist{
 			minimumDist = curDist
 			ownerOfMinimumDist = g.Nodes[i]
-			flag = false
 		}
 	}
-	//glb.Debug.Println(graphMap)
-	//g.lock.RUnlock()
-	if ownerOfMinimumDist==nil {
-		glb.Error.Println("**************** curX:",curX," curY:",curY," minDist:",minimumDist," flag:",flag," curDists:",curDistants," xys:",xys, " flagenter:",flagenter,"len(g.Nodes)",len(g.Nodes))
-		glb.Error.Println("g.nodes:", g.Nodes)
-	}
-	//glb.Debug.Println("**************** curX:",curX," curY:",curY," minDist:",minimumDist," flag:",flag," curDists:",curDistants," xys:",xys, " flagenter:",flagenter,"len(g.Nodes)",len(g.Nodes))
 	return ownerOfMinimumDist
 }
 

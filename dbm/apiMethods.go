@@ -890,7 +890,7 @@ func BuildGroupDB(groupName string) { //Todo: After each update in groupcache.go
 	//glb.Debug.Println(fingerprintInMemory[fingerprintOrdering[0]])
 	//glb.Debug.Println(groupName)
 	//gp := GM.GetGroup(groupName)
-	gp := GM.NewGroup(groupName)
+	gp := GM.GetGroup(groupName)
 	rd := gp.Get_RawData()
 	rd.Set_Fingerprints(fingerprintInMemory)
 	rd.Set_FingerprintsOrdering(fingerprintOrdering)

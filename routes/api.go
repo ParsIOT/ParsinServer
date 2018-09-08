@@ -1550,9 +1550,9 @@ func BuildGroup(c *gin.Context) {
 			}
 		}
 		//4. Preprocess on rss raw data
-		rd := dbm.GM.GetGroup(groupName).Get_RawData()
-		needToRelocateFP := dbm.GetSharedPrf(groupName).NeedToRelocateFP
-		algorithms.PreProcess(rd, needToRelocateFP) // use preprocess just once in buildgroup(not use in calculatelearn)
+		//rd := dbm.GM.GetGroup(groupName).Get_RawData()
+		//needToRelocateFP := dbm.GetSharedPrf(groupName).NeedToRelocateFP
+		//algorithms.PreProcess(rd, needToRelocateFP) // use preprocess just once in buildgroup(not use in calculatelearn)
 		//5. Run learning for raw data
 		algorithms.CalculateLearn(groupName)
 

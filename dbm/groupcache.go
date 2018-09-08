@@ -294,6 +294,7 @@ func init(){
 	// Must run on server.go
 }
 
+// Note: NewGroup created raw group that has new rawdata and configdata
 func (gm *GroupManger) NewGroup(groupName string) *Group {
 	GM.RLock()
 	groups := GM.groups

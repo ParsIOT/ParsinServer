@@ -100,21 +100,22 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 	}
 
 	node2FPs := make(map[string][]string)
+	graphMapPointer := dbm.GM.GetGroup("arman_28_3_97_ble_1").Get_ConfigData().Get_GroupGraph()
+
 	for fpTime, fp := range fingerprints{
 		// Todo: do something to remove gp name as hardcode
-		graphMapPointer := dbm.GM.GetGroup("arman_28_3_97_ble_1").Get_ConfigData().Get_GroupGraph()
+
 		nearNodeGraph := graphMapPointer.GetNearestNode(fp.Location)
 		//glb.Debug.Println("near node Graph: ",nearNodeGraph.Label)
 		if tempNode2FPs, ok :=node2FPs[fpTime]; ok {
 			node2FPs[nearNodeGraph.Label] = append(tempNode2FPs,fpTime)
+		} else{
+			if nearNodeGraph == nil { //1383.0,258.0
+				glb.Error.Println("*** near node was nil for ",fp.Location)
+			} else {
+				node2FPs[nearNodeGraph.Label] = []string{fpTime}
+			}
 		}
-		//else{
-		//	if nearNodeGraph == nil { //1383.0,258.0
-		//		//glb.Error.Println("*********** near node was nil for ",fp.Location)
-		//	} else {
-		//		node2FPs[nearNodeGraph.Label] = []string{fpTime}
-		//	}
-		//}
 	}
 
 	//// Cluster print

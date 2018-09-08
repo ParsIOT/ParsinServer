@@ -1344,7 +1344,7 @@ func RemoveOutlines(rd dbm.RawDataStruct) dbm.RawDataStruct {
 
 func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd *dbm.ConfigDataStruct, crossValidationPartsList []crossValidationParts) parameters.KnnHyperParameters {
 	// CrossValidation
-	tempGp := dbm.GM.NewGroup(groupName)
+	tempGp := dbm.GM.GetGroup(groupName)
 	tempGp.Set_Permanent(false)
 	tempGp.Set_ConfigData(cd)
 
@@ -1596,7 +1596,7 @@ func CalculateLearn(groupName string) {
 	}
 	glb.Debug.Println(dbm.GetCVResults(groupName))
 
-	// Set main parameters
+	// Set main parameters: Note: Don't change mainFpData
 	rd.Set_Fingerprints(mainFPData)
 	rd.Set_FingerprintsOrdering(mainFPOrdering)
 	GetParametersWithGP(gp)
