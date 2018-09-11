@@ -1998,7 +1998,7 @@ func GetMapDetails(c *gin.Context) {
 		MapName := dbm.GetSharedPrf(groupName).MapName
 		MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
 		MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
-		c.JSON(http.StatusOK, gin.H{"success": true, "MapPath": MapPath, "MapDimensions": MapDimensions})
+		c.JSON(http.StatusOK, gin.H{"success": true, "MapName": MapName, "MapPath": MapPath, "MapDimensions": MapDimensions})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group is not mentioned"})
 	}
