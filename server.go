@@ -367,7 +367,7 @@ func main() {
 	r.GET("/setRelocateFPLocState", routes.SetRelocateFPLocStateAPI)
 	r.GET("/getRelocateFPLocState", routes.GetRelocateFPLocStateAPI)
 	r.GET("/getRSSData", routes.GetRSSDataAPI)
-
+	r.GET("/getMapDetails", routes.GetMapDetails)
 	//r.POST("/addArbitLocations", routes.AddArbitLocations)
 	//r.POST("/delArbitLocations", routes.DelArbitLocations)
 	r.GET("/getArbitLocations", routes.GetArbitLocations)

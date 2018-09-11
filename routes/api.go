@@ -1983,3 +1983,24 @@ func GetRSSDataAPI(c *gin.Context) {
 	}
 
 }
+
+func GetMapDetails(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		MapName := dbm.GetSharedPrf(groupName).MapName
+		MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
+		MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
+		c.JSON(http.StatusOK, gin.H{"success": true, "MapPath": MapPath, "MapDimensions": MapDimensions})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group is not mentioned"})
+	}
+
+}
