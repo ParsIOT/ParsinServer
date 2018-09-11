@@ -7,7 +7,14 @@
 package routes
 
 import (
+	"ParsinServer/algorithms"
+	"ParsinServer/dbm"
+	"ParsinServer/dbm/parameters"
+	"ParsinServer/glb"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -15,13 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"github.com/gin-gonic/gin"
-	"ParsinServer/glb"
-	"ParsinServer/algorithms"
-	"ParsinServer/dbm"
-	"ParsinServer/dbm/parameters"
-	"io/ioutil"
-	"io"
 )
 
 var startTime time.Time
@@ -1314,7 +1314,7 @@ func AddEdgeToGraph(c *gin.Context) {
 	if groupName != "none" {
 		if err := c.ShouldBindJSON(&tempSt); err == nil {
 			newEdgeLabel := tempSt.NewEdge
-			glb.Debug.Println("newVertexLabel : ---------> ",newEdgeLabel)
+			glb.Debug.Println("newVertexLabel : ---------> ", newEdgeLabel)
 			curGroupGraph.AddEdgeByLabel(newEdgeLabel[0], newEdgeLabel[1])
 			//glb.Debug.Println("graph after adding : ---------> ",curGroupGraph.GetGraphMap())
 			//ad := gp.Get_AlgoData() // saving to DB has been moved to another function
@@ -1407,7 +1407,7 @@ func Getgraph(c *gin.Context) {
 		gp := dbm.GM.GetGroup(group)
 		graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
 		graphMap = graphMapPointer.GetGraphMap()
-		glb.Debug.Println("graphmap",graphMap)
+		glb.Debug.Println("graphmap", graphMap)
 		//glb.Debug.Println(graphMap)
 		//root,_ := graphMapPointer.GetNodeByLabel("-1152#1334")
 		//glb.Debug.Println("returned value from BFSTraverse",graphMapPointer.BFSTraverse(root))
@@ -1995,10 +1995,14 @@ func GetMapDetails(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 
 	if groupName != "none" {
-		MapName := dbm.GetSharedPrf(groupName).MapName
-		MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
-		MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
-		c.JSON(http.StatusOK, gin.H{"success": true, "MapName": MapName, "MapPath": MapPath, "MapDimensions": MapDimensions})
+		if dbm.GroupExists(groupName) {
+			MapName := dbm.GetSharedPrf(groupName).MapName
+			MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
+			MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
+			c.JSON(http.StatusOK, gin.H{"success": true, "MapName": MapName, "MapPath": MapPath, "MapDimensions": MapDimensions})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist"})
+		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group is not mentioned"})
 	}
