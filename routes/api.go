@@ -1445,11 +1445,14 @@ func GetGraphNodeAdjacentFPs(c *gin.Context) {
 		fpData := gp.Get_RawData().Get_Fingerprints()
 		glb.Debug.Println("node:", node)
 		glb.Debug.Println("Graph node2fps details:")
+		node2FPSLen := 0
 		for node, fps := range node2FPs {
 			glb.Debug.Println(node, ": number of adjacent fps = ", len(fps))
+			node2FPSLen += len(fps)
 		}
 
-		if fpIndexes, ok := node2FPs[node]; ok {
+		if node2FPSLen != 0 {
+			fpIndexes := node2FPs[node]
 			glb.Debug.Println("Num of adjacent Fingerprints: ", len(fpIndexes))
 			fpLocations := []string{}
 			otherFpLocations := []string{}

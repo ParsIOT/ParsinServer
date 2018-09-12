@@ -414,7 +414,7 @@
                 //select a dot to show adjacent fingerprints
                 selected_dot = e.layer.getLatLng().lat + "," + e.layer.getLatLng().lng
                 // console.log(selected_dot)
-                // if (show_adjacent_fp_check.check){
+                // if (show_adjacent_fp){
                 if (true) {
                     ShowAdjacentFPs(selected_dot);
                 }
@@ -523,10 +523,11 @@
     });
 
 
-    var blueMarkers = {};
-    var blueMarkersLoc = {};
-    var redMarkers = {};
-    var redMarkersLoc = {};
+    // FP marker: Show adjacent fp marker on map
+    var otherFPMarkers = {};
+    var otherFPMarkersLoc = {};
+    var adjacentFPMarkers = {};
+    var adjacentFPMarkersLoc = {};
 
     function ShowAdjacentFPs(selected_dot) {
         $.getJSON("/getGraphNodeAdjacentFPs?group={{ .Group }}&node=" + selected_dot, function (data) {
@@ -537,7 +538,7 @@
                 });
             } else {
 
-                removeRedBlueMarkers();
+                removeAllFPMarkers();
 
                 // console.log(data.fpLocations.length);
                 // console.log(data.otherFpLocations.length)
@@ -547,14 +548,14 @@
                 data.fpLocations.forEach(function (locStr) {
                     let loc = location_pattern.exec(locStr);
                     if (loc && loc[1] && loc[2]) {
-                        createRedMarker(locStr, loc);
+                        createAdjacentFPMarker(locStr, loc);
                     }
                 })
 
                 data.otherFpLocations.forEach(function (locStr) {
                     let loc = location_pattern.exec(locStr);
                     if (loc && loc[1] && loc[2]) {
-                        createBlueMarker(locStr, loc);
+                        createOtherFPMarker(locStr, loc);
                     }
                 })
 
@@ -572,32 +573,32 @@
         });
     }
 
-    function removeRedBlueMarkers() {
-        for (var marker in blueMarkers) {
-            map.removeLayer(blueMarkers[marker]);
+    function removeAllFPMarkers() {
+        for (var marker in otherFPMarkers) {
+            map.removeLayer(otherFPMarkers[marker]);
         }
-        for (var marker in redMarkers) {
-            map.removeLayer(redMarkers[marker]);
+        for (var marker in adjacentFPMarkers) {
+            map.removeLayer(adjacentFPMarkers[marker]);
         }
 
-        blueMarkers = {};
-        blueMarkersLoc = {};
-        redMarkers = {};
-        redMarkersLoc = {};
+        otherFPMarkers = {};
+        otherFPMarkersLoc = {};
+        adjacentFPMarkers = {};
+        adjacentFPMarkersLoc = {};
     }
 
-    function createBlueMarker(key, match) {
-        if (match in blueMarkersLoc) {
-            blueMarkersLoc[match].push(key);
-            blueMarkers[key].setPopupContent(blueMarkersLoc[match].join(","));
+    function createOtherFPMarker(key, match) {
+        if (match in otherFPMarkersLoc) {
+            otherFPMarkersLoc[match].push(key);
+            otherFPMarkers[key].setPopupContent(otherFPMarkersLoc[match].join(","));
         } else {
-            blueMarkersLoc[match] = [key];
-            blueMarkers[key] = L.marker([match[1], match[2]], {
+            otherFPMarkersLoc[match] = [key];
+            otherFPMarkers[key] = L.marker([match[1], match[2]], {
 //                    pulsing: true,
 //                    accuracy: 200,
                 title: match[0],
                 smallIcon: true
-            }).bindPopup(key).addTo(map);
+            }).addTo(map);
         }
     }
 
@@ -612,19 +613,19 @@
         shadowSize: [41, 41]
     });
 
-    function createRedMarker(key, match) {
-        if (match in redMarkersLoc) {
-            redMarkersLoc[match].push(key);
-            redMarkers[key].setPopupContent(redMarkersLoc[match].join(","));
+    function createAdjacentFPMarker(key, match) {
+        if (match in adjacentFPMarkersLoc) {
+            adjacentFPMarkersLoc[match].push(key);
+            adjacentFPMarkers[key].setPopupContent(adjacentFPMarkersLoc[match].join(","));
         } else {
-            redMarkersLoc[match] = [key];
-            redMarkers[key] = L.marker([match[1], match[2]], {
+            adjacentFPMarkersLoc[match] = [key];
+            adjacentFPMarkers[key] = L.marker([match[1], match[2]], {
 //                    pulsing: true,
 //                    accuracy: 200,
                 icon: redIcon,
                 title: match[0],
                 smallIcon: true
-            }).bindPopup(key[0] + " --> " + match[0]).addTo(map);
+            }).addTo(map);
         }
     }
 
