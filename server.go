@@ -228,7 +228,15 @@ func main() {
 
 	// Setup Gin-Gonic
 	gin.SetMode(gin.ReleaseMode)
-	r := gin.Default()
+	//r := gin.Default()
+
+	engine := gin.New()
+
+	noNeedLogRoutes := []string{"data"}
+
+	logger := glb.Logger(noNeedLogRoutes...)
+	engine.Use(logger, gin.Recovery())
+	r := engine
 
 	// Load templates
 	r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
@@ -422,3 +430,4 @@ func main() {
 // 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 // 	}
 // }
+
