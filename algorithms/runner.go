@@ -274,7 +274,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	glb.Debug.Println("location: ", location)
 
 	//location = userJSON.KnnGuess
-	//userJSON.KnnGuess = location //todo: must add location as seprated variable from knnguess in parameters.UserPositionJSON
+	userJSON.KnnGuess = location //todo: must add location as seprated variable from knnguess in parameters.UserPositionJSON
 	go dbm.SetUserPositionCache(strings.ToLower(curFingerprint.Group)+strings.ToLower(curFingerprint.Username), userJSON)
 	go gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userJSON)
 	go gp.Get_ResultData().Append_UserResults(curFingerprint.Username, userJSON)
