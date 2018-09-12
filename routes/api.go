@@ -1443,6 +1443,7 @@ func GetGraphNodeAdjacentFPs(c *gin.Context) {
 		gp := dbm.GM.GetGroup(group)
 		knnAlgoData := gp.Get_AlgoData().Get_KnnFPs()
 		fpData := gp.Get_RawData().Get_Fingerprints()
+		glb.Debug.Println(knnAlgoData.Node2FPs)
 
 		if fpIndexes, ok := knnAlgoData.Node2FPs[node]; ok {
 			fpLocations := []string{}

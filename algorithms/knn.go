@@ -103,14 +103,12 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 	graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
 
 	for fpTime, fp := range fingerprints{
-		// Todo: do something to remove gp name as hardcode
-
 		nearNodeGraph := graphMapPointer.GetNearestNode(fp.Location)
 		//glb.Debug.Println("near node Graph: ",nearNodeGraph.Label)
-		if tempNode2FPs, ok :=node2FPs[fpTime]; ok {
+		if tempNode2FPs, ok := node2FPs[nearNodeGraph.Label]; ok {
 			node2FPs[nearNodeGraph.Label] = append(tempNode2FPs,fpTime)
 		} else{
-			if nearNodeGraph == nil { //1383.0,258.0
+			if nearNodeGraph == nil {
 				glb.Error.Println("*** near node was nil for ",fp.Location)
 			} else {
 				node2FPs[nearNodeGraph.Label] = []string{fpTime}
