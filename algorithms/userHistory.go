@@ -37,6 +37,7 @@ func HistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory []par
 				//err := errors.New("Location names aren't in the format of x,y")
 				glb.Error.Println("Location names aren't in the format of x,y")
 			}
+			//glb.Debug.Println("***** x_y ***** : ", x_y)
 			curLocXstr := x_y[0]
 			curLocYstr := x_y[1]
 			curLocX, _ := strconv.ParseFloat(curLocXstr, 64)

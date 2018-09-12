@@ -100,7 +100,7 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 	}
 
 	node2FPs := make(map[string][]string)
-	graphMapPointer := dbm.GM.GetGroup("arman_28_3_97_ble_1").Get_ConfigData().Get_GroupGraph()
+	graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
 
 	for fpTime, fp := range fingerprints{
 		// Todo: do something to remove gp name as hardcode
@@ -236,9 +236,9 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	}
 
 	FP2A := make(map[string]float64)
-	maxLevel := 3
+	maxLevel := 2
 	As := []float64{10,5,2};
-	minA := float64(1);
+	minA := float64(0.1); // assigning zero make errors in other functions
 	for _,fpTime := range fingerprintsOrdering{
 		FP2A [fpTime] = minA
 	}
