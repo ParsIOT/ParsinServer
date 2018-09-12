@@ -361,6 +361,7 @@ func main() {
 			needToLoadSettings.GET("/saveedgestodb", routes.SaveEdgesToDB)
 			needToLoadSettings.POST("/RemoveEdgesOrVertices", routes.RemoveEdgesOrVertices)
 			needToLoadSettings.GET("/deletewholegraph", routes.DeleteWholeGraph)
+			needToLoadSettings.GET("/getGraphNodeAdjacentFPs", routes.GetGraphNodeAdjacentFPs)
 
 			needToLoadSettings.PUT("/choosemap", routes.ChooseMap) // komeil: choose a map for group
 			//Arbitrary locations

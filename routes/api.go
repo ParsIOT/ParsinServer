@@ -1427,6 +1427,37 @@ func Getgraph(c *gin.Context) {
 
 }
 
+// Get Adjacent fingerprint locations to a specific node of graph
+// Get parameters: group, node
+func GetGraphNodeAdjacentFPs(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	group := c.DefaultQuery("group", "none")
+	node := c.DefaultQuery("node", "none")
+
+	if group != "none" && node != "none" {
+		gp := dbm.GM.GetGroup(group)
+		knnAlgoData := gp.Get_AlgoData().Get_KnnFPs()
+		fpData := gp.Get_RawData().Get_Fingerprints()
+
+		if fpIndexes, ok := knnAlgoData.Node2FPs[node]; ok {
+			fpLocations := []string{}
+			for _, fpO := range fpIndexes {
+				fpLocations = append(fpLocations, fpData[fpO].Location)
+			}
+			c.JSON(http.StatusOK, gin.H{"fpLocations": fpLocations, "success": true})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"message": "can get adjacent fps, calculate first ", "success": false})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"message": "group or node field is null", "success": false})
+	}
+}
+
 // Get uniquemacs
 // Get parameters: group
 func GetUniqueMacs(c *gin.Context) {
