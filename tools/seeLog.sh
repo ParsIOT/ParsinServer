@@ -2,8 +2,8 @@
 
 #!/bin/bash
 
-#hostAddr=http://195.201.42.209:18003
-hostAddr=http://127.0.0.1:8003
+hostAddr=http://195.201.42.209:18003
+#hostAddr=http://127.0.0.1:8003
 
 curl -X POST -F 'username=admin' -F 'password=admin' $hostAddr/login --cookie-jar ./ParsinCookie
 
