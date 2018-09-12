@@ -343,6 +343,11 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-sm-2 col-xs-6">
+                        <button type="submit" class="btn btn-danger btn-block" id="clearConfigData"
+                                title="Clear ConfigData(graph, ...)">Clear ConfigData
+                        </button>
+                    </div>
                 </div>
 
             </div>
@@ -1006,6 +1011,41 @@
                             }
                     );
                 });
+    });
+
+    $('#clearConfigData').click(function () { /// OLD SWEETALERT, DOESN'T WORK WITH SWEETALERT2
+
+        swal({
+                    title: "Clear ConfigData",
+                    text: "Clear ConfigData (graph, ...) [recalculate to set new configdata on algodata]",
+                    type: "info",
+                    showCancelButton: true,
+                    closeOnConfirm: false,
+                    showLoaderOnConfirm: true,
+                },
+                function () {
+                    $.ajax({
+                        url: "/clearConfigData?group={{ .Group }}",
+                        type: "DELETE",
+                        success: function (data) {
+                            console.log(data);
+                            if (data['success']) {
+                                swal({
+                                    title: "Cleared!",
+                                    text: "ConfigData is clear!",
+                                    timer: 2000,
+                                    showConfirmButton: true
+                                }, function () {
+                                    location.reload();
+                                });
+                            } else {
+                                swal("Something went wrong.", data['message'], "error");
+                            }
+                        }
+                    });
+                });
+
+
     });
 
     $('#recalculateAll').click(function () {

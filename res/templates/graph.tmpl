@@ -165,11 +165,11 @@
 <script>
     var vertices = []; // list of vertices entered by map
     // var test = { // its pattern is like:
-    //     '10#10': ["20#20", "20#20"],
-    //     '20#20': ["10#10", "20#30"],
-    //     '20#30': ["10#10", "20#20", "50#50"],
-    //     '40#40': [],
-    //     '50#50': ["20#30"],
+    //     '10,10': ["20,20", "20,20"],
+    //     '20,20': ["10,10", "20,30"],
+    //     '20,30': ["10,10", "20,20", "50,50"],
+    //     '40,40': [],
+    //     '50,50': ["20,30"],
     // };
     var test;
     $.get("/getgraph", {
@@ -222,7 +222,7 @@
             // skip loop if the property is from prototype
             if (!init_markers_object.hasOwnProperty(key)) continue;
 
-            var start_marker_position = [parseFloat(key.split('#')[0]), parseFloat(key.split('#')[1])];
+            var start_marker_position = [parseFloat(key.split(',')[0]), parseFloat(key.split(',')[1])];
             //visited_vertices.push(start_marker_position);
             visited_vertices.push(key);
             var obj = init_markers_object[key];
@@ -239,7 +239,7 @@
                 if (!obj.hasOwnProperty(prop)) continue;
                 //var end_marker_position = obj[prop];
                 //console.log(obj[prop]);
-                var end_marker_position = [parseFloat(obj[prop].split('#')[0]), parseFloat(obj[prop].split('#')[1])]
+                var end_marker_position = [parseFloat(obj[prop].split(',')[0]), parseFloat(obj[prop].split(',')[1])]
                 // if (visited_vertices.indexOf(end_marker_position) === -1) {
                 if (!isItemInArray(visited_vertices, obj[prop])) {
                     var edge = new L.polyline([start_marker_position, end_marker_position], {
@@ -321,7 +321,7 @@
         var layer = e.layer;
         var layerType = e.layerType;
         if (layerType === 'marker') {
-            var new_vertex_key = Math.round(layer.getLatLng().lat).toString() + '#' + Math.round(layer.getLatLng().lng).toString();
+            var new_vertex_key = Math.round(layer.getLatLng().lat).toString() + ',' + Math.round(layer.getLatLng().lng).toString();
             test[new_vertex_key] = [];
             // var new_marker = L.userMarker(layer.getLatLng(), {
             //     smallIcon: true
@@ -364,12 +364,12 @@
         removed_edges = [];
         removed_layers.eachLayer(function (layer) {
             if (layer instanceof L.Polyline) {
-                var start_vertex_key = [layer.getLatLngs()[0].lat.toString() + '#' + layer.getLatLngs()[0].lng.toString()];
-                var end_vertex_key = [layer.getLatLngs()[1].lat.toString() + '#' + layer.getLatLngs()[1].lng.toString()];
+                var start_vertex_key = [layer.getLatLngs()[0].lat.toString() + ',' + layer.getLatLngs()[0].lng.toString()];
+                var end_vertex_key = [layer.getLatLngs()[1].lat.toString() + ',' + layer.getLatLngs()[1].lng.toString()];
                 removed_edges.push(start_vertex_key + "&" + end_vertex_key)
             }
             if (layer instanceof L.Marker) {
-                vertex_position = (layer.getLatLng().lat).toString() + '#' + (layer.getLatLng().lng); //+ ".0"
+                vertex_position = (layer.getLatLng().lat).toString() + ',' + (layer.getLatLng().lng); //+ ".0"
                 removed_vertices.push(vertex_position)
             }
         });
@@ -416,9 +416,9 @@
             } else if (start_vertex !== '' && end_vertex === '') {
                 end_vertex = [e.layer.getLatLng().lat, e.layer.getLatLng().lng];
                 console.log(end_vertex, " is selected as end_vertex");
-                //vertex keys in test object (e.g "20#40")
-                var start_vertex_key = start_vertex[0] + '#' + start_vertex[1];
-                var end_vertex_key = end_vertex[0] + '#' + end_vertex[1];
+                //vertex keys in test object (e.g "20,40")
+                var start_vertex_key = start_vertex[0] + ',' + start_vertex[1];
+                var end_vertex_key = end_vertex[0] + ',' + end_vertex[1];
                 console.log("it is about to add a new edge to map");
                 //making the new edge
                 var new_edge = new L.polyline([start_vertex, end_vertex], {

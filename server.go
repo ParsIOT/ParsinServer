@@ -361,18 +361,18 @@ func main() {
 			needToLoadSettings.GET("/saveedgestodb", routes.SaveEdgesToDB)
 			needToLoadSettings.POST("/RemoveEdgesOrVertices", routes.RemoveEdgesOrVertices)
 			needToLoadSettings.GET("/deletewholegraph", routes.DeleteWholeGraph)
-			//needToLoadSettings.GET("/getGraphNodeAdjacentFPs", routes.GetGraphNodeAdjacentFPs)
+			needToLoadSettings.GET("/getGraphNodeAdjacentFPs", routes.GetGraphNodeAdjacentFPs)
 
 			needToLoadSettings.PUT("/choosemap", routes.ChooseMap) // komeil: choose a map for group
 			//Arbitrary locations
 			needToLoadSettings.POST("/addArbitLocations", routes.AddArbitLocations)
 			needToLoadSettings.POST("/delArbitLocations", routes.DelArbitLocations)
 			//needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
+			needToLoadSettings.DELETE("/clearConfigData", routes.ClearConfigData)
 		}
 	}
 
-	r.GET("/getGraphNodeAdjacentFPs", routes.GetGraphNodeAdjacentFPs)
-
+	//r.GET("/getGraphNodeAdjacentFPs", routes.GetGraphNodeAdjacentFPs)
 	//r.POST("/addNodeToGraph", routes.AddNodeToGraph)
 	r.POST("/uploadTrueLocationLog", routes.UploadTrueLocationLog)
 	r.GET("/setRelocateFPLocState", routes.SetRelocateFPLocStateAPI)

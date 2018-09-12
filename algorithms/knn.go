@@ -101,21 +101,26 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 
 	node2FPs := make(map[string][]string)
 	graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
-
-	for fpTime, fp := range fingerprints{
-		nearNodeGraph := graphMapPointer.GetNearestNode(fp.Location)
-		//glb.Debug.Println("near node Graph: ",nearNodeGraph.Label)
-		if tempNode2FPs, ok := node2FPs[nearNodeGraph.Label]; ok {
-			node2FPs[nearNodeGraph.Label] = append(tempNode2FPs,fpTime)
-		} else{
+	if !graphMapPointer.IsEmpty() {
+		for fpTime, fp := range fingerprints {
+			nearNodeGraph := graphMapPointer.GetNearestNode(fp.Location)
+			//glb.Debug.Println("near node Graph: ",nearNodeGraph.Label)
 			if nearNodeGraph == nil {
-				glb.Error.Println("*** near node was nil for ",fp.Location)
+				glb.Error.Println("Nearest node is empty!")
+				continue
+			}
+			nodeLabel := nearNodeGraph.Label
+			if tempFPList, ok := node2FPs[nodeLabel]; ok {
+				node2FPs[nodeLabel] = append(tempFPList, fpTime)
 			} else {
-				node2FPs[nearNodeGraph.Label] = []string{fpTime}
+				if nearNodeGraph == nil {
+					glb.Error.Println("*** near node was nil for ", fp.Location)
+				} else {
+					node2FPs[nodeLabel] = []string{fpTime}
+				}
 			}
 		}
 	}
-
 	//// Cluster print
 	//for key,val := range clusters{
 	//	fmt.Println("mac: "+key+" ")

@@ -1201,8 +1201,8 @@ func AddNodeToGraph(c *gin.Context) {
 	curGroupGraph := gp.Get_ConfigData().Get_GroupGraph()
 
 	//glb.Debug.Println(curGroupGraph.GetNearestNode("998.0,1040.0").Label)
-	//glb.Debug.Println(curGroupGraph.GetNearestNode("-252#-1223").Label)
-	//glb.Debug.Println(curGroupGraph.GetNearestNode("-246#1534").Label)
+	//glb.Debug.Println(curGroupGraph.GetNearestNode("-252,-1223").Label)
+	//glb.Debug.Println(curGroupGraph.GetNearestNode("-246,1534").Label)
 
 	var tempSt st
 	if groupName != "none" {
@@ -1393,15 +1393,15 @@ func Getgraph(c *gin.Context) {
 	group := c.DefaultQuery("group", "none")
 	var err error
 	graphMap := make(map[string][]string)
-	//graphMap["10#10"] = append(graphMap["10#10"], "20#20")
-	//graphMap["10#10"] = append(graphMap["10#10"], "20#30")
-	//graphMap["20#20"] = append(graphMap["20#20"], "10#10")
-	//graphMap["20#20"] = append(graphMap["20#20"], "20#30")
-	//graphMap["20#30"] = append(graphMap["20#30"], "10#10")
-	//graphMap["20#30"] = append(graphMap["20#30"], "20#20")
-	//graphMap["20#30"] = append(graphMap["20#30"], "50#50")
-	//graphMap["40#40"] = make([]string, 0)
-	//graphMap["50#50"] = append(graphMap["50#50"], "20#30")
+	//graphMap["10,10"] = append(graphMap["10,10"], "20,20")
+	//graphMap["10,10"] = append(graphMap["10,10"], "20,30")
+	//graphMap["20,20"] = append(graphMap["20,20"], "10,10")
+	//graphMap["20,20"] = append(graphMap["20,20"], "20,30")
+	//graphMap["20,30"] = append(graphMap["20,30"], "10,10")
+	//graphMap["20,30"] = append(graphMap["20,30"], "20,20")
+	//graphMap["20,30"] = append(graphMap["20,30"], "50,50")
+	//graphMap["40,40"] = make([]string, 0)
+	//graphMap["50,50"] = append(graphMap["50,50"], "20,30")
 
 	if group != "none" {
 		gp := dbm.GM.GetGroup(group)
@@ -1409,7 +1409,7 @@ func Getgraph(c *gin.Context) {
 		graphMap = graphMapPointer.GetGraphMap()
 		glb.Debug.Println("graphmap", graphMap)
 		//glb.Debug.Println(graphMap)
-		//root,_ := graphMapPointer.GetNodeByLabel("-1152#1334")
+		//root,_ := graphMapPointer.GetNodeByLabel("-1152,1334")
 		//glb.Debug.Println("returned value from BFSTraverse",graphMapPointer.BFSTraverse(root))
 		//	{glb.Debug.Printf("%v\n", n)
 		//})
@@ -1436,16 +1436,17 @@ func GetGraphNodeAdjacentFPs(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	group := c.DefaultQuery("group", "none")
-	node := c.DefaultQuery("node", "none")
-
+	group := strings.ToLower(c.DefaultQuery("group", "none"))
+	node := strings.ToLower(c.DefaultQuery("node", "none"))
 	if group != "none" && node != "none" {
 		gp := dbm.GM.GetGroup(group)
 		knnAlgoData := gp.Get_AlgoData().Get_KnnFPs()
 		fpData := gp.Get_RawData().Get_Fingerprints()
-		glb.Debug.Println(knnAlgoData.Node2FPs)
+
 
 		if fpIndexes, ok := knnAlgoData.Node2FPs[node]; ok {
+			glb.Debug.Println("node:", node)
+			glb.Debug.Println("Num of adjacent Fingerprints: ", len(knnAlgoData.Node2FPs[node]))
 			fpLocations := []string{}
 			for _, fpO := range fpIndexes {
 				fpLocations = append(fpLocations, fpData[fpO].Location)
@@ -2032,6 +2033,30 @@ func GetMapDetails(c *gin.Context) {
 			MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
 			MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
 			c.JSON(http.StatusOK, gin.H{"success": true, "MapName": MapName, "MapPath": MapPath, "MapDimensions": MapDimensions})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist"})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group is not mentioned"})
+	}
+
+}
+
+func ClearConfigData(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "DELETE, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		if dbm.GroupExists(groupName) {
+			gp := dbm.GM.GetGroup(groupName)
+			gp.Set_ConfigData(gp.NewConfigDataStruct())
+			c.JSON(http.StatusOK, gin.H{"success": true})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist"})
 		}

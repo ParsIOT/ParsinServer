@@ -88,7 +88,7 @@ func (g *Graph) AddNodeByLabel(coords string) {
 func (node *Node) GetNodeLocation() (float64, float64){
 	//n := g.GetNodeByLabel(coords)
 	coords := node.Label
-	result := strings.Split(coords,"#")
+	result := strings.Split(coords, ",")
 	x,err := strconv.ParseFloat(result[0],64)
 	if err!=nil {glb.Error.Println(err)}
 	y,err := strconv.ParseFloat(result[1],64)
@@ -235,7 +235,6 @@ func (g *Graph) GetNearestNode(location string) *Node {
 	return ownerOfMinimumDist
 }
 
-
 // Traverse implements the BFS traversing algorithm
 //func (g *Graph) BFSTraverse(startNode *Node, f func(*Node)) {
 func (g *Graph) BFSTraverse(startNode *Node) [][]*Node {
@@ -289,4 +288,18 @@ func (g *Graph) BFSTraverse(startNode *Node) [][]*Node {
 	g.lock.RUnlock()
 	//glb.Debug.Println(result)
 	return result
+}
+
+func (g *Graph) IsEmpty() bool {
+	if len(g.Nodes) == 0 {
+		if len(g.Edges) == 0 {
+			return true
+		} else {
+			glb.Error.Println("Graph has edges but doesn't have any node!")
+			return true
+		}
+	} else {
+		return false
+	}
+
 }
