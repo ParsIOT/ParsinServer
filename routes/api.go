@@ -41,7 +41,7 @@ func PreLoadSettingsDecorator(routeFunc func(c *gin.Context)) func(c *gin.Contex
 }
 
 func PreLoadSettings(c *gin.Context) {
-	glb.Debug.Println("PreloadSettings")
+	//glb.Debug.Println("PreloadSettings")
 	group1 := c.Param("group")
 	group2 := c.DefaultQuery("group", "none")
 	groupExists := false
@@ -1441,17 +1441,26 @@ func GetGraphNodeAdjacentFPs(c *gin.Context) {
 	if group != "none" && node != "none" {
 		gp := dbm.GM.GetGroup(group)
 		knnAlgoData := gp.Get_AlgoData().Get_KnnFPs()
+		node2FPs := knnAlgoData.Node2FPs
 		fpData := gp.Get_RawData().Get_Fingerprints()
+		glb.Debug.Println("node:", node)
+		glb.Debug.Println("Graph node2fps details:")
+		for node, fps := range node2FPs {
+			glb.Debug.Println(node, ": number of adjacent fps = ", len(fps))
+		}
 
-
-		if fpIndexes, ok := knnAlgoData.Node2FPs[node]; ok {
-			glb.Debug.Println("node:", node)
-			glb.Debug.Println("Num of adjacent Fingerprints: ", len(knnAlgoData.Node2FPs[node]))
+		if fpIndexes, ok := node2FPs[node]; ok {
+			glb.Debug.Println("Num of adjacent Fingerprints: ", len(fpIndexes))
 			fpLocations := []string{}
-			for _, fpO := range fpIndexes {
-				fpLocations = append(fpLocations, fpData[fpO].Location)
+			otherFpLocations := []string{}
+			for fpTime, fp := range fpData {
+				if glb.StringInSlice(fpTime, fpIndexes) {
+					fpLocations = append(fpLocations, fp.Location)
+				} else {
+					otherFpLocations = append(otherFpLocations, fp.Location)
+				}
 			}
-			c.JSON(http.StatusOK, gin.H{"fpLocations": fpLocations, "success": true})
+			c.JSON(http.StatusOK, gin.H{"fpLocations": fpLocations, "otherFpLocations": otherFpLocations, "success": true})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"message": "can get adjacent fps, calculate first ", "success": false})
 		}

@@ -16,6 +16,7 @@
     <link href="/static/css/plugins/leaflet/leaflet.draw.css" rel="stylesheet">
     <link href="/static/css/plugins/leaflet/easy-button.css" rel="stylesheet">
     <link href="/static/css/sweetalert2.css" rel="stylesheet"/>
+    <link href="/static/css/izitoast/iziToast.css" rel="stylesheet">
     <!-- Font Awesome CSS -->
     <link rel="stylesheet" href="/static/css/font-awesome.min.css">
     <style>
@@ -158,6 +159,7 @@
 <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/EditToolbar.Edit.js"></script>
 <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/EditToolbar.Delete.js"></script>
 <script src="/static/js/plugins/leaflet/easy-button.js"></script>
+<script src="/static/js/izitoast/iziToast.js"></script>
 
 <script src="/static/js/sweetalert2.js"></script>
 
@@ -185,7 +187,7 @@
                 }
             }
     );
-
+    var selected_dot = '';
     var start_vertex = '';
     var end_vertex = '';
     var edge_draw_enable = false;
@@ -407,65 +409,75 @@
     graph_layer.on('click', function (e) {
         // console.log('***************');
         //if user clicks on a marker (not a line) and edge drawing is enabled
-        if (e.layer instanceof L.Marker && edge_draw_enable) {
-            //start of edge drawing
-            if (start_vertex === '' && end_vertex === '') {
-                start_vertex = [e.layer.getLatLng().lat, e.layer.getLatLng().lng];
-                console.log(start_vertex, " is selected as start_vertex")
-                //    the second vertex is clicked
-            } else if (start_vertex !== '' && end_vertex === '') {
-                end_vertex = [e.layer.getLatLng().lat, e.layer.getLatLng().lng];
-                console.log(end_vertex, " is selected as end_vertex");
-                //vertex keys in test object (e.g "20,40")
-                var start_vertex_key = start_vertex[0] + ',' + start_vertex[1];
-                var end_vertex_key = end_vertex[0] + ',' + end_vertex[1];
-                console.log("it is about to add a new edge to map");
-                //making the new edge
-                var new_edge = new L.polyline([start_vertex, end_vertex], {
-                    color: 'green',
-                    weight: 5,
-                    opacity: 0.8,
-                    smoothFactor: 1
-                });
-                console.log("a new edge must be added to map now");
-                //if start vertex is not the same as end vertex
-                if (start_vertex_key !== end_vertex) {
-                    //if start_vertex has no edges
-                    if (JSON.stringify(test[start_vertex_key]) == "[]") {
-                        test[start_vertex_key] = [end_vertex_key];
-                        test[end_vertex_key].push(start_vertex_key);
-                        new_edge.addTo(graph_layer);
-                    }
-                    //if start_vertex is connected to some vertices, but has no edge to end_vertex
-                    else if (!isItemInArray(test[start_vertex_key], end_vertex_key)) {
-                        test[start_vertex_key].push(end_vertex_key);
-                        test[end_vertex_key].push(start_vertex_key);
-                        new_edge.addTo(graph_layer);
-                    }
-                    //send edge to server
-                    NewEdge = [];
-                    NewEdge.push(start_vertex_key);
-                    NewEdge.push(end_vertex_key);
-
-                    $.ajax({
-                        method: "POST",
-                        url: "/addEdgeToGraph/?group={{ .Group }}",
-                        dataType: "json",
-                        data: JSON.stringify({
-                            "NewEdge": NewEdge,
-                        }),
-                        error: function (data) {
-                            console.log(data)
-                        }
-                    });
-
+        if (e.layer instanceof L.Marker) {
+            if (!edge_draw_enable) {
+                //select a dot to show adjacent fingerprints
+                selected_dot = e.layer.getLatLng().lat + "," + e.layer.getLatLng().lng
+                // console.log(selected_dot)
+                // if (show_adjacent_fp_check.check){
+                if (true) {
+                    ShowAdjacentFPs(selected_dot);
                 }
-                //reset start and end vertex variable
-                start_vertex = '';
-                end_vertex = '';
+            } else {
+                //start of edge drawing
+                if (start_vertex === '' && end_vertex === '') {
+                    start_vertex = [e.layer.getLatLng().lat, e.layer.getLatLng().lng];
+                    console.log(start_vertex, " is selected as start_vertex")
+                    //    the second vertex is clicked
+                } else if (start_vertex !== '' && end_vertex === '') {
+                    end_vertex = [e.layer.getLatLng().lat, e.layer.getLatLng().lng];
+                    console.log(end_vertex, " is selected as end_vertex");
+                    //vertex keys in test object (e.g "20,40")
+                    var start_vertex_key = start_vertex[0] + ',' + start_vertex[1];
+                    var end_vertex_key = end_vertex[0] + ',' + end_vertex[1];
+                    console.log("it is about to add a new edge to map");
+                    //making the new edge
+                    var new_edge = new L.polyline([start_vertex, end_vertex], {
+                        color: 'green',
+                        weight: 5,
+                        opacity: 0.8,
+                        smoothFactor: 1
+                    });
+                    console.log("a new edge must be added to map now");
+                    //if start vertex is not the same as end vertex
+                    if (start_vertex_key !== end_vertex) {
+                        //if start_vertex has no edges
+                        if (JSON.stringify(test[start_vertex_key]) == "[]") {
+                            test[start_vertex_key] = [end_vertex_key];
+                            test[end_vertex_key].push(start_vertex_key);
+                            new_edge.addTo(graph_layer);
+                        }
+                        //if start_vertex is connected to some vertices, but has no edge to end_vertex
+                        else if (!isItemInArray(test[start_vertex_key], end_vertex_key)) {
+                            test[start_vertex_key].push(end_vertex_key);
+                            test[end_vertex_key].push(start_vertex_key);
+                            new_edge.addTo(graph_layer);
+                        }
+                        //send edge to server
+                        NewEdge = [];
+                        NewEdge.push(start_vertex_key);
+                        NewEdge.push(end_vertex_key);
+
+                        $.ajax({
+                            method: "POST",
+                            url: "/addEdgeToGraph/?group={{ .Group }}",
+                            dataType: "json",
+                            data: JSON.stringify({
+                                "NewEdge": NewEdge,
+                            }),
+                            error: function (data) {
+                                console.log(data)
+                            }
+                        });
+
+                    }
+                    //reset start and end vertex variable
+                    start_vertex = '';
+                    end_vertex = '';
+                }
             }
+            // console.log('***************')
         }
-        // console.log('***************')
     });
 
 
@@ -509,6 +521,112 @@
         //map.removeLayer(L.userMarker( [$('#map_point_x').val(), $('#map_point_y').val()]));
         //todo: delete marker from map. it needs to get the one from the graph_layer list then remove it from map
     });
+
+
+    var blueMarkers = {};
+    var blueMarkersLoc = {};
+    var redMarkers = {};
+    var redMarkersLoc = {};
+
+    function ShowAdjacentFPs(selected_dot) {
+        $.getJSON("/getGraphNodeAdjacentFPs?group={{ .Group }}&node=" + selected_dot, function (data) {
+            if (data.success == false) {
+                iziToast.error({
+                    title: "Error",
+                    message: data.message,
+                });
+            } else {
+
+                removeRedBlueMarkers();
+
+                // console.log(data.fpLocations.length);
+                // console.log(data.otherFpLocations.length)
+
+                var location_pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
+
+                data.fpLocations.forEach(function (locStr) {
+                    let loc = location_pattern.exec(locStr);
+                    if (loc && loc[1] && loc[2]) {
+                        createRedMarker(locStr, loc);
+                    }
+                })
+
+                data.otherFpLocations.forEach(function (locStr) {
+                    let loc = location_pattern.exec(locStr);
+                    if (loc && loc[1] && loc[2]) {
+                        createBlueMarker(locStr, loc);
+                    }
+                })
+
+
+                /*  var new_vertex_key = Math.round(layer.getLatLng().lat).toString() + ',' + Math.round(layer.getLatLng().lng).toString();
+                  test[new_vertex_key] = [];
+                  // var new_marker = L.userMarker(layer.getLatLng(), {
+                  //     smallIcon: true
+                  // });
+                  var new_marker = L.userMarker([Math.round(layer.getLatLng().lat), Math.round(layer.getLatLng().lng)], {
+                      smallIcon: true
+                  });
+                  graph_layer.addLayer(new_marker);*/
+            }
+        });
+    }
+
+    function removeRedBlueMarkers() {
+        for (var marker in blueMarkers) {
+            map.removeLayer(blueMarkers[marker]);
+        }
+        for (var marker in redMarkers) {
+            map.removeLayer(redMarkers[marker]);
+        }
+
+        blueMarkers = {};
+        blueMarkersLoc = {};
+        redMarkers = {};
+        redMarkersLoc = {};
+    }
+
+    function createBlueMarker(key, match) {
+        if (match in blueMarkersLoc) {
+            blueMarkersLoc[match].push(key);
+            blueMarkers[key].setPopupContent(blueMarkersLoc[match].join(","));
+        } else {
+            blueMarkersLoc[match] = [key];
+            blueMarkers[key] = L.marker([match[1], match[2]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+                title: match[0],
+                smallIcon: true
+            }).bindPopup(key).addTo(map);
+        }
+    }
+
+    var redIcon = L.icon({
+        iconUrl: '/static/css/images/marker-icon-red.png',
+        shadowUrl: '/static/css/images/marker-shadow.png',
+
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        tooltipAnchor: [16, -28],
+        shadowSize: [41, 41]
+    });
+
+    function createRedMarker(key, match) {
+        if (match in redMarkersLoc) {
+            redMarkersLoc[match].push(key);
+            redMarkers[key].setPopupContent(redMarkersLoc[match].join(","));
+        } else {
+            redMarkersLoc[match] = [key];
+            redMarkers[key] = L.marker([match[1], match[2]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+                icon: redIcon,
+                title: match[0],
+                smallIcon: true
+            }).bindPopup(key[0] + " --> " + match[0]).addTo(map);
+        }
+    }
 
 </script>
 </body>
