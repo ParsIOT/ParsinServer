@@ -939,13 +939,31 @@ func EditMac(c *gin.Context) {
 	groupName := c.DefaultQuery("group", "none")
 	oldmac := c.DefaultQuery("oldmac", "none")
 	newmac := c.DefaultQuery("newmac", "none")
-	if groupName != "none" && oldmac != "none" && newmac != "none" {
-		numChanges := dbm.EditMacDB(oldmac, newmac, groupName)
-		glb.Debug.Println("Changed mac of " + strconv.Itoa(numChanges) + " fingerprints")
-		algorithms.CalculateLearn(groupName)
-		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
+	forceEdit := c.DefaultQuery("forceEdit", "none")
 
-		c.JSON(http.StatusOK, gin.H{"message": "Changed mac of " + strconv.Itoa(numChanges) + " fingerprints", "success": true})
+	if groupName != "none" && oldmac != "none" && newmac != "none" {
+		gp := dbm.GM.GetGroup(groupName)
+		fpData := gp.Get_RawData().Get_Fingerprints()
+
+		dbMacs := []string{}
+		for _,fp := range fpData{
+			for _,rt := range fp.WifiFingerprint{
+				if !glb.StringInSlice(rt.Mac,dbMacs){
+					dbMacs = append(dbMacs,rt.Mac)
+				}
+			}
+		}
+
+		if glb.StringInSlice(newmac,dbMacs) && forceEdit != "true"{
+			glb.Error.Println("There are some fingerprints that conatins the newmac already(edit newmac first)")
+			c.JSON(http.StatusOK, gin.H{"success": false, "message":"There are some fingerprints that conatins the newmac already(edit newmac first)"})
+		}else{
+			numChanges := dbm.EditMacDB(oldmac, newmac, groupName)
+			glb.Debug.Println("Changed mac of " + strconv.Itoa(numChanges) + " fingerprints")
+			//algorithms.CalculateLearn(groupName)
+			//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
+			c.JSON(http.StatusOK, gin.H{"message": "Changed mac of " + strconv.Itoa(numChanges) + " fingerprints", "success": true})
+		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
