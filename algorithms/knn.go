@@ -239,9 +239,9 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	}
 
 	FP2A := make(map[string]float64)
-	maxLevel := 2
-	As := []float64{10,5,2};
-	minA := float64(0.1); // assigning zero make errors in other functions
+	maxLevel := 3
+	As := []float64{5,5,5,3};
+	minA := float64(1); // assigning zero make errors in other functions
 	for _,fpTime := range fingerprintsOrdering{
 		FP2A [fpTime] = minA
 	}
