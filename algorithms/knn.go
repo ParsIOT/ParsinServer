@@ -240,7 +240,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 	FP2A := make(map[string]float64)
 	maxLevel := 3
-	As := []float64{100,50,10,1};
+	As := []float64{200,100,10,1};
 	minA := float64(1); // assigning zero make errors in other functions
 	for _,fpTime := range fingerprintsOrdering{
 		FP2A [fpTime] = minA
@@ -271,24 +271,27 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		if baseLoc != "" { // ignore when baseLoc is empty (for example there is no userhistory!)
 			if glb.GraphEnabled {
 				graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
-				baseNodeGraph := graphMapPointer.GetNearestNode(baseLoc)
-				sliceOfHops := graphMapPointer.BFSTraverse(baseNodeGraph) // edit this function to return a nested slice with
-				// nodes with corresponding hops
 
-				for i,levelSliceOfHops := range sliceOfHops{
-						for _,node := range levelSliceOfHops{
+				if !graphMapPointer.IsEmpty() {
+
+					baseNodeGraph := graphMapPointer.GetNearestNode(baseLoc)
+					sliceOfHops := graphMapPointer.BFSTraverse(baseNodeGraph) // edit this function to return a nested slice with
+					// nodes with corresponding hops
+
+					for i, levelSliceOfHops := range sliceOfHops {
+						for _, node := range levelSliceOfHops {
 							//hopFPs := append(hopFPs,node2FPs[node]...)
 							hopFPs := node2FPs[node.Label]
-							for _,fp := range hopFPs{
-								if (i <= maxLevel){
+							for _, fp := range hopFPs {
+								if (i <= maxLevel) {
 									FP2A[fp] = As[i]
 								}
 							}
 						}
+					}
+
+					//glb.Error.Println(FP2A)
 				}
-
-				//glb.Error.Println(FP2A)
-
 
 			} else {
 				baseLocX, baseLocY := glb.GetDotFromString(baseLoc)
