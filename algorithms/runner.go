@@ -269,6 +269,9 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
 	location, accuracyCircleRadius = HistoryEffect(userJSON, userHistory)
 
+	if glb.GraphEnabled {
+		location = knnGuess
+	}
 	userJSON.Location = location
 	glb.Debug.Println("Knn guess: ", knnGuess)
 	glb.Debug.Println("location: ", location)

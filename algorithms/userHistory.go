@@ -26,6 +26,7 @@ func HistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory []par
 	sumFactor := float64(0)
 
 	lastFPTime := tsHistory[len(locHistory)-1]
+	glb.Debug.Println(locHistory)
 
 	gaussModel := NewGaussian(0, glb.UserHistoryGaussVariance)
 	for i, loc := range locHistory {

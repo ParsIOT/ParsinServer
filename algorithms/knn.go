@@ -239,9 +239,9 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	}
 
 	FP2A := make(map[string]float64)
-	maxLevel := 2
-	As := []float64{10,5,2};
-	minA := float64(0.1); // assigning zero make errors in other functions
+	maxLevel := 3
+	As := []float64{200,100,10,1};
+	minA := float64(1); // assigning zero make errors in other functions
 	for _,fpTime := range fingerprintsOrdering{
 		FP2A [fpTime] = minA
 	}
@@ -271,25 +271,27 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		if baseLoc != "" { // ignore when baseLoc is empty (for example there is no userhistory!)
 			if glb.GraphEnabled {
 				graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
-				baseNodeGraph := graphMapPointer.GetNearestNode(baseLoc)
-				sliceOfHops := graphMapPointer.BFSTraverse(baseNodeGraph) // edit this function to return a nested slice with
-				// nodes with corresponding hops
 
-				for i,levelSliceOfHops := range sliceOfHops{
-						for _,node := range levelSliceOfHops{
+				if !graphMapPointer.IsEmpty() {
+
+					baseNodeGraph := graphMapPointer.GetNearestNode(baseLoc)
+					sliceOfHops := graphMapPointer.BFSTraverse(baseNodeGraph) // edit this function to return a nested slice with
+					// nodes with corresponding hops
+
+					for i, levelSliceOfHops := range sliceOfHops {
+						for _, node := range levelSliceOfHops {
 							//hopFPs := append(hopFPs,node2FPs[node]...)
 							hopFPs := node2FPs[node.Label]
-							for _,fp := range hopFPs{
-								if (i <= maxLevel){
+							for _, fp := range hopFPs {
+								if (i <= maxLevel) {
 									FP2A[fp] = As[i]
 								}
 							}
 						}
+					}
 
-
+					//glb.Error.Println(FP2A)
 				}
-
-
 
 			} else {
 				baseLocX, baseLocY := glb.GetDotFromString(baseLoc)
@@ -481,8 +483,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				locYstr := x_y[1]
 				locX, _ := strconv.ParseFloat(locXstr, 64)
 				locY, _ := strconv.ParseFloat(locYstr, 64)
-				locX = glb.Round(locX, 5)
-				locY = glb.Round(locY, 5)
+				//locX = glb.Round(locX, 5)
+				//locY = glb.Round(locY, 5)
 				//currentX = currentX + int(W[fpTime]*locX)
 				//currentY = currentY + int(W[fpTime]*locY)
 
@@ -499,6 +501,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				//glb.Error.Println(currentX,"::",currentY)
 				//}
 				curW := W[fpTime]*FP2A[fpTime]
+				glb.Debug.Println(curW)
 				//curW := W[fpTime]
 				currentX = currentX + int64(curW*locX)
 				currentY = currentY + int64(curW*locY)
@@ -527,9 +530,9 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 			return errors.New("NoValidFingerprints"), "", nil
 		}
 
+		glb.Error.Println(float64(currentX) / sumW , ",",float64(currentY) / sumW)
 		currentXint := int(float64(currentX) / sumW)
 		currentYint := int(float64(currentY) / sumW)
-
 		//glb.Debug.Println(curFingerprint.Location)
 		//glb.Debug.Println(glb.IntToString(currentXint) + ".0," + glb.IntToString(currentYint)+".0")
 		//Debug.Println(currentX)
@@ -588,7 +591,7 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 		//glb.Debug.Println("distance: ",distance)
 		//glb.Debug.Println("weight: ",weight)
 		results <- resultW{fpTime: job.fpTime,
-			weight: weight}
+			weight: weight*100}
 	}
 
 }

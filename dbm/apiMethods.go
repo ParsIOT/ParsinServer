@@ -445,26 +445,27 @@ func EditMacDB(oldmac string, newmac string, groupName string) int {
 	numChanges += len(toUpdate)
 
 	//fingerprintInMemory is map(pointer and no need to save)
-	rd.SetDirtyBit()
-	GM.InstantFlushDB(groupName)
+	rd.Set_Fingerprints(fingerprintInMemory)
+	//rd.SetDirtyBit()
+	//GM.InstantFlushDB(groupName)
 
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
 	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	//
-	//db.Update(func(tx *bolt.Tx) error {
-	//	bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
-	//	if err != nil {
-	//		return fmt.Errorf("create bucket: %s", err)
-	//	}
-	//
-	//	for k, v := range toUpdate {
-	//		bucket.Put([]byte(k), []byte(v))
-	//	}
-	//	return nil
-	//})
+
+	db.Update(func(tx *bolt.Tx) error {
+		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
+		if err != nil {
+			return fmt.Errorf("create bucket: %s", err)
+		}
+
+		for k, v := range toUpdate {
+			bucket.Put([]byte(k), parameters.DumpFingerprint(v))
+		}
+		return nil
+	})
 
 	toUpdateRes := make(map[string]string)
 

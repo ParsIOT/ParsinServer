@@ -314,7 +314,7 @@ func main() {
 			needToLoadSettings.GET("/locations", routes.GetLocationList)
 			needToLoadSettings.GET("/editloc", routes.EditLoc)
 			needToLoadSettings.GET("/editlocBaseDB", routes.EditLocBaseDB)
-			needToLoadSettings.GET("/editMac", routes.EditMac)
+			//needToLoadSettings.GET("/editMac", routes.EditMac)
 			needToLoadSettings.GET("/editusername", routes.EditUserName)
 			needToLoadSettings.GET("/arbitraryLocations/:group", routes.ArbitraryLocations)
 			//needToLoadSettings.GET("/editnetworkname", routes.EditNetworkName)
@@ -371,7 +371,7 @@ func main() {
 			needToLoadSettings.DELETE("/clearConfigData", routes.ClearConfigData)
 		}
 	}
-
+	r.GET("/editMac", routes.EditMac)
 	//r.GET("/getGraphNodeAdjacentFPs", routes.GetGraphNodeAdjacentFPs)
 	//r.POST("/addNodeToGraph", routes.AddNodeToGraph)
 	r.POST("/uploadTrueLocationLog", routes.UploadTrueLocationLog)
