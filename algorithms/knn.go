@@ -325,7 +325,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 	//tempList := []string{}
 	//tempList = append(tempList,fingerprintsOrdering...)
-	//sort.Sort(sort.StringSlice(fingerprintsOrdering))
+	sort.Sort(sort.StringSlice(fingerprintsOrdering))
 	//
 	//sum := int64(0)
 	//for _,i := range tempList{
@@ -362,7 +362,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	if (distAlgo == "Euclidean") {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			//wgKnn.Add(1)
-			go calcWeight(id, chanJobs, chanResults)
+			//go calcWeight(id, chanJobs, chanResults)
+			go calcWeight1(id, chanJobs, chanResults)
 		}
 	} else if (distAlgo == "Cosine") {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
@@ -397,6 +398,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		W[res.fpTime] = res.weight
 	}
 
+	W = ConvertDist2Wigth(W)
 	close(chanResults)
 
 	//if curFingerprint.Timestamp==int64(1516794991872647445){
@@ -591,6 +593,46 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 
 }
 
+func calcWeight1(id int, jobs <-chan jobW, results chan<- resultW) {
+
+	for job := range jobs {
+		distance := float64(0)
+		for curMac, curRssi := range job.mac2RssCur {
+			if fpRss, ok := job.mac2RssFP[curMac]; ok {
+				distance = distance + math.Pow(float64(curRssi-fpRss), minkowskyQ)
+				//curDist := math.Pow(10.0,float64(curRssi)*0.05)
+				//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
+				//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
+			} else {
+				distance = distance + math.Pow(float64(glb.MaxEuclideanRssVectorDist), minkowskyQ)
+				//distance = distance + 9
+				//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)
+			}
+		}
+		distance = distance / float64(len(job.mac2RssCur))
+		//if(distance==float64(0)){
+		//	glb.Error.Println("###@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+		//}
+		precision := 10
+		distance = glb.Round(math.Pow(distance, float64(1.0)/minkowskyQ), precision)
+		if distance == float64(0) {
+			//glb.Error.Println("Distance zero")
+			//glb.Error.Println(job.mac2RssCur)
+			//glb.Error.Println(job.mac2RssFP)
+			distance = math.Pow(10, -1*float64(precision))
+			//distance = maxDist
+		}
+		//weight := glb.Round(float64(1.0)/(float64(1.0)+distance), 5)
+		weight := distance
+
+		//glb.Debug.Println("distance: ",distance)
+		//glb.Debug.Println("weight: ",weight)
+		results <- resultW{fpTime: job.fpTime,
+			weight: weight}
+	}
+
+}
+
 func calcWeightCosine(id int, jobs <-chan jobW, results chan<- resultW) {
 	for job := range jobs {
 		//distance := float64(0)
@@ -739,4 +781,26 @@ func norm2zeroToOne(x float64) float64 {
 	b := -1 * maxrssInNormal * a
 	x = x*a + b
 	return x
+}
+
+func ConvertDist2Wigth(distMap map[string]float64) map[string]float64 {
+	maxDist := float64(-1)
+	minDist := math.MaxFloat64
+	newDistMap := make(map[string]float64)
+
+	for _, dist := range distMap {
+		if dist > maxDist {
+			maxDist = dist
+		}
+		if dist < minDist {
+			minDist = dist
+		}
+	}
+
+	for fpTime, dist := range distMap {
+		newDistMap[fpTime] = dist*-1 + maxDist
+	}
+
+	return newDistMap
+
 }

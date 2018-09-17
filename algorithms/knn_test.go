@@ -1,11 +1,13 @@
 package algorithms
 
 import (
-	"testing"
-	"ParsinServer/dbm/parameters"
 	"ParsinServer/dbm"
+	"ParsinServer/dbm/parameters"
 	"ParsinServer/glb"
+	"fmt"
 	"github.com/stretchr/testify/assert"
+	"strconv"
+	"testing"
 )
 
 func TestTrackKnn(t *testing.T){
@@ -67,3 +69,18 @@ func TestTrackKnn(t *testing.T){
 
 
 }
+
+func TestConvertDist2Wigth(t *testing.T) {
+	glb.Debug.Println("123")
+	distMap := make(map[string]float64)
+	for i := 15; i < 20; i++ {
+		distMap[strconv.Itoa(i)] = float64(i)
+	}
+	fmt.Println(distMap)
+	distMapResult := ConvertDist2Wigth(distMap)
+	fmt.Println(distMapResult)
+	//assert(t,distMapResult,distMap)
+
+}
+
+
