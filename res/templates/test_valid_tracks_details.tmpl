@@ -46,6 +46,11 @@
 
     <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
 
+    <link href="/static/css/plugins/loading-indicator/ladda.css" rel="stylesheet">
+    <script src="/static/js/plugins/loading-indicator/spin.js"></script>
+    <script src="/static/js/plugins/loading-indicator/ladda.js"></script>
+
+
     <!-- Font Awesome CSS -->
     <link rel="stylesheet" href="/static/css/font-awesome.min.css">
     <style>
@@ -76,14 +81,26 @@
 
     <!--<div class="well">-->
     <div class="row">
-        <div class="col-md-9 col-sm-12">
+        <div class="col-md-9 col-sm-12" id="loading-panel">
             <div class="panel panel-primary" id="map-panel">
                 <div class="panel-heading">
                     Map
                 </div>
-                <div class="panel-body">
-                    <label>Selected Time: <label id="selected-time"></label></label>
-                    <div class="time-select-slider"></div>
+                <div class="panel-body row">
+                    <div class="col-md-4 col-xs-6">
+                        <div class="input-group">
+                            <span class="input-group-addon primary"><span
+                                    class="glyphicon glyphicon-time"></span></span>
+                            <span id="formated-time-label" class="input-group-addon primary">00:00:00</span>
+                            <input id="time-value-input" class="form-control" type="number" step="1000">
+                        </div>
+                    </div>
+
+                    <div class="col-md-8 col-xs-6">
+                        <div id="time-select-slider" style="margin-top: 10px"></div>
+
+                    </div>
+
                 </div>
                 <div class="panel-body">
                     <div id="main-map"></div>
@@ -108,7 +125,9 @@
                                         tracks</label>
                                 </div>
                                 <div class="form-group">
-                                    <button onclick="getTestValidTrackMap()" class="btn btn-info btn-sm btn-block">
+                                    <button onclick="getTestValidTracksDetails()" id="get_test_valid_track_map_button"
+                                            class="ladda-button btn btn-info btn-sm btn-block " data-color="blue"
+                                            data-size="xs" data-style="zoom-out">
                                         Get test-valid tracks details
                                     </button>
                                 </div>
@@ -135,8 +154,8 @@
 <script type="application/javascript">
 
 
-    $('#main-map').css('height', $(window.top).height() - 275);
-    $('#settings-container').css('height', $(window.top).height() - 245);
+    $('#main-map').css('height', $(window.top).height() - 150);
+    $('#settings-container').css('height', $(window.top).height() - 50);
     var map = L.map('main-map', {
         crs: L.CRS.Simple,
         minZoom: -100,
@@ -153,17 +172,17 @@
     var fpLocMarkersLoc = {};
     var fpLocMarkers = {};
     var fpLocMarkerCount = {};
-    var toggleGuessMarkers = true;
 
     var fpData = {};
     var testvalidtracks = {};
     var testValidTrackMap = {};
     var tvTrackTimes = [];
-    var timestamp2formated = {};
 
     var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
 
-    initializeSlider();
+    var getTestValidTrackMapButton = Ladda.create(document.querySelector('#get_test_valid_track_map_button'));
+
+    initSlider();
     getTestValidTrackMap();
 
     // function definitions:
@@ -172,16 +191,15 @@
         getTestValidTracksDetails();
     }
 
-    function initializeSlider() {
-        $('.time-select-slider').slider({
-            min: tvTrackTimes[0],
-            max: tvTrackTimes[tvTrackTimes.length - 1],
+    function initSlider() {
+        $('#time-select-slider').slider({
+            min: 0,
+            max: 1,
         });
     }
 
     function getTestValidTracksDetails() {
-        var items = [];
-        var locations = [];
+        getTestValidTrackMapButton.toggle();
 
         $.getJSON("/getTestValidTracksDetails?group={{ .Group }}&repredict=" + ($('#repredict_check').is(":checked") ? "true" : "false"), function (data) {
             // console.log(data)
@@ -193,54 +211,15 @@
             } else {
                 testvalidtracks = data.testvalidtracks;
                 fpData = data.fpdata;
-                // console.log(data.testvalidtracks);
                 $.each(data.testvalidtracks, function (key, testValidTrack) {
-                    // console.log(val.truelocation)
-                    // console.log(testValidTrack.userposition.time);
                     tvTrackTimes.push(testValidTrack.userposition.time);
-
                     testValidTrackMap[testValidTrack.userposition.time] = testValidTrack;
-                    /*
-                                        let trueloc = pattern.exec(testValidTrack.truelocation);
-                                        let knnloc = pattern.exec(testValidTrack.userposition.knnguess);
-
-                                        if (trueloc && trueloc[1] && trueloc[2]) {
-                                            locations.push(trueloc);
-                                            items.push("<tr class='bg-info'><td>" + trueloc[1] + "</td><td>" + trueloc[2] + "</td></tr>");
-                                            // console.log(match)
-                                            // createGuessMarker(key, match);
-                                            createGuessMarker(testValidTrack.truelocation, trueloc);
-
-                                            // trueLocMarkers[key]=match;
-                                            algoGuessLocations["KNN"].push([trueloc, knnloc]);
-
-                                        } else {
-                                            items.push("<tr class='bg-info'><td colspan='2' class='text-center'> NO DATA </td></tr>");
-                                        }
-                    */
-
                 });
-
                 calculateTimeSlider();
-                // for (var i = 0; i < locations.length - 1; i++) {
-                //     Line(locations[i][1], locations[i][2], locations[i + 1][1], locations[i + 1][2])
-                // }
-
-
-                /*                $("#true-location-table").find("tbody").remove();
-                                console.log(items);
-                                $("<tbody/>", {
-                                    "class": "tab-content",
-                                    html: items.join("")
-                                }).appendTo("#true-location-table");
-                                $("#show-details-link").find("a").remove();//remove show rss details link
-                                $("<a/>", {
-                                    "target": "_blank",
-                                    "onclick": "window.open('" + "/getTestValidTracks?group={{ .Group }}','pagename','resizable,height=420,width=1000'); return false;",
-                    html: "See TestValidTracks details"
-                }).appendTo("#show-details-link");*/
             }
+            getTestValidTrackMapButton.toggle();
         });
+
     }
 
     function clearHistory() {
@@ -275,8 +254,8 @@
         } else {
             count = 1;
             fpLocMarkerCount[markerIndex] = count;
-            randomMarkerDist = getRandomInt(-15, 15);
-            fpLocMarkers[markerIndex] = L.marker([match[1] + randomMarkerDist, match[2] + randomMarkerDist], {
+            randomMarkerDist = getRandomFloat(-1, 1);
+            fpLocMarkers[markerIndex] = L.marker([parseFloat(match[1]) + randomMarkerDist, parseFloat(match[2]) + randomMarkerDist], {
                 icon: redIcon,
                 title: match[0],
                 smallIcon: true
@@ -303,101 +282,75 @@
         var maxTimestamp = tvTrackTimes[0];
         var formatedTimeList = [];
         tvTrackTimes.sort();
-        tvTrackTimes.forEach(function (timestamp) {
-            // map between timestamp and formated timestamp(hour:min:sec)
-
-            /*  formatedTime = timestamp2FormatedTime(timestamp);
-              if (formatedTime == undefined ){ // not exists in timestamp2formated
-                  formatedTime = timestamp2FormatedTime(timestamp);
-              }else{
-                  formatedTime = formatedTime+":"+getMillisecond(timestamp);
-              }
-              timestamp2formated[formatedTime] = timestamp;
-              formatedTimeList.push(formatedTime);*/
-            timestamp2formated[timestamp] = timestamp2FormatedTime(timestamp)
-
-        });
-
         // console.log(timestamp2formated);
 
-        $('.time-select-slider').slider({
+        $("#time-value-input").val(tvTrackTimes[0]);
+        $("#formated-time-label").text(timestamp2FormatedTime(tvTrackTimes[0]));
+        $("#time-value-input").attr({
+            "min": tvTrackTimes[0],
+            "max": tvTrackTimes[tvTrackTimes.length - 1]
+        });
+        $('#time-select-slider').slider({
             min: tvTrackTimes[0],
             max: tvTrackTimes[tvTrackTimes.length - 1],
         });
 
+        $("#time-select-slider").on("slide", function (event, ui) {
+            var timestamp = ui.value;
+            var adjTimestamp = getAdjacentTimestamp(tvTrackTimes, timestamp);
 
-        /*        $('.time-select-slider').slider('pips', {
-                    first: minTimestamp,
-                    last: maxTimestamp,
-                    rest: 'pip',
-                    labels: [100,200,300],
-                    prefix: "",
-                    suffix: ""
-            });*/
+            $("#time-value-input").val(timestamp);
+            $("#formated-time-label").text(timestamp2FormatedTime(adjTimestamp));
 
-        /*
-        $('.time-select-slider').slider('float', {
-            handle: true,
-            pips: true,
-            labels: timestamp2formated,
-            prefix: "",
-            suffix: ""
         });
-*/
-
-        /*
-                $(".time-select-slider").slider({
-                    value: 1,
-                    min: 0,
-                    max: formatedTimeList.length,
-                    step: 1,
-                    slide: function(event, ui) {
-                        $("#amount").val(formatedTimeList[ui.value]);
-                    }
-                });
-                $("#amount").val(formatedTimeList[$("#slider").slider("value")]);
-        */
-        $(".time-select-slider").on("slide", function (event, ui) {
+        $("#time-select-slider").on("slidestop", function (event, ui) {
             var adjTimestamp = getAdjacentTimestamp(tvTrackTimes, ui.value);
-            $("#selected-time").text(timestamp2formated[adjTimestamp]);
-
-            // Show fp and near fp data
-            clearHistory();
-            var testValidTrack = testValidTrackMap[adjTimestamp];
-            var guessLoc = testValidTrack.userposition.location;
-            var guessLocSplited = pattern.exec(guessLoc);
-            if (guessLocSplited && guessLocSplited[1] && guessLocSplited[2]) {
-                createGuessMarker(guessLocSplited);
-            }
-
-            // set fp locations
-            var knnData = testValidTrack.userposition.knndata;
-            // console.log(knnData)
-            for (var fpTime in knnData) {
-                var fpLoc = fpData[fpTime].location;
-                var fpLocSplited = pattern.exec(fpLoc);
-                if (fpLocSplited && fpLocSplited[1] && fpLocSplited[2]) {
-                    createfpLocMarker(fpLocSplited, knnData[fpTime]);
-                }
-            }
-
-
+            showFPData(adjTimestamp);
+        });
+        $("#time-value-input").on("change paste", function () {
+            var timestamp = $(this).val();
+            $("#formated-time-label").text(timestamp2FormatedTime(timestamp));
+            $("#time-select-slider").slider("value", timestamp);
+            var adjTimestamp = getAdjacentTimestamp(tvTrackTimes, timestamp);
+            showFPData(adjTimestamp);
         });
 
+
+    }
+
+    function showFPData(timestamp) {  // Show fp and near fp data
+        clearHistory();
+        var testValidTrack = testValidTrackMap[timestamp];
+        var guessLoc = testValidTrack.userposition.location;
+        var guessLocSplited = pattern.exec(guessLoc);
+        if (guessLocSplited && guessLocSplited[1] && guessLocSplited[2]) {
+            createGuessMarker(guessLocSplited);
+        }
+
+        // set fp locations
+        var knnData = testValidTrack.userposition.knndata;
+        // console.log(knnData)
+        for (var fpTime in knnData) {
+            var fpLoc = fpData[fpTime].location;
+            var fpLocSplited = pattern.exec(fpLoc);
+            if (fpLocSplited && fpLocSplited[1] && fpLocSplited[2]) {
+                createfpLocMarker(fpLocSplited, knnData[fpTime]);
+            }
+        }
     }
 
     function getAdjacentTimestamp(timestampList, mainTimestamp) {
         var lessUntil = 0;
         var resultTimesstamp = 0;
         for (let timestamp of timestampList) {
-            if (mainTimestamp > timestamp) {
+            if (mainTimestamp > timestamp - 1) {
                 lessUntil++;
             } else {
                 if (lessUntil != 0) {
                     resultTimesstamp = timestamp;
                     break;
                 } else {
-                    console.log("There is problem to get timestamp from timestamp slider");
+                    console.log("out of range of timestamps");
                 }
             }
         }
@@ -407,11 +360,10 @@
 
     function timestamp2FormatedTime(timestamp) {
         return new Date(timestamp * 1e3).toISOString().slice(-13, -5);
+        // var date = new Date(timestamp * 1e3);
+        // return date.getHours()+":"+date.getMinutes()+":"+date.getSeconds();
     }
 
-    /* function getMillisecond(timestamp){
-         return new Date(timestamp * 1e3).getMilliseconds().toString()
-     }*/
     function delTestValidTracks() {
         user = $('#user').val();
         swal({
@@ -450,8 +402,8 @@
 
     }
 
-    function getRandomInt(begin, end) {
-        return Math.round(Math.random() * (end - begin) + begin)
+    function getRandomFloat(begin, end) {
+        return Math.random() * (end - begin) + begin
     }
 </script>
 </body>

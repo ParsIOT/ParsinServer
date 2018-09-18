@@ -461,7 +461,7 @@ func GetTestValidTracksDetails(c *gin.Context) {
 		testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
 		if len(testValidTracks) != 0 {
 			if repredict == "true" {
-				glb.Debug.Println("Repredicting  test-valid tracks")
+				glb.Debug.Println("Repredicting test-valid tracks")
 				fpData := gp.Get_RawData().Get_Fingerprints()
 				gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
 
