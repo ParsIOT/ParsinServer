@@ -150,7 +150,9 @@
     map.addLayer(lineLayer);
 
     var guessMarkers = {};
+    var fpLocMarkersLoc = {};
     var fpLocMarkers = {};
+    var fpLocMarkerCount = {};
     var toggleGuessMarkers = true;
 
     var fpData = {};
@@ -191,7 +193,7 @@
             } else {
                 testvalidtracks = data.testvalidtracks;
                 fpData = data.fpdata;
-                console.log(data.testvalidtracks);
+                // console.log(data.testvalidtracks);
                 $.each(data.testvalidtracks, function (key, testValidTrack) {
                     // console.log(val.truelocation)
                     // console.log(testValidTrack.userposition.time);
@@ -249,9 +251,9 @@
             map.removeLayer(fpLocMarkers[marker]);
         }
         guessMarkers = {};
-        fpLocMarkers = {};
-        guessMarkersLoc = {};
         fpLocMarkersLoc = {};
+        fpLocMarkerCount = {};
+        fpLocMarkers = {};
     }
 
     function createGuessMarker(match) {
@@ -262,11 +264,25 @@
     }
 
     function createfpLocMarker(match, weigth) {
-        fpLocMarkers[match[0]] = L.marker([match[1], match[2]], {
-            icon: redIcon,
-            title: match[0],
-            smallIcon: true
-        }).bindPopup(match[0] + ", Weight: " + weigth.toFixed(2)).addTo(map);
+        weigth = weigth.toFixed(2);
+        var markerIndex = match[0] + ", Weight:" + weigth;
+        var count = 0;
+        if (markerIndex in fpLocMarkers) {
+            count = fpLocMarkerCount[markerIndex];
+            count++
+            fpLocMarkerCount[markerIndex] = count;
+            fpLocMarkers[markerIndex].setPopupContent(markerIndex + ", count=" + count);
+        } else {
+            count = 1;
+            fpLocMarkerCount[markerIndex] = count;
+            randomMarkerDist = getRandomInt(-15, 15);
+            fpLocMarkers[markerIndex] = L.marker([match[1] + randomMarkerDist, match[2] + randomMarkerDist], {
+                icon: redIcon,
+                title: match[0],
+                smallIcon: true
+            }).bindPopup(markerIndex + ", count=" + count).addTo(map);
+        }
+
 
     }
 
@@ -302,7 +318,7 @@
 
         });
 
-        console.log(timestamp2formated);
+        // console.log(timestamp2formated);
 
         $('.time-select-slider').slider({
             min: tvTrackTimes[0],
@@ -356,7 +372,7 @@
 
             // set fp locations
             var knnData = testValidTrack.userposition.knndata;
-            console.log(knnData)
+            // console.log(knnData)
             for (var fpTime in knnData) {
                 var fpLoc = fpData[fpTime].location;
                 var fpLocSplited = pattern.exec(fpLoc);
@@ -432,6 +448,10 @@
                     }
                 });
 
+    }
+
+    function getRandomInt(begin, end) {
+        return Math.round(Math.random() * (end - begin) + begin)
     }
 </script>
 </body>
