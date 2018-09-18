@@ -314,8 +314,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 					}
 				}
 				if len(tempFingerprintOrdering) != 0 {
-					glb.Error.Println(len(fingerprintsOrdering))
-					glb.Error.Println(len(tempFingerprintOrdering))
+					//glb.Error.Println(len(fingerprintsOrdering))
+					//glb.Error.Println(len(tempFingerprintOrdering))
 					fingerprintsOrdering = tempFingerprintOrdering
 				} else {
 					glb.Error.Println("There is long distance between base location(last location or PDR current location) and current location")
@@ -365,7 +365,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			//wgKnn.Add(1)
 			//go calcWeight(id, chanJobs, chanResults)
-			go calcWeight1(id, chanJobs, chanResults)
+			go calcWeight(id, chanJobs, chanResults)
 		}
 	} else if (distAlgo == "Cosine") {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
@@ -400,7 +400,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		W[res.fpTime] = res.weight
 	}
 
-	W = ConvertDist2Wigth(W)
+	//W = ConvertDist2Wigth(W)
 	close(chanResults)
 
 	//if curFingerprint.Timestamp==int64(1516794991872647445){
@@ -483,8 +483,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				locYstr := x_y[1]
 				locX, _ := strconv.ParseFloat(locXstr, 64)
 				locY, _ := strconv.ParseFloat(locYstr, 64)
-				//locX = glb.Round(locX, 5)
-				//locY = glb.Round(locY, 5)
+				locX = glb.Round(locX, 5)
+				locY = glb.Round(locY, 5)
 				//currentX = currentX + int(W[fpTime]*locX)
 				//currentY = currentY + int(W[fpTime]*locY)
 
@@ -500,9 +500,9 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				//glb.Error.Println(currentY)
 				//glb.Error.Println(currentX,"::",currentY)
 				//}
-				curW := W[fpTime]*FP2A[fpTime]
-				glb.Debug.Println(curW)
-				//curW := W[fpTime]
+				//curW := W[fpTime]*FP2A[fpTime]
+				//glb.Debug.Println(curW)
+				curW := W[fpTime]
 				currentX = currentX + int64(curW*locX)
 				currentY = currentY + int64(curW*locY)
 				//Debug.Println(W[fpTime]*locX)
@@ -530,7 +530,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 			return errors.New("NoValidFingerprints"), "", nil
 		}
 
-		glb.Error.Println(float64(currentX) / sumW , ",",float64(currentY) / sumW)
+		//glb.Error.Println(float64(currentX) / sumW , ",",float64(currentY) / sumW)
 		currentXint := int(float64(currentX) / sumW)
 		currentYint := int(float64(currentY) / sumW)
 		//glb.Debug.Println(curFingerprint.Location)

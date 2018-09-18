@@ -422,6 +422,8 @@ func GetUserLocations(c *gin.Context) {
 	}
 }
 
+// Get test-valid tracks
+// GET parameters: group
 func GetTestValidTracks(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -433,16 +435,56 @@ func GetTestValidTracks(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 
 	if groupName != "none" {
-		if !dbm.GroupExists(groupName) {
-			glb.Error.Println("Group doesn't exist")
-			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
-			return
-		}
 		testValidTracks := dbm.GM.GetGroup(groupName).Get_ResultData().Get_TestValidTracks()
 		glb.Debug.Println(testValidTracks)
 		c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or user isn't given"})
+	}
+}
+
+// Get test-valid tracks details or recalculate track (repredict) location of these FPs
+// GET Parameters: group, repredict
+func GetTestValidTracksDetails(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	repredict := strings.ToLower(c.DefaultQuery("repredict", "none"))
+
+	if groupName != "none" && repredict != "none" {
+		gp := dbm.GM.GetGroup(groupName)
+		testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
+		if len(testValidTracks) != 0 {
+			if repredict == "true" {
+				glb.Debug.Println("Repredicting  test-valid tracks")
+				fpData := gp.Get_RawData().Get_Fingerprints()
+				gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
+
+				// Repredict test-valid FPs
+				for i, testValidTrack := range testValidTracks {
+					fp := testValidTrack.UserPosition.Fingerprint
+					newUserPositiong := algorithms.RecalculateTrackFingerprint(fp)
+					testValidTracks[i].UserPosition = newUserPositiong
+				}
+				c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks, "fpdata": fpData})
+			} else if repredict == "false" {
+				gp := dbm.GM.GetGroup(groupName)
+				testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
+				fpData := gp.Get_RawData().Get_Fingerprints()
+				c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks, "fpdata": fpData})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": "repredict parameter must be true or false"})
+			}
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Empty test-valid track list"})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or repredict isn't given"})
 	}
 }
 

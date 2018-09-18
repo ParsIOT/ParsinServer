@@ -71,6 +71,7 @@ func TrackFingerprintPOST(c *gin.Context) {
 	}
 }
 
+
 // call leanFingerprint() function
 func LearnFingerprintPOST(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
@@ -282,7 +283,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	go gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userJSON)
 	go gp.Get_ResultData().Append_UserResults(curFingerprint.Username, userJSON)
 
-	if curFingerprint.TestValidation && curFingerprint.Username == "tester" {
+	if curFingerprint.TestValidation && curFingerprint.Username == glb.TesterUsername {
 		glb.Debug.Println("TestValidTrack added ")
 		tempTestValidTrack := parameters.TestValidTrack{UserPosition: userJSON}
 		go gp.Get_ResultData().Append_TestValidTracks(tempTestValidTrack)
@@ -312,6 +313,158 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	glb.Debug.Println(userJSON)
 
 	return message, true, location, bayesGuess, bayesData, svmGuess, svmData, knnGuess, scikitData, accuracyCircleRadius
+
+}
+
+// call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
+func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) parameters.UserPositionJSON {
+	// Classify with filter curFingerprint
+	//fullFingerprint := curFingerprint
+
+	dbm.FilterFingerprint(&curFingerprint)
+
+	groupName := strings.ToLower(curFingerprint.Group)
+
+	bayesGuess := ""
+	bayesData := make(map[string]float64)
+	svmGuess := ""
+	svmData := make(map[string]float64)
+	scikitData := make(map[string]string)
+	knnGuess := ""
+	location := ""
+	pdrLocation := curFingerprint.Location
+	accuracyCircleRadius := float64(0)
+	glb.Debug.Println("accuracy circle:", accuracyCircleRadius)
+	parameters.CleanFingerprint(&curFingerprint)
+
+	/*	wasLearning, ok := dbm.GetLearningCache(strings.ToLower(curFingerprint.Group))
+		if ok {
+			if wasLearning {
+				glb.Debug.Println("Was learning, calculating priors")
+
+				go dbm.SetLearningCache(groupName, false)
+				//bayes.OptimizePriorsThreaded(groupName)
+				//if glb.RuntimeArgs.Svm {
+				//	DumpFingerprintsSVM(groupName)
+				//	CalculateSVM(groupName)
+				//}
+				//if glb.RuntimeArgs.Scikit {
+				//	ScikitLearn(groupName)
+				//}
+				//LearnKnn(groupName)
+				CalculateLearn(groupName)
+				go dbm.AppendUserCache(groupName, curFingerprint.Username)
+			}
+		}*/
+	//glb.Info.Println(curFingerprint)
+	//bayesGuess, bayesData = bayes.CalculatePosterior(curFingerprint, nil)
+	//percentBayesGuess := float64(0)
+	//total := float64(0)
+	//for _, locBayes := range bayesData {
+	//	total += math.Exp(locBayes)
+	//	if locBayes > percentBayesGuess {
+	//		percentBayesGuess = locBayes
+	//	}
+	//}
+	//percentBayesGuess = math.Exp(bayesData[bayesGuess]) / total * 100.0
+
+	//// todo: add abitlity to save rf, knn, svm guess
+	//curFingerprint.Location = bayesGuess
+
+	//message := ""
+	//glb.Debug.Println("Tracking curFingerprint containing " + strconv.Itoa(len(curFingerprint.WifiFingerprint)) + " APs for " + curFingerprint.Username + " (" + curFingerprint.Group + ") at " + curFingerprint.Location + " (guess)")
+	//message += " BayesGuess: " + bayesGuess //+ " (" + strconv.Itoa(int(percentGuess1)) + "% confidence)"
+	//
+	//// Process SVM if needed
+	//if glb.RuntimeArgs.Svm {
+	//	svmGuess, svmData := SvmClassify(curFingerprint)
+	//	percentSvmGuess := int(100 * math.Exp(svmData[svmGuess]))
+	//	if percentSvmGuess > 100 {
+	//		//todo: wtf? \/ \/ why is could be more than 100
+	//		percentSvmGuess = percentSvmGuess / 10
+	//	}
+	//	message += " svmGuess: " + svmGuess
+	//	//message = "NB: " + locationGuess1 + " (" + strconv.Itoa(int(percentGuess1)) + "%)" + ", SVM: " + locationGuess2 + " (" + strconv.Itoa(int(percentGuess2)) + "%)"
+	//}
+
+	gp := dbm.GM.GetGroup(groupName)
+	// Calculating KNN
+	//glb.Debug.Println(curFingerprint)
+	err, knnGuess, knnData := TrackKnn(gp, curFingerprint, true)
+	if err != nil {
+		glb.Error.Println(err)
+	}
+
+	//curFingerprint.Location = knnGuess
+	// Insert full curFingerprint
+	//glb.Debug.Println(curFingerprint)
+	//go dbm.PutFingerprintIntoDatabase(fullFingerprint, "fingerprints-track")
+
+	// Calculating Scikit
+	if glb.RuntimeArgs.Scikit {
+		scikitData = ScikitClassify(groupName, curFingerprint)
+		glb.Debug.Println(scikitData)
+		for algorithm, valueXY := range scikitData {
+			glb.Debug.Println(algorithm + ":" + valueXY)
+		}
+
+	}
+
+	// Send out the final responses
+	var userPosJson parameters.UserPositionJSON
+	userPosJson.Time = curFingerprint.Timestamp
+	userPosJson.BayesGuess = bayesGuess
+	userPosJson.BayesData = bayesData
+	userPosJson.SvmGuess = svmGuess
+	userPosJson.SvmData = svmData
+	userPosJson.ScikitData = scikitData
+	userPosJson.KnnGuess = knnGuess
+	userPosJson.KnnData = knnData
+	userPosJson.PDRLocation = pdrLocation
+	userPosJson.Fingerprint = curFingerprint
+
+	// User history effect
+	//location = knnGuess
+	userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
+	location, accuracyCircleRadius = HistoryEffect(userPosJson, userHistory)
+
+	if glb.GraphEnabled {
+		location = knnGuess
+	}
+	userPosJson.Location = location
+	glb.Debug.Println("Knn guess: ", knnGuess)
+	glb.Debug.Println("location: ", location)
+
+	//location = userPosJson.KnnGuess
+	userPosJson.KnnGuess = location //todo: must add location as seprated variable from knnguess in parameters.UserPositionJSON
+	//go dbm.SetUserPositionCache(strings.ToLower(curFingerprint.Group)+strings.ToLower(curFingerprint.Username), userPosJson)
+	go gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
+	//go gp.Get_ResultData().Append_UserResults(curFingerprint.Username, userPosJson)
+
+	//glb.Debug.Println(len(gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)))
+
+	// Send MQTT if needed
+	if glb.RuntimeArgs.Mqtt {
+		type FingerprintResponse struct {
+			Timestamp  int64             `json:"time"`
+			BayesGuess string            `json:"bayesguess"`
+			SvmGuess   string            `json:"svmguess"`
+			ScikitData map[string]string `json:"scikitdata"`
+			KnnGuess   string            `json:"knnguess"`
+		}
+		//mqttMessage, _ := json.Marshal(FingerprintResponse{
+		//	Timestamp:  time.Now().UnixNano(),
+		//	BayesGuess: bayesGuess,
+		//	SvmGuess:   svmGuess,
+		//	ScikitData:    scikitData,
+		//	KnnGuess:   knnGuess,
+		//})
+		//go routes.SendMQTTLocation(string(mqttMessage), curFingerprint.Group, curFingerprint.Username)
+	}
+
+	glb.Debug.Println(userPosJson)
+
+	return userPosJson
 
 }
 

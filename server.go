@@ -284,21 +284,20 @@ func main() {
 		//needToLoadSettings := r
 		{
 			//Todo: Url must be same format to mention group name (now, group can be url param or be GET param)
-			//needToLoadSettings.GET("/dashboard/:group", routes.SlashDashboard)
+			// Pages :
 			needToLoadSettings.GET("/dashboard/:group", func(context *gin.Context) {
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
 				routes.SlashDashboard(context)
 			})
-
 			needToLoadSettings.GET("/explore/:group/:network/:location", routes.GetLocationMacs)
 			//needToLoadSettings.GET("/explore/:group/:network/:location", routes.SlashExplore2)
 			//needToLoadSettings.GET("/pie/:group/:network/:location", routes.SlashPie)
 			needToLoadSettings.GET("/livemap/:group", routes.LiveLocationMap)
 			//needToLoadSettings.GET("/userhistory/:group", routes.UserHistoryMap)
 			needToLoadSettings.GET("/userhistory/:group", routes.UserHistoryMap)
-			needToLoadSettings.GET("/userTestValidUserPos/:group", func(context *gin.Context) {
+			needToLoadSettings.GET("/testValidTracksMap/:group", func(context *gin.Context) {
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*")) // TODO: remove this for performance
-				routes.UserTestValidUserPos(context)
+				routes.TestValidTracksMap(context)
 			})
 
 			needToLoadSettings.GET("/fingerprintAmbiguity/:group", routes.FingerprintAmbiguity)
@@ -308,25 +307,31 @@ func main() {
 				routes.UWBUserMap(context)
 			})
 
-			//needToLoadSettings.GET("/location", routes.GetUserLocations)
+			needToLoadSettings.GET("/Graphform/:group", func(context *gin.Context) { //komeil: graph map
+				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
+				routes.Graphform(context)
+			})
+
+			needToLoadSettings.GET("/testValidTracksDetails/:group", func(context *gin.Context) { //komeil: graph map
+				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
+				routes.TestValidTracksDetails(context)
+			})
+			// APIs:
+
+
 			needToLoadSettings.GET("/getfingerprint/", routes.GetFingerprint)
 			needToLoadSettings.GET("/locationsmap/:group", routes.LocationsOnMap)
 			needToLoadSettings.GET("/locations", routes.GetLocationList)
 			needToLoadSettings.GET("/editloc", routes.EditLoc)
 			needToLoadSettings.GET("/editlocBaseDB", routes.EditLocBaseDB)
-			//needToLoadSettings.GET("/editMac", routes.EditMac)
 			needToLoadSettings.GET("/editusername", routes.EditUserName)
 			needToLoadSettings.GET("/arbitraryLocations/:group", routes.ArbitraryLocations)
-			//needToLoadSettings.GET("/editnetworkname", routes.EditNetworkName)
 			needToLoadSettings.DELETE("/location", routes.DeleteLocation)
 			needToLoadSettings.DELETE("/locationBaseDB", routes.DeleteLocationBaseDB)
 			needToLoadSettings.DELETE("/locations", routes.DeleteLocations)
 			needToLoadSettings.DELETE("/locationsBaseDB", routes.DeleteLocationsBaseDB)
 			needToLoadSettings.DELETE("/user", routes.DeleteUser)
 			needToLoadSettings.DELETE("/database", routes.DeleteDatabase)
-			//needToLoadSettings.DELETE("/delresults", routes.DelResults)
-
-			//needToLoadSettings.GET("/location", routes.GetUserLocations)
 			needToLoadSettings.GET("/fingerprintLikeness", routes.FingerprintLikeness)
 
 			needToLoadSettings.GET("/calculate", routes.Calculate)
@@ -346,10 +351,7 @@ func main() {
 			needToLoadSettings.GET("/reformdb", routes.ReformDB)
 			needToLoadSettings.GET("/macfilterform/:group", routes.Macfilterform)
 			//needToLoadSettings.GET("/Graphform/:group", routes.Graphform) //komeil: page to enter graph
-			needToLoadSettings.GET("/Graphform/:group", func(context *gin.Context) { //komeil: graph map
-				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
-				routes.Graphform(context)
-			})
+
 			needToLoadSettings.GET("/getMostSeenMacs", routes.GetMostSeenMacsAPI)
 			needToLoadSettings.POST("/setfiltermacs", routes.Setfiltermacs)
 			needToLoadSettings.GET("/getfiltermacs", routes.Getfiltermacs)
@@ -385,6 +387,7 @@ func main() {
 	r.DELETE("/delresults", routes.DelResults)
 	r.GET("/location", routes.GetUserLocations)
 	r.GET("/getTestValidTracks", routes.GetTestValidTracks)
+	r.GET("/getTestValidTracksDetails", routes.GetTestValidTracksDetails)
 	r.DELETE("/delTestValidTracks", routes.DelTestValidTracks)
 	r.GET("/calculateErrorByTrueLocation", routes.CalculateErrorByTrueLocation)
 	r.GET("/getTestErrorAlgoAccuracy", routes.GetTestErrorAlgoAccuracy)

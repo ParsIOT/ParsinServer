@@ -391,14 +391,14 @@
 			guessMarkers[key] = L.marker([match[1], match[2]], {
 //                    pulsing: true,
 //                    accuracy: 200,
-				icon: greenIcon,
+                icon: redIcon,
 				title: match[0],
 				smallIcon: true
 			}).bindPopup(key[0] + " --> " + match[0]).addTo(map);
 		}
 	}
 
-	var greenIcon = L.icon({
+    var redIcon = L.icon({
 		iconUrl: '/static/css/images/marker-icon-red.png',
 		shadowUrl: '/static/css/images/marker-shadow.png',
 

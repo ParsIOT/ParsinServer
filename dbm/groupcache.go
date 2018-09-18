@@ -1795,6 +1795,17 @@ func (rs *ResultDataStruct) Get_UserHistory(user string) []parameters.UserPositi
 	rs.RUnlock()
 	return history
 }
+func (rs *ResultDataStruct) Set_UserHistory(user string, new_item []parameters.UserPositionJSON) {
+	defer rs.SetDirtyBit()
+
+	rs.Lock()
+	if rs.UserHistory == nil {
+		rs.UserHistory = make(map[string][]parameters.UserPositionJSON)
+	}
+	rs.UserHistory[user] = new_item
+	rs.Unlock()
+}
+
 func (rs *ResultDataStruct) Get_AllHistory() map[string][]parameters.UserPositionJSON {
 	//defer rs.SetDirtyBit()
 
