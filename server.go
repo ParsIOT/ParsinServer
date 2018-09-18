@@ -374,6 +374,7 @@ func main() {
 		}
 	}
 	r.GET("/editMac", routes.EditMac)
+	r.GET("/reloadDB", routes.ReloadDB)
 	//r.GET("/getGraphNodeAdjacentFPs", routes.GetGraphNodeAdjacentFPs)
 	//r.POST("/addNodeToGraph", routes.AddNodeToGraph)
 	r.POST("/uploadTrueLocationLog", routes.UploadTrueLocationLog)

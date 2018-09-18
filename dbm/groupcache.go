@@ -324,6 +324,13 @@ func (gm *GroupManger) GetGroup(groupName string) *Group {
 	return group
 }
 
+func (gm *GroupManger) ReloadGroup(groupName string) {
+	gm.Lock()
+	gm.isLoad[groupName] = false
+	gm.Unlock()
+
+	gm.LoadGroup(groupName)
+}
 
 //func (gm *GroupManger) SetGroup(gp *Group) {
 //	//gm.LoadGroup(groupName)
