@@ -82,6 +82,6 @@ func init() {
 	GraphEnabled = false
 	PDREnabledForDynamicSubareaMethod = false
 
-	FastLearn = false
+	FastLearn = true
 	TesterUsername = "tester"
 }
