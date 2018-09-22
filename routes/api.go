@@ -1643,6 +1643,11 @@ func BuildGroup(c *gin.Context) {
 
 		//1: reform legacy db
 		dbm.ReformDBDB(groupName)
+
+		err := dbm.CorrectLearnFPsTimestamp(groupName)
+		if err != nil {
+			glb.Error.Println(err.Error())
+		}
 		//2: form raw groupcache and rawdata initialization with raw data in db
 		dbm.BuildGroupDB(groupName)
 		//3.relocate fp with true location that was uploaded

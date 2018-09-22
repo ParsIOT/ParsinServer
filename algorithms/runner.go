@@ -1086,7 +1086,7 @@ func GetParametersWithGP(gp *dbm.Group) {
 	//	glb.Error.Println(err)
 	//}
 	rd := gp.Get_RawData_Val()
-	md := gp.Get_MiddleData()
+	md := gp.NewMiddleDataStruct()
 	fingerprints := rd.Fingerprints
 	fingerprintsOrdering := rd.FingerprintsOrdering
 
@@ -1217,6 +1217,8 @@ func GetParametersWithGP(gp *dbm.Group) {
 		locations = append(locations, fp.Location)
 	}
 	md.LocCount = glb.DuplicateCountString(locations)
+
+	gp.Set_MiddleData(md)
 }
 
 
@@ -1500,7 +1502,7 @@ func RemoveOutlines(rd dbm.RawDataStruct) dbm.RawDataStruct {
 
 func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd *dbm.ConfigDataStruct, crossValidationPartsList []crossValidationParts) parameters.KnnHyperParameters {
 	// CrossValidation
-	tempGp := dbm.GM.GetGroup(groupName)
+	tempGp := dbm.GM.GetGroup(groupName, false) //permanent:false
 	tempGp.Set_Permanent(false)
 	tempGp.Set_ConfigData(cd)
 
@@ -1664,7 +1666,7 @@ func CalculateLearn(groupName string) {
 	mainFPData := rd.Get_Fingerprints()
 	mainFPOrdering := rd.Get_FingerprintsOrdering()
 	cd := gp.Get_ConfigData()
-	md := gp.Get_MiddleData()
+
 	ad := gp.Get_AlgoData()
 	rs := gp.Get_ResultData()
 
@@ -1676,13 +1678,14 @@ func CalculateLearn(groupName string) {
 	glb.Debug.Println("crossValidationPartsList length:", len(crossValidationPartsList))
 	shprf := dbm.GetSharedPrf(groupName)
 
-	bestKnnHyperParams := GetBestKnnHyperParams(groupName+"KNNTemp", shprf, cd, crossValidationPartsList)
+	bestKnnHyperParams := GetBestKnnHyperParams(groupName+"_KNNTemp", shprf, cd, crossValidationPartsList)
 
 	glb.Debug.Println(bestKnnHyperParams)
 
 	// Calculating each location detection accuracy with best hyperParameters: //todo:Avoid this extra level,do it in GetBestKnnHyperParams
 	knnDistError := 0
 	for _, CVParts := range crossValidationPartsList {
+		//glb.Debug.Println(cvNum)
 		// Learn
 		trainSetTemp := CVParts.GetTrainSet(gp)
 		rd.Set_Fingerprints(trainSetTemp.Fingerprints)
@@ -1758,7 +1761,7 @@ func CalculateLearn(groupName string) {
 	GetParametersWithGP(gp)
 
 	gp.GMutex.Lock()
-	glb.Debug.Println(md.UniqueMacs)
+	glb.Debug.Println(gp.Get_MiddleData().Get_UniqueMacs())
 
 	PreProcess(rd, shprf.NeedToRelocateFP)
 

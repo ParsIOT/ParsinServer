@@ -47,6 +47,8 @@ var MaxEuclideanRssVectorDist float64
 
 var FastLearn bool //ignore some crossvalidation calculation(rss regulating & get rss avg of adjacency dots) to learn fast
 
+var NewDistAlgo bool
+
 var TesterUsername string
 
 func init() {
@@ -55,7 +57,7 @@ func init() {
 	MinApNum = 1
 	MinRssi = -110
 	MaxRssi = 5
-	MaxEuclideanRssVectorDist = 50
+	MaxEuclideanRssVectorDist = 30
 	ProgressBarLength = 0
 	ProgressBarCurLevel = 0
 	DefaultKnnKRange = []int{25, 26}         //{10,30}
@@ -82,6 +84,7 @@ func init() {
 	GraphEnabled = false
 	PDREnabledForDynamicSubareaMethod = false
 
-	FastLearn = true
+	FastLearn = false
+	NewDistAlgo = false
 	TesterUsername = "tester"
 }

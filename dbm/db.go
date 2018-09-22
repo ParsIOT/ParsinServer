@@ -27,7 +27,7 @@ func boltOpen(path string, mode os.FileMode, options *bolt.Options) (*bolt.DB, e
 	// Works before db open
 	//file := filepath.Base(path)
 	//group := strings.TrimSuffix(file, filepath.Ext(file))
-	glb.Debug.Println("db Opened and locked")
+	glb.Debug.Println("db Opened")
 	blt, err := bolt.Open(path, mode, options)
 	return blt, err
 }
@@ -317,6 +317,92 @@ func GetLearnFingerPrints(group string,doFilter bool)([]string,map[string]parame
 	return fingerprintsOrdering,fingerprintsInMemory,nil
 }
 
+func CorrectLearnFPsTimestamp(groupName string) error {
+	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
+	var fingerprintsOrdering []string
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
+	defer db.Close()
+	if err != nil {
+		glb.Error.Println("Can't open db")
+		return errors.New("Can't open db")
+	}
+
+	/*	lastTimestamp := int64(1511422283212)
+		timestampList := []int64{}  // get timestamp to avoid suddenly same timestamp(this happens very rarely)
+		timestampDist := int64(5000) //millisecond*/
+
+	err = db.View(func(tx *bolt.Tx) error {
+		//gets the fingerprint bucket
+		b := tx.Bucket([]byte("fingerprints"))
+		if b == nil {
+			glb.Error.Println(groupName)
+			glb.Error.Println("No fingerprint bucket")
+			return fmt.Errorf("No fingerprint bucket")
+		}
+		c := b.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			fp := LoadFingerprint(v, false)
+
+			timestamp, err := strconv.ParseInt(string(k), 10, 64)
+			if err != nil {
+				glb.Error.Println(err.Error())
+				return err
+			}
+			fp.Timestamp = timestamp
+
+			/*	if fp.Timestamp == 0 {
+					glb.Debug.Println("timestamp is zero in this fingerprint!")
+					lastTimestamp += timestampDist
+					for glb.Int64InSlice(lastTimestamp,timestampList){
+						lastTimestamp += timestampDist
+					}
+					fp.Timestamp = lastTimestamp
+				}
+				fpTimestamp := fp.Timestamp
+
+				timestampList = append(timestampList,fpTimestamp)
+				fingerprintsInMemory[strconv.FormatInt(fpTimestamp, 10)] = LoadFingerprint(v,false)
+				fingerprintsOrdering = append(fingerprintsOrdering, strconv.FormatInt(fpTimestamp, 10))*/
+			fingerprintsInMemory[string(k)] = fp
+			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
+		}
+		return nil
+	})
+	if err != nil {
+		glb.Error.Println(groupName)
+		glb.Error.Println("Can't get learn fingerprints.")
+		return errors.New("Can't get learn fingerprints.")
+	}
+
+	//glb.Debug.Println(fingerprintsInMemory)
+
+	/*for fpTime,_ := range fingerprintsInMemory{
+		glb.Debug.Println(fpTime)
+	}*/
+	//
+
+	// rewrite correct fingerprints
+	err = db.Update(func(tx *bolt.Tx) error {
+		bucket, err := tx.CreateBucketIfNotExists([]byte("fingerprints"))
+		if err != nil {
+			return fmt.Errorf("create bucket: %s", err)
+		}
+
+		for fpTime, fp := range fingerprintsInMemory {
+			k := fpTime
+			v := string(parameters.DumpFingerprint(fp))
+			bucket.Put([]byte(k), []byte(v))
+		}
+		return nil
+	})
+	if err != nil {
+		glb.Error.Println(groupName)
+		glb.Error.Println("Can't rewrite learn fingerprints.")
+		return errors.New("Can't rewrite learn fingerprints.")
+	}
+
+	return nil
+}
 
 func PutDataIntoDatabase(res parameters.Fingerprint, database string) error {
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, res.Group+".db"), 0600, nil)

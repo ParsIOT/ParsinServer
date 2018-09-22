@@ -318,8 +318,7 @@ func main() {
 			})
 			// APIs:
 
-
-			needToLoadSettings.GET("/getfingerprint/", routes.GetFingerprint)
+			//needToLoadSettings.GET("/getfingerprint/", routes.GetFingerprint)
 			needToLoadSettings.GET("/locationsmap/:group", routes.LocationsOnMap)
 			needToLoadSettings.GET("/locations", routes.GetLocationList)
 			needToLoadSettings.GET("/editloc", routes.EditLoc)
@@ -373,6 +372,8 @@ func main() {
 			needToLoadSettings.DELETE("/clearConfigData", routes.ClearConfigData)
 		}
 	}
+	r.GET("/getfingerprint/", routes.GetFingerprint)
+
 	r.GET("/editMac", routes.EditMac)
 	r.GET("/reloadDB", routes.ReloadDB)
 	//r.GET("/getGraphNodeAdjacentFPs", routes.GetGraphNodeAdjacentFPs)

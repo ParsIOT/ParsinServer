@@ -307,15 +307,3 @@ func GetBytejsonResourceInBucket(keyName string,bucketName string,groupName stri
 	}
 	return output,nil
 }
-	//db, err := bolt.Open(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
-	//if err != nil {
-	//log.Fatal(err)
-	//gp = GM.NewGroup(groupName)
-	//}
-	//db.View(func(tx *bolt.Tx) error {
-	//	b := tx.Bucket([]byte("resources"))
-	//	v := b.Get([]byte("parameters"))
-	//	gp.UnmarshalJSON(v)
-	//	return nil
-	//})
-	//db.Close()
