@@ -66,6 +66,10 @@
             background-color: #53b5e6;
         }
 
+        .highlight-tbl-line {
+            background-color: #f0ad4e !important;
+        }
+
         .modal-body {
             max-height: calc(100vh - 210px);
             overflow-x: auto;
@@ -160,7 +164,29 @@
                                                 <button type="button" class="close" data-dismiss="modal"
                                                         aria-hidden="true">×
                                                 </button>
-                                                <h3 class="modal-title">RSS details</h3>
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <h3 class="modal-title">RSS details</h3>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label for="refresh-interval">Enter location</label>
+                                                            <div class="row">
+                                                                <div class="col-md-6">
+                                                                    <input id="loc-name" class="form-control"
+                                                                           placeholder="Location Name"/>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <button onclick="highlightLoc()"
+                                                                            class="btn btn-warning btn-sm btn-block">
+                                                                        Highlight
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
                                             </div>
                                             <div class="modal-body">
                                             {{/*<h5 class="text-center">Hello. Some text here.</h5>*/}}
@@ -225,6 +251,7 @@
     var curFpList = [];
 
     var fpData = {};
+    var knnData = {};
     var testvalidtracks = {};
     var testValidTrackMap = {};
     var tvTrackTimes = [];
@@ -290,6 +317,7 @@
         fpLocMarkerCount = {};
         fpLocMarkers = {};
         curFpList = [];
+        knnData = {};
     }
 
     function createGuessMarker(match) {
@@ -335,10 +363,10 @@
     });
 
     function calculateTimeSlider() {
-        var minTimestamp = tvTrackTimes[0];
-        var maxTimestamp = tvTrackTimes[0];
-        var formatedTimeList = [];
-        tvTrackTimes.sort();
+        tvTrackTimes.sort(function (a, b) {
+            return a - b;
+        });
+
         // console.log(timestamp2formated);
 
         $("#time-value-input").val(tvTrackTimes[0]);
@@ -352,6 +380,8 @@
             max: tvTrackTimes[tvTrackTimes.length - 1],
         });
 
+
+        // Event handlers:
         $("#time-select-slider").on("slide", function (event, ui) {
             var timestamp = ui.value;
             var adjTimestamp = getAdjacentTimestamp(tvTrackTimes, timestamp);
@@ -377,6 +407,7 @@
         clearHistory();
         var testValidTrack = testValidTrackMap[timestamp];
         var guessLoc = testValidTrack.userposition.location;
+        console.log(guessLoc);
         var guessLocSplited = pattern.exec(guessLoc);
         if (guessLocSplited && guessLocSplited[1] && guessLocSplited[2]) {
             createGuessMarker(guessLocSplited);
@@ -386,11 +417,11 @@
         }
 
         // set fp locations
-        var knnData = testValidTrack.userposition.knndata;
-        // console.log(knnData)
+        knnData = testValidTrack.userposition.knndata;
+        sortedFPtimeByWeight = SortDictByVal(knnData);
 
         fpTimeList = [];
-        for (var fpTime in knnData) {
+        for (let fpTime of sortedFPtimeByWeight) {
             // console.log(fpTime);
             var fpLoc = fpData[fpTime].location;
             var fpLocSplited = pattern.exec(fpLoc);
@@ -400,11 +431,45 @@
             }
         }
 
-        fpTimeList.sort();
+        // fpTimeList.sort(); // use .sort(function(a,b) { return a - b;}); instead of .sort() if the array type is float!
         for (let fpTime of fpTimeList) {
+            fp = fpData[fpTime];
+            fp.time = fpTime;
             curFpList.push(fpData[fpTime]);
         }
 
+    }
+
+
+    function SortDictByVal(mainDict) {
+
+        var keySorted = []; //[]string
+        var reverseDict = {}; //map[float64][]string{}
+
+        for (var key in mainDict) {
+            val = mainDict[key];
+            if (val in reverseDict) {
+                reverseDict[val].push(key);
+            } else {
+                reverseDict[val] = [key];
+            }
+        }
+
+        var valueList = [];
+        valueStrList = Object.keys(reverseDict);
+        for (let val of valueStrList) {
+            valueList.push(parseFloat(val));
+        }
+        valueList.sort(function (a, b) {
+            return a - b;
+        });
+
+        for (let val of valueList) {
+            for (let s of reverseDict[val]) {
+                keySorted.push(s);
+            }
+        }
+        return keySorted;
     }
 
     function getAdjacentTimestamp(timestampList, mainTimestamp) {
@@ -447,6 +512,7 @@
         $('#rss-details-tbl').find("tbody").remove();
         trTable = $("<tr/>").appendTo("#rss-details-tbl thead");
         trTable.append("<th>x,y</th>");
+        trTable.append("<th>weigth</th>");
         for (let mac of uniqueMacs) { // Add macs to head of table
             macSeperated = mac.split(":")
             if (macSeperated.length > 2) { // reduce the mac name length
@@ -463,27 +529,36 @@
         //      then add each line as a line of table
         allFPdata = [];
         // creating the 2-dims array
-        for (let fp of curFpList) {
-            tempFPData = Array.apply(null, Array(uniqueMacs.length + 2)).map(String.prototype.valueOf, "-");
+        // for (let fp of curFpList) {
+
+        for (var i = 0; i < curFpList.length; i++) {
+            fp = curFpList[i];
+            tempFPData = Array.apply(null, Array(uniqueMacs.length + 3)).map(String.prototype.valueOf, "-");
             tempFPData[0] = fp.time;
             tempFPData[1] = fp.location;
+            if (i != 0) { // first line is tracked fp and doesn't have weight
+                tempFPData[2] = knnData[fp.time].toFixed(5); // set weight
+            }
+
             for (let rt of fp["wifi-fingerprint"]) {
-                tempFPData[uniqueMacs.indexOf(rt.mac) + 2] = rt.rssi;
+                tempFPData[uniqueMacs.indexOf(rt.mac) + 3] = rt.rssi;
             }
             allFPdata.push(tempFPData);
         }
 
         // add timestamp,xy and rss details to the table
         for (var i = 0; i < allFPdata.length; i++) {
-            fpData = allFPdata[i];
+            fpRssData = allFPdata[i];
+
             tds = "";
 
             // append timestamp as onHover title of xy
-            timestamp = fpData[0];
-            tds = tds + "<td title='" + timestamp + "'>" + fpData[1] + "</td>";
+            timestamp = fpRssData[0];
+            tds = tds + "<td title='" + timestamp + "'>" + fpRssData[1] + "</td>";
+            tds = tds + "<td>" + fpRssData[2] + "</td>";
 
-            for (var j = 2; j < fpData.length; j++) {
-                tds = tds + "<td>" + fpData[j] + "</td>";
+            for (var j = 3; j < fpRssData.length; j++) {
+                tds = tds + "<td>" + fpRssData[j] + "</td>";
             }
 
             if (i == 0) { // first line must be highlighted
@@ -533,6 +608,17 @@
 
     }
 
+    function highlightLoc() {
+        locName = $('#loc-name').val();
+        tblLocs = $("#rss-details-tbl tr td:first-child");
+        tblLocs.each(function (index) {
+            $(this).parent().removeClass("highlight-tbl-line");
+            if (locName == $(this).text()) {
+                $(this).parent().addClass("highlight-tbl-line");
+            }
+        });
+
+    }
     function timestamp2FormatedTime(timestamp) {
         return new Date(timestamp * 1e3).toISOString().slice(-13, -5);
         // var date = new Date(timestamp * 1e3);
