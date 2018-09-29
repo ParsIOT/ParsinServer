@@ -839,7 +839,7 @@ func PutMaxMovement(c *gin.Context) {
 		MaxMovement, err := strconv.ParseFloat(MaxMovementStr, 64)
 		if err == nil {
 			if MaxMovement == float64(-1) {
-				MaxMovement = glb.MaxMovement
+				MaxMovement = glb.DefaultMaxMovement
 			}
 			err2 := dbm.SetSharedPrf(group, "MaxMovement", MaxMovement)
 			if err2 == nil {
@@ -853,6 +853,43 @@ func PutMaxMovement(c *gin.Context) {
 		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
+	}
+}
+
+func PutMaxEuclideanRssDist(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	MaxEuclideanRssDistStr := c.DefaultQuery("maxEuclideanRssDist", "none")
+
+	glb.Debug.Println(groupName)
+	glb.Debug.Println(MaxEuclideanRssDistStr)
+
+	if groupName != "none" && MaxEuclideanRssDistStr != "none" {
+		MaxEuclideanRssDist, err := strconv.Atoi(MaxEuclideanRssDistStr)
+		if err == nil {
+			if MaxEuclideanRssDist == -1 {
+				MaxEuclideanRssDist = glb.DefaultMaxEuclideanRssDist
+			}
+
+			cd := dbm.GM.GetGroup(groupName).Get_ConfigData()
+			knnParams := cd.Get_KnnParameters()
+			knnParams.MaxEuclideanRssDist = MaxEuclideanRssDist
+			cd.Set_KnnParameters(knnParams)
+
+			c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding MaxEuclideanRssDist for " + groupName + ", now set to " + MaxEuclideanRssDistStr})
+
+		} else {
+			glb.Error.Println(err.Error())
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or maxEuclideanRssDist isn't given"})
 	}
 }
 
@@ -873,7 +910,7 @@ func ChooseMap(c *gin.Context) {
 		//MaxMovement, err := strconv.ParseFloat(MaxMovementStr, 64)
 		//if err == nil {
 		//	if MaxMovement == float64(-1) {
-		//		MaxMovement = glb.MaxMovement
+		//		MaxMovement = glb.DefaultMaxMovement
 		//	}
 		mapNamesList := glb.ListMaps()
 		MapWidth := mapNamesList[mapName][0]

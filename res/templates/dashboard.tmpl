@@ -245,6 +245,8 @@
                     bestMinClusterRss:{{ $.bestMinClusterRss }}
                     <br>
                     MaxMovement: {{ $.maxMovement}}
+                    <br>
+                    MaxEuclideanRssDist: {{$.maxEuclideanRssDist}} [ble:30,wifi=50]
                 </div>
             </div>
         </div>
@@ -293,9 +295,10 @@
                         </button>
                     </div>
                     <div class="col-sm-2 col-xs-6">
-                        <button type="submit" class="btn btn-warning btn-block" id="setMinRss" title="Set K for KNN.">
+                        <button type="submit" class="btn btn-warning btn-block" id="setMaxEuclideanRssDist"
+                                title="Set Max Euclidean Rss Distance">
                             Set
-                            Min RSS
+                            MaxEuclideanRssDist
                         </button>
                     </div>
                 </div>
@@ -1232,10 +1235,10 @@
                 });
     });
 
-    $('#setMinRss').click(function () {
+    $('#setMaxEuclideanRssDist').click(function () {
         swal({
-                    title: "Set Minimum RSS",
-                    text: "Enter the new Minimum RSS filter:",
+                    title: "Set Max Euclidean Rss Dist",
+                    text: "Enter the new Max Euclidean Rss Dist (BLE:30,WiFi:50):",
                     type: "input",
                     showCancelButton: true,
                     closeOnConfirm: false,
@@ -1249,7 +1252,7 @@
                     }
 
                     $.ajax({
-                        url: "/minrss?group={{ .Group }}&minRss=" + inputValue,
+                        url: "/SetMaxEuclideanRssDist?group={{ .Group }}&maxEuclideanRssDist=" + inputValue,
                         type: "PUT",
                         success: function (data) {
                             console.log(data);

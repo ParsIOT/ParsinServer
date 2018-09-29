@@ -38,12 +38,12 @@ var DefaultMapHeight int
 
 var CalculateTestError bool
 
-var MaxMovement float64
+var DefaultMaxMovement float64
 
 var PDREnabledForDynamicSubareaMethod bool
 
 var GraphEnabled bool
-var MaxEuclideanRssVectorDist float64
+var DefaultMaxEuclideanRssDist int
 
 var FastLearn bool //ignore some crossvalidation calculation(rss regulating & get rss avg of adjacency dots) to learn fast
 
@@ -57,7 +57,7 @@ func init() {
 	MinApNum = 1
 	MinRssi = -110
 	MaxRssi = 5
-	MaxEuclideanRssVectorDist = 30
+	DefaultMaxEuclideanRssDist = 30 //=ble, 50=wifi
 	ProgressBarLength = 0
 	ProgressBarCurLevel = 0
 	DefaultKnnKRange = []int{25, 26}         //{10,30}
@@ -69,7 +69,7 @@ func init() {
 	UserHistoryEffectFactors = []float64{0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.5, 0.7, 0.8, 1}
 	UserHistoryGaussVariance = 0.15
 	UserHistoryTimeDelayFactor = 10000
-	MaxMovement = float64(10000)
+	DefaultMaxMovement = float64(10000)
 
 	PreprocessOutlinePercent = float64(0.333) // third part of fingerprints are considered as outline
 	NormalRssDev = 5
@@ -81,7 +81,7 @@ func init() {
 	DefaultMapHeight = 3400
 	DefaultMapWidth = 3600
 	CalculateTestError = true
-	GraphEnabled = true
+	GraphEnabled = false
 	PDREnabledForDynamicSubareaMethod = false
 
 	FastLearn = false

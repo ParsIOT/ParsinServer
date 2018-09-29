@@ -186,6 +186,7 @@ func SlashDashboard(c *gin.Context) {
 	bestK := knnHyperParams.K
 	bestMinClusterRss := knnHyperParams.MinClusterRss
 	maxMovement := dbm.GetSharedPrf(groupName).MaxMovement
+	maxEuclideanRssDist := gp.Get_ConfigData().Get_KnnParameters().MaxEuclideanRssDist
 
 	for n := range md.NetworkLocs {
 		//dash.Mixin[n] = gp.Get_Priors()[n].Special["MixIn"]
@@ -213,16 +214,17 @@ func SlashDashboard(c *gin.Context) {
 	//glb.Debug.Println(dash)
 	mapNamesList := glb.ListMaps()
 	c.HTML(http.StatusOK, "dashboard.tmpl", gin.H{
-		"Message":           glb.RuntimeArgs.Message,
-		"Group":             groupName,
-		"Dash":              dash,
-		"Users":             people,
-		"kRange":            kRange,
-		"knnMinCRssRange":   knnMinCRssRange,
-		"bestK":             bestK,
-		"bestMinClusterRss": bestMinClusterRss,
-		"maxMovement":       maxMovement,
-		"mapNamesList":		 mapNamesList,
+		"Message":             glb.RuntimeArgs.Message,
+		"Group":               groupName,
+		"Dash":                dash,
+		"Users":               people,
+		"kRange":              kRange,
+		"knnMinCRssRange":     knnMinCRssRange,
+		"bestK":               bestK,
+		"bestMinClusterRss":   bestMinClusterRss,
+		"maxMovement":         maxMovement,
+		"maxEuclideanRssDist": maxEuclideanRssDist,
+		"mapNamesList":        mapNamesList,
 	})
 }
 

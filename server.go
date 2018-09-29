@@ -346,6 +346,8 @@ func main() {
 			needToLoadSettings.PUT("/SetKnnMinClusterRSSRange", routes.PutKnnMinClusterRSSRange)
 			needToLoadSettings.PUT("/SetMaxMovement", routes.PutMaxMovement)
 			needToLoadSettings.PUT("/minrss", routes.PutMinRss)
+			needToLoadSettings.PUT("/SetMaxEuclideanRssDist", routes.PutMaxEuclideanRssDist)
+
 			needToLoadSettings.GET("/lastfingerprint", routes.GetLastFingerprint)
 			needToLoadSettings.GET("/reformdb", routes.ReformDB)
 			needToLoadSettings.GET("/macfilterform/:group", routes.Macfilterform)

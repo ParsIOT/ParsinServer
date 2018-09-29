@@ -13,6 +13,18 @@ import "ParsinServer/glb"
 //	NetworkRenamed map[string][]string // key:networkName, value:mac list; e.g.: {"1":["mac1","mac2"]}
 //}
 
+// Constant parameters that set manually are in KnnParameters
+type KnnParameters struct {
+	MaxEuclideanRssDist int
+}
+
+func NewKnnParameters() KnnParameters {
+	return KnnParameters{
+		MaxEuclideanRssDist: glb.DefaultMaxEuclideanRssDist,
+	}
+}
+
+// Constant parameters that set by cross-validation are in KnnHyperParameters
 type KnnHyperParameters struct {
 	K             int `json:"K"`
 	MinClusterRss int `json:"MinClusterRss"`

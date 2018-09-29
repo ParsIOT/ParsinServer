@@ -17,7 +17,7 @@ var minkowskyQ float64
 var maxrssInNormal, minrssInNormal float64
 //var topRssList []int
 var distAlgo string
-
+var MaxEuclideanRssDist int
 var uniqueMacs []string
 //var ValidKs []int = defaultValidKs()
 //var ValidMinClusterRSSs []int = defaultValidMinClusterRSSs()
@@ -195,6 +195,9 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	//node2FPs = tempKnnFingerprints.Node2FPs
 	node2FPs = tempKnnFingerprints.Node2FPs
 	uniqueMacs = gp.Get_MiddleData().Get_UniqueMacs()
+
+	knnParams := gp.Get_ConfigData().Get_KnnParameters()
+	MaxEuclideanRssDist = knnParams.MaxEuclideanRssDist
 	//tempList := []string{}
 	//tempList = append(tempList,mainFingerprintsOrdering...)
 	//sort.Sort(sort.StringSlice(tempList))
@@ -577,7 +580,7 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 				//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
 				//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
 			} else if glb.StringInSlice(curMac, uniqueMacs) {
-				distance = distance + math.Pow(float64(glb.MaxEuclideanRssVectorDist), minkowskyQ)
+				distance = distance + math.Pow(float64(MaxEuclideanRssDist), minkowskyQ)
 				length++
 				//distance = distance + 9
 				//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)
@@ -621,7 +624,7 @@ func calcWeight1(id int, jobs <-chan jobW, results chan<- resultW) {
 				//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
 				//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
 			} else if glb.StringInSlice(curMac, uniqueMacs) {
-				distance = distance + math.Pow(float64(glb.MaxEuclideanRssVectorDist), minkowskyQ)
+				distance = distance + math.Pow(float64(MaxEuclideanRssDist), minkowskyQ)
 				length++
 				//distance = distance + 9
 				//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)

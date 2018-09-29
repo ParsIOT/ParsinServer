@@ -1616,8 +1616,8 @@ func easyjson3b8810b5DecodeParsinServerDbm5(in *jlexer.Lexer, out *ConfigDataStr
 			continue
 		}
 		switch key {
-		case "Test":
-			out.Test = int(in.Int())
+		case "KnnParameters":
+			(out.KnnParameters).UnmarshalEasyJSON(in)
 		case "GroupGraph":
 			(out.GroupGraph).UnmarshalEasyJSON(in)
 		default:
@@ -1635,14 +1635,14 @@ func easyjson3b8810b5EncodeParsinServerDbm5(out *jwriter.Writer, in ConfigDataSt
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"Test\":"
+		const prefix string = ",\"KnnParameters\":"
 		if first {
 			first = false
 			out.RawString(prefix[1:])
 		} else {
 			out.RawString(prefix)
 		}
-		out.Int(int(in.Test))
+		(in.KnnParameters).MarshalEasyJSON(out)
 	}
 	{
 		const prefix string = ",\"GroupGraph\":"

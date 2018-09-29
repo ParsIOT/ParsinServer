@@ -993,12 +993,14 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 			}
 
 			distance := float64(0)
+			knnParams := gp.Get_ConfigData().Get_KnnParameters()
+			MaxEuclideanRssDist := knnParams.MaxEuclideanRssDist
 
 			for mainMac, mainRssi := range mac2RssMain {
 				if fpRss, ok := mac2Rss[mainMac]; ok {
 					distance = distance + math.Pow(float64(mainRssi-fpRss), 2)
 				} else {
-					distance = distance + math.Pow(float64(glb.MaxEuclideanRssVectorDist), 2)
+					distance = distance + math.Pow(float64(MaxEuclideanRssDist), 2)
 				}
 			}
 			distance = distance / float64(len(mac2RssMain))
