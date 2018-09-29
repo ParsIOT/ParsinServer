@@ -42,7 +42,7 @@ var MaxEuclideanRssVectorDist float64
 func init() {
 	DefaultMixin = float64(0.1)
 	DefaultCutoff = float64(0.01)
-	MinApNum = 1
+	MinApNum = 2
 	MinRssi = -110
 	MaxRssi = 5
 	MaxEuclideanRssVectorDist = 50

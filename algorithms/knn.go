@@ -12,10 +12,9 @@ import (
 	"sort"
 )
 
-
 var knn_regression bool
 var minkowskyQ float64
-var maxrssInNormal,minrssInNormal float64
+var maxrssInNormal, minrssInNormal float64
 //var topRssList []int
 var distAlgo string
 
@@ -60,9 +59,7 @@ type jobW struct {
 	mac2RssFP  map[string]int
 }
 
-
-
-func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []interface{}) (parameters.KnnFingerprints,error) {
+func LearnKnn(md *dbm.MiddleDataStruct, rd dbm.RawDataStruct, hyperParameters []interface{}) (parameters.KnnFingerprints, error) {
 	//Debug.Println(Cosine([]float64{1,2,3},[]float64{1,2,4}))
 	//jsonFingerprint = calcMacRate(jsonFingerprint,false)
 	//K := hyperParameters[0].(int)
@@ -92,10 +89,10 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//	return err
 	//}
 
-	for fpTime,fp := range fingerprints {
-		for _,rt := range fp.WifiFingerprint{ //rt ==> Router = mac + RSS of an Access Point
-			if (rt.Rssi >= MinClusterRSS){
-				clusters[rt.Mac] = append(clusters[rt.Mac],fpTime)
+	for fpTime, fp := range fingerprints {
+		for _, rt := range fp.WifiFingerprint { //rt ==> Router = mac + RSS of an Access Point
+			if (rt.Rssi >= MinClusterRSS) {
+				clusters[rt.Mac] = append(clusters[rt.Mac], fpTime)
 			}
 		}
 	}
@@ -126,7 +123,7 @@ func LearnKnn(md *dbm.MiddleDataStruct,rd dbm.RawDataStruct,hyperParameters []in
 	//
 	//// Set in cache
 	//go dbm.SetKnnFPCache(groupName,tempKnnFingerprints)
-	return tempKnnFingerprints,nil
+	return tempKnnFingerprints, nil
 }
 func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsidered bool) (error, string, map[string]float64) {
 
@@ -138,7 +135,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
 	var mainFingerprintsOrdering []string
 	var fingerprintsOrdering []string
-	clusters := make(map[string][]string)
+	//clusters := make(map[string][]string)
 	//
 	//tempKnnFingerprints, ok := dbm.GetKnnFPCache(curFingerprint.Group)
 	//if ok {
@@ -167,7 +164,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	//tempKnnFingerprints := dbm.GM.GetGroup(curFingerprint.Group).Get_AlgoData().Get_KnnFPs()
 	fingerprintsInMemory = tempKnnFingerprints.FingerprintsInMemory
 	mainFingerprintsOrdering = tempKnnFingerprints.FingerprintsOrdering
-	clusters = tempKnnFingerprints.Clusters
+	//clusters = tempKnnFingerprints.Clusters
 
 	//tempList := []string{}
 	//tempList = append(tempList,mainFingerprintsOrdering...)
@@ -200,18 +197,17 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	//		}
 	//}
 
-
 	// fingerprintOrdering Creation according to clusters and rss rates
 	highRateRssExist := false // komeil: a variable to decide if it is needed to search all fingerprints instead of one or some clusters
-	for _, rt := range curFingerprint.WifiFingerprint {
-		if(rt.Rssi>=tempKnnFingerprints.MinClusterRss){
-			if cluster, ok := clusters[rt.Mac]; ok {
-				highRateRssExist = true
-				fingerprintsOrdering = append(fingerprintsOrdering,cluster...)
+	/*	for _, rt := range curFingerprint.WifiFingerprint {
+			if (rt.Rssi >= tempKnnFingerprints.MinClusterRss) {
+				if cluster, ok := clusters[rt.Mac]; ok {
+					highRateRssExist = true
+					fingerprintsOrdering = append(fingerprintsOrdering, cluster...)
+				}
 			}
-		}
-	}
-	if (!highRateRssExist){
+		}*/
+	if (!highRateRssExist) {
 		fingerprintsOrdering = mainFingerprintsOrdering
 	}
 
@@ -288,7 +284,6 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	//	glb.Error.Println("Nums of AP must be greater than 3")
 	//}
 
-
 	knnK := tempKnnFingerprints.K
 
 	//knnK := dbm.GetSharedPrf(curFingerprint.Group).KnnK
@@ -296,19 +291,18 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	// calculating knn
 	W := make(map[string]float64)
 
-
 	//var wgKnn sync.WaitGroup
 
 	numJobs := len(fingerprintsOrdering)
 	runtime.GOMAXPROCS(glb.MaxParallelism())
 	chanJobs := make(chan jobW, 1+numJobs)
 	chanResults := make(chan resultW, 1+numJobs)
-	if(distAlgo=="Euclidean"){
+	if (distAlgo == "Euclidean") {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			//wgKnn.Add(1)
 			go calcWeight(id, chanJobs, chanResults)
 		}
-	}else if(distAlgo=="Cosine"){
+	} else if (distAlgo == "Cosine") {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			go calcWeightCosine(id, chanJobs, chanResults)
 		}
@@ -321,7 +315,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		if (len(fp.WifiFingerprint) < glb.MinApNum) { // todo:
 			numJobs -= 1
 			continue
-		}else{
+		} else {
 			NumofMinAPNum++
 		}
 		//Debug.Println(fp.WifiFingerprint)
@@ -330,7 +324,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 		chanJobs <- jobW{fpTime: fpTime,
 			mac2RssCur: mac2RssCur,
-			mac2RssFP: mac2RssFP}
+			mac2RssFP:  mac2RssFP}
 
 	}
 
@@ -361,9 +355,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	currentX = 0
 	currentY = 0
 
-
 	if NumofMinAPNum == 0 {
-		glb.Error.Println("There is no fingerprint that its number of APs be more than ",glb.MinApNum,"MinApNum")
+		glb.Error.Println("There is no fingerprint that its number of APs be more than ", glb.MinApNum, "MinApNum")
 		return errors.New("NumofAP_lowerThan_MinApNum"), ",", nil
 	}
 
@@ -422,8 +415,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				}
 				locXstr := x_y[0]
 				locYstr := x_y[1]
-				locX, _ := strconv.ParseFloat(locXstr,64)
-				locY, _ := strconv.ParseFloat(locYstr,64)
+				locX, _ := strconv.ParseFloat(locXstr, 64)
+				locY, _ := strconv.ParseFloat(locYstr, 64)
 				locX = glb.Round(locX, 5)
 				locY = glb.Round(locY, 5)
 				//currentX = currentX + int(W[fpTime]*locX)
@@ -546,14 +539,14 @@ func calcWeightCosine(id int, jobs <-chan jobW, results chan<- resultW) {
 		for curMac, curRssi := range job.mac2RssCur {
 			if fpRss, ok := job.mac2RssFP[curMac]; ok {
 				//distance = distance + math.Pow(float64(curRssi-fpRss), minkowskyQ)
-				a = append(a,norm2zeroToOne(float64(curRssi)))
-				b = append(b,norm2zeroToOne(float64(fpRss)))
+				a = append(a, norm2zeroToOne(float64(curRssi)))
+				b = append(b, norm2zeroToOne(float64(fpRss)))
 				//a1 = append(a1,(float64(curRssi)))
 				//b1 = append(b1,(float64(fpRss)))
 			} else {
 				//distance = distance + maxDist
-				a = append(a,norm2zeroToOne(float64(curRssi)))
-				b = append(b,norm2zeroToOne(float64(glb.MinRssi)))
+				a = append(a, norm2zeroToOne(float64(curRssi)))
+				b = append(b, norm2zeroToOne(float64(glb.MinRssi)))
 				//a1 = append(a1,(float64(curRssi)))
 				//b1 = append(b1,(float64(MinRssi)))
 			}
@@ -566,7 +559,7 @@ func calcWeightCosine(id int, jobs <-chan jobW, results chan<- resultW) {
 		//Debug.Println(a1)
 		//Debug.Println(b)
 		//Debug.Println(b1)
-		weight,err := Cosine(a,b)
+		weight, err := Cosine(a, b)
 		//Debug.Println(weight)
 
 		//
@@ -577,7 +570,7 @@ func calcWeightCosine(id int, jobs <-chan jobW, results chan<- resultW) {
 		//Debug.Println(savedCosine)
 		//Debug.Println(weight)
 
-		if err!=nil{
+		if err != nil {
 			glb.Error.Println(err)
 		}
 		//Debug.Println("weight: ",weight)
@@ -585,7 +578,6 @@ func calcWeightCosine(id int, jobs <-chan jobW, results chan<- resultW) {
 			weight: weight}
 	}
 }
-
 
 func getMac2Rss(routeList []parameters.Router) map[string]int {
 	mac2Rss := make(map[string]int)
@@ -679,7 +671,7 @@ func Cosine(a []float64, b []float64) (cosine float64, err error) {
 }
 
 func norm2zeroToOne(x float64) float64 {
-	a := 1.0 / (minrssInNormal-maxrssInNormal)
+	a := 1.0 / (minrssInNormal - maxrssInNormal)
 	b := -1 * maxrssInNormal * a
 	x = x*a + b
 	return x

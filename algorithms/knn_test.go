@@ -3,21 +3,27 @@ package algorithms
 import (
 	"testing"
 	"ParsinServer/dbm/parameters"
-	"ParsinServer/dbm"
-	"ParsinServer/glb"
-	"github.com/stretchr/testify/assert"
+	"fmt"
+	"time"
 )
 
-func TestTrackKnn(t *testing.T){
-	gp := dbm.GM.GetGroup("arman_20_7_96_ble_2")
+func elapsed(what string) func() {
+	start := time.Now()
+	return func() {
+		fmt.Printf("%s took %v\n", what, time.Since(start))
+	}
+}
+
+func TestTrackKnn(t *testing.T) {
+	//gp := dbm.GM.GetGroup("arman_20_7_96_ble_2")
 
 	//glb.Debug.Println(len(fingerprintsInMemory1))
-
+	defer elapsed("test ddf")
 	fp := parameters.Fingerprint{
-		Group:           "arman_20_7_96_ble_2",
-		Username:        "hadi",
-		Location:        "-12.000000,1412.000000",
-		Timestamp:       1507803686841705438,
+		Group:     "arman_20_7_96_ble_2",
+		Username:  "hadi",
+		Location:  "-12.000000,1412.000000",
+		Timestamp: 1507803686841705438,
 		WifiFingerprint: []parameters.Router{
 
 			parameters.Router{
@@ -29,12 +35,12 @@ func TestTrackKnn(t *testing.T){
 				Rssi: -87,
 			},
 			parameters.Router{
-			Mac:  "01:17:C5:97:1B:44",
-			Rssi: -84,
+				Mac:  "01:17:C5:97:1B:44",
+				Rssi: -84,
 			},
 			parameters.Router{
-			Mac:  "01:17:C5:97:E7:B3",
-			Rssi: -92,
+				Mac:  "01:17:C5:97:E7:B3",
+				Rssi: -92,
 			},
 			parameters.Router{
 				Mac:  "01:17:C5:97:5B:1D",
@@ -54,16 +60,29 @@ func TestTrackKnn(t *testing.T){
 			},
 		},
 	}
-	for i:=0;i<10000;i++{
+	fpTemp := fp
+	fpTemp.WifiFingerprint = nil
+	for i := 0; i < len(fp.WifiFingerprint)-1; i++ {
+		currRouter := fp.WifiFingerprint[i]
+		for j := i + 1; j < len(fp.WifiFingerprint); j++ {
+			var r parameters.Router
+			nextRouter := fp.WifiFingerprint[j]
+			r.Mac = fmt.Sprintf("%v#%v", currRouter.Mac, nextRouter.Mac)
+			r.Rssi = currRouter.Rssi - nextRouter.Rssi
+			fpTemp.WifiFingerprint = append(fpTemp.WifiFingerprint, r)
+		}
+
+	}
+	fmt.Println(len(fp.WifiFingerprint))
+	fmt.Println(len(fpTemp.WifiFingerprint))
+/*	for i := 0; i < 10000; i++ {
 		_, resultDot, _ := TrackKnn(gp, fp, false)
 
-		if (resultDot != "-12.000004,1411.999993"){
+		if (resultDot != "-12.000004,1411.999993") {
 
 			glb.Debug.Println(resultDot)
 			assert.Equal(t, resultDot, "-12.000004,1411.999993")
 		}
 	}
-
-
-
+*/
 }
