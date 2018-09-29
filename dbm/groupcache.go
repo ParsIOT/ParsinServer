@@ -1856,6 +1856,13 @@ func (rs *ResultDataStruct) Get_AllUserResults() map[string][]parameters.UserPos
 	rs.RUnlock()
 	return results
 }
+func (rs *ResultDataStruct) Set_AllUserResults(new_item map[string][]parameters.UserPositionJSON) {
+	defer rs.SetDirtyBit()
+
+	rs.Lock()
+	rs.UserResults = new_item
+	rs.Unlock()
+}
 func (rs *ResultDataStruct) Clear_UserResults(user string) error {
 	defer rs.SetDirtyBit()
 

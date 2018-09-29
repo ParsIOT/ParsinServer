@@ -81,7 +81,7 @@ func init() {
 	DefaultMapHeight = 3400
 	DefaultMapWidth = 3600
 	CalculateTestError = true
-	GraphEnabled = false
+	GraphEnabled = true
 	PDREnabledForDynamicSubareaMethod = false
 
 	FastLearn = false

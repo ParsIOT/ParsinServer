@@ -388,7 +388,7 @@ func main() {
 	r.GET("/getArbitLocations", routes.GetArbitLocations)
 	r.DELETE("/delresults", routes.DelResults)
 	r.GET("/location", routes.GetUserLocations)
-	r.GET("/getTestValidTracks", routes.GetTestValidTracks)
+	r.GET("/getTestValidTracks", routes.GetTestValidTracks) // deprecated
 	r.GET("/getTestValidTracksDetails", routes.GetTestValidTracksDetails)
 	r.DELETE("/delTestValidTracks", routes.DelTestValidTracks)
 	r.GET("/calculateErrorByTrueLocation", routes.CalculateErrorByTrueLocation)

@@ -521,20 +521,50 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	repredictStr := strings.ToLower(c.DefaultQuery("repredict", "none"))
 
-	if groupName != "none" {
+	if groupName != "none" && repredictStr != "none" {
 		if !dbm.GroupExists(groupName) {
 			glb.Error.Println("Group doesn't exist")
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist"})
 			return
 		}
-
-		err, details := dbm.CalculateTestError(groupName)
-		if err != nil {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		repredict := false
+		if repredictStr == "true" {
+			repredict = true
+		} else if repredictStr == "false" {
+			repredict = false
 		} else {
-			glb.Debug.Println(details)
-			c.JSON(http.StatusOK, gin.H{"success": true, "details": details})
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "repredict must be true or false"})
+			return
+		}
+		gp := dbm.GM.GetGroup(groupName)
+		rsd := gp.Get_ResultData()
+		testValidTracks := rsd.Get_TestValidTracks()
+		if len(testValidTracks) != 0 {
+			if repredict {
+				glb.Debug.Println("Repredicting test-valid tracks")
+				gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
+
+				// Repredict test-valid FPs
+				for i, testValidTrack := range testValidTracks {
+					fp := testValidTrack.UserPosition.Fingerprint
+					//glb.Error.Println("Fp:",fp)
+					newUserPositiong := algorithms.RecalculateTrackFingerprint(fp)
+					//glb.Debug.Println(newUserPositiong)
+					testValidTracks[i].UserPosition = newUserPositiong
+				}
+			}
+			err, details, testValidTracks := dbm.CalculateTestError(groupName, testValidTracks)
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			} else {
+				glb.Debug.Println(details)
+				c.JSON(http.StatusOK, gin.H{"success": true, "details": details, "testvalidtracks": testValidTracks})
+			}
+		} else {
+			glb.Error.Println("empty TestValidTracks")
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Empty TestValidTracks"})
 		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group isn't given"})

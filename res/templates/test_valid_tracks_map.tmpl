@@ -40,7 +40,11 @@
 
 	<link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
 
-	<!-- Font Awesome CSS -->
+    <link href="/static/css/plugins/loading-indicator/ladda.css" rel="stylesheet">
+    <script src="/static/js/plugins/loading-indicator/spin.js"></script>
+    <script src="/static/js/plugins/loading-indicator/ladda.js"></script>
+
+    <!-- Font Awesome CSS -->
 	<link rel="stylesheet" href="/static/css/font-awesome.min.css">
 	<style>
 		#live-map {
@@ -94,11 +98,21 @@
 								Error Calculation</h4></a>
 							<div id="error-calculation" class="collapse in">
 								<div class="col-md-12">
-									<div class="form-group">
-										<button onclick="calculateErrorByTrueLocation()"
+                                    <div class="form-group">
+                                        <label><input id="repredict_check" type="checkbox">Repredict test-valid
+                                            track locations</label>
+                                    </div>
+                                    <div class="form-group">
+                                    {{/*	<button onclick="calculateErrorByTrueLocation()"
 										        class="btn btn-success btn-sm btn-block">
 											Calculate Error
-										</button>
+										</button>*/}}
+                                        <button onclick="calculateErrorByTrueLocation()"
+                                                id="calc_err_by_true_loc_button"
+                                                class="ladda-button btn btn-info btn-sm btn-block " data-color="blue"
+                                                data-size="xs" data-style="zoom-out">
+                                            Calculate Error
+                                        </button>
 									</div>
 								</div>
 								<div class="col-md-12">
@@ -147,14 +161,15 @@
 							<div id="test-valid-tracks" class="collapse">
 								<div class="col-md-6">
 									<div class="form-group">
-										<button onclick="testValidTrackMap()" class="btn btn-success btn-sm btn-block">
-											Get
+                                        <button onclick="ReloadTestValidTrackMap()"
+                                                class="btn btn-success btn-sm btn-block">
+                                            Show
 										</button>
 									</div>
 								</div>
 								<div class="col-md-6">
 									<div class="form-group">
-										<button onclick="clearHistory()" class="btn btn-warning btn-sm btn-block">Clear
+                                        <button onclick="clearBoard()" class="btn btn-warning btn-sm btn-block">Clear
 										</button>
 									</div>
 								</div>
@@ -225,10 +240,13 @@
 	var guessMarkers = {};
 	var guessMarkersLoc = {};
 	var toggleGuessMarkers = true;
+    var testValidTracks = {};
 
 	var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
+    var calculateErrorByTrueLocationButton = Ladda.create(document.querySelector('#calc_err_by_true_loc_button'));
 
-	var algoList = ["KNN", "Bayes", "SVM"];
+
+    var algoList = ["KNN", "Bayes", "SVM"];
 	var algoGuessLocations = {};
 	algoList.forEach(function (value) {
 		$('#algo-list').append("<option value=" + value + ">" + value + "</option>");
@@ -258,24 +276,23 @@
 		line.addTo(lineLayer);
 	}
 
-	function UpdateTestValidTrackMap() {
+    function ShowTestValidTrackMap() {
 		var items = [];
 		var locations = [];
 		algoList.forEach(function (value) {
 			algoGuessLocations[value] = [];
 		});
 
-		$.getJSON("/getTestValidTracks?group={{ .Group }}", function (data) {
+    {{/*$.getJSON("/getTestValidTracks?group={{ .Group }}", function (data) {*/}}
 			// console.log(data)
-			if (data.testvalidtracks.length == 0) {
-				iziToast.error({
-					title: "Error",
-					message: "Error calculation didn't work properly or there aren't any test-valid tracks",
-				});
-			} else {
-
-
-				$.each(data.testvalidtracks, function (key, val) {
+        /*		if (data.testValidTracks.length == 0) {
+                    iziToast.error({
+                        title: "Error",
+                        message: "Error calculation didn't work properly or there aren't any test-valid tracks",
+                    });
+                } else {
+    */
+        $.each(testValidTracks, function (key, val) {
 					// console.log(val.truelocation)
 
 					let trueloc = pattern.exec(val.truelocation);
@@ -304,24 +321,24 @@
 
 
 				$("#true-location-table").find("tbody").remove();
-				console.log(items);
+        // console.log(items);
 				$("<tbody/>", {
 					"class": "tab-content",
 					html: items.join("")
 				}).appendTo("#true-location-table");
 				$("#show-details-link").find("a").remove();//remove show rss details link
-				$("<a/>", {
-					"target": "_blank",
-					"onclick": "window.open('" + "/getTestValidTracks?group={{ .Group }}','pagename','resizable,height=420,width=1000'); return false;",
+        /*$("<a/>", {
+            "target": "_blank",
+            "onclick": "window.open('" + "/getTestValidTracks?group={{ .Group }}','pagename','resizable,height=420,width=1000'); return false;",
 					html: "See TestValidTracks details"
-				}).appendTo("#show-details-link");
-			}
-		});
-	}
+				}).appendTo("#show-details-link");*/
+        // }
+        // });
+    }
 
-	function testValidTrackMap() {
-		clearHistory();
-		UpdateTestValidTrackMap();
+    function ReloadTestValidTrackMap() {
+        clearBoard();
+        ShowTestValidTrackMap();
 	}
 
 	function seeGuessResults() {
@@ -331,7 +348,7 @@
 			algoGuessLocations[selected].forEach(function (element) {
 				trueloc = element[0];
 				knnloc = element[1];
-				console.log(element);
+                // console.log(element);
 				if (trueloc && trueloc[1] && trueloc[2]) {
 					createGuessLocMarker(trueloc, knnloc);
 					Line([trueloc[1], trueloc[2]], [knnloc[1], knnloc[2]], 'red');
@@ -350,7 +367,7 @@
 		toggleGuessMarkers = !toggleGuessMarkers;
 	}
 
-	function clearHistory() {
+    function clearBoard() {
 		for (var marker in trueLocMarkers) {
 			map.removeLayer(trueLocMarkers[marker]);
 		}
@@ -410,9 +427,12 @@
 	});
 
 	function calculateErrorByTrueLocation() {
+        calculateErrorByTrueLocationButton.toggle();
 
-		$.getJSON("/calculateErrorByTrueLocation?group={{ .Group }}", function (data) {
+        $.getJSON("/calculateErrorByTrueLocation?group={{ .Group }}&repredict=" + ($('#repredict_check').is(":checked") ? "true" : "false"), function (data) {
 			if (data.success == true) {
+
+                testValidTracks = data.testvalidtracks;
 				// Getting each algorithm Error
 				$.getJSON("/getTestErrorAlgoAccuracy?group={{ .Group }}", function (data) {
 					if (data.success == true) {
@@ -464,7 +484,8 @@
 					message: data.message,
 				});
 			}
-		});
+            calculateErrorByTrueLocationButton.toggle();
+        });
 	}
 
 
@@ -491,6 +512,7 @@
 							console.log(data)
 							if (data['success']) {
 								swal("Deleted!", data['message'], "success");
+                                testValidTracks = {};
 								location.reload()
 							} else {
 								swal("Something went wrong.", data['message'], "error");

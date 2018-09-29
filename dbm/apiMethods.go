@@ -1,20 +1,20 @@
 package dbm
 
 import (
-	"strconv"
-	"time"
-	"fmt"
-	"github.com/boltdb/bolt"
-	"strings"
-	"path"
-	"ParsinServer/glb"
 	"ParsinServer/dbm/parameters"
+	"ParsinServer/glb"
+	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/boltdb/bolt"
 	"math"
-	"sort"
 	"os"
-	"bufio"
+	"path"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func TrackFingerprintsEmptyPosition(group string) (map[string]parameters.UserPositionJSON, map[string]parameters.Fingerprint, error) {
@@ -799,23 +799,43 @@ func DeleteUser(user string, group string) int {
 
 }
 
-func ReformDBDB(group string) int {
+func ReformDBDB(groupName string) int {
 	toUpdate := make(map[string]string)
 	numChanges := 0
 
-	_, fingerprintInMemory, err := GetLearnFingerPrints(group, false)
+	gp := GM.GetGroup(groupName)
+	rsd := gp.Get_ResultData()
+
+	// rename group name in testvalid tracks
+	testVallidTracks := rsd.Get_TestValidTracks()
+	for i, _ := range testVallidTracks {
+		testVallidTracks[i].UserPosition.Fingerprint.Group = groupName
+	}
+	rsd.Set_TestValidTracks(testVallidTracks)
+
+	// rename group name in user results
+	userResults := rsd.Get_AllUserResults()
+	for user, results := range userResults {
+		for i, _ := range results {
+			results[i].Fingerprint.Group = groupName
+		}
+		userResults[user] = results
+	}
+	rsd.Set_AllUserResults(userResults)
+
+	_, fingerprintInMemory, err := GetLearnFingerPrints(groupName, false)
 	//glb.Warning.Println(fingerprintInMemory)
 	if err != nil {
 		return 0
 	}
 	for fpTime, fp := range fingerprintInMemory {
 		tempFp := fp
-		tempFp.Group = group
+		tempFp.Group = groupName
 		tempFp.Location = glb.RoundLocationDim(tempFp.Location)
 		toUpdate[fpTime] = string(parameters.DumpFingerprint(tempFp))
 	}
 
-	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
+	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
 	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
@@ -844,7 +864,7 @@ func ReformDBDB(group string) int {
 			for k, v := c.Last(); k != nil; k, v = c.Prev() {
 				v2 := LoadFingerprint(v, false)
 
-				v2.Group = group
+				v2.Group = groupName
 				toUpdate[string(k)] = string(parameters.DumpFingerprint(v2))
 
 			}
@@ -1276,18 +1296,16 @@ func GetRSSData(groupName string, mac string) [][]int {
 
 }
 
-func CalculateTestError(groupName string) (error, [][]string) { //todo: create a page to show test-valid test fingerprint on map
+func CalculateTestError(groupName string, testValidTracks []parameters.TestValidTrack) (error, [][]string, []parameters.TestValidTrack) { //todo: create a page to show test-valid test fingerprint on map
 	details := [][]string{}
 
 	gp := GM.GetGroup(groupName)
+	rsd := gp.Get_ResultData()
 
 	// Get True Location logs from db
 	allLocationLogs := gp.Get_RawData().Get_TestValidTrueLocations()
 	glb.Debug.Println("TrueLocationLog :", allLocationLogs)
 
-	// Get TestValidTracks from db
-	rsd := gp.Get_ResultData()
-	testValidTracks := rsd.Get_TestValidTracks()
 	tempTestValidTracks := []parameters.TestValidTrack{}
 	//glb.Debug.Println(testValidTracks)
 	AlgoError := make(map[string]float64)
@@ -1295,10 +1313,7 @@ func CalculateTestError(groupName string) (error, [][]string) { //todo: create a
 	AlgoError["knn"] = float64(0)
 	//AlgoError["bayes"] = float64(0)
 	//AlgoError["svm"] = float64(0)
-	if len(testValidTracks) == 0 {
-		glb.Error.Println("empty TestValidTracks")
-		return errors.New("empty TestValidTracks"), [][]string{}
-	}
+
 
 	for _, testValidTrack := range testValidTracks {
 		userPos := testValidTrack.UserPosition
@@ -1328,7 +1343,7 @@ func CalculateTestError(groupName string) (error, [][]string) { //todo: create a
 	}
 
 	// Set new TestValidTracks list that true locations was set
-	rsd.Set_TestValidTracks(tempTestValidTracks)
+	//rsd.Set_TestValidTracks(tempTestValidTracks)
 
 	// Set AlgoTestError Accuracy
 	glb.Debug.Println("Num of test-valid fp:", numValidTestFPs)
@@ -1336,7 +1351,7 @@ func CalculateTestError(groupName string) (error, [][]string) { //todo: create a
 		glb.Debug.Println("TestValid "+algoName+" Error = ", algoError/float64(numValidTestFPs))
 		rsd.Set_AlgoTestErrorAccuracy(algoName, int(algoError/float64(numValidTestFPs)))
 	}
-	return nil, details
+	return nil, details, tempTestValidTracks
 }
 
 func SetTrueLocationFromLog(groupName string, method string) error {
