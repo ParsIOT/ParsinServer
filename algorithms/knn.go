@@ -240,12 +240,12 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		fingerprintsOrdering = mainFingerprintsOrdering
 	}
 
-	FP2A := make(map[string]float64)
-	maxLevel := 3
-	As := []float64{200,100,10,1};
-	minA := float64(1); // assigning zero make errors in other functions
+	FP2AFactor := make(map[string]float64)
+	maxHopLevel := 2
+	adjacencyFactors := []float64{200, 100, 10, 1};
+	minAdjacencyFactor := float64(1); // assigning zero make errors in other functions
 	for _,fpTime := range fingerprintsOrdering{
-		FP2A [fpTime] = minA
+		FP2AFactor [fpTime] = minAdjacencyFactor
 	}
 
 	// History effect:
@@ -285,14 +285,14 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 							//hopFPs := append(hopFPs,node2FPs[node]...)
 							hopFPs := node2FPs[node.Label]
 							for _, fp := range hopFPs {
-								if (i <= maxLevel) {
-									FP2A[fp] = As[i]
+								if (i <= maxHopLevel) {
+									FP2AFactor[fp] = adjacencyFactors[i]
 								}
 							}
 						}
 					}
 
-					//glb.Error.Println(FP2A)
+					//glb.Error.Println(FP2AFactor)
 				}
 
 			} else {
@@ -507,7 +507,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				//glb.Error.Println(currentY)
 				//glb.Error.Println(currentX,"::",currentY)
 				//}
-				curW := W[fpTime] * FP2A[fpTime]
+				curW := W[fpTime] * FP2AFactor[fpTime]
 				//glb.Debug.Println(curW)
 				//curW := W[fpTime]
 				currentX = currentX + int64(curW*locX)
