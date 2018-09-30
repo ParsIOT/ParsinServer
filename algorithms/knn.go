@@ -138,6 +138,7 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 	tempKnnFingerprints.FingerprintsOrdering = fingerprintsOrdering
 	tempKnnFingerprints.Clusters = clusters
 	tempKnnFingerprints.Node2FPs = node2FPs
+	tempKnnFingerprints.HyperParameters = hyperParameters
 	//dbm.GM.GetGroup(groupName).Get_AlgoData().Set_KnnFPs(tempKnnFingerprints)
 
 	//err = dbm.SetKnnFingerprints(tempKnnFingerprints, groupName)
@@ -230,23 +231,29 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	//}
 
 	// fingerprintOrdering Creation according to clusters and rss rates
-	highRateRssExist := false // komeil: a variable to decide if it is needed to search all fingerprints instead of one or some clusters
-	for _, rt := range curFingerprint.WifiFingerprint {
-		if (rt.Rssi >= hyperParams.MinClusterRss) {
-			if cluster, ok := clusters[rt.Mac]; ok {
-				highRateRssExist = true
-				fingerprintsOrdering = append(fingerprintsOrdering, cluster...)
+	if glb.MinRssClustringEnabled {
+		AtleastInOneCluster := false // komeil: a variable to decide if it is needed to search all fingerprints instead of one or some clusters
+		for _, rt := range curFingerprint.WifiFingerprint {
+			if (rt.Rssi >= hyperParams.MinClusterRss) {
+				if cluster, ok := clusters[rt.Mac]; ok {
+					AtleastInOneCluster = true
+					fingerprintsOrdering = append(fingerprintsOrdering, cluster...)
+
+				}
 			}
 		}
-	}
-	if (!highRateRssExist) {
+		if (!AtleastInOneCluster) {
+			fingerprintsOrdering = mainFingerprintsOrdering
+		}
+	} else {
 		fingerprintsOrdering = mainFingerprintsOrdering
 	}
 
+
 	FP2AFactor := make(map[string]float64)
-	maxHopLevel := 2
-	adjacencyFactors := []float64{200, 100, 10, 1};
-	minAdjacencyFactor := float64(1); // assigning zero make errors in other functions
+	maxHopLevel := len(hyperParams.GraphFactors) - 2 // last item is minAdjacencyFactor
+	adjacencyFactors := hyperParams.GraphFactors;
+	minAdjacencyFactor := hyperParams.GraphFactors[maxHopLevel+1]; // assigning zero make errors in other functions
 	for _,fpTime := range fingerprintsOrdering{
 		FP2AFactor [fpTime] = minAdjacencyFactor
 	}
@@ -405,7 +412,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 	for i := 1; i <= numJobs; i++ {
 		res := <-chanResults
-		W[res.fpTime] = res.weight
+		W[res.fpTime] = res.weight * FP2AFactor[res.fpTime]
 	}
 	if glb.NewDistAlgo {
 		W = ConvertDist2Wigth(W)
@@ -510,7 +517,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				//glb.Error.Println(currentY)
 				//glb.Error.Println(currentX,"::",currentY)
 				//}
-				curW := W[fpTime] * FP2AFactor[fpTime]
+				curW := W[fpTime]
 				//glb.Debug.Println(curW)
 				//curW := W[fpTime]
 				currentX = currentX + int64(curW*locX)
