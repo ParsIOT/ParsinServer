@@ -21,8 +21,10 @@ type RawDataStruct struct {
 	mutex *sync.RWMutex
 	group *Group
 	//Learned data:
-	Fingerprints         map[string]parameters.Fingerprint
-	FingerprintsOrdering []string
+	Fingerprints               map[string]parameters.Fingerprint
+	FingerprintsOrdering       []string
+	FingerprintsBackup         map[string]parameters.Fingerprint
+	FingerprintsOrderingBackup []string
 
 	LearnTrueLocations     map[int64]string
 	TestValidTrueLocations map[int64]string //timestamp:location
@@ -868,12 +870,14 @@ func (gm *GroupManger) InstantFlushDB(groupName string) {
 
 func (gp *Group) NewRawDataStruct() *RawDataStruct {
 	return &RawDataStruct{
-		mutex:                  &sync.RWMutex{},
-		group:                  gp,
-		Fingerprints:           make(map[string]parameters.Fingerprint),
-		FingerprintsOrdering:   []string{},
-		LearnTrueLocations:     make(map[int64]string),
-		TestValidTrueLocations: make(map[int64]string),
+		mutex:                      &sync.RWMutex{},
+		group:                      gp,
+		Fingerprints:               make(map[string]parameters.Fingerprint),
+		FingerprintsOrdering:       []string{},
+		FingerprintsBackup:         make(map[string]parameters.Fingerprint),
+		FingerprintsOrderingBackup: []string{},
+		LearnTrueLocations:         make(map[int64]string),
+		TestValidTrueLocations:     make(map[int64]string),
 	}
 }
 func (gp *Group) NewConfigDataStruct() *ConfigDataStruct {
@@ -1460,7 +1464,6 @@ func (rd *RawDataStruct) Get_Fingerprints() map[string]parameters.Fingerprint {
 	return item
 }
 
-//Note: Use it just in buildgroup
 func (rd *RawDataStruct) Set_Fingerprints(new_item map[string]parameters.Fingerprint) {
 	defer rd.SetDirtyBit()
 
@@ -1476,7 +1479,6 @@ func (rd *RawDataStruct) Get_FingerprintsOrdering() []string {
 	return item
 }
 
-//Note: Use it just in buildgroup
 func (rd *RawDataStruct) Set_FingerprintsOrdering(new_item []string) {
 	defer rd.SetDirtyBit()
 
@@ -1484,7 +1486,41 @@ func (rd *RawDataStruct) Set_FingerprintsOrdering(new_item []string) {
 	rd.FingerprintsOrdering = new_item
 	rd.Unlock()
 }
-func (rd *RawDataStruct) Get_FPs() ([]string, map[string]parameters.Fingerprint) {
+
+func (rd *RawDataStruct) Get_FingerprintsBackup() map[string]parameters.Fingerprint {
+	rd.RLock()
+	item := rd.FingerprintsBackup
+	rd.RUnlock()
+
+	return item
+}
+
+//Note: Use it just in buildgroup
+func (rd *RawDataStruct) Set_FingerprintsBackup(new_item map[string]parameters.Fingerprint) {
+	defer rd.SetDirtyBit()
+
+	rd.Lock()
+	rd.FingerprintsBackup = new_item
+	rd.Unlock()
+}
+
+func (rd *RawDataStruct) Get_FingerprintsOrderingBackup() []string {
+	rd.RLock()
+	item := rd.FingerprintsOrderingBackup
+	rd.RUnlock()
+	return item
+}
+
+//Note: Use it just in buildgroup
+func (rd *RawDataStruct) Set_FingerprintsOrderingBackup(new_item []string) {
+	defer rd.SetDirtyBit()
+
+	rd.Lock()
+	rd.FingerprintsOrderingBackup = new_item
+	rd.Unlock()
+}
+
+/*func (rd *RawDataStruct) Get_FPs() ([]string, map[string]parameters.Fingerprint) {
 	rd.RLock()
 	item1 := rd.FingerprintsOrdering
 	item2 := rd.Fingerprints
@@ -1500,7 +1536,7 @@ func (rd *RawDataStruct) Set_FPs(new_item1 []string, new_item2 map[string]parame
 	rd.FingerprintsOrdering = new_item1
 	rd.Fingerprints = new_item2
 	rd.Unlock()
-}
+}*/
 
 func (rd *RawDataStruct) Get_LearnTrueLocations() map[int64]string {
 	rd.RLock()

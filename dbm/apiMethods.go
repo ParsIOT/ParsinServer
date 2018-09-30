@@ -916,6 +916,9 @@ func BuildGroupDB(groupName string) { //Todo: After each update in groupcache.go
 	rd := gp.Get_RawData()
 	rd.Set_Fingerprints(fingerprintInMemory)
 	rd.Set_FingerprintsOrdering(fingerprintOrdering)
+	rd.Set_FingerprintsBackup(fingerprintInMemory)
+	rd.Set_FingerprintsOrderingBackup(fingerprintOrdering)
+
 	//glb.Debug.Println(GM.isLoad[groupName])
 	//GM.InstantFlushDB(groupName)
 	//glb.Debug.Println(gp.Get_RawData_Val().FingerprintsOrdering)
@@ -1180,6 +1183,8 @@ func RelocateFPLoc(groupName string) error {
 
 	rd.Set_FingerprintsOrdering(tempfpO)
 	rd.Set_Fingerprints(tempfpData)
+	rd.Set_FingerprintsOrderingBackup(tempfpO)
+	rd.Set_FingerprintsBackup(tempfpData)
 
 	glb.Debug.Println("RelocateFPLoc ended!")
 

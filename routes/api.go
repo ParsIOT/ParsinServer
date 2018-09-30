@@ -319,9 +319,10 @@ func Calculate(c *gin.Context) {
 			return
 		}
 
-		algorithms.CalculateLearn(groupName)
+		algorithms.CalculateLearn(groupName) //NOte:Enable it!
 
-		testvalidTracks := dbm.GM.GetGroup(groupName).Get_ResultData().Get_TestValidTracks()
+		rsd := dbm.GM.GetGroup(groupName).Get_ResultData()
+		testvalidTracks := rsd.Get_TestValidTracks()
 		if glb.GraphEnabled && len(testvalidTracks) != 0 {
 
 			// Find true locations
@@ -333,7 +334,11 @@ func Calculate(c *gin.Context) {
 
 			// calculate beset graphfactors
 			algorithms.CalculateGraphFactor(groupName)
+		} else if !glb.GraphEnabled {
+			rsd.Set_AlgoAccuracy("knn_testvalid", 0)
+			rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
 		}
+
 		go dbm.ResetCache("userPositionCache")
 		go dbm.SetLearningCache(groupName, false)
 		c.JSON(http.StatusOK, gin.H{"message": "Parameters optimized.", "success": true})

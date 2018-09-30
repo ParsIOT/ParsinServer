@@ -254,6 +254,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	maxHopLevel := len(hyperParams.GraphFactors) - 2 // last item is minAdjacencyFactor
 	adjacencyFactors := hyperParams.GraphFactors;
 	minAdjacencyFactor := hyperParams.GraphFactors[maxHopLevel+1]; // assigning zero make errors in other functions
+
 	for _,fpTime := range fingerprintsOrdering{
 		FP2AFactor [fpTime] = minAdjacencyFactor
 	}
@@ -272,7 +273,12 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				lastUserPos := userPosHistory[len(userPosHistory)-1]
 				//glb.Error.Println(lastUserPos)
 				// todo:use lastUserPos.loction instead of knnguess
+
 				baseLoc = lastUserPos.Location // Current PDRLocation isn't  available, use last location estimated
+				/*				if strconv.FormatInt(curFingerprint.Timestamp, 10) == "1538071196747"{ //1538071209118
+									glb.Error.Println(len(userPosHistory))
+									glb.Error.Println(baseLoc)
+								}*/
 				//glb.Debug.Println(lastUserPos.KnnGuess)
 				//glb.Debug.Println(lastUserPos.Location)
 			}

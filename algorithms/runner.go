@@ -436,7 +436,8 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 	//location = userPosJson.KnnGuess
 	userPosJson.KnnGuess = location //todo: must add location as seprated variable from knnguess in parameters.UserPositionJSON
 	//go dbm.SetUserPositionCache(strings.ToLower(curFingerprint.Group)+strings.ToLower(curFingerprint.Username), userPosJson)
-	go gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
+	gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson) //Todo: if we use this as goroutine the delay until running effect next track
+
 	//go gp.Get_ResultData().Append_UserResults(curFingerprint.Username, userPosJson)
 
 	//glb.Debug.Println(len(gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)))
@@ -475,7 +476,7 @@ func RecalculateTrackFingerprintKnnCrossValidation(curFingerprint parameters.Fin
 	//glb.Debug.Println("Knn guess: ", knnGuess)
 	//glb.Debug.Println("location: ", location)
 
-	go gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
+	gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson) //Todo: if we use this as goroutine the delay until running effect next track
 
 	//glb.Debug.Println(userPosJson)
 	return userPosJson.Location
@@ -884,13 +885,13 @@ func (cvParts *crossValidationParts) GetTrainSet(gp *dbm.Group) dbm.RawDataStruc
 	return resRD
 }
 
-func GetCrossValidationParts(gp *dbm.Group, rd dbm.RawDataStruct) []crossValidationParts {
+func GetCrossValidationParts(gp *dbm.Group, fpOrdering []string, fpData map[string]parameters.Fingerprint) []crossValidationParts {
 	var CVPartsList []crossValidationParts
 	var tempCVParts crossValidationParts
 	locRDMap := make(map[string]dbm.RawDataStruct)
 
-	for _, index := range rd.FingerprintsOrdering {
-		fp := rd.Fingerprints[index]
+	for _, index := range fpOrdering {
+		fp := fpData[index]
 
 		if fpRD, ok := locRDMap[fp.Location]; ok {
 			fpRD.Fingerprints[index] = fp
@@ -1229,8 +1230,8 @@ func GetParametersWithGP(gp *dbm.Group) {
 //Note: Use it just one time(not use it in calculatelearn, use it in buildgroup)
 func PreProcess(rd *dbm.RawDataStruct, needToRelocateFP bool) {
 
-	fingerprintsOrdering := rd.Get_FingerprintsOrdering()
-	fingerprintsData := rd.Get_Fingerprints()
+	fingerprintsOrdering := rd.Get_FingerprintsOrderingBackup()
+	fingerprintsData := rd.Get_FingerprintsBackup()
 
 	// filter fingerprints according to filtermac list
 	for _, fpIndex := range fingerprintsOrdering {
@@ -1242,8 +1243,8 @@ func PreProcess(rd *dbm.RawDataStruct, needToRelocateFP bool) {
 	// Regulation rss data(outline detection)
 	// Grouping fingerprints by location
 	locRDMap := make(map[string]dbm.RawDataStruct)
-	for _, index := range rd.FingerprintsOrdering {
-		fp := rd.Fingerprints[index]
+	for _, index := range fingerprintsOrdering {
+		fp := fingerprintsData[index]
 
 		if fpRD, ok := locRDMap[fp.Location]; ok {
 			fpRD.Fingerprints[index] = fp
@@ -1507,7 +1508,7 @@ func RemoveOutlines(rd dbm.RawDataStruct) dbm.RawDataStruct {
 func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd *dbm.ConfigDataStruct, crossValidationPartsList []crossValidationParts) parameters.KnnHyperParameters {
 	// CrossValidation
 	tempGp := dbm.GM.GetGroup(groupName, false) //permanent:false
-	tempGp.Set_Permanent(false)
+	//tempGp.Set_Permanent(false)
 	tempGp.Set_ConfigData(cd)
 
 
@@ -1566,6 +1567,8 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 				trainSetTemp := CVParts.GetTrainSet(tempGp)
 				rdTemp.Set_Fingerprints(trainSetTemp.Fingerprints)
 				rdTemp.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
+				rdTemp.Set_FingerprintsBackup(trainSetTemp.Fingerprints)
+				rdTemp.Set_FingerprintsOrderingBackup(trainSetTemp.FingerprintsOrdering)
 
 				testFPs := CVParts.testSet.Fingerprints
 				testFPsOrdering := CVParts.testSet.FingerprintsOrdering
@@ -1678,17 +1681,16 @@ func CalculateLearn(groupName string) {
 	gp := dbm.GM.GetGroup(groupName)
 	gp.Set_Permanent(false) //for crossvalidation
 
-	rdVal := gp.Get_RawData_Val()
 	rd := gp.Get_RawData()
-	mainFPData := rd.Get_Fingerprints()
-	mainFPOrdering := rd.Get_FingerprintsOrdering()
+	mainFPData := rd.Get_FingerprintsBackup()
+	mainFPOrdering := rd.Get_FingerprintsOrderingBackup()
 	cd := gp.Get_ConfigData()
 	ad := gp.Get_AlgoData()
 	rs := gp.Get_ResultData()
 
 	knnLocAccuracy := make(map[string]int)
 	var crossValidationPartsList []crossValidationParts
-	crossValidationPartsList = GetCrossValidationParts(gp, rdVal)
+	crossValidationPartsList = GetCrossValidationParts(gp, mainFPOrdering, mainFPData)
 	// ToDo: Need to learn algorithms concurrently
 
 	glb.Debug.Println("crossValidationPartsList length:", len(crossValidationPartsList))
@@ -1707,6 +1709,8 @@ func CalculateLearn(groupName string) {
 		trainSetTemp := CVParts.GetTrainSet(gp)
 		rd.Set_Fingerprints(trainSetTemp.Fingerprints)
 		rd.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
+		rd.Set_FingerprintsBackup(trainSetTemp.Fingerprints)
+		rd.Set_FingerprintsOrderingBackup(trainSetTemp.FingerprintsOrdering)
 		testFPs := CVParts.testSet.Fingerprints
 		testFPsOrdering := CVParts.testSet.FingerprintsOrdering
 		GetParametersWithGP(gp)
@@ -1777,6 +1781,8 @@ func CalculateLearn(groupName string) {
 	// Set main parameters: Note: Don't change mainFpData
 	rd.Set_Fingerprints(mainFPData)
 	rd.Set_FingerprintsOrdering(mainFPOrdering)
+	rd.Set_FingerprintsBackup(mainFPData)
+	rd.Set_FingerprintsOrderingBackup(mainFPOrdering)
 	GetParametersWithGP(gp)
 
 	gp.GMutex.Lock()
@@ -1838,6 +1844,8 @@ func CalculateGraphFactor(groupName string) {
 
 	glb.Debug.Println("bestKnnHyperParams before CalculateGraphFactor :", knnHyperParams)
 	// 1. TestValid without graph:
+	/*	testValidTrueLoc := []string{}
+		testvalidGuessLoc := []string{}*/
 	glb.GraphEnabled = false
 	{
 		learnedKnnData, _ := LearnKnn(gp, knnHyperParams)
@@ -1845,10 +1853,16 @@ func CalculateGraphFactor(groupName string) {
 
 		totalDistError := 0
 		trackedPointsNum := 0
+		gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear userhistory to check knn error with new graphfactor
+
 		for _, testValidTrack := range testValidTracks {
 			fp := testValidTrack.UserPosition.Fingerprint
 			testLocation := testValidTrack.TrueLocation
+
 			resultDot := RecalculateTrackFingerprintKnnCrossValidation(fp)
+
+			/*			testValidTrueLoc = append(testValidTrueLoc, testLocation)
+						testvalidGuessLoc = append(testvalidGuessLoc, resultDot)*/
 
 			resx, resy := glb.GetDotFromString(resultDot)
 			x, y := glb.GetDotFromString(testLocation)
@@ -1871,6 +1885,8 @@ func CalculateGraphFactor(groupName string) {
 		rsd.Set_AlgoAccuracy("knn_testvalid", totalDistError/trackedPointsNum)
 	}
 	glb.GraphEnabled = true
+	/*	glb.Error.Println("testValidTrueLoc",testValidTrueLoc)
+		glb.Error.Println("testvalidGuessLoc",testvalidGuessLoc)*/
 
 	// 2. Testvalid with graph:
 	totalErrorList := []int{}
@@ -1896,6 +1912,11 @@ func CalculateGraphFactor(groupName string) {
 			testLocation := testValidTrack.TrueLocation
 			resultDot := RecalculateTrackFingerprintKnnCrossValidation(fp)
 
+			/*	if (testLocation=="-428.0,906.0"){
+					glb.Debug.Println("-33.0,946.0 resultdot:",resultDot)
+					glb.Debug.Println(fp)
+				}
+	*/
 			resx, resy := glb.GetDotFromString(resultDot)
 			x, y := glb.GetDotFromString(testLocation)
 			distErrorTemp := int(glb.CalcDist(x, y, resx, resy))

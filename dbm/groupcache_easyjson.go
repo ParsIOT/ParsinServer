@@ -512,6 +512,49 @@ func easyjson3b8810b5DecodeParsinServerDbm1(in *jlexer.Lexer, out *RawDataStruct
 				}
 				in.Delim(']')
 			}
+		case "FingerprintsBackup":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.FingerprintsBackup = make(map[string]parameters.Fingerprint)
+				} else {
+					out.FingerprintsBackup = nil
+				}
+				for !in.IsDelim('}') {
+					key := string(in.String())
+					in.WantColon()
+					var v24 parameters.Fingerprint
+					(v24).UnmarshalEasyJSON(in)
+					(out.FingerprintsBackup)[key] = v24
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
+		case "FingerprintsOrderingBackup":
+			if in.IsNull() {
+				in.Skip()
+				out.FingerprintsOrderingBackup = nil
+			} else {
+				in.Delim('[')
+				if out.FingerprintsOrderingBackup == nil {
+					if !in.IsDelim(']') {
+						out.FingerprintsOrderingBackup = make([]string, 0, 4)
+					} else {
+						out.FingerprintsOrderingBackup = []string{}
+					}
+				} else {
+					out.FingerprintsOrderingBackup = (out.FingerprintsOrderingBackup)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v25 string
+					v25 = string(in.String())
+					out.FingerprintsOrderingBackup = append(out.FingerprintsOrderingBackup, v25)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
 		case "LearnTrueLocations":
 			if in.IsNull() {
 				in.Skip()
@@ -525,9 +568,9 @@ func easyjson3b8810b5DecodeParsinServerDbm1(in *jlexer.Lexer, out *RawDataStruct
 				for !in.IsDelim('}') {
 					key := int64(in.Int64Str())
 					in.WantColon()
-					var v24 string
-					v24 = string(in.String())
-					(out.LearnTrueLocations)[key] = v24
+					var v26 string
+					v26 = string(in.String())
+					(out.LearnTrueLocations)[key] = v26
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -545,9 +588,9 @@ func easyjson3b8810b5DecodeParsinServerDbm1(in *jlexer.Lexer, out *RawDataStruct
 				for !in.IsDelim('}') {
 					key := int64(in.Int64Str())
 					in.WantColon()
-					var v25 string
-					v25 = string(in.String())
-					(out.TestValidTrueLocations)[key] = v25
+					var v27 string
+					v27 = string(in.String())
+					(out.TestValidTrueLocations)[key] = v27
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -578,16 +621,16 @@ func easyjson3b8810b5EncodeParsinServerDbm1(out *jwriter.Writer, in RawDataStruc
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v26First := true
-			for v26Name, v26Value := range in.Fingerprints {
-				if v26First {
-					v26First = false
+			v28First := true
+			for v28Name, v28Value := range in.Fingerprints {
+				if v28First {
+					v28First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v26Name))
+				out.String(string(v28Name))
 				out.RawByte(':')
-				(v26Value).MarshalEasyJSON(out)
+				(v28Value).MarshalEasyJSON(out)
 			}
 			out.RawByte('}')
 		}
@@ -604,11 +647,58 @@ func easyjson3b8810b5EncodeParsinServerDbm1(out *jwriter.Writer, in RawDataStruc
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v27, v28 := range in.FingerprintsOrdering {
-				if v27 > 0 {
+			for v29, v30 := range in.FingerprintsOrdering {
+				if v29 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v28))
+				out.String(string(v30))
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"FingerprintsBackup\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		if in.FingerprintsBackup == nil && (out.Flags&jwriter.NilMapAsEmpty) == 0 {
+			out.RawString(`null`)
+		} else {
+			out.RawByte('{')
+			v31First := true
+			for v31Name, v31Value := range in.FingerprintsBackup {
+				if v31First {
+					v31First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v31Name))
+				out.RawByte(':')
+				(v31Value).MarshalEasyJSON(out)
+			}
+			out.RawByte('}')
+		}
+	}
+	{
+		const prefix string = ",\"FingerprintsOrderingBackup\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		if in.FingerprintsOrderingBackup == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v32, v33 := range in.FingerprintsOrderingBackup {
+				if v32 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v33))
 			}
 			out.RawByte(']')
 		}
@@ -625,16 +715,16 @@ func easyjson3b8810b5EncodeParsinServerDbm1(out *jwriter.Writer, in RawDataStruc
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v29First := true
-			for v29Name, v29Value := range in.LearnTrueLocations {
-				if v29First {
-					v29First = false
+			v34First := true
+			for v34Name, v34Value := range in.LearnTrueLocations {
+				if v34First {
+					v34First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.Int64Str(int64(v29Name))
+				out.Int64Str(int64(v34Name))
 				out.RawByte(':')
-				out.String(string(v29Value))
+				out.String(string(v34Value))
 			}
 			out.RawByte('}')
 		}
@@ -651,16 +741,16 @@ func easyjson3b8810b5EncodeParsinServerDbm1(out *jwriter.Writer, in RawDataStruc
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v30First := true
-			for v30Name, v30Value := range in.TestValidTrueLocations {
-				if v30First {
-					v30First = false
+			v35First := true
+			for v35Name, v35Value := range in.TestValidTrueLocations {
+				if v35First {
+					v35First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.Int64Str(int64(v30Name))
+				out.Int64Str(int64(v35Name))
 				out.RawByte(':')
-				out.String(string(v30Value))
+				out.String(string(v35Value))
 			}
 			out.RawByte('}')
 		}
@@ -723,27 +813,27 @@ func easyjson3b8810b5DecodeParsinServerDbm2(in *jlexer.Lexer, out *MiddleDataStr
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v31 map[string]bool
+					var v36 map[string]bool
 					if in.IsNull() {
 						in.Skip()
 					} else {
 						in.Delim('{')
 						if !in.IsDelim('}') {
-							v31 = make(map[string]bool)
+							v36 = make(map[string]bool)
 						} else {
-							v31 = nil
+							v36 = nil
 						}
 						for !in.IsDelim('}') {
 							key := string(in.String())
 							in.WantColon()
-							var v32 bool
-							v32 = bool(in.Bool())
-							(v31)[key] = v32
+							var v37 bool
+							v37 = bool(in.Bool())
+							(v36)[key] = v37
 							in.WantComma()
 						}
 						in.Delim('}')
 					}
-					(out.NetworkMacs)[key] = v31
+					(out.NetworkMacs)[key] = v36
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -761,27 +851,27 @@ func easyjson3b8810b5DecodeParsinServerDbm2(in *jlexer.Lexer, out *MiddleDataStr
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v33 map[string]bool
+					var v38 map[string]bool
 					if in.IsNull() {
 						in.Skip()
 					} else {
 						in.Delim('{')
 						if !in.IsDelim('}') {
-							v33 = make(map[string]bool)
+							v38 = make(map[string]bool)
 						} else {
-							v33 = nil
+							v38 = nil
 						}
 						for !in.IsDelim('}') {
 							key := string(in.String())
 							in.WantColon()
-							var v34 bool
-							v34 = bool(in.Bool())
-							(v33)[key] = v34
+							var v39 bool
+							v39 = bool(in.Bool())
+							(v38)[key] = v39
 							in.WantComma()
 						}
 						in.Delim('}')
 					}
-					(out.NetworkLocs)[key] = v33
+					(out.NetworkLocs)[key] = v38
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -799,9 +889,9 @@ func easyjson3b8810b5DecodeParsinServerDbm2(in *jlexer.Lexer, out *MiddleDataStr
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v35 float32
-					v35 = float32(in.Float32())
-					(out.MacVariability)[key] = v35
+					var v40 float32
+					v40 = float32(in.Float32())
+					(out.MacVariability)[key] = v40
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -819,9 +909,9 @@ func easyjson3b8810b5DecodeParsinServerDbm2(in *jlexer.Lexer, out *MiddleDataStr
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v36 int
-					v36 = int(in.Int())
-					(out.MacCount)[key] = v36
+					var v41 int
+					v41 = int(in.Int())
+					(out.MacCount)[key] = v41
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -839,27 +929,27 @@ func easyjson3b8810b5DecodeParsinServerDbm2(in *jlexer.Lexer, out *MiddleDataStr
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v37 map[string]int
+					var v42 map[string]int
 					if in.IsNull() {
 						in.Skip()
 					} else {
 						in.Delim('{')
 						if !in.IsDelim('}') {
-							v37 = make(map[string]int)
+							v42 = make(map[string]int)
 						} else {
-							v37 = nil
+							v42 = nil
 						}
 						for !in.IsDelim('}') {
 							key := string(in.String())
 							in.WantColon()
-							var v38 int
-							v38 = int(in.Int())
-							(v37)[key] = v38
+							var v43 int
+							v43 = int(in.Int())
+							(v42)[key] = v43
 							in.WantComma()
 						}
 						in.Delim('}')
 					}
-					(out.MacCountByLoc)[key] = v37
+					(out.MacCountByLoc)[key] = v42
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -880,9 +970,9 @@ func easyjson3b8810b5DecodeParsinServerDbm2(in *jlexer.Lexer, out *MiddleDataStr
 					out.UniqueLocs = (out.UniqueLocs)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v39 string
-					v39 = string(in.String())
-					out.UniqueLocs = append(out.UniqueLocs, v39)
+					var v44 string
+					v44 = string(in.String())
+					out.UniqueLocs = append(out.UniqueLocs, v44)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -903,9 +993,9 @@ func easyjson3b8810b5DecodeParsinServerDbm2(in *jlexer.Lexer, out *MiddleDataStr
 					out.UniqueMacs = (out.UniqueMacs)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v40 string
-					v40 = string(in.String())
-					out.UniqueMacs = append(out.UniqueMacs, v40)
+					var v45 string
+					v45 = string(in.String())
+					out.UniqueMacs = append(out.UniqueMacs, v45)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -923,9 +1013,9 @@ func easyjson3b8810b5DecodeParsinServerDbm2(in *jlexer.Lexer, out *MiddleDataStr
 				for !in.IsDelim('}') {
 					key := string(in.String())
 					in.WantColon()
-					var v41 int
-					v41 = int(in.Int())
-					(out.LocCount)[key] = v41
+					var v46 int
+					v46 = int(in.Int())
+					(out.LocCount)[key] = v46
 					in.WantComma()
 				}
 				in.Delim('}')
@@ -956,29 +1046,29 @@ func easyjson3b8810b5EncodeParsinServerDbm2(out *jwriter.Writer, in MiddleDataSt
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v42First := true
-			for v42Name, v42Value := range in.NetworkMacs {
-				if v42First {
-					v42First = false
+			v47First := true
+			for v47Name, v47Value := range in.NetworkMacs {
+				if v47First {
+					v47First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v42Name))
+				out.String(string(v47Name))
 				out.RawByte(':')
-				if v42Value == nil && (out.Flags&jwriter.NilMapAsEmpty) == 0 {
+				if v47Value == nil && (out.Flags&jwriter.NilMapAsEmpty) == 0 {
 					out.RawString(`null`)
 				} else {
 					out.RawByte('{')
-					v43First := true
-					for v43Name, v43Value := range v42Value {
-						if v43First {
-							v43First = false
+					v48First := true
+					for v48Name, v48Value := range v47Value {
+						if v48First {
+							v48First = false
 						} else {
 							out.RawByte(',')
 						}
-						out.String(string(v43Name))
+						out.String(string(v48Name))
 						out.RawByte(':')
-						out.Bool(bool(v43Value))
+						out.Bool(bool(v48Value))
 					}
 					out.RawByte('}')
 				}
@@ -998,29 +1088,29 @@ func easyjson3b8810b5EncodeParsinServerDbm2(out *jwriter.Writer, in MiddleDataSt
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v44First := true
-			for v44Name, v44Value := range in.NetworkLocs {
-				if v44First {
-					v44First = false
+			v49First := true
+			for v49Name, v49Value := range in.NetworkLocs {
+				if v49First {
+					v49First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v44Name))
+				out.String(string(v49Name))
 				out.RawByte(':')
-				if v44Value == nil && (out.Flags&jwriter.NilMapAsEmpty) == 0 {
+				if v49Value == nil && (out.Flags&jwriter.NilMapAsEmpty) == 0 {
 					out.RawString(`null`)
 				} else {
 					out.RawByte('{')
-					v45First := true
-					for v45Name, v45Value := range v44Value {
-						if v45First {
-							v45First = false
+					v50First := true
+					for v50Name, v50Value := range v49Value {
+						if v50First {
+							v50First = false
 						} else {
 							out.RawByte(',')
 						}
-						out.String(string(v45Name))
+						out.String(string(v50Name))
 						out.RawByte(':')
-						out.Bool(bool(v45Value))
+						out.Bool(bool(v50Value))
 					}
 					out.RawByte('}')
 				}
@@ -1040,16 +1130,16 @@ func easyjson3b8810b5EncodeParsinServerDbm2(out *jwriter.Writer, in MiddleDataSt
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v46First := true
-			for v46Name, v46Value := range in.MacVariability {
-				if v46First {
-					v46First = false
+			v51First := true
+			for v51Name, v51Value := range in.MacVariability {
+				if v51First {
+					v51First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v46Name))
+				out.String(string(v51Name))
 				out.RawByte(':')
-				out.Float32(float32(v46Value))
+				out.Float32(float32(v51Value))
 			}
 			out.RawByte('}')
 		}
@@ -1066,16 +1156,16 @@ func easyjson3b8810b5EncodeParsinServerDbm2(out *jwriter.Writer, in MiddleDataSt
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v47First := true
-			for v47Name, v47Value := range in.MacCount {
-				if v47First {
-					v47First = false
+			v52First := true
+			for v52Name, v52Value := range in.MacCount {
+				if v52First {
+					v52First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v47Name))
+				out.String(string(v52Name))
 				out.RawByte(':')
-				out.Int(int(v47Value))
+				out.Int(int(v52Value))
 			}
 			out.RawByte('}')
 		}
@@ -1092,29 +1182,29 @@ func easyjson3b8810b5EncodeParsinServerDbm2(out *jwriter.Writer, in MiddleDataSt
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v48First := true
-			for v48Name, v48Value := range in.MacCountByLoc {
-				if v48First {
-					v48First = false
+			v53First := true
+			for v53Name, v53Value := range in.MacCountByLoc {
+				if v53First {
+					v53First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v48Name))
+				out.String(string(v53Name))
 				out.RawByte(':')
-				if v48Value == nil && (out.Flags&jwriter.NilMapAsEmpty) == 0 {
+				if v53Value == nil && (out.Flags&jwriter.NilMapAsEmpty) == 0 {
 					out.RawString(`null`)
 				} else {
 					out.RawByte('{')
-					v49First := true
-					for v49Name, v49Value := range v48Value {
-						if v49First {
-							v49First = false
+					v54First := true
+					for v54Name, v54Value := range v53Value {
+						if v54First {
+							v54First = false
 						} else {
 							out.RawByte(',')
 						}
-						out.String(string(v49Name))
+						out.String(string(v54Name))
 						out.RawByte(':')
-						out.Int(int(v49Value))
+						out.Int(int(v54Value))
 					}
 					out.RawByte('}')
 				}
@@ -1134,11 +1224,11 @@ func easyjson3b8810b5EncodeParsinServerDbm2(out *jwriter.Writer, in MiddleDataSt
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v50, v51 := range in.UniqueLocs {
-				if v50 > 0 {
+			for v55, v56 := range in.UniqueLocs {
+				if v55 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v51))
+				out.String(string(v56))
 			}
 			out.RawByte(']')
 		}
@@ -1155,11 +1245,11 @@ func easyjson3b8810b5EncodeParsinServerDbm2(out *jwriter.Writer, in MiddleDataSt
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v52, v53 := range in.UniqueMacs {
-				if v52 > 0 {
+			for v57, v58 := range in.UniqueMacs {
+				if v57 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v53))
+				out.String(string(v58))
 			}
 			out.RawByte(']')
 		}
@@ -1176,16 +1266,16 @@ func easyjson3b8810b5EncodeParsinServerDbm2(out *jwriter.Writer, in MiddleDataSt
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v54First := true
-			for v54Name, v54Value := range in.LocCount {
-				if v54First {
-					v54First = false
+			v59First := true
+			for v59Name, v59Value := range in.LocCount {
+				if v59First {
+					v59First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v54Name))
+				out.String(string(v59Name))
 				out.RawByte(':')
-				out.Int(int(v54Value))
+				out.Int(int(v59Value))
 			}
 			out.RawByte('}')
 		}
