@@ -1742,13 +1742,15 @@ func (rs *ResultDataStruct) Set_AlgoAccuracy(algoName string, distError int) {
 	defer rs.SetDirtyBit()
 
 	rs.Lock()
-
-	if _, ok := rs.AlgoAccuracy[algoName]; ok {
-		rs.AlgoAccuracy[algoName] = distError
-	} else {
+	//if _, ok := rs.AlgoAccuracy[algoName]; ok {
+	//	rs.AlgoAccuracy[algoName] = distError
+	//} else {
+	//	rs.AlgoAccuracy = make(map[string]int)
+	if rs.AlgoAccuracy == nil {
 		rs.AlgoAccuracy = make(map[string]int)
-		rs.AlgoAccuracy[algoName] = distError
 	}
+	rs.AlgoAccuracy[algoName] = distError
+	//}
 	rs.Unlock()
 }
 
@@ -1766,7 +1768,9 @@ func (rs *ResultDataStruct) Set_AlgoLocAccuracy(algoName string, loc string, dis
 	if _, ok := rs.AlgoAccuracyLoc[algoName]; ok {
 		rs.AlgoAccuracyLoc[algoName][loc] = distError
 	} else {
-		rs.AlgoAccuracyLoc = make(map[string]map[string]int)
+		if rs.AlgoAccuracy == nil {
+			rs.AlgoAccuracyLoc = make(map[string]map[string]int)
+		}
 		rs.AlgoAccuracyLoc[algoName] = make(map[string]int)
 		rs.AlgoAccuracyLoc[algoName][loc] = distError
 	}
@@ -1905,7 +1909,9 @@ func (rs *ResultDataStruct) Set_AlgoTestErrorAccuracy(algoName string, distError
 	if _, ok := rs.AlgoTestErrorAccuracy[algoName]; ok {
 		rs.AlgoTestErrorAccuracy[algoName] = distError
 	} else {
-		rs.AlgoTestErrorAccuracy = make(map[string]int)
+		if rs.AlgoTestErrorAccuracy == nil {
+			rs.AlgoTestErrorAccuracy = make(map[string]int)
+		}
 		rs.AlgoTestErrorAccuracy[algoName] = distError
 	}
 	rs.Unlock()

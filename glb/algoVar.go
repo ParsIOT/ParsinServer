@@ -21,6 +21,7 @@ var RssRegulation bool               // permit to rss outlines deleting
 var AvgRSSAdjacentDots bool          // permit to set average of rss of adjacent dots instead of raw rss; according to heatmap it's not good to do this!
 
 var ProgressBarLength,ProgressBarCurLevel int
+var MinRssClustringEnabled bool
 
 var MaxUserHistoryLen int
 var MaxUserResultsLen int
@@ -30,6 +31,7 @@ var UserHistoryGaussVariance float64
 var UserHistoryTimeDelayFactor float64
 // Default K in KNN algorithm
 var DefaultKnnMinCRssRange,DefaultKnnKRange []int
+var DefaultGraphFactorsRange [][]float64
 
 var DefaultMapName string
 var DefaultMapDimensions []int
@@ -62,6 +64,8 @@ func init() {
 	ProgressBarCurLevel = 0
 	DefaultKnnKRange = []int{25, 26}         //{10,30}
 	DefaultKnnMinCRssRange = []int{-75, -76} //{-60,-90}
+	DefaultGraphFactorsRange = [][]float64{{1, 1, 1, 1}, {2, 2, 2, 1}}
+
 	//MinClusterRss = -75
 	MaxUserHistoryLen = 2
 	MaxUserResultsLen = 1000
@@ -81,10 +85,11 @@ func init() {
 	DefaultMapHeight = 3400
 	DefaultMapWidth = 3600
 	CalculateTestError = true
-	GraphEnabled = false
+	GraphEnabled = true
 	PDREnabledForDynamicSubareaMethod = false
 
 	FastLearn = false
 	NewDistAlgo = false
 	TesterUsername = "tester"
+	MinRssClustringEnabled = true
 }

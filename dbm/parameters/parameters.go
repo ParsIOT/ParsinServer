@@ -26,14 +26,16 @@ func NewKnnParameters() KnnParameters {
 
 // Constant parameters that set by cross-validation are in KnnHyperParameters
 type KnnHyperParameters struct {
-	K             int `json:"K"`
-	MinClusterRss int `json:"MinClusterRss"`
+	K             int       `json:"K"`
+	MinClusterRss int       `json:"MinClusterRss"`
+	GraphFactors  []float64 `json:"GraphFactors"`
 }
 
 func NewKnnHyperParameters() KnnHyperParameters {
 	return KnnHyperParameters{
 		K:             glb.DefaultKnnKRange[0],
 		MinClusterRss: glb.DefaultKnnMinCRssRange[0],
+		GraphFactors:  glb.DefaultGraphFactorsRange[0],
 	}
 }
 

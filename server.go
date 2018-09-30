@@ -232,7 +232,7 @@ func main() {
 
 	engine := gin.New()
 
-	noNeedLogRoutes := []string{"data"}
+	noNeedLogRoutes := []string{"data", "calcLevel"}
 
 	logger := glb.Logger(noNeedLogRoutes...)
 	engine.Use(logger, gin.Recovery())

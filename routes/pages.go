@@ -159,13 +159,15 @@ func SlashDashboard(c *gin.Context) {
 
 
 	type DashboardData struct {
-		Networks         []string
-		Locations        map[string][]string
-		LocationAccuracy map[string]int
-		LocationCount    map[string]int
-		Mixin            map[string]float64
-		VarabilityCutoff map[string]float64
-		Users            map[string]parameters.UserPositionJSON
+		Networks                  []string
+		Locations                 map[string][]string
+		LocationAccuracy          map[string]int
+		KnnTestValidAccuracy      int
+		KnnTestValidGraphAccuracy int
+		LocationCount             map[string]int
+		Mixin                     map[string]float64
+		VarabilityCutoff          map[string]float64
+		Users                     map[string]parameters.UserPositionJSON
 	}
 	var dash DashboardData
 	dash.Networks = []string{}
@@ -181,6 +183,7 @@ func SlashDashboard(c *gin.Context) {
 
 	gp := dbm.GM.GetGroup(groupName)
 	md := gp.Get_MiddleData_Val()
+	rsd := gp.Get_ResultData()
 
 	knnHyperParams := gp.Get_AlgoData().Get_KnnFPs().HyperParameters
 	bestK := knnHyperParams.K
@@ -204,13 +207,17 @@ func SlashDashboard(c *gin.Context) {
 			dash.LocationCount = md.LocCount
 		}
 		totalError := 0
-		algoAccuracy := gp.Get_ResultData().Get_AlgoLocAccuracy()
+		algoAccuracy := rsd.Get_AlgoLocAccuracy()
 		for loc, accuracy := range algoAccuracy["knn"] {
 			dash.LocationAccuracy[loc] = accuracy
 			totalError += accuracy
 		}
-		dash.LocationAccuracy["all"] = totalError
+		dash.LocationAccuracy["all"] = totalError / len(algoAccuracy["knn"])
 	}
+	algoAccuracies := rsd.Get_AlgoAccuracy()
+	dash.KnnTestValidAccuracy = algoAccuracies["knn_testvalid"]
+	dash.KnnTestValidGraphAccuracy = algoAccuracies["knn_testvalid_graph"]
+
 	//glb.Debug.Println(dash)
 	mapNamesList := glb.ListMaps()
 	c.HTML(http.StatusOK, "dashboard.tmpl", gin.H{

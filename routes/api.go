@@ -61,7 +61,7 @@ func PreLoadSettings(c *gin.Context) {
 		}
 
 	} else if group2 != "none" {
-		glb.Debug.Println(group2)
+		//glb.Debug.Println(group2)
 		//glb.Debug.Println(dbm.GetSharedPrf(group2))
 		groupExists = dbm.GroupExists(group2)
 		if groupExists {
@@ -318,7 +318,22 @@ func Calculate(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
 			return
 		}
+
 		algorithms.CalculateLearn(groupName)
+
+		testvalidTracks := dbm.GM.GetGroup(groupName).Get_ResultData().Get_TestValidTracks()
+		if glb.GraphEnabled && len(testvalidTracks) != 0 {
+
+			// Find true locations
+			gp := dbm.GM.GetGroup(groupName)
+			rsd := gp.Get_ResultData()
+			testValidTracks := rsd.Get_TestValidTracks()
+			_, _, testValidTracksRes := dbm.CalculateTestError(groupName, testValidTracks)
+			rsd.Set_TestValidTracks(testValidTracksRes)
+
+			// calculate beset graphfactors
+			algorithms.CalculateGraphFactor(groupName)
+		}
 		go dbm.ResetCache("userPositionCache")
 		go dbm.SetLearningCache(groupName, false)
 		c.JSON(http.StatusOK, gin.H{"message": "Parameters optimized.", "success": true})
@@ -559,7 +574,8 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 			if err != nil {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			} else {
-				glb.Debug.Println(details)
+				/*				rsd.Set_TestValidTracks(testValidTracks)
+								glb.Debug.Println(details)*/
 				c.JSON(http.StatusOK, gin.H{"success": true, "details": details, "testvalidtracks": testValidTracks})
 			}
 		} else {
