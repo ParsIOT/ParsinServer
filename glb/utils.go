@@ -829,3 +829,81 @@ func SortedInsert(s []int64, f int64) []int64 {
 	return newS
 }
 
+// gets first slice, last slice and level which it must be entered 0 at normal calls. (its goal is for recursive calls inside the function)
+func getGraphSlicesRangeRecursive (first []float64 , last []float64 , level int) ([][]float64) {
+	//fmt.Println("level = ", level)
+
+	if len(first) != len(last){
+		errors.New("length of first and last are not equal")
+	}
+	result := [][]float64{}
+
+	if level == len(first){
+		//fmt.Println("level at end" ,level)
+		return result
+	}else {
+		a := []float64{}
+		for u:=0;u<len(first);u++{
+			a=append(a,0)
+		}
+
+		copy(a, first)
+
+		for j := float64(0); j < (last[level] - first[level]); j++ {
+
+			b := []float64{}
+			for u:=0;u<len(first);u++{
+				b=append(b,0)
+			}
+			copy(b, a)
+			result = append(result, b)
+			tempResults := getGraphSlicesRangeRecursive(a,last,level+1)
+			result = append(result,tempResults...)
+
+			a[level]++
+			tempResults = getGraphSlicesRangeRecursive(a,last,level+1)
+
+			result = append(result,tempResults...)
+			//fmt.Println("a,level = ",a , level)
+		}
+		b := []float64{}
+		for u:=0;u<len(first);u++{
+			b=append(b,0)
+		}
+		copy(b, a)
+		result = append(result, b)
+	}
+	//fmt.Println(result)
+	finalResult := [][]float64{}
+	new := true
+	for i:=0; i<len(result);i++{ // algorithm returns a slice which has duplicates. here it removes the duplicates
+		for j:=0;j<len(finalResult);j++{
+			if testEq(result[i],finalResult[j])==true {
+				//fmt.Println(result[i]," ", finalResult[j])
+				new = false
+			}
+		}
+		if new==true {
+			finalResult = append(finalResult, result[i])
+		}
+		new = true
+
+	}
+	return finalResult
+}
+
+func testEq(a, b []float64) bool { //tests whether two slices are the same
+	// If one is nil, the other must also be nil.
+	if (a == nil) != (b == nil) {
+		return false;
+	}
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
