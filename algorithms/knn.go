@@ -271,10 +271,11 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		}
 	*/
 	FP2AFactor := make(map[string]float64)
+	//hyperParams.GraphFactors = []float64{3,3,3,3,2,2,2,2,1}
 	maxHopLevel := len(hyperParams.GraphFactors) - 2 // last item is minAdjacencyFactor
-	adjacencyFactors := hyperParams.GraphFactors;
-	minAdjacencyFactor := hyperParams.GraphFactors[maxHopLevel+1]; // assigning zero make errors in other functions
 
+	adjacencyFactors := hyperParams.GraphFactors
+	minAdjacencyFactor := hyperParams.GraphFactors[maxHopLevel+1] // assigning zero make errors in other functions
 	for _,fpTime := range fingerprintsOrdering{
 		FP2AFactor [fpTime] = minAdjacencyFactor
 	}

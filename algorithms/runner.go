@@ -1835,7 +1835,7 @@ func CalculateGraphFactor(groupName string) {
 
 	//GraphFactors range:
 	//validGraphFactorsRange = [][]float64{}
-	validGraphFactors := [][]float64{{100, 50, 1, 1}, {50, 20, 1, 1}, {2, 1, 1, 1}, {50, 25, 15, 1}}
+	validGraphFactors := [][]float64{{3,3,3,3,2,2,2,2,1}, {50, 20, 1, 1}, {2, 1, 1, 1}, {50, 25, 15, 1},{1, 15, 25, 1},{5, 25, 15, 1},{100, 100, 100, 100,100,1},{100, 100, 100,100,1},{2000,1000,500,1},{4,4,4,4,3,3,3,2,2,1}}
 
 	//if len(validGraphFactorsRange) == 1{
 	//
