@@ -199,6 +199,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 	knnParams := gp.Get_ConfigData().Get_KnnParameters()
 	MaxEuclideanRssDist = knnParams.MaxEuclideanRssDist
+
 	//tempList := []string{}
 	//tempList = append(tempList,mainFingerprintsOrdering...)
 	//sort.Sort(sort.StringSlice(tempList))
@@ -231,25 +232,44 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	//}
 
 	// fingerprintOrdering Creation according to clusters and rss rates
-	if glb.MinRssClustringEnabled {
+	repeatFP := make(map[string]int)
+	for _, fpTime := range mainFingerprintsOrdering {
+		repeatFP[fpTime] = 1
+	}
+
+	if glb.MinRssClustringEnabled || hyperParams.MinClusterRss == 0 {
 		AtleastInOneCluster := false // komeil: a variable to decide if it is needed to search all fingerprints instead of one or some clusters
 		for _, rt := range curFingerprint.WifiFingerprint {
 			if (rt.Rssi >= hyperParams.MinClusterRss) {
 				if cluster, ok := clusters[rt.Mac]; ok {
+					//glb.Error.Println(rt.Mac,":",rt.Rssi)
 					AtleastInOneCluster = true
-					fingerprintsOrdering = append(fingerprintsOrdering, cluster...)
+					for _, fpTimeMem := range cluster {
+						//if !glb.StringInSlice(fpTimeMem,fingerprintsOrdering){
+						fingerprintsOrdering = append(fingerprintsOrdering, fpTimeMem)
+						//}else{
+						//	//repeatFP[fpTimeMem] *=10
+						//	repeatFP[fpTimeMem] +=1
+						//
+						//}
+					}
+					//fingerprintsOrdering = append(fingerprintsOrdering, cluster...)
 
 				}
 			}
 		}
 		if (!AtleastInOneCluster) {
+			//glb.Error.Println("Not in cluster")
 			fingerprintsOrdering = mainFingerprintsOrdering
 		}
 	} else {
 		fingerprintsOrdering = mainFingerprintsOrdering
 	}
 
-
+	/*	if (curFingerprint.Timestamp == int64(1538064063095)){
+			glb.Error.Println(fingerprintsOrdering)
+		}
+	*/
 	FP2AFactor := make(map[string]float64)
 	maxHopLevel := len(hyperParams.GraphFactors) - 2 // last item is minAdjacencyFactor
 	adjacencyFactors := hyperParams.GraphFactors;
@@ -260,6 +280,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	}
 
 	// History effect:
+	//historyConsidered = false // Note:deleteit .
 	// Idea from: Dynamic Subarea Method in "A Hybrid Indoor Positioning Algorithm based on WiFi Fingerprinting and Pedestrian Dead Reckoning""
 	var tempFingerprintOrdering []string
 	if historyConsidered {
@@ -418,7 +439,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 	for i := 1; i <= numJobs; i++ {
 		res := <-chanResults
-		W[res.fpTime] = res.weight * FP2AFactor[res.fpTime]
+		W[res.fpTime] = res.weight * FP2AFactor[res.fpTime] * float64(repeatFP[res.fpTime])
 	}
 	if glb.NewDistAlgo {
 		W = ConvertDist2Wigth(W)
@@ -449,7 +470,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		return errors.New("NumofAP_lowerThan_MinApNum"), ",", nil
 	}
 
-	fingerprintSorted := glb.SortDictByVal(W)
+	fingerprintSorted := glb.SortReverseDictByVal(W)
 
 	ws := []float64{}
 	for _, w := range W {
@@ -574,7 +595,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				break;
 			}
 		}
-		sortedKNNList := glb.SortDictByVal(KNNList)
+		sortedKNNList := glb.SortReverseDictByVal(KNNList)
 		//glb.Debug.Println(sortedKNNList[0])
 		return nil, sortedKNNList[0], KNNList
 	}
