@@ -1042,7 +1042,7 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 		}
 	}
 	//glb.Debug.Println("**** calculated distance overall:\n", CalculatedDistanceOverall)
-	//sortedCalculatedDistanceOverall := glb.SortDictByVal(CalculatedDistanceOverall)
+	//sortedCalculatedDistanceOverall := glb.SortReverseDictByVal(CalculatedDistanceOverall)
 	//glb.Debug.Println("**** calculated distance overall:\n", sortedCalculatedDistanceOverall)
 	resultMap := make(map[string][]string)
 	for _, fp := range resultFPs {
@@ -1141,7 +1141,7 @@ func GetMostSeenMacs(groupName string) []string {
 		}
 	}
 
-	macSorted := glb.SortDictByVal(macCount)
+	macSorted := glb.SortReverseDictByVal(macCount)
 
 	// get N of most seen macs
 	NumOfMustSeenMacs := 40
@@ -1311,7 +1311,7 @@ func CalculateTestError(groupName string, testValidTracks []parameters.TestValid
 
 	// Get True Location logs from db
 	allLocationLogs := gp.Get_RawData().Get_TestValidTrueLocations()
-	glb.Debug.Println("TrueLocationLog :", allLocationLogs)
+	//glb.Debug.Println("TrueLocationLog :", allLocationLogs)
 
 	tempTestValidTracks := []parameters.TestValidTrack{}
 	//glb.Debug.Println(testValidTracks)

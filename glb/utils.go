@@ -324,7 +324,7 @@ func CopyFileContents(src, dst string) (err error) {
 	return
 }
 
-func SortDictByVal(W map[string]float64) []string {
+func SortReverseDictByVal(W map[string]float64) []string {
 	var keySorted []string
 	reverseMap := map[float64][]string{}
 	var valueList sort.Float64Slice
@@ -345,7 +345,7 @@ func SortDictByVal(W map[string]float64) []string {
 	return keySorted
 }
 
-// Like SortDictByVal but when there are some fingerprints(specific mac) with same rss,
+// Like SortReverseDictByVal but when there are some fingerprints(specific mac) with same rss,
 //		sort them according to their timestamp(actually there is no difference between them) to avoid side effects
 // 			(because random ordering of these FP may cause some wrong priorities).
 //		of course, we must solve this problem by correcting the algorithms. It's difficult, because maybe there are many FPs(specific mac) with same rss

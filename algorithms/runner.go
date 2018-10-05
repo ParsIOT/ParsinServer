@@ -333,7 +333,7 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 	pdrLocation := curFingerprint.Location
 	accuracyCircleRadius := float64(0)
 	glb.Debug.Println("accuracy circle:", accuracyCircleRadius)
-	parameters.CleanFingerprint(&curFingerprint)
+	//parameters.CleanFingerprint(&curFingerprint)
 
 	/*	wasLearning, ok := dbm.GetLearningCache(strings.ToLower(curFingerprint.Group))
 		if ok {
@@ -479,6 +479,10 @@ func RecalculateTrackFingerprintKnnCrossValidation(curFingerprint parameters.Fin
 	gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson) //Todo: if we use this as goroutine the delay until running effect next track
 
 	//glb.Debug.Println(userPosJson)
+	/*	glb.Error.Println("###############")
+		glb.Error.Println(userPosJson.KnnGuess)
+		glb.Error.Println(userPosJson.KnnData)*/
+
 	return userPosJson.Location
 }
 
@@ -1529,6 +1533,7 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	} else if len(knnKRange) == 2 {
 		validKs = glb.MakeRange(knnKRange[0], knnKRange[1])
 	} else {
+		glb.Error.Println("knnKRange:", knnKRange)
 		glb.Error.Println("Can't set valid Knn K values")
 	}
 	//2.MinClusterRSS
@@ -1537,10 +1542,12 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	minClusterRSSRange := shprf.KnnMinCRssRange
 	if len(minClusterRSSRange) == 1 {
 		validMinClusterRSSs = glb.MakeRange(minClusterRSSRange[0], minClusterRSSRange[0])
-	} else if len(knnKRange) == 2 {
+	} else if len(minClusterRSSRange) == 2 {
 		validMinClusterRSSs = glb.MakeRange(minClusterRSSRange[0], minClusterRSSRange[1])
+		validMinClusterRSSs = append(validMinClusterRSSs, 0)
 	} else {
-		glb.Error.Println("Can't set valid Knn K values")
+		glb.Error.Println("minClusterRSSRange:", minClusterRSSRange)
+		glb.Error.Println("Can't set valid min cluster rss values")
 	}
 
 	// Set length of calculation progress bar
@@ -1604,8 +1611,10 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 					err, resultDot, _ = TrackKnn(tempGp, fp, false)
 					if err != nil {
 						if err.Error() == "NumofAP_lowerThan_MinApNum" {
+							glb.Error.Println("NumofAP_lowerThan_MinApNum")
 							continue
 						} else if err.Error() == "NoValidFingerprints" {
+							glb.Error.Println("NoValidFingerprints")
 							continue
 						}
 					} else {
