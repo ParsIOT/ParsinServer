@@ -1311,6 +1311,7 @@ func CalculateTestError(groupName string, testValidTracks []parameters.TestValid
 
 	// Get True Location logs from db
 	allLocationLogs := gp.Get_RawData().Get_TestValidTrueLocations()
+
 	//glb.Debug.Println("TrueLocationLog :", allLocationLogs)
 
 	tempTestValidTracks := []parameters.TestValidTrack{}
@@ -1321,32 +1322,41 @@ func CalculateTestError(groupName string, testValidTracks []parameters.TestValid
 	//AlgoError["bayes"] = float64(0)
 	//AlgoError["svm"] = float64(0)
 
-
 	for _, testValidTrack := range testValidTracks {
 		userPos := testValidTrack.UserPosition
 		//correct fp location
-		TrueLoc, err := FindTrueFPloc(userPos.Fingerprint, allLocationLogs)
-		if err == nil {
-			testValidTrack.TrueLocation = TrueLoc
-			numValidTestFPs++
-			trueX, trueY := glb.GetDotFromString(TrueLoc)
-
-			// Knn guess error:
-			fpKnnX, fpKnnY := glb.GetDotFromString(userPos.KnnGuess)
-			AlgoError["knn"] += glb.CalcDist(fpKnnX, fpKnnY, trueX, trueY)
-
-			//fpBayesX, fpBayesY := glb.GetDotFromString(userPos.BayesGuess)
-			//AlgoError["bayes"] += glb.CalcDist(fpBayesX, fpBayesY, trueX, trueY)
-
-			//fpSvmX, fpSvmY := glb.GetDotFromString(userPos.SvmGuess)
-			//AlgoError["svm"] += glb.CalcDist(fpSvmX, fpSvmY, trueX, trueY)
-			details = append(details, []string{TrueLoc, userPos.KnnGuess})
-			//details = append(details,[]string{TrueLoc,userPos.KnnGuess,userPos.SvmGuess})
-
-			tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
+		TrueLoc := ""
+		var err error
+		if len(allLocationLogs) > 0 {
+			TrueLoc, err = FindTrueFPloc(userPos.Fingerprint, allLocationLogs)
+			if err != nil {
+				glb.Error.Println(err)
+				continue
+			}
 		} else {
-			glb.Error.Println(err)
+			TrueLoc = userPos.Fingerprint.Location
+			if TrueLoc == "" {
+				continue
+			}
 		}
+
+		testValidTrack.TrueLocation = TrueLoc
+		numValidTestFPs++
+		trueX, trueY := glb.GetDotFromString(TrueLoc)
+
+		// Knn guess error:
+		fpKnnX, fpKnnY := glb.GetDotFromString(userPos.KnnGuess)
+		AlgoError["knn"] += glb.CalcDist(fpKnnX, fpKnnY, trueX, trueY)
+
+		//fpBayesX, fpBayesY := glb.GetDotFromString(userPos.BayesGuess)
+		//AlgoError["bayes"] += glb.CalcDist(fpBayesX, fpBayesY, trueX, trueY)
+
+		//fpSvmX, fpSvmY := glb.GetDotFromString(userPos.SvmGuess)
+		//AlgoError["svm"] += glb.CalcDist(fpSvmX, fpSvmY, trueX, trueY)
+		details = append(details, []string{TrueLoc, userPos.KnnGuess})
+		//details = append(details,[]string{TrueLoc,userPos.KnnGuess,userPos.SvmGuess})
+
+		tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
 	}
 
 	// Set new TestValidTracks list that true locations was set
