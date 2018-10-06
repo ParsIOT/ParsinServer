@@ -19,3 +19,11 @@ func TestListMaps(t *testing.T) {
 
 	assert.Equal(t, sortedList, []int64{1, 2, 3, 4})
 }
+func TestSortIntKeyDictByIntVal(t *testing.T) {
+	newMap := make(map[int]int)
+	newMap[1] = 10
+	newMap[3] = 30
+	newMap[2] = 20
+	sortedKey := SortIntKeyDictByIntVal(newMap)
+	assert.Equal(t, []int{1, 2, 3}, sortedKey)
+}

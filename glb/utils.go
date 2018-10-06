@@ -345,6 +345,27 @@ func SortReverseDictByVal(W map[string]float64) []string {
 	return keySorted
 }
 
+func SortIntKeyDictByIntVal(W map[int]int) []int {
+	var keySorted []int
+	reverseMap := map[int][]int{}
+	var valueList sort.IntSlice
+	for k, v := range W {
+		reverseMap[v] = append(reverseMap[v], k)
+	}
+	for k := range reverseMap {
+		valueList = append(valueList, k)
+	}
+	valueList.Sort()
+	sort.Sort(valueList)
+
+	for _, k := range valueList {
+		for _, s := range reverseMap[k] {
+			keySorted = append(keySorted, s)
+		}
+	}
+	return keySorted
+}
+
 // Like SortReverseDictByVal but when there are some fingerprints(specific mac) with same rss,
 //		sort them according to their timestamp(actually there is no difference between them) to avoid side effects
 // 			(because random ordering of these FP may cause some wrong priorities).
