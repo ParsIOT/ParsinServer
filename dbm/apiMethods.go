@@ -1303,8 +1303,9 @@ func GetRSSData(groupName string, mac string) [][]int {
 
 }
 
-func CalculateTestError(groupName string, testValidTracks []parameters.TestValidTrack) (error, [][]string, []parameters.TestValidTrack) { //todo: create a page to show test-valid test fingerprint on map
+func CalculateTestError(groupName string, testValidTracks []parameters.TestValidTrack) (error, []int, [][]string, []parameters.TestValidTrack) { //todo: create a page to show test-valid test fingerprint on map
 	details := [][]string{}
+	errDetails := []int{}
 
 	gp := GM.GetGroup(groupName)
 	rsd := gp.Get_ResultData()
@@ -1346,8 +1347,10 @@ func CalculateTestError(groupName string, testValidTracks []parameters.TestValid
 
 		// Knn guess error:
 		fpKnnX, fpKnnY := glb.GetDotFromString(userPos.KnnGuess)
-		AlgoError["knn"] += glb.CalcDist(fpKnnX, fpKnnY, trueX, trueY)
 
+		dist := glb.CalcDist(fpKnnX, fpKnnY, trueX, trueY)
+		AlgoError["knn"] += dist
+		errDetails = append(errDetails, int(dist))
 		//fpBayesX, fpBayesY := glb.GetDotFromString(userPos.BayesGuess)
 		//AlgoError["bayes"] += glb.CalcDist(fpBayesX, fpBayesY, trueX, trueY)
 
@@ -1368,7 +1371,10 @@ func CalculateTestError(groupName string, testValidTracks []parameters.TestValid
 		glb.Debug.Println("TestValid "+algoName+" Error = ", algoError/float64(numValidTestFPs))
 		rsd.Set_AlgoTestErrorAccuracy(algoName, int(algoError/float64(numValidTestFPs)))
 	}
-	return nil, details, tempTestValidTracks
+
+	sort.Ints(errDetails)
+
+	return nil, errDetails, details, tempTestValidTracks
 }
 
 func SetTrueLocationFromLog(groupName string, method string) error {

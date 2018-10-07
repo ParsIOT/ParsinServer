@@ -319,17 +319,17 @@ func Calculate(c *gin.Context) {
 			return
 		}
 
-		algorithms.CalculateLearn(groupName) //NOte:Enable it!
+		algorithms.CalculateLearn(groupName)
 
+		// test-valid hyper parameters selecting
 		rsd := dbm.GM.GetGroup(groupName).Get_ResultData()
-		testvalidTracks := rsd.Get_TestValidTracks()
-		if glb.GraphEnabled && len(testvalidTracks) != 0 {
+		testValidTracks := rsd.Get_TestValidTracks()
+		if glb.GraphEnabled && len(testValidTracks) != 0 {
 
 			// Find true locations
 			gp := dbm.GM.GetGroup(groupName)
 			rsd := gp.Get_ResultData()
-			testValidTracks := rsd.Get_TestValidTracks()
-			_, _, testValidTracksRes := dbm.CalculateTestError(groupName, testValidTracks)
+			_, _, _, testValidTracksRes := dbm.CalculateTestError(groupName, testValidTracks)
 			rsd.Set_TestValidTracks(testValidTracksRes)
 
 			// calculate beset graphfactors
@@ -575,13 +575,13 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 					testValidTracks[i].UserPosition = newUserPositiong
 				}
 			}
-			err, details, testValidTracks := dbm.CalculateTestError(groupName, testValidTracks)
+			err, errDetails, details, testValidTracks := dbm.CalculateTestError(groupName, testValidTracks)
 			if err != nil {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			} else {
 				/*				rsd.Set_TestValidTracks(testValidTracks)
 								glb.Debug.Println(details)*/
-				c.JSON(http.StatusOK, gin.H{"success": true, "details": details, "testvalidtracks": testValidTracks})
+				c.JSON(http.StatusOK, gin.H{"success": true, "errDetails": errDetails, "details": details, "testvalidtracks": testValidTracks})
 			}
 		} else {
 			glb.Error.Println("empty TestValidTracks")
@@ -1705,7 +1705,7 @@ func CalcCompletionLevel(c *gin.Context) {
 		cmpLevel := dbm.GetCalcCompletionLevel()
 		if (cmpLevel > 0 && cmpLevel <= 1) {
 			//cmpLevel = float64(int(cmpLevel*10000000))/100000
-			glb.Debug.Printf("Calculation level: %f % \n", cmpLevel)
+			//glb.Debug.Printf("Calculation level: %f % \n", cmpLevel)
 			c.JSON(http.StatusOK, gin.H{"success": true, "message": cmpLevel,})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "No calculation is running"})

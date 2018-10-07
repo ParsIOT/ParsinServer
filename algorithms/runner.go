@@ -5,6 +5,7 @@ import (
 	"ParsinServer/dbm"
 	"ParsinServer/dbm/parameters"
 	"ParsinServer/glb"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"math"
 	"net/http"
@@ -426,9 +427,9 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 	userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
 	location, accuracyCircleRadius = HistoryEffect(userPosJson, userHistory)
 
-	if glb.GraphEnabled {
+	//if glb.GraphEnabled {
 		location = knnGuess
-	}
+	//}
 	userPosJson.Location = location
 	glb.Debug.Println("Knn guess: ", knnGuess)
 	glb.Debug.Println("location: ", location)
@@ -1515,9 +1516,12 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	//tempGp.Set_Permanent(false)
 	tempGp.Set_ConfigData(cd)
 
-
 	totalErrorList := []int{}
 	knnErrHyperParameters := make(map[int]parameters.KnnHyperParameters)
+
+	allHyperParamDetails := make(map[int]parameters.KnnHyperParameters)
+	allErrDetails := make(map[int][]int)
+	//allErrDetailsList := [][]int{}
 
 	bestResult := -1
 
@@ -1552,11 +1556,15 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 
 	// Set length of calculation progress bar
 	// This is shared between all threads, so it's invalid when two calculateLearn thread run
-	glb.ProgressBarLength = len(validMinClusterRSSs) * len(validKs)
+	calculationLen := len(validMinClusterRSSs) * len(validKs)
+	glb.ProgressBarLength = calculationLen
 
 	adTemp := tempGp.NewAlgoDataStruct()
 	rdTemp := tempGp.Get_RawData()
 
+	//allErrDetailsList = make([][]int,calculationLen)
+
+	paramUniqueKey := 0 // just creating unique key for each possible the parameters permutation
 	for i, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
 		for j, K := range validKs { // for over KnnK
 			glb.ProgressBarCurLevel = i*len(validKs) + j
@@ -1566,6 +1574,11 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 			//glb.Error.Println(tempHyperParameters)
 			tempHyperParameters.K = K
 			tempHyperParameters.MinClusterRss = minClusterRss
+
+			paramUniqueKey++
+			allHyperParamDetails[paramUniqueKey] = tempHyperParameters
+			tempAllErrDetailList := []int{}
+			//tempAllErrDetailList := make([]int,len(crossValidationPartsList))
 
 			// 1-foldCrossValidation (each round one location select as test set)
 			for _, CVParts := range crossValidationPartsList {
@@ -1628,13 +1641,18 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 					//	glb.Error.Println("ResultDot = ",resultDot)
 					//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
 					//}
-					distError += int(glb.CalcDist(x, y, resx, resy))
-					if distError < 0 { //print if distError is lower than zero(it's for error detection)
+					tempDistError := int(glb.CalcDist(x, y, resx, resy))
+					if tempDistError < 0 { //print if distError is lower than zero(it's for error detection)
 						glb.Error.Println(fp)
 						glb.Error.Println(resultDot)
 						_, resultDot, _ = TrackKnn(tempGp, fp, false)
 						glb.Error.Println(x, y)
 						glb.Error.Println(resx, resy)
+					} else {
+						distError += tempDistError
+						tempAllErrDetailList = append(tempAllErrDetailList, tempDistError)
+						//tempAllErrDetailList[CVNum] = tempDistError
+						//allErrDetails[paramUniqueKey] = append(allErrDetails[paramUniqueKey],tempDistError)
 					}
 				}
 				if trackedPointsNum == 0 {
@@ -1646,7 +1664,10 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 
 				tempGp.GMutex.Unlock()
 			}
+			sort.Ints(tempAllErrDetailList)
 
+			allErrDetails[paramUniqueKey] = tempAllErrDetailList
+			//allErrDetailsList[paramUniqueKey] = tempAllErrDetailList
 			glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d) = %d \n", minClusterRss, K, totalDistError)
 
 			//if(bestResult==-1 || totalDistError<bestResult){
@@ -1658,11 +1679,51 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 		}
 	}
 
+	glb.Debug.Println((allErrDetails))
+
 	glb.ProgressBarCurLevel = 0 // reset progressBar level
 
 	// Select best hyperParameters
 	//glb.Debug.Println(totalErrorList)
-	sort.Ints(totalErrorList)
+
+	//bestKey, sortedErrDetails, newErrorMap, err := SelectLowestError(allErrDetails,"FalseRate")
+	bestKey, sortedErrDetails, newErrorMap, err := SelectLowestError(allErrDetails, "AUC")
+	if err != nil {
+		glb.Error.Println(err)
+
+		// find best mean error
+		sort.Ints(totalErrorList)
+		bestResult = totalErrorList[0]
+		bestErrHyperParameters := knnErrHyperParameters[bestResult]
+
+		glb.Debug.Println("CrossValidation resuts:")
+		for _, res := range totalErrorList {
+			glb.Debug.Println(knnErrHyperParameters[res], " : ", res)
+		}
+		//glb.Debug.Println()
+		glb.Debug.Println("Best K : ", bestErrHyperParameters.K)
+		glb.Debug.Println("Best MinClusterRss : ", bestErrHyperParameters.MinClusterRss)
+		glb.Debug.Println("Minimum error = ", bestResult)
+
+		return bestErrHyperParameters
+	}
+
+	for _, i := range sortedErrDetails {
+		glb.Debug.Println("-----------------------------")
+		glb.Debug.Println("Hyper Params:", allHyperParamDetails[i])
+		glb.Debug.Println("Error:", newErrorMap[i])
+	}
+
+	for _, i := range sortedErrDetails {
+		glb.Debug.Println(allHyperParamDetails[i], " ", newErrorMap[i])
+	}
+
+	bestErrHyperParameters := allHyperParamDetails[bestKey]
+	glb.Debug.Println("Best HyperParameters: ", bestErrHyperParameters)
+
+	return bestErrHyperParameters
+
+	/*sort.Ints(totalErrorList)
 	bestResult = totalErrorList[0]
 	bestErrHyperParameters := knnErrHyperParameters[bestResult]
 
@@ -1675,7 +1736,7 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	glb.Debug.Println("Best MinClusterRss : ", bestErrHyperParameters.MinClusterRss)
 	glb.Debug.Println("Minimum error = ", bestResult)
 
-	return bestErrHyperParameters
+	return bestErrHyperParameters*/
 }
 
 func CalculateLearn(groupName string) {
@@ -1835,7 +1896,7 @@ func CalculateGraphFactor(groupName string) {
 
 	//GraphFactors range:
 	//validGraphFactorsRange = [][]float64{}
-	validGraphFactors := [][]float64{{3,3,3,3,2,2,2,2,1}, {50, 20, 1, 1}, {2, 1, 1, 1}, {50, 25, 15, 1},{1, 15, 25, 1},{5, 25, 15, 1},{100, 100, 100, 100,100,1},{100, 100, 100,100,1},{2000,1000,500,1},{4,4,4,4,3,3,3,2,2,1}}
+	validGraphFactors := [][]float64{{100, 100, 100, 100, 3, 2, 1}, {10, 10, 10, 10, 3, 2, 1}, {8, 8, 8, 8, 3, 2, 1}}
 
 	//if len(validGraphFactorsRange) == 1{
 	//
@@ -1959,4 +2020,48 @@ func CalculateGraphFactor(groupName string) {
 	ad.Set_KnnFPs(knnFPs)
 	rsd.Set_AlgoAccuracy("knn_testvalid_graph", bestResult)
 
+}
+
+// Find best key that has lowest error list:
+// method : "FalseRate", "AUC"
+func SelectLowestError(errMap map[int][]int, method string) (int, []int, map[int]int, error) {
+	if method == "FalseRate" {
+		trueMaxErr := 100 // 100 cm
+		falseCountMap := make(map[int]int)
+
+		for key, errList := range errMap {
+			falseCount := 0
+			for _, err := range errList {
+				if err > trueMaxErr {
+					falseCount++
+				}
+			}
+			falseCountMap[key] = falseCount
+		}
+		sortedKey := glb.SortIntKeyDictByIntVal(falseCountMap)
+		return sortedKey[0], sortedKey, falseCountMap, nil
+	} else if method == "AUC" {
+		falseCountMap := make(map[int]int)
+
+		trueMaxErr := 300 // 100 cm
+		trueMinErr := 100 // 100 cm
+		step := 10
+
+		for key, errList := range errMap {
+			allStepFalseCount := 0
+			for tempTrueMaxErr := trueMinErr; tempTrueMaxErr <= trueMaxErr; tempTrueMaxErr += step {
+				eachStepFalseCount := 0
+				for _, err := range errList {
+					if err > tempTrueMaxErr {
+						eachStepFalseCount++
+					}
+				}
+				allStepFalseCount += eachStepFalseCount
+			}
+			falseCountMap[key] = allStepFalseCount
+		}
+		sortedKey := glb.SortIntKeyDictByIntVal(falseCountMap)
+		return sortedKey[0], sortedKey, falseCountMap, nil
+	}
+	return -1, []int{}, make(map[int]int), errors.New("Invalid method parameters")
 }
