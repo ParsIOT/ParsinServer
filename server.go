@@ -18,9 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"runtime/debug"
 	"strings"
-	"time"
 )
 
 // VersionNum keeps track of the version
@@ -46,14 +44,14 @@ func main() {
 		LoginSuccessfulRedirectURL: "/change-db",
 	})
 
-	go func() {
-		for {
-			time.Sleep(20 * time.Second)
-			fmt.Println("Free up memory...")
-			debug.FreeOSMemory()
-		}
+	/*	go func() {
+			for {
+				time.Sleep(20 * time.Second)
+				fmt.Println("Free up memory...")
+				debug.FreeOSMemory()
+			}
 
-	}()
+		}()*/
 
 	dbm.Wg.Add(1)
 	defer dbm.Wg.Wait()
@@ -402,7 +400,7 @@ func main() {
 
 	//needToLoadSettings := r.Group("/",routes.PreLoadSettings)
 	//{
-	//	needToLoadSettings.POST("/track", algorithms.TrackFingerprintPOST)
+	//	needToLoadSettings.POST("/track", algorithms.TrackFingerprintPfOST)
 	//}
 	// Authentication
 	auth := r.Group("/")

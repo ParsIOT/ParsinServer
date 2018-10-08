@@ -27,3 +27,13 @@ func TestSortIntKeyDictByIntVal(t *testing.T) {
 	sortedKey := SortIntKeyDictByIntVal(newMap)
 	assert.Equal(t, []int{1, 2, 3}, sortedKey)
 }
+
+func TestGetGraphSlicesRangeRecursive(t *testing.T) {
+	beginSlice := []float64{1, 1, 1, 1}
+	endSlice := []float64{10, 10, 10, 10}
+
+	rangeSlices := GetGraphSlicesRangeRecursive(beginSlice, endSlice)
+	Debug.Println(rangeSlices)
+	assert.Equal(t, true, false)
+
+}

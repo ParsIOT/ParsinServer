@@ -14,6 +14,13 @@ import (
 	"strings"
 )
 
+const (
+	AUC              string = "AUC"
+	FalseRate        string = "FalseRate"
+	Mean             string = "Mean"
+	LatterPercentile string = "LatterPercentile"
+)
+
 var threadedCross bool = false //don't use, it's not safe now!
 
 type KnnJob struct {
@@ -424,8 +431,8 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 
 	// User history effect
 	//location = knnGuess
-	userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
-	location, accuracyCircleRadius = HistoryEffect(userPosJson, userHistory)
+	//userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
+	//location, accuracyCircleRadius = HistoryEffect(userPosJson, userHistory)
 
 	//if glb.GraphEnabled {
 		location = knnGuess
@@ -1510,20 +1517,20 @@ func RemoveOutlines(rd dbm.RawDataStruct) dbm.RawDataStruct {
 	return rd
 }
 
+// Error calculation using mean as error algorithm
 func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd *dbm.ConfigDataStruct, crossValidationPartsList []crossValidationParts) parameters.KnnHyperParameters {
 	// CrossValidation
 	tempGp := dbm.GM.GetGroup(groupName, false) //permanent:false
 	//tempGp.Set_Permanent(false)
 	tempGp.Set_ConfigData(cd)
 
-	totalErrorList := []int{}
-	knnErrHyperParameters := make(map[int]parameters.KnnHyperParameters)
+	//totalErrorList := []int{}
+	//knnErrHyperParameters := make(map[int]parameters.KnnHyperParameters)
 
 	allHyperParamDetails := make(map[int]parameters.KnnHyperParameters)
 	allErrDetails := make(map[int][]int)
-	//allErrDetailsList := [][]int{}
 
-	bestResult := -1
+	//bestResult := -1
 
 	//Set algorithm parameters range:
 
@@ -1581,7 +1588,8 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 			//tempAllErrDetailList := make([]int,len(crossValidationPartsList))
 
 			// 1-foldCrossValidation (each round one location select as test set)
-			for _, CVParts := range crossValidationPartsList {
+			for CVNum, CVParts := range crossValidationPartsList {
+				glb.Debug.Println("CrossValidation Part num :", CVNum)
 
 				// Learn:
 				trainSetTemp := CVParts.GetTrainSet(tempGp)
@@ -1658,13 +1666,11 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 				if trackedPointsNum == 0 {
 					glb.Error.Println("For loc:", testLocation, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
 				} else {
-					distError = distError / trackedPointsNum
-					totalDistError += distError
+					//distError = distError / trackedPointsNum
+					//totalDistError += distError
 				}
-
 				tempGp.GMutex.Unlock()
 			}
-			sort.Ints(tempAllErrDetailList)
 
 			allErrDetails[paramUniqueKey] = tempAllErrDetailList
 			//allErrDetailsList[paramUniqueKey] = tempAllErrDetailList
@@ -1674,8 +1680,8 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 			//	bestResult = totalDistError
 			//	bestK = K
 			//}
-			totalErrorList = append(totalErrorList, totalDistError)
-			knnErrHyperParameters[totalDistError] = tempHyperParameters
+			//totalErrorList = append(totalErrorList, totalDistError)
+			//knnErrHyperParameters[totalDistError] = tempHyperParameters
 		}
 	}
 
@@ -1687,26 +1693,8 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	//glb.Debug.Println(totalErrorList)
 
 	//bestKey, sortedErrDetails, newErrorMap, err := SelectLowestError(allErrDetails,"FalseRate")
-	bestKey, sortedErrDetails, newErrorMap, err := SelectLowestError(allErrDetails, "AUC")
-	if err != nil {
-		glb.Error.Println(err)
-
-		// find best mean error
-		sort.Ints(totalErrorList)
-		bestResult = totalErrorList[0]
-		bestErrHyperParameters := knnErrHyperParameters[bestResult]
-
-		glb.Debug.Println("CrossValidation resuts:")
-		for _, res := range totalErrorList {
-			glb.Debug.Println(knnErrHyperParameters[res], " : ", res)
-		}
-		//glb.Debug.Println()
-		glb.Debug.Println("Best K : ", bestErrHyperParameters.K)
-		glb.Debug.Println("Best MinClusterRss : ", bestErrHyperParameters.MinClusterRss)
-		glb.Debug.Println("Minimum error = ", bestResult)
-
-		return bestErrHyperParameters
-	}
+	bestKey, sortedErrDetails, newErrorMap := SelectBestFromErrMap(allErrDetails)
+	bestErrHyperParameters := allHyperParamDetails[bestKey]
 
 	for _, i := range sortedErrDetails {
 		glb.Debug.Println("-----------------------------")
@@ -1718,7 +1706,6 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 		glb.Debug.Println(allHyperParamDetails[i], " ", newErrorMap[i])
 	}
 
-	bestErrHyperParameters := allHyperParamDetails[bestKey]
 	glb.Debug.Println("Best HyperParameters: ", bestErrHyperParameters)
 
 	return bestErrHyperParameters
@@ -1737,6 +1724,218 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	glb.Debug.Println("Minimum error = ", bestResult)
 
 	return bestErrHyperParameters*/
+}
+
+func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreferences, cd *dbm.ConfigDataStruct, crossValidationPartsList []crossValidationParts) parameters.KnnHyperParameters {
+	// CrossValidation
+	tempGp := dbm.GM.GetGroup(groupName, false) //permanent:false
+	tempGp.Set_ConfigData(cd)
+
+	totalErrorList := []int{}
+	knnErrHyperParameters := make(map[int]parameters.KnnHyperParameters)
+
+	bestResult := -1
+
+	//Set algorithm parameters range:
+
+	// KNN:
+	// Parameters list creation
+	// 1.K
+	validKs := glb.MakeRange(glb.DefaultKnnKRange[0], glb.DefaultKnnKRange[1])
+	knnKRange := shprf.KnnKRange
+	if len(knnKRange) == 1 {
+		validKs = glb.MakeRange(knnKRange[0], knnKRange[0])
+	} else if len(knnKRange) == 2 {
+		validKs = glb.MakeRange(knnKRange[0], knnKRange[1])
+	} else {
+		glb.Error.Println("knnKRange:", knnKRange)
+		glb.Error.Println("Can't set valid Knn K values")
+	}
+	//2.MinClusterRSS
+	validMinClusterRSSs := glb.MakeRange(glb.DefaultKnnMinCRssRange[0], glb.DefaultKnnMinCRssRange[1])
+
+	minClusterRSSRange := shprf.KnnMinCRssRange
+	if len(minClusterRSSRange) == 1 {
+		validMinClusterRSSs = glb.MakeRange(minClusterRSSRange[0], minClusterRSSRange[0])
+	} else if len(minClusterRSSRange) == 2 {
+		validMinClusterRSSs = glb.MakeRange(minClusterRSSRange[0], minClusterRSSRange[1])
+		validMinClusterRSSs = append(validMinClusterRSSs, 0)
+	} else {
+		glb.Error.Println("minClusterRSSRange:", minClusterRSSRange)
+		glb.Error.Println("Can't set valid min cluster rss values")
+	}
+
+	// Set length of calculation progress bar
+	// This is shared between all threads, so it's invalid when two calculateLearn thread run
+	glb.ProgressBarLength = len(validMinClusterRSSs) * len(validKs)
+
+	adTemp := tempGp.NewAlgoDataStruct()
+	rdTemp := tempGp.Get_RawData()
+
+	for i, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
+		for j, K := range validKs { // for over KnnK
+			glb.ProgressBarCurLevel = i*len(validKs) + j
+			totalDistError := 0
+
+			tempHyperParameters := parameters.NewKnnHyperParameters()
+			//glb.Error.Println(tempHyperParameters)
+			tempHyperParameters.K = K
+			tempHyperParameters.MinClusterRss = minClusterRss
+
+			// 1-foldCrossValidation (each round one location select as test set)
+			for CVNum, CVParts := range crossValidationPartsList {
+				glb.Debug.Println("CrossValidation Part num :", CVNum)
+
+				// Learn:
+				trainSetTemp := CVParts.GetTrainSet(tempGp)
+				rdTemp.Set_Fingerprints(trainSetTemp.Fingerprints)
+				rdTemp.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
+				rdTemp.Set_FingerprintsBackup(trainSetTemp.Fingerprints)
+				rdTemp.Set_FingerprintsOrderingBackup(trainSetTemp.FingerprintsOrdering)
+
+				testFPs := CVParts.testSet.Fingerprints
+				testFPsOrdering := CVParts.testSet.FingerprintsOrdering
+
+				GetParametersWithGP(tempGp)
+
+				PreProcess(rdTemp, shprf.NeedToRelocateFP)
+
+				learnedKnnData, _ := LearnKnn(tempGp, tempHyperParameters)
+
+				/*			// Set hyper parameters
+							learnedKnnData.HyperParameters = parameters.NewKnnHyperParameters()
+							learnedKnnData.HyperParameters.K = K
+							learnedKnnData.HyperParameters.MinClusterRss = minClusterRss*/
+
+				//learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K: K, MinClusterRss: minClusterRss}
+
+				adTemp.Set_KnnFPs(learnedKnnData)
+
+				// Set to main group
+				tempGp.GMutex.Lock() //For each group there's a lock to avoid race between concurrent calculateLearn s
+				tempGp.Set_AlgoData(adTemp)
+
+				// Error calculation for this round
+				distError := 0
+				trackedPointsNum := 0
+				testLocation := testFPs[testFPsOrdering[0]].Location
+				for _, index := range testFPsOrdering {
+					fp := testFPs[index]
+
+					resultDot := ""
+					var err error
+					err, resultDot, _ = TrackKnn(tempGp, fp, false)
+					if err != nil {
+						if err.Error() == "NumofAP_lowerThan_MinApNum" {
+							glb.Error.Println("NumofAP_lowerThan_MinApNum")
+							continue
+						} else if err.Error() == "NoValidFingerprints" {
+							glb.Error.Println("NoValidFingerprints")
+							continue
+						}
+					} else {
+						trackedPointsNum++
+					}
+
+					//glb.Debug.Println(fp.Timestamp)
+					resx, resy := glb.GetDotFromString(resultDot)
+					x, y := glb.GetDotFromString(testLocation)
+					//if fp.Timestamp==int64(1516794991872647445){
+					//	glb.Error.Println("ResultDot = ",resultDot)
+					//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
+					//}
+					distError += int(glb.CalcDist(x, y, resx, resy))
+					if distError < 0 { //print if distError is lower than zero(it's for error detection)
+						glb.Error.Println(fp)
+						glb.Error.Println(resultDot)
+						_, resultDot, _ = TrackKnn(tempGp, fp, false)
+						glb.Error.Println(x, y)
+						glb.Error.Println(resx, resy)
+					}
+				}
+				if trackedPointsNum == 0 {
+					glb.Error.Println("For loc:", testLocation, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
+				} else {
+					distError = distError / trackedPointsNum
+					totalDistError += distError
+				}
+
+				tempGp.GMutex.Unlock()
+			}
+
+			glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d) = %d \n", minClusterRss, K, totalDistError)
+
+			//if(bestResult==-1 || totalDistError<bestResult){
+			//	bestResult = totalDistError
+			//	bestK = K
+			//}
+			totalErrorList = append(totalErrorList, totalDistError)
+			knnErrHyperParameters[totalDistError] = tempHyperParameters
+		}
+	}
+
+	glb.ProgressBarCurLevel = 0 // reset progressBar level
+
+	// Select best hyperParameters
+	//glb.Debug.Println(totalErrorList)
+	sort.Ints(totalErrorList)
+	bestResult = totalErrorList[0]
+	bestErrHyperParameters := knnErrHyperParameters[bestResult]
+
+	glb.Debug.Println("CrossValidation resuts:")
+	for _, res := range totalErrorList {
+		glb.Debug.Println(knnErrHyperParameters[res], " : ", res)
+	}
+	//glb.Debug.Println()
+	glb.Debug.Println("Best K : ", bestErrHyperParameters.K)
+	glb.Debug.Println("Best MinClusterRss : ", bestErrHyperParameters.MinClusterRss)
+	glb.Debug.Println("Minimum error = ", bestResult)
+
+	return bestErrHyperParameters
+}
+
+// return best index from error map
+// bestkey is key of minimum error
+// sortedErrDetails is sorted keys according to error(first one is bestkey)
+// newErrorMap is map of int to int that originate from allErrDetails map according to error method(auc,mean, ...)
+func SelectBestFromErrMap(allErrDetails map[int][]int) (int, []int, map[int]int) {
+	MainErrAlgorithm := Mean
+
+	bestKey, sortedErrDetails, newErrorMap, err := SelectLowestError(allErrDetails, MainErrAlgorithm)
+	if err != nil { // Use Mean algorithm
+		glb.Error.Println(err)
+
+		// find best mean error
+		bestKey, sortedErrDetails, newErrorMap, err := SelectLowestError(allErrDetails, Mean)
+		if err != nil {
+			glb.Error.Println(err)
+		}
+		//bestResult := sortedErrDetails[0]
+		return bestKey, sortedErrDetails, newErrorMap
+		/*bestErrHyperParameters := knnErrHyperParameters[bestResult]
+
+		glb.Debug.Println("CrossValidation resuts:")
+		for _, res := range totalErrorList {
+			glb.Debug.Println(knnErrHyperParameters[res], " : ", res)
+		}
+		//glb.Debug.Println()
+		glb.Debug.Println("Best K : ", bestErrHyperParameters.K)
+		glb.Debug.Println("Best MinClusterRss : ", bestErrHyperParameters.MinClusterRss)
+		glb.Debug.Println("Minimum error = ", bestResult)
+
+		return bestErrHyperParameters*/
+	}
+	glb.Error.Println(newErrorMap)
+	return bestKey, sortedErrDetails, newErrorMap
+	/*	for _, i := range sortedErrDetails {
+			glb.Debug.Println("-----------------------------")
+			glb.Debug.Println("Hyper Params:", allHyperParamDetails[i])
+			glb.Debug.Println("Error:", newErrorMap[i])
+		}
+
+		for _, i := range sortedErrDetails {
+			glb.Debug.Println(allHyperParamDetails[i], " ", newErrorMap[i])
+		}*/
 }
 
 func CalculateLearn(groupName string) {
@@ -1766,15 +1965,17 @@ func CalculateLearn(groupName string) {
 	glb.Debug.Println("crossValidationPartsList length:", len(crossValidationPartsList))
 	shprf := dbm.GetSharedPrf(groupName)
 
-	bestKnnHyperParams := GetBestKnnHyperParams(groupName+"_KNNTemp", shprf, cd, crossValidationPartsList)
+	//bestKnnHyperParams := GetBestKnnHyperParams(groupName+"_KNNTemp", shprf, cd, crossValidationPartsList)
+	bestKnnHyperParams := GetBestKnnHyperParamsLegacy(groupName+"_KNNTemp", shprf, cd, crossValidationPartsList)
 
 	glb.Debug.Println("BestHyperParameters before testvalid track recalculation :", bestKnnHyperParams)
 
 	// Calculating each location detection accuracy with best hyperParameters: //todo:Avoid this extra level,do it in GetBestKnnHyperParams
 	knnDistError := 0
 	numLocCrossed := 0
-	for _, CVParts := range crossValidationPartsList {
-		//glb.Debug.Println(cvNum)
+	for CVNum, CVParts := range crossValidationPartsList {
+		glb.Debug.Println("CrossValidation Part num :", CVNum)
+
 		// Learn
 		trainSetTemp := CVParts.GetTrainSet(gp)
 		rd.Set_Fingerprints(trainSetTemp.Fingerprints)
@@ -1896,7 +2097,175 @@ func CalculateGraphFactor(groupName string) {
 
 	//GraphFactors range:
 	//validGraphFactorsRange = [][]float64{}
-	validGraphFactors := [][]float64{{100, 100, 100, 100, 3, 2, 1}, {10, 10, 10, 10, 3, 2, 1}, {8, 8, 8, 8, 3, 2, 1}}
+	validGraphFactors := [][]float64{{0.5, 0.5, 1, 1, 1}, {2, 1, 1, 1}, {100, 100, 100, 100, 3, 2, 1}, {10, 10, 10, 10, 3, 2, 1}, {8, 8, 8, 8, 3, 2, 1}, {1, 1, 1, 1}}
+
+	//if len(validGraphFactorsRange) == 1{
+	//
+	//}else if len(validGraphFactorsRange) == 2{
+	//
+	//}else{
+	//	glb.Error.Println("Can't set valid graph factors values")
+	//}
+
+	testValidTracks := rsd.Get_TestValidTracks()
+
+	// Set parameters with testvalid tracks
+	//reset temp params
+	knnHyperParams := knnFPs.HyperParameters
+
+	glb.Debug.Println("bestKnnHyperParams before CalculateGraphFactor :", knnHyperParams)
+	// 1. TestValid without graph:
+	/*	testValidTrueLoc := []string{}
+		testvalidGuessLoc := []string{}*/
+	glb.GraphEnabled = false
+	{
+		learnedKnnData, _ := LearnKnn(gp, knnHyperParams)
+		ad.Set_KnnFPs(learnedKnnData)
+
+		allErrDetails := make(map[int][]int)
+
+		tempAllErrDetailList := []int{}
+		/*totalDistError := 0
+		trackedPointsNum := 0*/
+		gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear userhistory to check knn error with new graphfactor
+
+		for _, testValidTrack := range testValidTracks {
+			fp := testValidTrack.UserPosition.Fingerprint
+			testLocation := testValidTrack.TrueLocation
+
+			resultDot := RecalculateTrackFingerprintKnnCrossValidation(fp)
+
+			/*			testValidTrueLoc = append(testValidTrueLoc, testLocation)
+						testvalidGuessLoc = append(testvalidGuessLoc, resultDot)*/
+
+			resx, resy := glb.GetDotFromString(resultDot)
+			x, y := glb.GetDotFromString(testLocation)
+			tempDistError := int(glb.CalcDist(x, y, resx, resy))
+			if tempDistError < 0 { //print if totalDistError is lower than zero(it's for error detection)
+				glb.Error.Println(fp)
+				glb.Error.Println(resultDot)
+				glb.Error.Println("totalDistError is negetive!")
+			} else {
+				/*trackedPointsNum++
+				totalDistError += tempDistError*/
+				tempAllErrDetailList = append(tempAllErrDetailList, tempDistError)
+
+				//glb.Debug.Println("###########")
+				//glb.Debug.Println(fp)
+				//glb.Debug.Println(testLocation)
+				//glb.Debug.Println(resultDot)
+				//glb.Debug.Println(tempDistError)
+			}
+		}
+		allErrDetails[0] = tempAllErrDetailList
+		_, _, newErrorMap := SelectBestFromErrMap(allErrDetails)
+		glb.Error.Println("testvalid error without graph:", newErrorMap[0])
+		rsd.Set_AlgoAccuracy("knn_testvalid", newErrorMap[0])
+	}
+	glb.GraphEnabled = true
+	/*	glb.Error.Println("testValidTrueLoc",testValidTrueLoc)
+		glb.Error.Println("testvalidGuessLoc",testvalidGuessLoc)*/
+
+	// 2. Testvalid with graph:
+	//totalErrorList := []int{}
+	//knnErrHyperParameters := make(map[int]parameters.KnnHyperParameters)
+	//bestResult := -1
+
+	// graphfactor used in online phase so learning must be done one time
+	learnedKnnData, _ := LearnKnn(gp, knnHyperParams)
+
+	allHyperParamDetails := make(map[int]parameters.KnnHyperParameters)
+	allErrDetails := make(map[int][]int)
+	paramUniqueKey := 0 // just creating unique key for each possible the parameters permutation
+	for _, graphFactor := range validGraphFactors { // for over the validGraphFactors
+		gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear userhistory to check knn error with new graphfactor
+
+		allHyperParamDetails[0] = learnedKnnData.HyperParameters
+
+		tempHyperParameters := knnHyperParams
+		tempHyperParameters.GraphFactors = graphFactor
+		learnedKnnData.HyperParameters = tempHyperParameters
+		ad.Set_KnnFPs(learnedKnnData)
+
+		paramUniqueKey++
+		allHyperParamDetails[paramUniqueKey] = tempHyperParameters
+		tempAllErrDetailList := []int{}
+
+		//totalDistError := 0
+		trackedPointsNum := 0
+		for _, testValidTrack := range testValidTracks {
+			fp := testValidTrack.UserPosition.Fingerprint
+			testLocation := testValidTrack.TrueLocation
+			resultDot := RecalculateTrackFingerprintKnnCrossValidation(fp)
+
+			/*	if (testLocation=="-428.0,906.0"){
+					glb.Debug.Println("-33.0,946.0 resultdot:",resultDot)
+					glb.Debug.Println(fp)
+				}
+	*/
+			resx, resy := glb.GetDotFromString(resultDot)
+			x, y := glb.GetDotFromString(testLocation)
+			tempDistError := int(glb.CalcDist(x, y, resx, resy))
+			if tempDistError < 0 { //print if totalDistError is lower than zero(it's for error detection)
+				glb.Error.Println(fp)
+				glb.Error.Println(resultDot)
+				glb.Error.Println("totalDistError is negetive!")
+			} else {
+				trackedPointsNum++
+				//totalDistError += tempDistError
+				tempAllErrDetailList = append(tempAllErrDetailList, tempDistError)
+			}
+		}
+
+		if trackedPointsNum == 0 {
+			glb.Error.Println("trackedPointsNum is zero!")
+		} else {
+			/*			totalDistError = totalDistError / trackedPointsNum
+						totalErrorList = append(totalErrorList, totalDistError)
+						knnErrHyperParameters[totalDistError] = tempHyperParameters*/
+		}
+		allErrDetails[paramUniqueKey] = tempAllErrDetailList
+		glb.Debug.Println("Calculation for graphfactor=", graphFactor, " ended ", )
+	}
+
+	/*	sort.Ints(totalErrorList)
+		bestResult = totalErrorList[0]
+		bestErrHyperParameters := knnErrHyperParameters[bestResult]*/
+
+	bestKey, sortedErrDetails, newErrorMap := SelectBestFromErrMap(allErrDetails)
+	bestErrHyperParameters := allHyperParamDetails[bestKey]
+	bestResult := newErrorMap[bestKey]
+
+	for _, i := range sortedErrDetails {
+		glb.Debug.Println("-----------------------------")
+		glb.Debug.Println("Hyper Params:", allHyperParamDetails[i])
+		glb.Debug.Println("Error:", newErrorMap[i])
+	}
+
+	for _, i := range sortedErrDetails {
+		glb.Debug.Println(allHyperParamDetails[i], " ", newErrorMap[i])
+	}
+
+	glb.Debug.Println("Best HyperParameters: ", bestErrHyperParameters)
+
+	knnFPs.HyperParameters = bestErrHyperParameters
+	glb.Debug.Println("Best GraphFactors : ", bestErrHyperParameters.GraphFactors)
+
+	ad.Set_KnnFPs(knnFPs)
+	rsd.Set_AlgoAccuracy("knn_testvalid_graph", bestResult)
+
+}
+
+// Error calculation using mean as error algorithm
+func CalculateGraphFactorLegacy(groupName string) {
+	gp := dbm.GM.GetGroup(groupName)
+	rsd := gp.Get_ResultData()
+	ad := gp.Get_AlgoData()
+	knnFPs := ad.Get_KnnFPs()
+
+	//GraphFactors range:
+	//validGraphFactorsRange = [][]float64{}
+	validGraphFactors := [][]float64{{0.5, 0.5, 1, 1, 1}, {2, 1, 1, 1}, {100, 100, 100, 100, 3, 2, 1}, {10, 10, 10, 10, 3, 2, 1}, {8, 8, 8, 8, 3, 2, 1}, {1, 1, 1, 1}}
 
 	//if len(validGraphFactorsRange) == 1{
 	//
@@ -2023,14 +2392,15 @@ func CalculateGraphFactor(groupName string) {
 }
 
 // Find best key that has lowest error list:
-// method : "FalseRate", "AUC"
+// method : "FalseRate", "AUC" ,"LatterPercentile","Mean"
 func SelectLowestError(errMap map[int][]int, method string) (int, []int, map[int]int, error) {
-	if method == "FalseRate" {
+	if method == FalseRate {
 		trueMaxErr := 100 // 100 cm
 		falseCountMap := make(map[int]int)
 
 		for key, errList := range errMap {
 			falseCount := 0
+			sort.Ints(errList)
 			for _, err := range errList {
 				if err > trueMaxErr {
 					falseCount++
@@ -2040,15 +2410,20 @@ func SelectLowestError(errMap map[int][]int, method string) (int, []int, map[int
 		}
 		sortedKey := glb.SortIntKeyDictByIntVal(falseCountMap)
 		return sortedKey[0], sortedKey, falseCountMap, nil
-	} else if method == "AUC" {
+	} else if method == AUC {
 		falseCountMap := make(map[int]int)
 
+		//latterPercentile := 0.90
 		trueMaxErr := 300 // 100 cm
-		trueMinErr := 100 // 100 cm
+		trueMinErr := 50  // 100 cm
 		step := 10
 
 		for key, errList := range errMap {
 			allStepFalseCount := 0
+			sort.Ints(errList)
+
+			//latterPercentileIndex := int(float64(errListLen)*latterPercentile)
+			//latterPercentileVal := errList[latterPercentileIndex]
 			for tempTrueMaxErr := trueMinErr; tempTrueMaxErr <= trueMaxErr; tempTrueMaxErr += step {
 				eachStepFalseCount := 0
 				for _, err := range errList {
@@ -2062,6 +2437,40 @@ func SelectLowestError(errMap map[int][]int, method string) (int, []int, map[int
 		}
 		sortedKey := glb.SortIntKeyDictByIntVal(falseCountMap)
 		return sortedKey[0], sortedKey, falseCountMap, nil
+	} else if method == LatterPercentile {
+		latterPercentile := 0.75
+
+		percentileMap := make(map[int]int)
+		errListLen := 0
+
+		// find error list length
+		for key := range errMap {
+			if errListLen == 0 {
+				errListLen = len(errMap[key])
+			} else {
+				break
+			}
+		}
+		for key, errList := range errMap {
+			sort.Ints(errList)
+			latterPercentileIndex := int(float64(errListLen) * latterPercentile)
+			latterPercentileVal := errList[latterPercentileIndex]
+			percentileMap[key] = latterPercentileVal
+		}
+		sortedKey := glb.SortIntKeyDictByIntVal(percentileMap)
+		return sortedKey[0], sortedKey, percentileMap, nil
+	} else if method == Mean {
+		meanErrMap := make(map[int]int)
+		for key, errList := range errMap {
+			mean := 0
+			for _, err := range errList {
+				mean += err
+			}
+			mean /= len(errList)
+			meanErrMap[key] = mean
+		}
+		sortedKey := glb.SortIntKeyDictByIntVal(meanErrMap)
+		return sortedKey[0], sortedKey, meanErrMap, nil
 	}
 	return -1, []int{}, make(map[int]int), errors.New("Invalid method parameters")
 }

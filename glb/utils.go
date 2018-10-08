@@ -850,6 +850,9 @@ func SortedInsert(s []int64, f int64) []int64 {
 	return newS
 }
 
+func GetGraphSlicesRangeRecursive(first []float64, last []float64) ([][]float64) {
+	return getGraphSlicesRangeRecursive(first, last, 0)
+}
 // gets first slice, last slice and level which it must be entered 0 at normal calls. (its goal is for recursive calls inside the function)
 func getGraphSlicesRangeRecursive (first []float64 , last []float64 , level int) ([][]float64) {
 	//fmt.Println("level = ", level)
@@ -883,7 +886,6 @@ func getGraphSlicesRangeRecursive (first []float64 , last []float64 , level int)
 
 			a[level]++
 			tempResults = getGraphSlicesRangeRecursive(a,last,level+1)
-
 			result = append(result,tempResults...)
 			//fmt.Println("a,level = ",a , level)
 		}
@@ -901,6 +903,11 @@ func getGraphSlicesRangeRecursive (first []float64 , last []float64 , level int)
 		for j:=0;j<len(finalResult);j++{
 			if testEq(result[i],finalResult[j])==true {
 				//fmt.Println(result[i]," ", finalResult[j])
+				new = false
+			}
+		}
+		for k := 0; k < len(result[i])-1; k++ {
+			if (result[i][k] < result[i][k+1]) {
 				new = false
 			}
 		}

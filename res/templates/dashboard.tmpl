@@ -14,8 +14,8 @@
     <link href="/static/css/izitoast/iziToast.css" rel="stylesheet">
     <script src="/static/js/izitoast/iziToast.js"></script>
 
-    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+    <link href="/static/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="/static/js/bootstrap-toggle.min.js"></script>
     <!-- Bootstrap Core CSS -->
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
 
@@ -234,7 +234,7 @@
                     <input id="use_uwb" data-toggle="toggle" data-on="Use UWB data" data-off="Don't use UWB"
                            type="checkbox">
                 </div>
-                <div class="pull-left">
+            {{/*<div class="pull-left">*/}}
                     K range = {{ $.kRange }}
                     <br>
                     Min cluster rss range = {{ $.knnMinCRssRange }}
@@ -247,7 +247,13 @@
                     MaxMovement: {{ $.maxMovement}}
                     <br>
                     MaxEuclideanRssDist: {{$.maxEuclideanRssDist}} [ble:30,wifi=50]
+                <div class="pull-right">
+                    <input id="just_calc_graph_factors_check" data-toggle="toggle" data-on="JustGraphFactors"
+                           data-off="CompleteCalculation"
+                           type="checkbox">
                 </div>
+            {{/*</div>*/}}
+
             </div>
         </div>
     </div>
@@ -1082,7 +1088,8 @@
                     title: "Recalculate priors and analyze accuracy",
                     type: "info",
                     html: true,
-                    text: '<div class="row"><div class="col-md-12" style="margin-top: 50px"><div class="progress"><div id="pb" class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="color:black;">0%</div></div></div></div>',
+                    text: '  <input id="use_uwb" data-toggle="toggle" data-on="Use UWB data" data-off="Don\'t use UWB"\n' +
+                            'type="checkbox"><div class="row"><div class="col-md-12" style="margin-top: 50px"><div class="progress"><div id="pb" class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="color:black;">0%</div></div></div></div>',
                     showCancelButton: true,
                     closeOnConfirm: false,
                     showLoaderOnConfirm: true,
@@ -1092,6 +1099,7 @@
                     preConfirm: setInterval(getdata, 1000)
                     $.get("/calculate", {
                                 "group": "{{ .Group }}",
+                                "justCalcGraphFactors": ($('#just_calc_graph_factors_check').is(":checked") ? "true" : "false"),
                             },
                             function (data) {
                                 console.log(data);

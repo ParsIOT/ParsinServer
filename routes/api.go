@@ -310,8 +310,11 @@ func Calculate(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	groupName := c.DefaultQuery("group", "none")
-	groupName = strings.ToLower(groupName)
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	justCalcGraphFactors := strings.ToLower(c.DefaultQuery("justCalcGraphFactors", "none"))
+
+
 	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
 			glb.Error.Println("Group doesn't exist")
@@ -319,7 +322,11 @@ func Calculate(c *gin.Context) {
 			return
 		}
 
-		algorithms.CalculateLearn(groupName)
+		if justCalcGraphFactors != "true" {
+			algorithms.CalculateLearn(groupName)
+		} else {
+			glb.Debug.Println("Just Calculating Graph Factors")
+		}
 
 		// test-valid hyper parameters selecting
 		rsd := dbm.GM.GetGroup(groupName).Get_ResultData()
@@ -1753,6 +1760,25 @@ func BuildGroup(c *gin.Context) {
 		//algorithms.PreProcess(rd, needToRelocateFP) // use preprocess just once in buildgroup(not use in calculatelearn)
 		//5. Run learning for raw data
 		algorithms.CalculateLearn(groupName)
+
+		// test-valid hyper parameters selecting
+		rsd := dbm.GM.GetGroup(groupName).Get_ResultData()
+		testValidTracks := rsd.Get_TestValidTracks()
+		if glb.GraphEnabled && len(testValidTracks) != 0 {
+
+			// Find true locations
+			gp := dbm.GM.GetGroup(groupName)
+			rsd := gp.Get_ResultData()
+			_, _, _, testValidTracksRes := dbm.CalculateTestError(groupName, testValidTracks)
+			rsd.Set_TestValidTracks(testValidTracksRes)
+
+			// calculate beset graphfactors
+			algorithms.CalculateGraphFactor(groupName)
+		} else if !glb.GraphEnabled {
+			rsd.Set_AlgoAccuracy("knn_testvalid", 0)
+			rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
+		}
+
 
 		glb.Debug.Println("Struct reformed successfully")
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "struct renewed"})
