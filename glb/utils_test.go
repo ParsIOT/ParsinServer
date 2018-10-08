@@ -34,6 +34,8 @@ func TestGetGraphSlicesRangeRecursive(t *testing.T) {
 
 	rangeSlices := GetGraphSlicesRangeRecursive(beginSlice, endSlice)
 	Debug.Println(rangeSlices)
+	Debug.Println(len(rangeSlices))
+
 	assert.Equal(t, true, false)
 
 }
