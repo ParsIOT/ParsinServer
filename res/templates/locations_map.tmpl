@@ -159,7 +159,7 @@
                 console.log(dragStartPoint);
             });
             marker.on('dragend', function (e) {
-                dragEndPoint = (e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0";
+                dragEndPoint = (Math.round(e.target.getLatLng().lat)).toString() + ".0" + "," + (Math.round(e.target.getLatLng().lng)).toString() + ".0";
                 console.log("END:");
                 console.log(dragEndPoint);
                 console.log(e.target);

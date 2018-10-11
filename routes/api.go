@@ -119,21 +119,35 @@ func GetLocationList(c *gin.Context) {
 	}
 	//ps, _ := dbm.OpenParameters(group)
 	gp := dbm.GM.GetGroup(groupName)
-	md := gp.Get_MiddleData_Val()
+	//md := gp.Get_MiddleData_Val()
+	md := gp.Get_MiddleData()
 	algoAccuracy := gp.Get_ResultData().Get_AlgoLocAccuracy()
 	locationCount := make(map[string]map[string]int)
-	for n := range md.NetworkLocs {
-		for loc := range md.NetworkLocs[n] {
+
+	fpData := gp.Get_RawData().Get_Fingerprints()
+	uniqueLocations := []string{}
+	for _, fp := range fpData {
+		if !glb.StringInSlice(fp.Location, uniqueLocations) {
+			uniqueLocations = append(uniqueLocations, fp.Location)
+		}
+	}
+
+	glb.Debug.Println(uniqueLocations)
+	//md.Set_UniqueLocs(uniqueLocations)
+
+	//for n := range uniqueLocations {
+	//	for loc := range md.NetworkLocs[n] {
+	for _, loc := range uniqueLocations {
 			locationCount[loc] = make(map[string]int)
 			//locationCount[loc]["count"] = gp.BayesResults[n].TotalLocations[loc]
 			//locationCount[loc]["accuracy"] = gp.BayesResults[n].Accuracy[loc]
 			locationCount[loc]["count"] = md.LocCount[loc]
 			locationCount[loc]["accuracy"] = algoAccuracy["knn"][loc]
 		}
-	}
+	//}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":   fmt.Sprintf("Found %d unique locations in group %s", len(md.UniqueLocs), groupName),
+		"message":   fmt.Sprintf("Found %d unique locations in group %s", len(uniqueLocations), groupName),
 		"locations": locationCount,
 		"success":   true})
 }
@@ -1029,11 +1043,14 @@ func EditLoc(c *gin.Context) {
 	groupName := c.DefaultQuery("group", "none")
 	oldloc := strings.TrimSpace(c.DefaultQuery("oldloc", "none"))
 	newloc := strings.TrimSpace(c.DefaultQuery("newloc", "none"))
+	glb.Debug.Println(oldloc)
+	glb.Debug.Println(newloc)
+
 	if groupName != "none" && oldloc != "none" && newloc != "none" {
 		numChanges := dbm.EditLocDB(oldloc, newloc, groupName)
 		glb.Debug.Println("Changed location of " + strconv.Itoa(numChanges) + " fingerprints")
 		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
-		algorithms.CalculateLearn(groupName)
+		//algorithms.CalculateLearn(groupName)
 		c.JSON(http.StatusOK, gin.H{"message": "Changed location of " + strconv.Itoa(numChanges) + " fingerprints", "success": true})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
@@ -1056,7 +1073,7 @@ func EditLocBaseDB(c *gin.Context) {
 		dbm.EditLocDB(oldloc, newloc, groupName)
 		glb.Debug.Println("Changed location of " + strconv.Itoa(numChanges) + " fingerprints")
 		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
-		algorithms.CalculateLearn(groupName)
+		//algorithms.CalculateLearn(groupName)
 		c.JSON(http.StatusOK, gin.H{"message": "Changed location of " + strconv.Itoa(numChanges) + " fingerprints", "success": true})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
@@ -2278,3 +2295,34 @@ func ReloadDB(c *gin.Context) {
 	}
 
 }
+
+func KnnConfigPOST(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	kRange := c.PostForm("kRange")
+	minClusterRssRange := c.PostForm("minClusterRssRange")
+	maxEuclideanRssDistRange := c.PostForm("maxEuclideanRssDistRange")
+	graphState := c.PostForm("graphState")
+	graphFactorRange := c.PostForm("graphFactorRange")
+	dsaState := c.PostForm("dsaState")
+	maxMovementRange := c.PostForm("maxMovementRange")
+
+	glb.Debug.Println(kRange)
+	glb.Debug.Println(minClusterRssRange)
+	glb.Debug.Println(maxEuclideanRssDistRange)
+	glb.Debug.Println(graphState)
+	glb.Debug.Println(graphFactorRange)
+	glb.Debug.Println(dsaState)
+	glb.Debug.Println(maxMovementRange)
+
+	c.Redirect(http.StatusFound, "/dashboard/"+groupName)
+}
+
+
