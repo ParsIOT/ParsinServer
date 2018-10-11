@@ -271,7 +271,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		}
 	*/
 	FP2AFactor := make(map[string]float64)
-	//hyperParams.GraphFactors = []float64{3,3,3,3,2,2,2,2,1}
+	//hyperParams.GraphFactors = []float64{10,10,3,2,1}
 	maxHopLevel := len(hyperParams.GraphFactors) - 2 // last item is minAdjacencyFactor
 
 	adjacencyFactors := hyperParams.GraphFactors

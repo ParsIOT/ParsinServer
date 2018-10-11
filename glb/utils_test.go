@@ -31,8 +31,9 @@ func TestSortIntKeyDictByIntVal(t *testing.T) {
 func TestGetGraphSlicesRangeRecursive(t *testing.T) {
 	beginSlice := []float64{1, 1, 1, 1}
 	endSlice := []float64{10, 10, 10, 10}
+	step := 5.0
 
-	rangeSlices := GetGraphSlicesRangeRecursive(beginSlice, endSlice)
+	rangeSlices := GetGraphSlicesRangeRecursive(beginSlice, endSlice,step)
 	Debug.Println(rangeSlices)
 	Debug.Println(len(rangeSlices))
 

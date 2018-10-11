@@ -2101,7 +2101,8 @@ func CalculateGraphFactor(groupName string) {
 
 	beginSlice := []float64{1, 1, 1, 1}
 	endSlice := []float64{2, 2, 2, 2}
-	validGraphFactors := glb.GetGraphSlicesRangeRecursive(beginSlice, endSlice)
+	step := 2.0
+	validGraphFactors := glb.GetGraphSlicesRangeRecursive(beginSlice, endSlice, step)
 
 
 
