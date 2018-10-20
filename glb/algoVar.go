@@ -38,7 +38,6 @@ var DefaultMapDimensions []int
 var DefaultMapWidth int
 var DefaultMapHeight int
 
-var CalculateTestError bool
 
 var DefaultMaxMovement float64
 
@@ -84,7 +83,6 @@ func init() {
 	DefaultMapDimensions = []int{3400,3600}
 	DefaultMapHeight = 3400
 	DefaultMapWidth = 3600
-	CalculateTestError = true
 	GraphEnabled = true
 	PDREnabledForDynamicSubareaMethod = false
 

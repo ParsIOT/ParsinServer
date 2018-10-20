@@ -54,7 +54,6 @@ type ConfigDataStruct struct {
 	//Learned data:
 	KnnParameters parameters.KnnParameters
 	GroupGraph    parameters.Graph
-
 	//Note: Run easyjson.sh after editing
 }
 

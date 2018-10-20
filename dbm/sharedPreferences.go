@@ -37,8 +37,6 @@ func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}
 		shPrf.KnnMinCRssRange = val.([]int)
 	case "MinRss":
 		shPrf.MinRss = val.(int)
-	case "MinRssOpt":
-		shPrf.MinRssOpt = val.(int)
 	case "FilterMacsMap":
 		shPrf.FilterMacsMap = val.([]string)
 	case "ArbitLocations":
