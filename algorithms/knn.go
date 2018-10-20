@@ -1,15 +1,15 @@
 package algorithms
 
 import (
-	"math"
-	"strings"
-	"strconv"
-	"runtime"
+	"ParsinServer/dbm"
+	"ParsinServer/dbm/parameters"
 	"ParsinServer/glb"
 	"errors"
-	"ParsinServer/dbm/parameters"
-	"ParsinServer/dbm"
+	"math"
+	"runtime"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 var knn_regression bool
@@ -231,6 +231,14 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	//		}
 	//}
 
+	/*	tempKnnFpOrdering := []string{}
+		for _,fpTime := range mainFingerprintsOrdering{
+			if len(fingerprintsInMemory[fpTime].WifiFingerprint)>= glb.MinApNum{
+				tempKnnFpOrdering = append(tempKnnFpOrdering,fpTime)
+			}
+		}
+		mainFingerprintsOrdering = tempKnnFpOrdering*/
+
 	// fingerprintOrdering Creation according to clusters and rss rates
 	repeatFP := make(map[string]int)
 	for _, fpTime := range mainFingerprintsOrdering {
@@ -271,19 +279,21 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		}
 	*/
 	FP2AFactor := make(map[string]float64)
-	//hyperParams.GraphFactors = []float64{3,3,3,3,2,2,2,2,1}
+	//hyperParams.GraphFactors = []float64{10,10,3,2,1}
 	maxHopLevel := len(hyperParams.GraphFactors) - 2 // last item is minAdjacencyFactor
 
 	adjacencyFactors := hyperParams.GraphFactors
 	minAdjacencyFactor := hyperParams.GraphFactors[maxHopLevel+1] // assigning zero make errors in other functions
-	for _,fpTime := range fingerprintsOrdering{
-		FP2AFactor [fpTime] = minAdjacencyFactor
-	}
+	//if minAdjacencyFactor != 0 {
+	//	for _,fpTime := range fingerprintsOrdering{
+	//		FP2AFactor[fpTime] = minAdjacencyFactor
+	//	}
+	//}
 
 	// History effect:
 	//historyConsidered = false // Note:deleteit .
+
 	// Idea from: Dynamic Subarea Method in "A Hybrid Indoor Positioning Algorithm based on WiFi Fingerprinting and Pedestrian Dead Reckoning""
-	var tempFingerprintOrdering []string
 	if historyConsidered {
 		baseLoc := "" // according to last location or pdr location, filter far fingerprints
 		if (curFingerprint.Location != "" && glb.PDREnabledForDynamicSubareaMethod) { // Current PDRLocation is available
@@ -307,33 +317,42 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		}
 		//glb.Error.Println(baseLoc)
 
-
 		if baseLoc != "" { // ignore when baseLoc is empty (for example there is no userhistory!)
 			if glb.GraphEnabled {
+				var tempFingerprintOrdering []string
 				graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
 
 				if !graphMapPointer.IsEmpty() {
-
 					baseNodeGraph := graphMapPointer.GetNearestNode(baseLoc)
 					sliceOfHops := graphMapPointer.BFSTraverse(baseNodeGraph) // edit this function to return a nested slice with
 					// nodes with corresponding hops
 
 					for i, levelSliceOfHops := range sliceOfHops {
+						var factor float64
+						if (i <= maxHopLevel) {
+							factor = adjacencyFactors[i]
+						} else if minAdjacencyFactor != 0 { // last member of adjacencyFactors is minAdjacencyFactor
+							factor = minAdjacencyFactor
+						} else { // if minAdjacencyFactor is zero ignore remaining fingerprints(related to father graph nodes)
+							break
+						}
+
 						for _, node := range levelSliceOfHops {
 							//hopFPs := append(hopFPs,node2FPs[node]...)
 							hopFPs := node2FPs[node.Label]
-							for _, fp := range hopFPs {
-								if (i <= maxHopLevel) {
-									FP2AFactor[fp] = adjacencyFactors[i]
-								}
+							for _, fpTime := range hopFPs {
+								FP2AFactor[fpTime] = factor
+								tempFingerprintOrdering = append(tempFingerprintOrdering, fpTime)
 							}
 						}
 					}
 
+					fingerprintsOrdering = tempFingerprintOrdering
 					//glb.Error.Println(FP2AFactor)
 				}
 
 			} else {
+				var tempFingerprintOrdering []string
 				baseLocX, baseLocY := glb.GetDotFromString(baseLoc)
 				maxMovement := dbm.GetSharedPrf(gp.Get_Name()).MaxMovement
 				//glb.Error.Println()
@@ -432,16 +451,34 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 		chanJobs <- jobW{fpTime: fpTime,
 			mac2RssCur: mac2RssCur,
-			mac2RssFP: mac2RssFP}
+			mac2RssFP:  mac2RssFP}
 
 	}
 
 	close(chanJobs)
 
-	for i := 1; i <= numJobs; i++ {
-		res := <-chanResults
-		W[res.fpTime] = res.weight * FP2AFactor[res.fpTime] * float64(repeatFP[res.fpTime])
+	if glb.GraphEnabled && len(FP2AFactor) != 0 { //FP2AFactor length is zero when user history is empty
+		for i := 1; i <= numJobs; i++ {
+			res := <-chanResults
+			if (res.weight*FP2AFactor[res.fpTime]*float64(repeatFP[res.fpTime]) == 0) {
+				glb.Error.Println("EYBAABA")
+				glb.Error.Println(FP2AFactor[res.fpTime])
+				glb.Error.Println(FP2AFactor)
+			}
+			W[res.fpTime] = res.weight * FP2AFactor[res.fpTime] * float64(repeatFP[res.fpTime])
+		}
+	} else {
+		for i := 1; i <= numJobs; i++ {
+			res := <-chanResults
+			W[res.fpTime] = res.weight * float64(repeatFP[res.fpTime])
+		}
 	}
+
+
+
+
+
+
 	if glb.NewDistAlgo {
 		W = ConvertDist2Wigth(W)
 	}
@@ -640,7 +677,7 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 		//glb.Debug.Println("distance: ",distance)
 		//glb.Debug.Println("weight: ",weight)
 		results <- resultW{fpTime: job.fpTime,
-			weight: weight*100}
+			weight: weight * 100}
 	}
 
 }
