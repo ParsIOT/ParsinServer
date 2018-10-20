@@ -1925,7 +1925,7 @@ func SelectBestFromErrMap(allErrDetails map[int][]int) (int, []int, map[int]int)
 
 		return bestErrHyperParameters*/
 	}
-	glb.Error.Println(newErrorMap)
+	glb.Debug.Println(newErrorMap)
 	return bestKey, sortedErrDetails, newErrorMap
 	/*	for _, i := range sortedErrDetails {
 			glb.Debug.Println("-----------------------------")
@@ -1959,6 +1959,8 @@ func CalculateLearn(groupName string) {
 
 	knnLocAccuracy := make(map[string]int)
 	var crossValidationPartsList []crossValidationParts
+	glb.Debug.Println(mainFPOrdering)
+	glb.Debug.Println(mainFPData)
 	crossValidationPartsList = GetCrossValidationParts(gp, mainFPOrdering, mainFPData)
 	// ToDo: Need to learn algorithms concurrently
 
@@ -2043,7 +2045,11 @@ func CalculateLearn(groupName string) {
 	}
 
 	// Set CrossValidation results
-	rs.Set_AlgoAccuracy("knn", knnDistError/numLocCrossed)
+	if numLocCrossed == 0 {
+		glb.Error.Println("numLocCrossed is zero ")
+	} else {
+		rs.Set_AlgoAccuracy("knn", knnDistError/numLocCrossed)
+	}
 	for loc, accuracy := range knnLocAccuracy {
 		rs.Set_AlgoLocAccuracy("knn", loc, accuracy)
 	}
@@ -2099,9 +2105,12 @@ func CalculateGraphFactor(groupName string) {
 	//validGraphFactorsRange = [][]float64{}
 	//validGraphFactors := [][]float64{{0.5, 0.5, 1, 1, 1}, {2, 1, 1, 1}, {100, 100, 100, 100, 3, 2, 1}, {10, 10, 10, 10, 3, 2, 1}, {8, 8, 8, 8, 3, 2, 1}, {1, 1, 1, 1}}
 
-	beginSlice := []float64{1, 1, 1, 1}
-	endSlice := []float64{2, 2, 2, 2}
+	beginSlice := []float64{1, 1, 1, 1, 1, 1, 1}
+	//endSlice := []float64{10, 10, 10, 10, 3, 2, 1}
+	endSlice := []float64{2, 1, 1, 1, 1, 1, 1}
 	validGraphFactors := glb.GetGraphSlicesRangeRecursive(beginSlice, endSlice)
+	validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
+	validGraphFactors = append(validGraphFactors, []float64{10, 10, 10, 10, 3, 2, 1})
 
 
 
@@ -2165,7 +2174,7 @@ func CalculateGraphFactor(groupName string) {
 		}
 		allErrDetails[0] = tempAllErrDetailList
 		_, _, newErrorMap := SelectBestFromErrMap(allErrDetails)
-		glb.Error.Println("testvalid error without graph:", newErrorMap[0])
+		glb.Debug.Println("testvalid error without graph:", newErrorMap[0])
 		rsd.Set_AlgoAccuracy("knn_testvalid", newErrorMap[0])
 	}
 	glb.GraphEnabled = true
