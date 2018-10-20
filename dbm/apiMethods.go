@@ -1303,7 +1303,7 @@ func GetRSSData(groupName string, mac string) [][]int {
 
 }
 
-func CalculateTestError(groupName string, testValidTracks []parameters.TestValidTrack) (error, []int, [][]string, []parameters.TestValidTrack) { //todo: create a page to show test-valid test fingerprint on map
+func CalculateTestErrorAndRelocateTestValid(groupName string, testValidTracks []parameters.TestValidTrack) (error, []int, [][]string, []parameters.TestValidTrack) { //todo: create a page to show test-valid test fingerprint on map
 	details := [][]string{}
 	errDetails := []int{}
 
