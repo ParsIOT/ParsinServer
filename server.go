@@ -370,6 +370,7 @@ func main() {
 			needToLoadSettings.POST("/delArbitLocations", routes.DelArbitLocations)
 			//needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
 			needToLoadSettings.DELETE("/clearConfigData", routes.ClearConfigData)
+			needToLoadSettings.POST("/knnConfig", routes.KnnConfigPOST)
 		}
 	}
 	r.GET("/getfingerprint/", routes.GetFingerprint)
@@ -381,6 +382,7 @@ func main() {
 	r.POST("/uploadTrueLocationLog", routes.UploadTrueLocationLog)
 	r.GET("/setRelocateFPLocState", routes.SetRelocateFPLocStateAPI)
 	r.GET("/getRelocateFPLocState", routes.GetRelocateFPLocStateAPI)
+	r.DELETE("/clearTestValidTrueLocation", routes.ClearTestValidTrueLocation)
 	r.GET("/getRSSData", routes.GetRSSDataAPI)
 	r.GET("/getMapDetails", routes.GetMapDetails)
 	//r.POST("/addArbitLocations", routes.AddArbitLocations)

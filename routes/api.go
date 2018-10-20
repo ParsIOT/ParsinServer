@@ -138,12 +138,12 @@ func GetLocationList(c *gin.Context) {
 	//for n := range uniqueLocations {
 	//	for loc := range md.NetworkLocs[n] {
 	for _, loc := range uniqueLocations {
-			locationCount[loc] = make(map[string]int)
-			//locationCount[loc]["count"] = gp.BayesResults[n].TotalLocations[loc]
-			//locationCount[loc]["accuracy"] = gp.BayesResults[n].Accuracy[loc]
-			locationCount[loc]["count"] = md.LocCount[loc]
-			locationCount[loc]["accuracy"] = algoAccuracy["knn"][loc]
-		}
+		locationCount[loc] = make(map[string]int)
+		//locationCount[loc]["count"] = gp.BayesResults[n].TotalLocations[loc]
+		//locationCount[loc]["accuracy"] = gp.BayesResults[n].Accuracy[loc]
+		locationCount[loc]["count"] = md.LocCount[loc]
+		locationCount[loc]["accuracy"] = algoAccuracy["knn"][loc]
+	}
 	//}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -328,7 +328,6 @@ func Calculate(c *gin.Context) {
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	justCalcGraphFactors := strings.ToLower(c.DefaultQuery("justCalcGraphFactors", "none"))
 
-
 	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
 			glb.Error.Println("Group doesn't exist")
@@ -350,8 +349,14 @@ func Calculate(c *gin.Context) {
 			// Find true locations
 			gp := dbm.GM.GetGroup(groupName)
 			rsd := gp.Get_ResultData()
-			_, _, _, testValidTracksRes := dbm.CalculateTestError(groupName, testValidTracks)
-			rsd.Set_TestValidTracks(testValidTracksRes)
+			_, _, _, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, testValidTracks)
+			if len(testValidTracksRes) != 0 { // if truelocations doesn't match avoid reseting testvalidtracks(testValidTracksRes is empty!)
+				rsd.Set_TestValidTracks(testValidTracksRes)
+			} else if len(testValidTracksRes) != len(testValidTracks) {
+				glb.Error.Println("testValidTracksRes length and testValidTracks length doesn't equal")
+			} else {
+				glb.Error.Println("Empty testValidTracksRes(truelocations and testvalids timestamp don't match.)")
+			}
 
 			// calculate beset graphfactors
 			algorithms.CalculateGraphFactor(groupName)
@@ -546,7 +551,14 @@ func DelTestValidTracks(c *gin.Context) {
 			return
 		}
 
-		dbm.GM.GetGroup(groupName).Get_ResultData().Set_TestValidTracks([]parameters.TestValidTrack{})
+		gp := dbm.GM.GetGroup(groupName)
+		// delete testvalid tracks
+		gp.Get_ResultData().Set_TestValidTracks([]parameters.TestValidTrack{})
+
+		// delete truelocation(uwb) of testvalidtracks
+		emptyTestValidTrueLocations := make(map[int64]string)
+		gp.Get_RawData().Set_TestValidTrueLocations(emptyTestValidTrueLocations)
+
 		c.JSON(http.StatusOK, gin.H{"success": true})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or user isn't given"})
@@ -596,13 +608,22 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 					testValidTracks[i].UserPosition = newUserPositiong
 				}
 			}
-			err, errDetails, details, testValidTracks := dbm.CalculateTestError(groupName, testValidTracks)
+
+			// testValidTracksRes is a temporary variable, don't save it in db
+			err, errDetails, details, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, testValidTracks)
+
+			if len(testValidTracksRes) != len(testValidTracks) {
+				glb.Error.Println("testValidTracksRes length and testValidTracks length doesn't equal")
+			} else {
+				glb.Error.Println("Empty testValidTracksRes(truelocations and testvalids timestamp don't match.)")
+			}
+
 			if err != nil {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			} else {
 				/*				rsd.Set_TestValidTracks(testValidTracks)
 								glb.Debug.Println(details)*/
-				c.JSON(http.StatusOK, gin.H{"success": true, "errDetails": errDetails, "details": details, "testvalidtracks": testValidTracks})
+				c.JSON(http.StatusOK, gin.H{"success": true, "errDetails": errDetails, "details": details, "testvalidtracks": testValidTracksRes})
 			}
 		} else {
 			glb.Error.Println("empty TestValidTracks")
@@ -1100,18 +1121,18 @@ func EditMac(c *gin.Context) {
 		fpData := gp.Get_RawData().Get_Fingerprints()
 
 		dbMacs := []string{}
-		for _,fp := range fpData{
-			for _,rt := range fp.WifiFingerprint{
-				if !glb.StringInSlice(rt.Mac,dbMacs){
-					dbMacs = append(dbMacs,rt.Mac)
+		for _, fp := range fpData {
+			for _, rt := range fp.WifiFingerprint {
+				if !glb.StringInSlice(rt.Mac, dbMacs) {
+					dbMacs = append(dbMacs, rt.Mac)
 				}
 			}
 		}
 
-		if glb.StringInSlice(newmac,dbMacs) && forceEdit != "true"{
+		if glb.StringInSlice(newmac, dbMacs) && forceEdit != "true" {
 			glb.Error.Println("There are some fingerprints that conatins the newmac already(edit newmac first)")
-			c.JSON(http.StatusOK, gin.H{"success": false, "message":"There are some fingerprints that conatins the newmac already(edit newmac first)"})
-		}else{
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "There are some fingerprints that conatins the newmac already(edit newmac first)"})
+		} else {
 			numChanges := dbm.EditMacDB(oldmac, newmac, groupName)
 			glb.Debug.Println("Changed mac of " + strconv.Itoa(numChanges) + " fingerprints")
 			//algorithms.CalculateLearn(groupName)
@@ -1786,8 +1807,14 @@ func BuildGroup(c *gin.Context) {
 			// Find true locations
 			gp := dbm.GM.GetGroup(groupName)
 			rsd := gp.Get_ResultData()
-			_, _, _, testValidTracksRes := dbm.CalculateTestError(groupName, testValidTracks)
-			rsd.Set_TestValidTracks(testValidTracksRes)
+			_, _, _, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, testValidTracks)
+			if len(testValidTracksRes) != 0 { // if truelocations doesn't match avoid reseting testvalidtracks(testValidTracksRes is empty!)
+				rsd.Set_TestValidTracks(testValidTracksRes)
+			} else if len(testValidTracksRes) != len(testValidTracks) {
+				glb.Error.Println("testValidTracksRes length and testValidTracks length doesn't equal")
+			} else {
+				glb.Error.Println("Empty testValidTracksRes(truelocations and testvalids timestamp don't match.)")
+			}
 
 			// calculate beset graphfactors
 			algorithms.CalculateGraphFactor(groupName)
@@ -1795,7 +1822,6 @@ func BuildGroup(c *gin.Context) {
 			rsd.Set_AlgoAccuracy("knn_testvalid", 0)
 			rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
 		}
-
 
 		glb.Debug.Println("Struct reformed successfully")
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "struct renewed"})
@@ -2200,6 +2226,27 @@ func GetRelocateFPLocStateAPI(c *gin.Context) {
 
 }
 
+func ClearTestValidTrueLocation(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "DELETE, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		rd := dbm.GM.GetGroup(groupName).Get_RawData()
+		emptyTestValidTrueLocations := make(map[int64]string)
+		rd.Set_TestValidTrueLocations(emptyTestValidTrueLocations)
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group is not mentioned"})
+	}
+
+}
+
 func GetRSSDataAPI(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -2324,5 +2371,3 @@ func KnnConfigPOST(c *gin.Context) {
 
 	c.Redirect(http.StatusFound, "/dashboard/"+groupName)
 }
-
-

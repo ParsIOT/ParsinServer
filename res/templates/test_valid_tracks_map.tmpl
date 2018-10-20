@@ -474,7 +474,7 @@
                             errDetails.sort(function (a, b) {
                                 return a - b;
                             });
-                            var percentile = 0.75
+                            var percentile = 0.95
                             tbody.append("<tr class='bg-info'><td>knn " + Math.round(percentile * 100) + " percentile</td><td>" + errDetails[Math.round(errDetails.length * percentile)] + "</td></tr>");
 
                             $("#show-error-details-link").find("a").remove();//remove show rss details link

@@ -1,0 +1,135 @@
+{{ define "knn_config" }}
+<style>
+    .modal-dialog {
+        overflow-y: initial !important
+    }
+
+    .modal-body {
+        height: 450px;
+        overflow-y: auto;
+    }
+</style>
+<div class="modal fade" id="knnConfigModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Change KNN configs</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action='/knnConfig?group={{ $.Group }}' id="knnConfigForm" method='POST'>
+            {{/*<form action='#' id="knnConfigForm" method='POST'>*/}}
+                <div class="modal-body">
+                {{/*     <div class="input-group form-group">
+                        <h4>Results:</h4>
+                        best K:{{ $.bestK }}
+                        <br>
+                        best MinClusterRss:{{ $.bestMinClusterRss }}
+                        <br>
+                        best MaxMovement: {{ $.maxMovement}}
+                        <br>
+                        best MaxEuclideanRssDist: {{$.maxEuclideanRssDist}} [ble:30,wifi=50]
+                    </div>
+                    <hr>*/}}
+                    <div class="input-group form-group">
+                        <span class="input-group-addon">K range: </span>
+                        <span class="input-group-addon">[25 26]</span>
+                        <input id="kRange" name="kRange" class="form-control input-lg" type="text"
+                               placeholder="[begin,end] or [specific K]; example:[1,30]">
+                    </div>
+                    <div class="input-group form-group">
+                        <span class="input-group-addon">Min cluster RSS range: </span>
+                        <span class="input-group-addon">[-60 -70]</span>
+                        <input id="minClusterRssRange" name="minClusterRssRange" class="form-control input-lg"
+                               type="text"
+                               placeholder="[begin,end] or [specific rss]; example:[-60,-90]">
+                    </div>
+                    <div class="input-group form-group">
+                        <span class="input-group-addon">Max Euclidean Rss Dist range: </span>
+                        <span class="input-group-addon">[30 60]</span>
+                        <input id="maxEuclideanRssDistRange" name="maxEuclideanRssDistRange"
+                               class="form-control input-lg" type="text"
+                               placeholder="[begin,end] or [specific rss dist]; example:[30,50]">
+                    </div>
+                    <hr>
+                    <div class="volume-fees-panel">
+                        <h4>Graph Settings: </h4>
+                        <div class="input-group form-group">
+                            <span class="input-group-addon">Graph enabled: </span>
+                            <span class="input-group-addon">Active</span>
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-info btn-secondary active">
+                                    <input type="radio" name="graphState" id="graphStateOn" value="on" checked> On
+                                </label>
+                                <label class="btn btn-secondary btn-danger">
+                                    <input type="radio" name="graphState" id="graphStateOff" value="off"> Off
+                                </label>
+                            </div>
+                        </div>
+                        <div class="input-group form-group">
+                            <span class="input-group-addon">Graph factor range: </span>
+                            <span class="input-group-addon">[[1,1,1,1] [10,10,10,10]]</span>
+                            <input id="graphFactorRange" name="graphFactorRange" class="form-control input-lg"
+                                   type="text"
+                                   placeholder="[begin,end] or [specific factor slice]; example:[[1,1,1,1] [10,10,10,10]]">
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="volume-fees-panel">
+                        <h4>Dynamic subarea method Settings: </h4>
+                        <div class="input-group form-group">
+                            <span class="input-group-addon">DSA enabled: </span>
+                            <span class="input-group-addon">Active</span>
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-info btn-secondary active">
+                                    <input type="radio" name="dsaState" id="dsaStateOn" value="on" checked> On
+                                </label>
+                                <label class="btn btn-secondary btn-danger">
+                                    <input type="radio" name="dsaState" id="dsaStateOff" value="off"> Off
+                                </label>
+                            </div>
+                        </div>
+                        <div class="input-group form-group">
+                            <span class="input-group-addon">Max movement range: </span>
+                            <span class="input-group-addon">[100 10000]</span>
+                            <input id="maxMovementRange" name="maxMovementRange" class="form-control input-lg"
+                                   type="text"
+                                   placeholder="[begin,end] or [specific dist]; example:[100 1000]">
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <div class="form-group">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <input type='submit' class="btn btn-primary" value="Save"/>
+                    {{/*<button type="button" id="SaveKnnConfig" class="btn btn-primary" >Save</button>*/}}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{{/*<script>
+
+    $('#SaveKnnConfig').click(function () {
+        // $("#knnConfigForm").trigger('submit');
+        var frm = $('#knnConfigForm');
+        $.ajax({
+            type: frm.attr('method'),
+            url: frm.attr('action'),
+            data: frm.serialize(),
+            success: function (data) {
+                console.log('Submission was successful.');
+                console.log(data);
+            },
+            error: function (data) {
+                console.log('An error occurred.');
+                console.log(data);
+            },
+        });
+    });
+</script>*/}}
+
+{{ end }}

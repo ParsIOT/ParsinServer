@@ -185,7 +185,6 @@
 
 
 {{ template "navbar" . }}
-
 <!-- Page Content -->
 <div class="container">
 
@@ -207,6 +206,7 @@
             </h2>
         </div>
     </div>
+
 
     <!-- Page Header -->
     <!-- <div class="row clearfix" id="content-row">
@@ -357,6 +357,13 @@
                                 title="Clear ConfigData(graph, ...)">Clear ConfigData
                         </button>
                     </div>
+                    <div class="col-sm-2 col-xs-6">
+                        <button type="submit" class="btn btn-success btn-block" data-toggle="modal"
+                                data-target="#knnConfigModal">
+                            KNN config
+                        </button>
+                    </div>
+                {{ template "knn_config" . }}
                 </div>
 
             </div>
