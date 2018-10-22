@@ -1959,8 +1959,8 @@ func CalculateLearn(groupName string) {
 
 	knnLocAccuracy := make(map[string]int)
 	var crossValidationPartsList []crossValidationParts
-	glb.Debug.Println(mainFPOrdering)
-	glb.Debug.Println(mainFPData)
+	//glb.Debug.Println(mainFPOrdering)
+	//glb.Debug.Println(mainFPData)
 	crossValidationPartsList = GetCrossValidationParts(gp, mainFPOrdering, mainFPData)
 	// ToDo: Need to learn algorithms concurrently
 
