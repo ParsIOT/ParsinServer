@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  parsin-autorun:
+    build: .
+    dockerfile: Dockerfile
+    image: registry.gitlab.com/parsiot/parsinserver/autorun:komail-1
+    volumes:
+      - PATH/TO/data/:/go/src/ParsinServer/data
+      - PATH/TO/findconf/:/go/src/ParsinServer/findconf
+    # entrypoint: /bin/bash
+    # # -i
+    # stdin_open: true
+    # # -i
+    # tty: true
