@@ -1,20 +1,22 @@
 package algorithms
 
 import (
-	"math"
-	"strings"
-	"strconv"
-	"runtime"
+	"ParsinServer/dbm"
+	"ParsinServer/dbm/parameters"
 	"ParsinServer/glb"
 	"errors"
-	"ParsinServer/dbm/parameters"
-	"ParsinServer/dbm"
+	"fmt"
+	"math"
+	"runtime"
 	"sort"
+	"strconv"
+	"strings"
 )
 
 var knn_regression bool
 var minkowskyQ float64
 var maxrssInNormal, minrssInNormal float64
+
 //var topRssList []int
 var distAlgo string
 
@@ -63,7 +65,7 @@ func LearnKnn(md *dbm.MiddleDataStruct, rd dbm.RawDataStruct, hyperParameters []
 	//Debug.Println(Cosine([]float64{1,2,3},[]float64{1,2,4}))
 	//jsonFingerprint = calcMacRate(jsonFingerprint,false)
 	//K := hyperParameters[0].(int)
-	MinClusterRSS := hyperParameters[1].(int) //komeil: min threshold for determining whether ...
+	//MinClusterRSS := hyperParameters[1].(int) //komeil: min threshold for determining whether ...
 	// a fingerprint is in the cluster of a beacon or not
 	//glb.Debug.Printf("Knn is running (K:%d, MinClusterRss:%d)\n",K,MinClusterRSS)
 	//jsonFingerprint = calcMacJustRate(jsonFingerprint,false)
@@ -88,15 +90,37 @@ func LearnKnn(md *dbm.MiddleDataStruct, rd dbm.RawDataStruct, hyperParameters []
 	//if err!=nil {
 	//	return err
 	//}
-
+	tempFingerprints := make(map[string]parameters.Fingerprint)
 	for fpTime, fp := range fingerprints {
-		for _, rt := range fp.WifiFingerprint { //rt ==> Router = mac + RSS of an Access Point
+		/*for _, rt := range fp.WifiFingerprint { //rt ==> Router = mac + RSS of an Access Point
 			if (rt.Rssi >= MinClusterRSS) {
 				clusters[rt.Mac] = append(clusters[rt.Mac], fpTime)
 			}
+		}*/
+		/*		if strings.Contains(fp.WifiFingerprint[0].Mac, "#") {
+				break
+			}*/
+		fpTemp := fp
+		fpTemp.WifiFingerprint = nil
+		for i := 0; i < len(fp.WifiFingerprint)-1; i++ {
+			sort.Slice(fpTemp.WifiFingerprint, func(i, j int) bool {
+				return fpTemp.WifiFingerprint[i].Mac < fpTemp.WifiFingerprint[j].Mac
+			})
+			currRouter := fp.WifiFingerprint[i]
+			for j := i + 1; j < len(fp.WifiFingerprint); j++ {
+				var r parameters.Router
+				nextRouter := fp.WifiFingerprint[j]
+				r.Mac = fmt.Sprintf("%v#%v", currRouter.Mac, nextRouter.Mac)
+				r.Rssi = currRouter.Rssi - nextRouter.Rssi
+				fpTemp.WifiFingerprint = append(fpTemp.WifiFingerprint, r)
+			}
+
 		}
+
+		tempFingerprints[fpTime] = fpTemp
 	}
 
+	fingerprints = tempFingerprints
 	//// Cluster print
 	//for key,val := range clusters{
 	//	fmt.Println("mac: "+key+" ")
@@ -126,7 +150,7 @@ func LearnKnn(md *dbm.MiddleDataStruct, rd dbm.RawDataStruct, hyperParameters []
 	return tempKnnFingerprints, nil
 }
 func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsidered bool) (error, string, map[string]float64) {
-
+	historyConsidered = false
 	//rd := gp.Get_RawData()
 	//md := gp.Get_MiddleData()
 
@@ -166,6 +190,25 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	mainFingerprintsOrdering = tempKnnFingerprints.FingerprintsOrdering
 	//clusters = tempKnnFingerprints.Clusters
 
+	//explain: convert fingerprint to diff
+	convertedFingerprint := curFingerprint
+	convertedFingerprint.WifiFingerprint = nil
+	for i := 0; i < len(curFingerprint.WifiFingerprint)-1; i++ {
+		sort.Slice(curFingerprint.WifiFingerprint, func(i, j int) bool {
+			return curFingerprint.WifiFingerprint[i].Mac < curFingerprint.WifiFingerprint[j].Mac
+		})
+		currRouter := curFingerprint.WifiFingerprint[i]
+		for j := i + 1; j < len(curFingerprint.WifiFingerprint); j++ {
+			var r parameters.Router
+			nextRouter := curFingerprint.WifiFingerprint[j]
+			r.Mac = fmt.Sprintf("%v#%v", currRouter.Mac, nextRouter.Mac)
+			r.Rssi = currRouter.Rssi - nextRouter.Rssi
+			convertedFingerprint.WifiFingerprint = append(convertedFingerprint.WifiFingerprint, r)
+		}
+
+	}
+	curFingerprint = convertedFingerprint
+
 	//tempList := []string{}
 	//tempList = append(tempList,mainFingerprintsOrdering...)
 	//sort.Sort(sort.StringSlice(tempList))
@@ -200,14 +243,14 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	// fingerprintOrdering Creation according to clusters and rss rates
 	highRateRssExist := false // komeil: a variable to decide if it is needed to search all fingerprints instead of one or some clusters
 	/*	for _, rt := range curFingerprint.WifiFingerprint {
-			if (rt.Rssi >= tempKnnFingerprints.MinClusterRss) {
-				if cluster, ok := clusters[rt.Mac]; ok {
-					highRateRssExist = true
-					fingerprintsOrdering = append(fingerprintsOrdering, cluster...)
-				}
+		if (rt.Rssi >= tempKnnFingerprints.MinClusterRss) {
+			if cluster, ok := clusters[rt.Mac]; ok {
+				highRateRssExist = true
+				fingerprintsOrdering = append(fingerprintsOrdering, cluster...)
 			}
-		}*/
-	if (!highRateRssExist) {
+		}
+	}*/
+	if !highRateRssExist {
 		fingerprintsOrdering = mainFingerprintsOrdering
 	}
 
@@ -215,8 +258,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	// Idea from: Dynamic Subarea Method in "A Hybrid Indoor Positioning Algorithm based on WiFi Fingerprinting and Pedestrian Dead Reckoning""
 	var tempFingerprintOrdering []string
 	if historyConsidered {
-		baseLoc := "" // according to last location or pdr location, filter far fingerprints
-		if (curFingerprint.Location != "") { // Current PDRLocation is available
+		baseLoc := ""                      // according to last location or pdr location, filter far fingerprints
+		if curFingerprint.Location != "" { // Current PDRLocation is available
 			baseLoc = curFingerprint.Location
 			// todo : we can use lastUserPos.Location even when PDRLocation is available too.
 		} else {
@@ -297,12 +340,12 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	runtime.GOMAXPROCS(glb.MaxParallelism())
 	chanJobs := make(chan jobW, 1+numJobs)
 	chanResults := make(chan resultW, 1+numJobs)
-	if (distAlgo == "Euclidean") {
+	if distAlgo == "Euclidean" {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			//wgKnn.Add(1)
 			go calcWeight(id, chanJobs, chanResults)
 		}
-	} else if (distAlgo == "Cosine") {
+	} else if distAlgo == "Cosine" {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			go calcWeightCosine(id, chanJobs, chanResults)
 		}
@@ -312,7 +355,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	for _, fpTime := range fingerprintsOrdering {
 		fp := fingerprintsInMemory[fpTime]
 
-		if (len(fp.WifiFingerprint) < glb.MinApNum) { // todo:
+		if len(fp.WifiFingerprint) < glb.MinApNum { // todo:
 			numJobs -= 1
 			continue
 		} else {
@@ -406,7 +449,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		//var xHistequ []string
 		//var xHistMap []string
 		for K, fpTime := range fingerprintSorted {
-			if (K < stopNum) {
+			if K < stopNum {
 				KNNList[fpTime] = W[fpTime]
 				x_y := strings.Split(fingerprintsInMemory[fpTime].Location, ",")
 				if !(len(x_y) == 2) {
@@ -439,7 +482,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				//Debug.Println(W[fpTime]*locX)
 				sumW = sumW + W[fpTime]
 			} else {
-				break;
+				break
 			}
 		}
 		//if curFingerprint.Timestamp==int64(1516794991872647445) {
@@ -471,7 +514,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	} else {
 		KNNList := make(map[string]float64)
 		for K, fpTime := range fingerprintSorted {
-			if (K < stopNum) {
+			if K < stopNum {
 				fpLoc := fingerprintsInMemory[fpTime].Location
 				if _, ok := KNNList[fpLoc]; ok {
 					KNNList[fpLoc] += W[fpTime]
@@ -479,7 +522,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 					KNNList[fpLoc] = W[fpTime]
 				}
 			} else {
-				break;
+				break
 			}
 		}
 		sortedKNNList := glb.SortDictByVal(KNNList)
