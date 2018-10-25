@@ -80,10 +80,10 @@ func SlashChangeDb(c *gin.Context) {
 	var groupName string
 	loginGroup := sessions.Default(c)
 	groupCookie := loginGroup.Get("group")
-	groupName = c.DefaultQuery("group", "noneasdf")
-	errorMessage := c.DefaultQuery("error", "noneasdf")
+	groupName = c.DefaultQuery("group", "none")
+	errorMessage := c.DefaultQuery("error", "none")
 
-	if errorMessage != "noneasdf"{
+	if errorMessage != "none" {
 		if errorMessage == "groupNotExists"{
 			c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
 				"ErrorMessage": "There is no group with this name.",
@@ -93,7 +93,7 @@ func SlashChangeDb(c *gin.Context) {
 	}
 
 	if groupCookie == nil {
-		if groupName == "noneasdf" {
+		if groupName == "none" {
 			c.HTML(http.StatusOK, "changedb.tmpl", gin.H{})
 		} else {
 			loginGroup.Set("group", groupName)
@@ -159,13 +159,15 @@ func SlashDashboard(c *gin.Context) {
 
 
 	type DashboardData struct {
-		Networks         []string
-		Locations        map[string][]string
-		LocationAccuracy map[string]int
-		LocationCount    map[string]int
-		Mixin            map[string]float64
-		VarabilityCutoff map[string]float64
-		Users            map[string]parameters.UserPositionJSON
+		Networks                  []string
+		Locations                 map[string][]string
+		LocationAccuracy          map[string]int
+		KnnTestValidAccuracy      int
+		KnnTestValidGraphAccuracy int
+		LocationCount             map[string]int
+		Mixin                     map[string]float64
+		VarabilityCutoff          map[string]float64
+		Users                     map[string]parameters.UserPositionJSON
 	}
 	var dash DashboardData
 	dash.Networks = []string{}
@@ -181,11 +183,13 @@ func SlashDashboard(c *gin.Context) {
 
 	gp := dbm.GM.GetGroup(groupName)
 	md := gp.Get_MiddleData_Val()
+	rsd := gp.Get_ResultData()
 
-	knnAlgo := gp.Get_AlgoData().Get_KnnFPs()
-	bestK := knnAlgo.K
-	bestMinClusterRss := knnAlgo.MinClusterRss
+	knnHyperParams := gp.Get_AlgoData().Get_KnnFPs().HyperParameters
+	bestK := knnHyperParams.K
+	bestMinClusterRss := knnHyperParams.MinClusterRss
 	maxMovement := dbm.GetSharedPrf(groupName).MaxMovement
+	maxEuclideanRssDist := gp.Get_ConfigData().Get_KnnParameters().MaxEuclideanRssDist
 
 	for n := range md.NetworkLocs {
 		//dash.Mixin[n] = gp.Get_Priors()[n].Special["MixIn"]
@@ -203,26 +207,31 @@ func SlashDashboard(c *gin.Context) {
 			dash.LocationCount = md.LocCount
 		}
 		totalError := 0
-		algoAccuracy := gp.Get_ResultData().Get_AlgoLocAccuracy()
+		algoAccuracy := rsd.Get_AlgoLocAccuracy()
 		for loc, accuracy := range algoAccuracy["knn"] {
 			dash.LocationAccuracy[loc] = accuracy
 			totalError += accuracy
 		}
-		dash.LocationAccuracy["all"] = totalError
+		dash.LocationAccuracy["all"] = totalError / len(algoAccuracy["knn"])
 	}
+	algoAccuracies := rsd.Get_AlgoAccuracy()
+	dash.KnnTestValidAccuracy = algoAccuracies["knn_testvalid"]
+	dash.KnnTestValidGraphAccuracy = algoAccuracies["knn_testvalid_graph"]
+
 	//glb.Debug.Println(dash)
 	mapNamesList := glb.ListMaps()
 	c.HTML(http.StatusOK, "dashboard.tmpl", gin.H{
-		"Message":           glb.RuntimeArgs.Message,
-		"Group":             groupName,
-		"Dash":              dash,
-		"Users":             people,
-		"kRange":            kRange,
-		"knnMinCRssRange":   knnMinCRssRange,
-		"bestK":             bestK,
-		"bestMinClusterRss": bestMinClusterRss,
-		"maxMovement":       maxMovement,
-		"mapNamesList":		 mapNamesList,
+		"Message":             glb.RuntimeArgs.Message,
+		"Group":               groupName,
+		"Dash":                dash,
+		"Users":               people,
+		"kRange":              kRange,
+		"knnMinCRssRange":     knnMinCRssRange,
+		"bestK":               bestK,
+		"bestMinClusterRss":   bestMinClusterRss,
+		"maxMovement":         maxMovement,
+		"maxEuclideanRssDist": maxEuclideanRssDist,
+		"mapNamesList":        mapNamesList,
 	})
 }
 
@@ -290,7 +299,7 @@ func ArbitraryLocations(c *gin.Context) {
 	})
 }
 
-// slashDashboard displays the Users on a map
+// Displays the Users on a map
 func UserHistoryMap(c *gin.Context) {
 	groupName := c.Param("group")
 	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
@@ -309,6 +318,46 @@ func UserHistoryMap(c *gin.Context) {
 		"MapHeight":MapDimensions[1],
 	})
 }
+
+func TestValidTracksMap(c *gin.Context) {
+	groupName := c.Param("group")
+	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+		})
+		return
+	}
+	MapName := dbm.GetSharedPrf(groupName).MapName
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
+	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
+	c.HTML(http.StatusOK, "test_valid_tracks_map.tmpl", gin.H{
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
+	})
+}
+
+func TestValidTracksDetails(c *gin.Context) {
+	groupName := c.Param("group")
+	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+		})
+		return
+	}
+	MapName := dbm.GetSharedPrf(groupName).MapName
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
+	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
+	c.HTML(http.StatusOK, "test_valid_tracks_details.tmpl", gin.H{
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
+	})
+}
+
+
 
 func FingerprintAmbiguity(c *gin.Context) {
 	groupName := c.Param("group")
@@ -347,6 +396,27 @@ func Heatmap(c *gin.Context) {
 		"MapHeight":MapDimensions[1],
 	})
 }
+
+func UWBUserMap(c *gin.Context) {
+	groupName := c.Param("group")
+	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+		})
+		return
+	}
+	MapName := dbm.GetSharedPrf(groupName).MapName
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
+	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
+	c.HTML(http.StatusOK, "live_uwb_location_map.tmpl", gin.H{
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
+	})
+}
+
+
 
 // slash Location returns location (to be deprecated)
 //func SlashLocation(c *gin.Context) {

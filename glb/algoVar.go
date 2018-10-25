@@ -18,8 +18,10 @@ var MinApNum int
 var PreprocessOutlinePercent float64 // percentage of a location fingerprints that its received rss considered as outline
 var NormalRssDev int                 // Normal deviation rss from median
 var RssRegulation bool               // permit to rss outlines deleting
+var AvgRSSAdjacentDots bool          // permit to set average of rss of adjacent dots instead of raw rss; according to heatmap it's not good to do this!
 
 var ProgressBarLength,ProgressBarCurLevel int
+var MinRssClustringEnabled bool
 
 var MaxUserHistoryLen int
 var MaxUserResultsLen int
@@ -29,15 +31,27 @@ var UserHistoryGaussVariance float64
 var UserHistoryTimeDelayFactor float64
 // Default K in KNN algorithm
 var DefaultKnnMinCRssRange,DefaultKnnKRange []int
+var DefaultGraphFactorsRange [][]float64
 
 var DefaultMapName string
 var DefaultMapDimensions []int
 var DefaultMapWidth int
 var DefaultMapHeight int
 
-var MaxMovement float64
+var CalculateTestError bool
 
-var MaxEuclideanRssVectorDist float64
+var DefaultMaxMovement float64
+
+var PDREnabledForDynamicSubareaMethod bool
+
+var GraphEnabled bool
+var DefaultMaxEuclideanRssDist int
+
+var FastLearn bool //ignore some crossvalidation calculation(rss regulating & get rss avg of adjacency dots) to learn fast
+
+var NewDistAlgo bool
+
+var TesterUsername string
 
 func init() {
 	DefaultMixin = float64(0.1)
@@ -45,11 +59,13 @@ func init() {
 	MinApNum = 2
 	MinRssi = -110
 	MaxRssi = 5
-	MaxEuclideanRssVectorDist = 50
+	DefaultMaxEuclideanRssDist = 30 //=ble, 50=wifi
 	ProgressBarLength = 0
 	ProgressBarCurLevel = 0
 	DefaultKnnKRange = []int{25, 26}         //{10,30}
 	DefaultKnnMinCRssRange = []int{-75, -76} //{-60,-90}
+	DefaultGraphFactorsRange = [][]float64{{1, 1, 1, 1}, {2, 2, 2, 1}}
+
 	//MinClusterRss = -75
 	MaxUserHistoryLen = 2
 	MaxUserResultsLen = 1000
@@ -57,15 +73,23 @@ func init() {
 	UserHistoryEffectFactors = []float64{0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.5, 0.7, 0.8, 1}
 	UserHistoryGaussVariance = 0.15
 	UserHistoryTimeDelayFactor = 10000
-	MaxMovement = float64(10000)
+	DefaultMaxMovement = float64(10000)
 
 	PreprocessOutlinePercent = float64(0.333) // third part of fingerprints are considered as outline
 	NormalRssDev = 5
 	RssRegulation = true
+	AvgRSSAdjacentDots = true
 
 	DefaultMapName = "DefaultMap.png"
 	DefaultMapDimensions = []int{3400,3600}
 	DefaultMapHeight = 3400
 	DefaultMapWidth = 3600
+	CalculateTestError = true
+	GraphEnabled = true
+	PDREnabledForDynamicSubareaMethod = false
 
+	FastLearn = false
+	NewDistAlgo = false
+	TesterUsername = "tester"
+	MinRssClustringEnabled = true
 }

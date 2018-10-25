@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset=utf-8/>
+	<title>PARSIN</title>
+	<link rel="shortcut icon" sizes="16x16 24x24 32x32 48x48 64x64" href="/static/img/favicon.ico"/>
+	<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
+
+	<!-- Bootstrap and JQuery JS -->
+	<script src="/static/js/jquery-2.0.0.min.js"></script>
+	<script src='/static/js/bootstrap.js'></script>
+
+	<!-- Bootstrap Core CSS -->
+	<link href="/static/css/bootstrap.min.css" rel="stylesheet">
+
+	<!-- Custom CSS -->
+	<link href="/static/css/2-col-portfolio.css" rel="stylesheet">
+	<link href="/static/css/custom.css" rel="stylesheet">
+
+
+	<link href="/static/css/leaflet.css" rel="stylesheet">
+	<link href="/static/css/leaflet.usermarker.css" rel="stylesheet">
+	<script src='/static/js/leaflet.js'></script>
+	<script src='/static/js/leaflet.usermarker.js'></script>
+	<script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
+
+	<script src="/static/js/sweetalert.min.js"></script>
+	<script src="/static/js/d3.min.js"></script>
+	<script src="/static/js/d3.tip.v0.6.3.js"></script>
+
+	<link href="/static/css/sweetalert2.css" rel="stylesheet"/>
+	<script src="/static/js/sweetalert2.js"></script>
+
+	<link href="/static/css/izitoast/iziToast.css" rel="stylesheet">
+	<script src="/static/js/izitoast/iziToast.js"></script>
+
+    <link href="/static/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="/static/js/bootstrap-toggle.min.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
+
+    <link href="/static/css/plugins/loading-indicator/ladda.css" rel="stylesheet">
+    <script src="/static/js/plugins/loading-indicator/spin.js"></script>
+    <script src="/static/js/plugins/loading-indicator/ladda.js"></script>
+
+    <!-- Font Awesome CSS -->
+	<link rel="stylesheet" href="/static/css/font-awesome.min.css">
+	<style>
+		#live-map {
+			height: 500px;
+		}
+
+		#true-location-table-container {
+			overflow: scroll;
+		}
+	</style>
+</head>
+
+<body>
+
+{{ template "navbar" . }}
+
+<!-- Page Content -->
+<div class="container-fluid">
+
+	<div class="row">
+		<div class="col-lg-12">
+			<h2 class="page-header">Algorithm Error Calculation
+				<small>view test-valid tracking on map</small>
+			</h2>
+		</div>
+	</div>
+
+	<!--<div class="well">-->
+	<div class="row">
+		<div class="col-md-9 col-sm-12">
+			<div class="panel panel-primary" id="map-panel">
+				<div class="panel-heading">
+					Map
+				</div>
+				<div class="panel-body">
+					<div id="live-map"></div>
+
+				</div>
+			</div>
+		</div>
+		<div class="col-md-3 col-sm-12">
+			<div class="panel panel-success" id="settings-list-panel">
+				<div class="panel-heading">
+					Settings
+				</div>
+				<div class="panel-body" id="true-location-table-container">
+					<div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
+						<div class="col-md-12">
+							<a href="#error-calculation" data-toggle="collapse"><h4
+									style="text-decoration: underline; margin-bottom: 10px;">
+								Error Calculation</h4></a>
+							<div id="error-calculation" class="collapse in">
+								<div class="col-md-12">
+                                    <div class="form-group">
+                                        <label><input id="repredict_check" type="checkbox">Repredict test-valid
+                                            track locations</label>
+                                    </div>
+                                    <div class="form-group">
+                                    {{/*	<button onclick="calculateErrorByTrueLocation()"
+										        class="btn btn-success btn-sm btn-block">
+											Calculate Error
+										</button>*/}}
+                                        <button onclick="calculateErrorByTrueLocation()"
+                                                id="calc_err_by_true_loc_button"
+                                                class="ladda-button btn btn-info btn-sm btn-block " data-color="blue"
+                                                data-size="xs" data-style="zoom-out">
+                                            Calculate Error
+                                        </button>
+									</div>
+								</div>
+								<div class="col-md-12">
+									<div class="form-group">
+										<button onclick="delTestValidTracks()"
+										        class="btn btn-danger btn-sm btn-block">
+											Delete test-valid tracks
+										</button>
+									</div>
+								</div>
+								<div id="algo-results" class="col-md-12">
+								</div>
+                                <h4 id="show-error-details-link" class="text-center"/>
+
+							</div>
+						</div>
+					</div>
+
+					<div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
+						<div class="col-md-12">
+							<a href="#true-location-file" data-toggle="collapse"><h4 style="text-decoration: underline;">
+								True Location File</h4></a>
+
+
+							<div id="true-location-file" class="collapse">
+								<div class="form-group">
+									<label><input id="append_file_check" type="checkbox">Append to existence file</label>
+								</div>
+								<div class="form-group">
+									<input type="file" accept="text/*" class="swal2-file" id="file_to_upload" placeholder="Upload true location log">
+								</div>
+								<div class="form-group">
+
+									<button onclick="uploadTestValidTrueLoc()" class="btn btn-info btn-sm btn-block">
+										Upload True Location File
+									</button>
+								</div>
+							</div>
+
+						</div>
+					</div>
+
+					<div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
+						<div class="col-md-12">
+							<a href="#test-valid-tracks" data-toggle="collapse"><h4 style="text-decoration: underline;">
+								Test-valid tracks</h4></a>
+							<div id="test-valid-tracks" class="collapse">
+								<div class="col-md-6">
+									<div class="form-group">
+                                        <button onclick="ReloadTestValidTrackMap()"
+                                                class="btn btn-success btn-sm btn-block">
+                                            Show
+										</button>
+									</div>
+								</div>
+								<div class="col-md-6">
+									<div class="form-group">
+                                        <button onclick="clearBoard()" class="btn btn-warning btn-sm btn-block">Clear
+										</button>
+									</div>
+								</div>
+								<br>
+								<div class="form-group">
+									<label>Select Algorithms</label>
+									<select id="algo-list" class="form-control">
+									</select>
+								</div>
+								<div class="col-md-12">
+									<div class="form-group">
+										<button onclick="seeGuessResults()" class="btn btn-danger btn-sm btn-block">Show
+											Algorithm Result
+										</button>
+									</div>
+								</div>
+								<div class="col-md-12">
+									<hr>
+								</div>
+								<div class="col-md-12">
+									<div class="form-group">
+										<label>Details:</label>
+										<table id="true-location-table"
+										       class="table table-responsive table-hover table-condensed table-bordered">
+											<thead>
+											<tr>
+												<td>X</td>
+												<td>Y</td>
+											</tr>
+											</thead>
+										</table>
+										<h5 id="show-details-link" class="text-center"/>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+				</div>
+			</div>
+		</div>
+	</div>
+	<!--</div>-->
+
+
+</div>
+
+<script type="application/javascript">
+
+
+	$('#live-map').css('height', $(window.top).height() - 275);
+	$('#true-location-table-container').css('height', $(window.top).height() - 245);
+	var map = L.map('live-map', {
+		crs: L.CRS.Simple,
+		minZoom: -100,
+//        maxZoom: 4
+	});
+	var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
+	//    var bounds = [[-400, -300], [400, 300]];
+	var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
+	map.setView([0, 0], -2);
+
+	lineLayer = L.featureGroup();
+	map.addLayer(lineLayer);
+
+	var trueLocMarkers = {};
+	var trueLocMarkersLoc = {};
+	var guessMarkers = {};
+	var guessMarkersLoc = {};
+	var toggleGuessMarkers = true;
+    var testValidTracks = {};
+    var errDetails = [];
+
+	var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
+    var calculateErrorByTrueLocationButton = Ladda.create(document.querySelector('#calc_err_by_true_loc_button'));
+
+
+    var algoList = ["KNN", "Bayes", "SVM"];
+	var algoGuessLocations = {};
+	algoList.forEach(function (value) {
+		$('#algo-list').append("<option value=" + value + ">" + value + "</option>");
+		algoGuessLocations[value] = [];
+	});
+
+	//    var marker = L.userMarker([0, 0], {pulsing: true, accuracy: 100, smallIcon: true});
+	//    marker.addTo(map);
+
+	// calculateErrorByTrueLocation();
+
+	function Line(p1, p2, color) {
+
+		var pointA = new L.LatLng(p1[0], p1[1]);
+		var pointB = new L.LatLng(p2[0], p2[1]);
+		var pointList = [pointA, pointB];
+
+
+		var line = new L.Polyline(pointList, {
+			color: color,
+			dashArray: "8 8",
+			weight: 5,
+			opacity: 0.3,
+			smoothFactor: 1,
+			// symbol: L.Symbol.arrowHead({pixelSize: 15, polygon: false, pathOptions: {stroke: true}})
+		});
+		line.addTo(lineLayer);
+	}
+
+    function ShowTestValidTrackMap() {
+		var items = [];
+		var locations = [];
+		algoList.forEach(function (value) {
+			algoGuessLocations[value] = [];
+		});
+
+    {{/*$.getJSON("/getTestValidTracks?group={{ .Group }}", function (data) {*/}}
+			// console.log(data)
+        /*		if (data.testValidTracks.length == 0) {
+                    iziToast.error({
+                        title: "Error",
+                        message: "Error calculation didn't work properly or there aren't any test-valid tracks",
+                    });
+                } else {
+    */
+        $.each(testValidTracks, function (key, val) {
+					// console.log(val.truelocation)
+
+					let trueloc = pattern.exec(val.truelocation);
+					let knnloc = pattern.exec(val.userposition.knnguess);
+
+					if (trueloc && trueloc[1] && trueloc[2]) {
+						locations.push(trueloc);
+						items.push("<tr class='bg-info'><td>" + trueloc[1] + "</td><td>" + trueloc[2] + "</td></tr>");
+						// console.log(match)
+						// createTrueLocMarker(key, match);
+						createTrueLocMarker(val.truelocation, trueloc);
+
+						// trueLocMarkers[key]=match;
+						algoGuessLocations["KNN"].push([trueloc, knnloc]);
+
+					} else {
+						items.push("<tr class='bg-info'><td colspan='2' class='text-center'> NO DATA </td></tr>");
+					}
+
+
+				});
+
+				// for (var i = 0; i < locations.length - 1; i++) {
+				//     Line(locations[i][1], locations[i][2], locations[i + 1][1], locations[i + 1][2])
+				// }
+
+
+				$("#true-location-table").find("tbody").remove();
+        // console.log(items);
+				$("<tbody/>", {
+					"class": "tab-content",
+					html: items.join("")
+				}).appendTo("#true-location-table");
+				$("#show-details-link").find("a").remove();//remove show rss details link
+        /*$("<a/>", {
+            "target": "_blank",
+            "onclick": "window.open('" + "/getTestValidTracks?group={{ .Group }}','pagename','resizable,height=420,width=1000'); return false;",
+					html: "See TestValidTracks details"
+				}).appendTo("#show-details-link");*/
+        // }
+        // });
+    }
+
+    function ReloadTestValidTrackMap() {
+        clearBoard();
+        ShowTestValidTrackMap();
+	}
+
+	function seeGuessResults() {
+		if (toggleGuessMarkers) {
+			selected = $('#algo-list').val();
+
+			algoGuessLocations[selected].forEach(function (element) {
+				trueloc = element[0];
+				knnloc = element[1];
+                // console.log(element);
+				if (trueloc && trueloc[1] && trueloc[2]) {
+					createGuessLocMarker(trueloc, knnloc);
+					Line([trueloc[1], trueloc[2]], [knnloc[1], knnloc[2]], 'red');
+				}
+			});
+		} else {
+			for (var marker in guessMarkers) {
+				map.removeLayer(guessMarkers[marker]);
+			}
+			map.removeLayer(lineLayer);
+			lineLayer = L.featureGroup();
+			map.addLayer(lineLayer);
+			guessMarkers = {};
+			guessMarkersLoc = {};
+		}
+		toggleGuessMarkers = !toggleGuessMarkers;
+	}
+
+    function clearBoard() {
+		for (var marker in trueLocMarkers) {
+			map.removeLayer(trueLocMarkers[marker]);
+		}
+		for (var marker in guessMarkers) {
+			map.removeLayer(guessMarkers[marker]);
+		}
+		map.removeLayer(lineLayer);
+		lineLayer = L.featureGroup();
+		map.addLayer(lineLayer);
+
+		trueLocMarkers = {};
+		trueLocMarkersLoc = {};
+		guessMarkers = {};
+		guessMarkersLoc = {};
+	}
+
+	function createTrueLocMarker(key, match) {
+		if (match in trueLocMarkersLoc) {
+			trueLocMarkersLoc[match].push(key);
+			trueLocMarkers[trueLocMarkersLoc[match][0]].setPopupContent(trueLocMarkersLoc[match].join(","));
+		} else {
+			trueLocMarkersLoc[match] = [key];
+			trueLocMarkers[key] = L.marker([match[1], match[2]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+				title: match[0],
+				smallIcon: true
+			}).bindPopup(key).addTo(map);
+		}
+	}
+
+	function createGuessLocMarker(key, match) {
+		if (match in guessMarkersLoc) {
+			guessMarkersLoc[match].push(key);
+            guessMarkers[guessMarkersLoc[match][0]].setPopupContent(guessMarkersLoc[match].join(","));
+		} else {
+			guessMarkersLoc[match] = [key];
+			guessMarkers[key] = L.marker([match[1], match[2]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+                icon: redIcon,
+				title: match[0],
+				smallIcon: true
+			}).bindPopup(key[0] + " --> " + match[0]).addTo(map);
+		}
+	}
+
+    var redIcon = L.icon({
+		iconUrl: '/static/css/images/marker-icon-red.png',
+		shadowUrl: '/static/css/images/marker-shadow.png',
+
+		iconSize: [25, 41],
+		iconAnchor: [12, 41],
+		popupAnchor: [1, -34],
+		tooltipAnchor: [16, -28],
+		shadowSize: [41, 41]
+	});
+
+	function calculateErrorByTrueLocation() {
+        calculateErrorByTrueLocationButton.toggle();
+
+        $.getJSON("/calculateErrorByTrueLocation?group={{ .Group }}&repredict=" + ($('#repredict_check').is(":checked") ? "true" : "false"), function (data) {
+			if (data.success == true) {
+
+                testValidTracks = data.testvalidtracks;
+                errDetails = data.errDetails;
+
+				// Getting each algorithm Error
+				$.getJSON("/getTestErrorAlgoAccuracy?group={{ .Group }}", function (data) {
+					if (data.success == true) {
+
+						$("#algo-results").empty();
+						$("#algo-results").append("  <label>Results:</label>\n" +
+								"    <table id=\"algo-result-table\"\n" +
+								"    class=\"table table-responsive table-hover table-condensed table-bordered\">\n" +
+								"            <thead>\n" +
+								"            <tr>\n" +
+								"            <td>Algorithm</td>\n" +
+								"            <td>Error</td>\n" +
+								"            </tr>\n" +
+								"            </thead>\n" +
+								"            </table>");
+
+						$("#algo-result-table").find("tbody").remove();
+
+
+						tbody = $("<tbody/>", {
+							"class": "tab-content",
+						}).appendTo("#algo-result-table");
+						// console.log(tbody);
+
+						if (data.algosAccuracy.length == 0) {
+							iziToast.error({
+								title: "CalculateError didn't run properly",
+								message: data.message,
+							});
+						} else {
+							$.each(data.algosAccuracy, function (algorithm, error) {
+								tbody.append("<tr class='bg-info'><td>" + algorithm + "</td><td>" + error + "</td></tr>");
+							});
+
+                            errDetails.sort(function (a, b) {
+                                return a - b;
+                            });
+                            var percentile = 0.75
+                            tbody.append("<tr class='bg-info'><td>knn " + Math.round(percentile * 100) + " percentile</td><td>" + errDetails[Math.round(errDetails.length * percentile)] + "</td></tr>");
+
+                            $("#show-error-details-link").find("a").remove();//remove show rss details link
+                            $("<a/>", {
+                                "target": "_blank",
+                                "onclick": "window.open('" + "/calculateErrorByTrueLocation?group={{ .Group }}&repredict=false" + "','pagename','resizable,height=420,width=1000'); return false;",
+                                html: "See Error details"
+                            }).appendTo("#show-error-details-link");
+
+                        }
+					} else {
+						$("#algo-result-table").find("tbody").remove();
+						console.log("Err on getTestErrorAlgoAccuracy: ", data.message);
+						iziToast.error({
+							title: 'Error on getTestErrorAlgoAccuracy',
+							message: data.message,
+						});
+					}
+				});
+			} else {
+				$("#algo-result-table").find("tbody").remove();
+				console.log("Err on calculateErrorByTrueLocation: ", data.message);
+				iziToast.error({
+					title: 'Error on calculateErrorByTrueLocation',
+					message: data.message,
+				});
+			}
+            calculateErrorByTrueLocationButton.toggle();
+        });
+	}
+
+
+	function delTestValidTracks() {
+		user = $('#user').val();
+		swal({
+					title: "Delete test-valid tracks",
+					text: "Are you sure you want to delete all of test-valid tracks ",
+					type: "warning",
+					showCancelButton: true,
+					confirmButtonColor: "#DD6B55",
+					confirmButtonText: "Yes, delete them!",
+					cancelButtonText: "No, cancel pls!",
+					closeOnConfirm: false,
+					closeOnCancel: false
+				},
+				function (isConfirm) {
+					if (isConfirm) {
+						var req = $.ajax({
+							method: "DELETE",
+							url: "/delTestValidTracks" + '?' + $.param({"group": "{{ .Group }}"})
+						});
+						req.done(function (data) {
+							console.log(data)
+							if (data['success']) {
+								swal("Deleted!", data['message'], "success");
+                                testValidTracks = {};
+								location.reload()
+							} else {
+								swal("Something went wrong.", data['message'], "error");
+							}
+						});
+						req.fail(function (data) {
+							swal("Sorry", data['message'], "error");
+						});
+					} else {
+						swal("Cancelled", "Your data is safe :)", "error");
+					}
+				});
+
+	}
+
+	function uploadTestValidTrueLoc() {
+		var fd = new FormData();
+		fd.append('file', $('#file_to_upload')[0].files[0]);
+
+		$.ajax({
+			url: "/uploadTrueLocationLog?group={{ .Group }}&method=" + ($('#append_file_check').is(":checked") ? "testAppend" : "test"),
+			data: fd,
+			type: "POST",
+			// file: file,
+			processData: false,  // tell jQuery not to process the data
+			contentType: false   // tell jQuery not to set contentType
+		}).done(function (data) {
+			if (data.success == true) {
+				iziToast.success({
+					title: "Done",
+					message: "Uploaded Successfully",
+				});
+			} else {
+				iziToast.error({
+					title: "Error",
+					message: data.message,
+				});
+			}
+			console.log("Server Output:");
+			console.log(data);
+		});
+
+	}
+
+</script>
+</body>
+
+</html>

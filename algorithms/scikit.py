@@ -93,7 +93,7 @@ class Scikit(object):
     def get_data(self, fname):
         # First go through once and get set of macs/locations
         X = []
-        with open("data/" + fname + ".scikit.json", 'r') as f_in:
+        with open("../data/" + fname + ".scikit.json", 'r') as f_in:
             for fingerprint in f_in:
                 try:
                     data = json.loads(fingerprint)
@@ -220,6 +220,7 @@ class Scikit(object):
         print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
         # print(self.trainX)
         # print(self.trainY)
+
         print("FFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
         try:
             for i in range(len(self.clfClassifiers)):
@@ -246,7 +247,7 @@ class Scikit(object):
         # score = self.clf.score(self.testX, self.testY)
         # print("score")
         # print(score)
-        with open('data/' + dataFile + '.scikit.pkl', 'wb') as fid:
+        with open('../data/' + dataFile + '.scikit.pkl', 'wb') as fid:
             pickle.dump([self.clfClassifiers,self.clfRegressors, self.nameX, self.nameY, self.locationList], fid)
         return {'learn': 1}
 
@@ -273,7 +274,7 @@ class Scikit(object):
 
     def classify(self, groupName, fingerpintFile):
         print("Classifing...")
-        with open('data/' + groupName + '.scikit.pkl', 'rb') as pickle_file:
+        with open('../data/' + groupName + '.scikit.pkl', 'rb') as pickle_file:
             [self.clfClassifiers,self.clfRegressors, self.nameX, self.nameY, self.locationList] = pickle.load(pickle_file)
 
 
@@ -381,7 +382,7 @@ class EchoRequestHandler(socketserver.BaseRequestHandler):
             payload = json.dumps(
                 randomF.classify(
                     group,
-                    filename +
+                    "../data/" + filename +
                     ".scikittemp")).encode('utf-8')
             print("Payload: ",payload)
         self.request.send(payload)

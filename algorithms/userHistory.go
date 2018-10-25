@@ -9,8 +9,8 @@ import (
 
 func HistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory []parameters.UserPositionJSON) (string, float64) {
 
-	glb.Debug.Println(currentUserPos)
-	glb.Debug.Println(userHistory)
+	//glb.Debug.Println(currentUserPos)
+	//glb.Debug.Println(userHistory)
 
 	locHistory := []string{}
 	tsHistory := []int64{} // timestamps
@@ -26,17 +26,19 @@ func HistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory []par
 	sumFactor := float64(0)
 
 	lastFPTime := tsHistory[len(locHistory)-1]
+	//glb.Debug.Println(locHistory)
 
 	gaussModel := NewGaussian(0, glb.UserHistoryGaussVariance)
 	for i, loc := range locHistory {
 		var factor float64
 		if i == len(locHistory)-1 {
-			glb.Debug.Println(loc)
+			//glb.Debug.Println(loc)
 			x_y := strings.Split(loc, ",")
 			if !(len(x_y) == 2) {
 				//err := errors.New("Location names aren't in the format of x,y")
 				glb.Error.Println("Location names aren't in the format of x,y")
 			}
+			//glb.Debug.Println("***** x_y ***** : ", x_y)
 			curLocXstr := x_y[0]
 			curLocYstr := x_y[1]
 			curLocX, _ := strconv.ParseFloat(curLocXstr, 64)
@@ -47,7 +49,7 @@ func HistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory []par
 			resY += curLocY * factor
 
 		} else {
-			glb.Debug.Println(loc)
+			//glb.Debug.Println(loc)
 			tempx_y := strings.Split(loc, ",")
 			if len(tempx_y) < 2 {
 				glb.Error.Println("Location names aren't in the format of x,y")
@@ -59,7 +61,7 @@ func HistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory []par
 
 			factor = gaussModel.Pdf(float64(lastFPTime-tsHistory[i]) / glb.UserHistoryTimeDelayFactor)
 
-			glb.Debug.Println(factor)
+			//glb.Debug.Println(factor)
 			resX += tempLocX * factor
 			resY += tempLocY * factor
 		}
@@ -67,7 +69,7 @@ func HistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory []par
 		sumFactor += factor
 	}
 
-	glb.Debug.Println(sumFactor)
+	//glb.Debug.Println(sumFactor)
 	resX /= sumFactor
 	resY /= sumFactor
 

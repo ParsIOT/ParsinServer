@@ -218,11 +218,11 @@ while(1):
             for xy in inptLocList:
                 y = resultDic[xy][inptMac]
                 print("\t"+xy+": "+str(y))
-                fig = plt.figure(xy+":"+inptMac)
-                figNum += 1
-                fig.canvas.set_window_title(str(figNum)+":"+xy+":"+inptMac)
-                plt.plot(list(range(len(y))), y, linewidth=2, linestyle="-", c=cm.hot(random.randint(40,200)))
-                plt.axis([0, len(y), -110,-10])
+                # fig = plt.figure(xy+":"+inptMac)
+                # figNum += 1
+                # fig.canvas.set_window_title(str(figNum)+":"+xy+":"+inptMac)
+                # plt.plot(list(range(len(y))), y, linewidth=2, linestyle="-", c=cm.hot(random.randint(40,200)))
+                # plt.axis([0, len(y), -110,-10])
                 history.append(xy+","+inptMac)
 
         except Exception as e:

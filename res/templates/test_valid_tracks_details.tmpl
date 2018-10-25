@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8/>
+    <title>PARSIN</title>
+    <link rel="shortcut icon" sizes="16x16 24x24 32x32 48x48 64x64" href="/static/img/favicon.ico"/>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
+
+    <!-- Bootstrap and JQuery JS -->
+    <script src="/static/js/jquery-2.0.0.min.js"></script>
+    <script src='/static/js/bootstrap.js'></script>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
+    <link href="/static/css/custom.css" rel="stylesheet">
+
+
+    <link href="/static/css/leaflet.css" rel="stylesheet">
+    <link href="/static/css/leaflet.usermarker.css" rel="stylesheet">
+    <script src='/static/js/leaflet.js'></script>
+    <script src='/static/js/leaflet.usermarker.js'></script>
+    <script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
+
+    <script src="/static/js/sweetalert.min.js"></script>
+    <script src="/static/js/d3.min.js"></script>
+    <script src="/static/js/d3.tip.v0.6.3.js"></script>
+
+    <link href="/static/css/sweetalert2.css" rel="stylesheet"/>
+    <script src="/static/js/sweetalert2.js"></script>
+
+    <link href="/static/css/izitoast/iziToast.css" rel="stylesheet">
+    <script src="/static/js/izitoast/iziToast.js"></script>
+
+    <link href="/static/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="/static/js/bootstrap-toggle.min.js"></script>
+
+    <link href="/static/css/plugins/jquery-ui-slider/jquery-ui.min.css" rel="stylesheet">
+    <script src="/static/js/plugins/jquery-ui-slider/jquery-ui.min.js"></script>
+
+    <link href="/static/css/plugins/jquery-ui-slider/jquery-ui-slider-pips.min.css" rel="stylesheet">
+    <script src="/static/js/plugins/jquery-ui-slider/jquery-ui-slider-pips.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
+
+    <link href="/static/css/plugins/loading-indicator/ladda.css" rel="stylesheet">
+    <script src="/static/js/plugins/loading-indicator/spin.js"></script>
+    <script src="/static/js/plugins/loading-indicator/ladda.js"></script>
+
+
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+    <style>
+        #main-map {
+            height: 500px;
+        }
+
+        #settings-container {
+            overflow: scroll;
+        }
+
+        #first-tbl-line {
+            background-color: #53b5e6;
+        }
+
+        .highlight-tbl-line {
+            background-color: #f0ad4e !important;
+        }
+
+        .modal-body {
+            max-height: calc(100vh - 210px);
+            overflow-x: auto;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+{{ template "navbar" . }}
+
+<!-- Page Content -->
+<div class="container-fluid">
+
+    <div class="row">
+        <div class="col-lg-12">
+            <h2 class="page-header">Test Valid Track Details
+                <small>view test-valid track details on map</small>
+            </h2>
+        </div>
+    </div>
+
+    <!--<div class="well">-->
+    <div class="row">
+        <div class="col-md-9 col-sm-12" id="loading-panel">
+            <div class="panel panel-primary" id="map-panel">
+                <div class="panel-heading">
+                    Map
+                </div>
+                <div class="panel-body row">
+                    <div class="col-md-5 col-xs-6">
+                        <div class="input-group">
+                            <span class="input-group-addon"><span
+                                    class="glyphicon glyphicon-time"></span></span>
+                            <span id="adj-time-value-input" class="input-group-addon">0000000000</span>
+                            <input id="time-value-input" class="form-control" type="number" step="1000">
+                        </div>
+                    </div>
+
+                    <div class="col-md-7 col-xs-6">
+                        <div id="time-select-slider" style="margin-top: 10px"></div>
+
+                    </div>
+
+                </div>
+                <div class="panel-body">
+                    <div id="main-map"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-12">
+            <div class="panel panel-success" id="settings-list-panel">
+                <div class="panel-heading">
+                    Settings
+                </div>
+                <div class="panel-body" id="settings-container">
+                    <div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
+                        <div class="col-md-12">
+                            <a href="#true-location-file" data-toggle="collapse"><h4
+                                    style="text-decoration: underline;">
+                                True Location File</h4></a>
+
+                            <div id="true-location-file" class="collapse in">
+                                <div class="form-group">
+                                    <label><input id="repredict_check" type="checkbox">Repredict test-valid
+                                        tracks</label>
+                                </div>
+                                <div class="form-group">
+                                    <button onclick="getTestValidTracksDetails()" id="get_test_valid_track_map_button"
+                                            class="ladda-button btn btn-info btn-sm btn-block " data-color="blue"
+                                            data-size="xs" data-style="zoom-out">
+                                        Get test-valid tracks details
+                                    </button>
+                                </div>
+                                <div class="form-group">
+                                    <button onclick="delTestValidTracks()"
+                                            class="btn btn-danger btn-sm btn-block">
+                                        Delete test-valid tracks
+                                    </button>
+                                </div>
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-success btn-block" data-toggle="modal"
+                                            data-target="#showRssDetailsModal" onclick="showRssDetails()">
+                                        Show RSS details
+                                    </button>
+                                </div>
+                                <div class="modal fade" id="showRssDetailsModal" tabindex="-1" role="dialog">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <button type="button" class="close" data-dismiss="modal"
+                                                        aria-hidden="true">×
+                                                </button>
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <h3 class="modal-title">RSS details</h3>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-group">
+                                                            <label for="refresh-interval">Enter location</label>
+                                                            <div class="row">
+                                                                <div class="col-md-6">
+                                                                    <input id="loc-name" class="form-control"
+                                                                           placeholder="Location Name"/>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <button onclick="highlightLoc()"
+                                                                            class="btn btn-warning btn-sm btn-block">
+                                                                        Highlight
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                            <div class="modal-body">
+                                            {{/*<h5 class="text-center">Hello. Some text here.</h5>*/}}
+                                                <table class="table table-striped" id="rss-details-tbl">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>x,y</th>
+                                                        <th class="text-right">45001</th>
+                                                        <th>3</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-default " data-dismiss="modal">
+                                                    Close
+                                                </button>
+                                            {{/*<button type="button" class="btn btn-primary">Save Changes</button>*/}}
+                                            </div>
+
+                                        </div><!-- /.modal-content -->
+                                    </div><!-- /.modal-dialog -->
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--</div>-->
+
+
+</div>
+
+<script type="application/javascript">
+
+
+    $('#main-map').css('height', $(window.top).height() - 150);
+    $('#settings-container').css('height', $(window.top).height() - 50);
+    var map = L.map('main-map', {
+        crs: L.CRS.Simple,
+        minZoom: -100,
+//        maxZoom: 4
+    });
+    var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
+    var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
+    map.setView([0, 0], -2);
+
+    lineLayer = L.featureGroup();
+    map.addLayer(lineLayer);
+
+    var guessMarkers = {};
+    var fpLocMarkersLoc = {};
+    var fpLocMarkers = {};
+    var fpLocMarkerCount = {};
+    var curFpList = [];
+
+    var fpData = {};
+    var knnData = {};
+    var testvalidtracks = {};
+    var testValidTrackMap = {};
+    var tvTrackTimes = [];
+
+    var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
+
+    var getTestValidTrackMapButton = Ladda.create(document.querySelector('#get_test_valid_track_map_button'));
+
+    initSlider();
+    getTestValidTrackMap();
+
+    // function definitions:
+    function getTestValidTrackMap() {
+
+        fpData = {};
+        testvalidtracks = {};
+        testValidTrackMap = {};
+        tvTrackTimes = [];
+        clearHistory();
+        getTestValidTracksDetails();
+    }
+
+    function initSlider() {
+        $('#time-select-slider').slider({
+            min: 0,
+            max: 1,
+        });
+    }
+
+    function getTestValidTracksDetails() {
+        getTestValidTrackMapButton.toggle();
+
+        $.getJSON("/getTestValidTracksDetails?group={{ .Group }}&repredict=" + ($('#repredict_check').is(":checked") ? "true" : "false"), function (data) {
+            // console.log(data)
+            if (!data.success) {
+                iziToast.error({
+                    title: "Error",
+                    message: data.message,
+                });
+            } else {
+                testvalidtracks = data.testvalidtracks;
+                fpData = data.fpdata;
+                $.each(data.testvalidtracks, function (key, testValidTrack) {
+                    tvTrackTimes.push(testValidTrack.userposition.time);
+                    testValidTrackMap[testValidTrack.userposition.time] = testValidTrack;
+                });
+                calculateTimeSlider();
+            }
+            getTestValidTrackMapButton.toggle();
+        });
+
+    }
+
+    function clearHistory() {
+        for (var marker in guessMarkers) {
+            map.removeLayer(guessMarkers[marker]);
+        }
+        for (var marker in fpLocMarkers) {
+            map.removeLayer(fpLocMarkers[marker]);
+        }
+        guessMarkers = {};
+        fpLocMarkersLoc = {};
+        fpLocMarkerCount = {};
+        fpLocMarkers = {};
+        curFpList = [];
+        knnData = {};
+    }
+
+    function createGuessMarker(match) {
+        guessMarkers[match[0]] = L.marker([match[1], match[2]], {
+            title: match[0],
+            smallIcon: true
+        }).bindPopup(match[0]).addTo(map);
+    }
+
+    function createfpLocMarker(match, weigth) {
+        weigth = weigth.toFixed(2);
+        var markerIndex = match[0] + ", Weight:" + weigth;
+        var count = 0;
+        if (markerIndex in fpLocMarkers) {
+            count = fpLocMarkerCount[markerIndex];
+            count++
+            fpLocMarkerCount[markerIndex] = count;
+            fpLocMarkers[markerIndex].setPopupContent(markerIndex + ", count=" + count);
+        } else {
+            count = 1;
+            fpLocMarkerCount[markerIndex] = count;
+            randomMarkerDist = getRandomFloat(-1, 1);
+            fpLocMarkers[markerIndex] = L.marker([parseFloat(match[1]) + randomMarkerDist, parseFloat(match[2]) + randomMarkerDist], {
+                icon: redIcon,
+                title: match[0],
+                smallIcon: true
+            }).bindPopup(markerIndex + ", count=" + count).addTo(map);
+        }
+
+
+    }
+
+
+    var redIcon = L.icon({
+        iconUrl: '/static/css/images/marker-icon-red.png',
+        shadowUrl: '/static/css/images/marker-shadow.png',
+
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        tooltipAnchor: [16, -28],
+        shadowSize: [41, 41]
+    });
+
+    function calculateTimeSlider() {
+        tvTrackTimes.sort(function (a, b) {
+            return a - b;
+        });
+
+        // console.log(timestamp2formated);
+
+        $("#time-value-input").val(tvTrackTimes[0]);
+        $("#adj-time-value-input").text(tvTrackTimes[0]);
+        $("#time-value-input").attr({
+            "min": tvTrackTimes[0],
+            "max": tvTrackTimes[tvTrackTimes.length - 1]
+        });
+        $('#time-select-slider').slider({
+            min: tvTrackTimes[0],
+            max: tvTrackTimes[tvTrackTimes.length - 1],
+        });
+
+
+        // Event handlers:
+        $("#time-select-slider").on("slide", function (event, ui) {
+            var timestamp = ui.value;
+            var adjTimestamp = getAdjacentTimestamp(tvTrackTimes, timestamp);
+
+            $("#time-value-input").val(timestamp);
+            $("#adj-time-value-input").text(adjTimestamp);
+
+        });
+        $("#time-select-slider").on("slidestop", function (event, ui) {
+            var adjTimestamp = getAdjacentTimestamp(tvTrackTimes, ui.value);
+            showFPData(adjTimestamp);
+        });
+        $("#time-value-input").on("change paste", function () {
+            var timestamp = $(this).val();
+            $("#time-select-slider").slider("value", timestamp);
+            var adjTimestamp = getAdjacentTimestamp(tvTrackTimes, timestamp);
+            $("#adj-time-value-input").text(adjTimestamp);
+            showFPData(adjTimestamp);
+        });
+    }
+
+    function showFPData(timestamp) {  // Show fp and near fp data
+        clearHistory();
+        var testValidTrack = testValidTrackMap[timestamp];
+        var guessLoc = testValidTrack.userposition.location;
+        console.log(guessLoc);
+        var guessLocSplited = pattern.exec(guessLoc);
+        if (guessLocSplited && guessLocSplited[1] && guessLocSplited[2]) {
+            createGuessMarker(guessLocSplited);
+            guessFP = testValidTrack.userposition.fingerprint;
+            guessFP.location = testValidTrack.userposition.location
+            curFpList.push(guessFP);
+        }
+
+        // set fp locations
+        knnData = testValidTrack.userposition.knndata;
+        sortedFPtimeByWeight = SortDictByVal(knnData);
+
+        fpTimeList = [];
+        for (let fpTime of sortedFPtimeByWeight) {
+            // console.log(fpTime);
+            var fpLoc = fpData[fpTime].location;
+            var fpLocSplited = pattern.exec(fpLoc);
+            if (fpLocSplited && fpLocSplited[1] && fpLocSplited[2]) {
+                createfpLocMarker(fpLocSplited, knnData[fpTime]);
+                fpTimeList.push(fpTime);
+            }
+        }
+
+        // fpTimeList.sort(); // use .sort(function(a,b) { return a - b;}); instead of .sort() if the array type is float!
+        for (let fpTime of fpTimeList) {
+            fp = fpData[fpTime];
+            fp.time = fpTime;
+            curFpList.push(fpData[fpTime]);
+        }
+
+    }
+
+
+    function SortDictByVal(mainDict) {
+
+        var keySorted = []; //[]string
+        var reverseDict = {}; //map[float64][]string{}
+
+        for (var key in mainDict) {
+            val = mainDict[key];
+            if (val in reverseDict) {
+                reverseDict[val].push(key);
+            } else {
+                reverseDict[val] = [key];
+            }
+        }
+
+        var valueList = [];
+        valueStrList = Object.keys(reverseDict);
+        for (let val of valueStrList) {
+            valueList.push(parseFloat(val));
+        }
+        valueList.sort(function (a, b) {
+            return a - b;
+        });
+
+        for (let val of valueList) {
+            for (let s of reverseDict[val]) {
+                keySorted.push(s);
+            }
+        }
+        return keySorted;
+    }
+
+    function getAdjacentTimestamp(timestampList, mainTimestamp) {
+        var lessUntil = 0;
+        var resultTimesstamp = 0;
+        for (let timestamp of timestampList) {
+            if (mainTimestamp > timestamp - 1) {
+                lessUntil++;
+            } else {
+                if (lessUntil != 0) {
+                    resultTimesstamp = timestamp;
+                    break;
+                } else {
+                    console.log("out of range of timestamps");
+                }
+            }
+        }
+
+        return resultTimesstamp;
+    }
+
+
+    function showRssDetails() {
+        // console.table(curFpList);
+
+        // find all of macs in curFplist
+        uniqueMacs = [];
+        for (let fp of curFpList) {
+            for (let rt of fp["wifi-fingerprint"]) {
+                if (!uniqueMacs.includes(rt.mac)) {
+                    uniqueMacs.push(rt.mac);
+                }
+            }
+        }
+        uniqueMacs.sort();
+        // console.log(uniqueMacs);
+
+        // Add thead to rss-details-tbl table
+        $('#rss-details-tbl thead').find("tr").remove();
+        $('#rss-details-tbl').find("tbody").remove();
+        trTable = $("<tr/>").appendTo("#rss-details-tbl thead");
+        trTable.append("<th>x,y</th>");
+        trTable.append("<th>weigth</th>");
+        for (let mac of uniqueMacs) { // Add macs to head of table
+            macSeperated = mac.split(":")
+            if (macSeperated.length > 2) { // reduce the mac name length
+                lastPartOfMac = macSeperated[macSeperated.length - 2] + ":" + macSeperated[macSeperated.length - 1];
+                trTable.append("<th title='" + mac + "'>" + lastPartOfMac + "</th>");
+            } else {
+                trTable.append("<th title='" + mac + "'>" + mac + "</th>");
+            }
+            tbody = $("<tbody/>", {
+                "class": "tab-content",
+            }).appendTo("#rss-details-tbl");
+        }
+        // we first create 2-dims array that each member contains timestamp, xy and rss details of a fingerprint
+        //      then add each line as a line of table
+        allFPdata = [];
+        // creating the 2-dims array
+        // for (let fp of curFpList) {
+
+        for (var i = 0; i < curFpList.length; i++) {
+            fp = curFpList[i];
+            tempFPData = Array.apply(null, Array(uniqueMacs.length + 3)).map(String.prototype.valueOf, "-");
+            tempFPData[0] = fp.time;
+            tempFPData[1] = fp.location;
+            if (i != 0) { // first line is tracked fp and doesn't have weight
+                tempFPData[2] = knnData[fp.time].toFixed(5); // set weight
+            }
+
+            for (let rt of fp["wifi-fingerprint"]) {
+                tempFPData[uniqueMacs.indexOf(rt.mac) + 3] = rt.rssi;
+            }
+            allFPdata.push(tempFPData);
+        }
+
+        // add timestamp,xy and rss details to the table
+        for (var i = 0; i < allFPdata.length; i++) {
+            fpRssData = allFPdata[i];
+
+            tds = "";
+
+            // append timestamp as onHover title of xy
+            timestamp = fpRssData[0];
+            tds = tds + "<td title='" + timestamp + "'>" + fpRssData[1] + "</td>";
+            tds = tds + "<td>" + fpRssData[2] + "</td>";
+
+            for (var j = 3; j < fpRssData.length; j++) {
+                tds = tds + "<td>" + fpRssData[j] + "</td>";
+            }
+
+            if (i == 0) { // first line must be highlighted
+                tbody.append("<tr id='first-tbl-line'>" + tds + "</tr>");
+            } else {
+                tbody.append("<tr>" + tds + "</tr>");
+            }
+        }
+
+    }
+
+
+    function delTestValidTracks() {
+        user = $('#user').val();
+        swal({
+                    title: "Delete test-valid tracks",
+                    text: "Are you sure you want to delete all of test-valid tracks ",
+                    type: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#DD6B55",
+                    confirmButtonText: "Yes, delete them!",
+                    cancelButtonText: "No, cancel pls!",
+                    closeOnConfirm: false,
+                    closeOnCancel: false
+                },
+                function (isConfirm) {
+                    if (isConfirm) {
+                        var req = $.ajax({
+                            method: "DELETE",
+                            url: "/delTestValidTracks" + '?' + $.param({"group": "{{ .Group }}"})
+                        });
+                        req.done(function (data) {
+                            if (data['success']) {
+                                swal("Deleted!", data['message'], "success");
+                                location.reload()
+                            } else {
+                                swal("Something went wrong.", data['message'], "error");
+                            }
+                        });
+                        req.fail(function (data) {
+                            swal("Sorry", data['message'], "error");
+                        });
+                    } else {
+                        swal("Cancelled", "Your data is safe :)", "error");
+                    }
+                });
+
+    }
+
+    function highlightLoc() {
+        locName = $('#loc-name').val();
+        tblLocs = $("#rss-details-tbl tr td:first-child");
+        tblLocs.each(function (index) {
+            $(this).parent().removeClass("highlight-tbl-line");
+            if (locName == $(this).text()) {
+                $(this).parent().addClass("highlight-tbl-line");
+            }
+        });
+
+    }
+    function timestamp2FormatedTime(timestamp) {
+        return new Date(timestamp * 1e3).toISOString().slice(-13, -5);
+        // var date = new Date(timestamp * 1e3);
+        // return date.getHours()+":"+date.getMinutes()+":"+date.getSeconds();
+    }
+
+    function getRandomFloat(begin, end) {
+        return Math.random() * (end - begin) + begin
+    }
+</script>
+</body>
+
+</html>

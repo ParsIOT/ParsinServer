@@ -55,13 +55,13 @@ package routes
 //}
 //
 //func PutMQTT(c *gin.Context) {
-//	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
-//	reset := strings.ToLower(c.DefaultQuery("reset", "noneasdf"))
+//	group := strings.ToLower(c.DefaultQuery("group", "none"))
+//	reset := strings.ToLower(c.DefaultQuery("reset", "none"))
 //	if !glb.RuntimeArgs.Mqtt {
 //		c.JSON(http.StatusOK, gin.H{"success": false, "message": "MQTT is not enabled on this server"})
 //		return
 //	}
-//	if group != "noneasdf" {
+//	if group != "none" {
 //		password, err := GetMQTT(group)
 //		if len(password) == 0 || reset == "true" {
 //			password, err = SetMQTT(group)

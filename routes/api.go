@@ -7,7 +7,14 @@
 package routes
 
 import (
+	"ParsinServer/algorithms"
+	"ParsinServer/dbm"
+	"ParsinServer/dbm/parameters"
+	"ParsinServer/glb"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -15,12 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"github.com/gin-gonic/gin"
-	"ParsinServer/glb"
-	"ParsinServer/algorithms"
-	"ParsinServer/dbm"
-	"ParsinServer/dbm/parameters"
-	"io"
 )
 
 var startTime time.Time
@@ -31,8 +32,8 @@ func init() {
 
 func PreLoadSettingsDecorator(routeFunc func(c *gin.Context)) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		group := c.DefaultQuery("group", "noneasdf")
-		if group != "noneasdf" {
+		group := c.DefaultQuery("group", "none")
+		if group != "none" {
 			dbm.GetSharedPrf(group)
 		}
 		routeFunc(c)
@@ -40,9 +41,9 @@ func PreLoadSettingsDecorator(routeFunc func(c *gin.Context)) func(c *gin.Contex
 }
 
 func PreLoadSettings(c *gin.Context) {
-	glb.Debug.Println("PreloadSettings")
+	//glb.Debug.Println("PreloadSettings")
 	group1 := c.Param("group")
-	group2 := c.DefaultQuery("group", "noneasdf")
+	group2 := c.DefaultQuery("group", "none")
 	groupExists := false
 	//glb.Debug.Println(c)
 	if len(group1) != 0 {
@@ -59,8 +60,8 @@ func PreLoadSettings(c *gin.Context) {
 			c.Redirect(302, "/change-db?error=groupNotExists")
 		}
 
-	} else if group2 != "noneasdf" {
-		glb.Debug.Println(group2)
+	} else if group2 != "none" {
+		//glb.Debug.Println(group2)
 		//glb.Debug.Println(dbm.GetSharedPrf(group2))
 		groupExists = dbm.GroupExists(group2)
 		if groupExists {
@@ -79,7 +80,7 @@ func PreLoadSettings(c *gin.Context) {
 			"message": fmt.Sprintf("group name must be mentioned in url(e.g.: /groupName (url param) or ?group=groupName (GET param))"),
 			"success": false})
 	}
-	// Todo: add real "noneasdf" state
+	// Todo: add real "none" state
 }
 
 //returns uptime, starttime, number of cpu cores
@@ -106,13 +107,14 @@ func GetLocationList(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
-	if groupName == "noneasdf" {
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	if groupName == "none" {
 		c.JSON(http.StatusOK, gin.H{"message": "You need to specify group", "success": false})
 		return
 	}
 	if !dbm.GroupExists(groupName) {
-		c.JSON(http.StatusOK, gin.H{"message": "You should insert a fingerprint first, see documentation", "success": false})
+		glb.Error.Println("Group doesn't exist")
+		c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
 		return
 	}
 	//ps, _ := dbm.OpenParameters(group)
@@ -161,15 +163,16 @@ func GetLastFingerprint(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	groupName := c.DefaultQuery("group", "noneasdf")
+	groupName := c.DefaultQuery("group", "none")
 	groupName = strings.ToLower(groupName)
-	user := c.DefaultQuery("user", "noneasdf")
-	if groupName != "noneasdf" {
+	user := c.DefaultQuery("user", "none")
+	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
-			c.JSON(http.StatusOK, gin.H{"message": "You should insert a fingerprint first, see documentation", "success": false})
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
 			return
 		}
-		if user == "noneasdf" {
+		if user == "none" {
 			c.JSON(http.StatusOK, gin.H{"message": "You need to specify user", "success": false})
 			return
 		}
@@ -307,14 +310,42 @@ func Calculate(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	groupName := c.DefaultQuery("group", "noneasdf")
-	groupName = strings.ToLower(groupName)
-	if groupName != "noneasdf" {
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	justCalcGraphFactors := strings.ToLower(c.DefaultQuery("justCalcGraphFactors", "none"))
+
+
+	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
-			c.JSON(http.StatusOK, gin.H{"message": "You should insert a fingerprint first, see documentation", "success": false})
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
 			return
 		}
-		algorithms.CalculateLearn(groupName)
+
+		if justCalcGraphFactors != "true" {
+			algorithms.CalculateLearn(groupName)
+		} else {
+			glb.Debug.Println("Just Calculating Graph Factors")
+		}
+
+		// test-valid hyper parameters selecting
+		rsd := dbm.GM.GetGroup(groupName).Get_ResultData()
+		testValidTracks := rsd.Get_TestValidTracks()
+		if glb.GraphEnabled && len(testValidTracks) != 0 {
+
+			// Find true locations
+			gp := dbm.GM.GetGroup(groupName)
+			rsd := gp.Get_ResultData()
+			_, _, _, testValidTracksRes := dbm.CalculateTestError(groupName, testValidTracks)
+			rsd.Set_TestValidTracks(testValidTracksRes)
+
+			// calculate beset graphfactors
+			algorithms.CalculateGraphFactor(groupName)
+		} else if !glb.GraphEnabled {
+			rsd.Set_AlgoAccuracy("knn_testvalid", 0)
+			rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
+		}
+
 		go dbm.ResetCache("userPositionCache")
 		go dbm.SetLearningCache(groupName, false)
 		c.JSON(http.StatusOK, gin.H{"message": "Parameters optimized.", "success": true})
@@ -334,24 +365,25 @@ func GetUserLocations(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := c.DefaultQuery("group", "noneasdf")
+	groupName := c.DefaultQuery("group", "none")
 	groupName = strings.ToLower(groupName)
-	userQuery := c.DefaultQuery("user", "noneasdf")
-	usersQuery := c.DefaultQuery("users", "noneasdf")
-	nQuery := c.DefaultQuery("n", "noneasdf")
+	userQuery := c.DefaultQuery("user", "none")
+	usersQuery := c.DefaultQuery("users", "none")
+	nQuery := c.DefaultQuery("n", "none")
 	groupName = strings.ToLower(groupName)
 	userQuery = strings.ToLower(userQuery)
-	if groupName != "noneasdf" {
+	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
-			c.JSON(http.StatusOK, gin.H{"message": "You should insert fingerprints before tracking, see documentation", "success": false})
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
 			return
 		}
 		people := make(map[string][]parameters.UserPositionJSON)
 		users := strings.Split(strings.ToLower(usersQuery), ",")
-		if users[0] == "noneasdf" {
+		if users[0] == "none" {
 			users = []string{userQuery}
 		}
-		if users[0] == "noneasdf" {
+		if users[0] == "none" {
 			//users = dbm.GetUsers(groupName)
 			users = dbm.GetRecentUsers(groupName)
 			glb.Debug.Println("Users:", users)
@@ -361,7 +393,7 @@ func GetUserLocations(c *gin.Context) {
 			if _, ok := people[user]; !ok {
 				people[user] = []parameters.UserPositionJSON{}
 			}
-			if nQuery != "noneasdf" {
+			if nQuery != "none" {
 				number, _ := strconv.ParseInt(nQuery, 10, 0)
 				glb.Debug.Println("Getting history for " + user)
 				people[user] = append(people[user], GetHistoricalUserPositions(groupName, user, int(number))...)
@@ -417,11 +449,185 @@ func GetUserLocations(c *gin.Context) {
 	}
 }
 
+// Get test-valid tracks
+// GET parameters: group
+func GetTestValidTracks(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		testValidTracks := dbm.GM.GetGroup(groupName).Get_ResultData().Get_TestValidTracks()
+		glb.Debug.Println(testValidTracks)
+		c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or user isn't given"})
+	}
+}
+
+// Get test-valid tracks details or recalculate track (repredict) location of these FPs
+// GET Parameters: group, repredict
+func GetTestValidTracksDetails(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	repredict := strings.ToLower(c.DefaultQuery("repredict", "none"))
+
+	if groupName != "none" && repredict != "none" {
+		gp := dbm.GM.GetGroup(groupName)
+		testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
+		if len(testValidTracks) != 0 {
+			if repredict == "true" {
+				glb.Debug.Println("Repredicting test-valid tracks")
+				fpData := gp.Get_RawData().Get_Fingerprints()
+				gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
+
+				// Repredict test-valid FPs
+				for i, testValidTrack := range testValidTracks {
+					fp := testValidTrack.UserPosition.Fingerprint
+					newUserPositiong := algorithms.RecalculateTrackFingerprint(fp)
+					testValidTracks[i].UserPosition = newUserPositiong
+				}
+				c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks, "fpdata": fpData})
+			} else if repredict == "false" {
+				gp := dbm.GM.GetGroup(groupName)
+				testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
+				fpData := gp.Get_RawData().Get_Fingerprints()
+				c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks, "fpdata": fpData})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": "repredict parameter must be true or false"})
+			}
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Empty test-valid track list"})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or repredict isn't given"})
+	}
+}
+
+func DelTestValidTracks(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "DELETE, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		if !dbm.GroupExists(groupName) {
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
+			return
+		}
+
+		dbm.GM.GetGroup(groupName).Get_ResultData().Set_TestValidTracks([]parameters.TestValidTrack{})
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or user isn't given"})
+	}
+}
+
+func CalculateErrorByTrueLocation(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	repredictStr := strings.ToLower(c.DefaultQuery("repredict", "none"))
+
+	if groupName != "none" && repredictStr != "none" {
+		if !dbm.GroupExists(groupName) {
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist"})
+			return
+		}
+		repredict := false
+		if repredictStr == "true" {
+			repredict = true
+		} else if repredictStr == "false" {
+			repredict = false
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "repredict must be true or false"})
+			return
+		}
+		gp := dbm.GM.GetGroup(groupName)
+		rsd := gp.Get_ResultData()
+		testValidTracks := rsd.Get_TestValidTracks()
+		if len(testValidTracks) != 0 {
+			if repredict {
+				glb.Debug.Println("Repredicting test-valid tracks")
+				gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
+
+				// Repredict test-valid FPs
+				for i, testValidTrack := range testValidTracks {
+					fp := testValidTrack.UserPosition.Fingerprint
+					//glb.Error.Println("Fp:",fp)
+					newUserPositiong := algorithms.RecalculateTrackFingerprint(fp)
+					//glb.Debug.Println(newUserPositiong)
+					testValidTracks[i].UserPosition = newUserPositiong
+				}
+			}
+			err, errDetails, details, testValidTracks := dbm.CalculateTestError(groupName, testValidTracks)
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			} else {
+				/*				rsd.Set_TestValidTracks(testValidTracks)
+								glb.Debug.Println(details)*/
+				c.JSON(http.StatusOK, gin.H{"success": true, "errDetails": errDetails, "details": details, "testvalidtracks": testValidTracks})
+			}
+		} else {
+			glb.Error.Println("empty TestValidTracks")
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Empty TestValidTracks"})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group isn't given"})
+	}
+}
+
+func GetTestErrorAlgoAccuracy(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		if !dbm.GroupExists(groupName) {
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"message": "Group doesn't exist", "success": false})
+			return
+		}
+
+		algosAccuracy := dbm.GM.GetGroup(groupName).Get_ResultData().Get_AlgoTestErrorAccuracy()
+		c.JSON(http.StatusOK, gin.H{"success": true, "algosAccuracy": algosAccuracy})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group isn't given"})
+	}
+}
+
 // copies a DB
 // GET parameters: from, to
 func MigrateDatabase(c *gin.Context) {
-	fromDB := strings.ToLower(c.DefaultQuery("from", "noneasdf"))
-	toDB := strings.ToLower(c.DefaultQuery("to", "noneasdf"))
+	fromDB := strings.ToLower(c.DefaultQuery("from", "none"))
+	toDB := strings.ToLower(c.DefaultQuery("to", "none"))
 	glb.Debug.Printf("Migrating %s to %s.\n", fromDB, toDB)
 	if !glb.Exists(path.Join(glb.RuntimeArgs.SourcePath, fromDB+".db")) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't migrate from " + fromDB + ", it does not exist."})
@@ -444,7 +650,7 @@ func DeleteDatabase(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "DELETE, OPTIONS")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	groupName := strings.TrimSpace(strings.ToLower(c.DefaultQuery("group", "noneasdf")))
+	groupName := strings.TrimSpace(strings.ToLower(c.DefaultQuery("group", "none")))
 	groupName = strings.ToLower(groupName)
 	if glb.Exists(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")) {
 
@@ -465,9 +671,9 @@ func DeleteDatabase(c *gin.Context) {
 //	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 //	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 //
-//	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+//	group := strings.ToLower(c.DefaultQuery("group", "none"))
 //	newMixin := c.DefaultQuery("mixin", "none")
-//	if group != "noneasdf" {
+//	if group != "none" {
 //		newMixinFloat, err := strconv.ParseFloat(newMixin, 64)
 //		if err == nil {
 //			//err2 := dbm.SetMixinOverride(group, newMixinFloat)
@@ -496,11 +702,11 @@ func DeleteDatabase(c *gin.Context) {
 //	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 //	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 //
-//	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+//	group := strings.ToLower(c.DefaultQuery("group", "none"))
 //	newCutoff := c.DefaultQuery("cutoff", "none")
 //	glb.Debug.Println(group)
 //	glb.Debug.Println(newCutoff)
-//	if group != "noneasdf" {
+//	if group != "none" {
 //		newCutoffFloat, err := strconv.ParseFloat(newCutoff, 64)
 //		if err == nil {
 //			err2 := dbm.SetSharedPrf(group, "Cutoff", newCutoffFloat)
@@ -528,11 +734,11 @@ func DeleteDatabase(c *gin.Context) {
 //	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 //	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 //
-//	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+//	group := strings.ToLower(c.DefaultQuery("group", "none"))
 //	newK := c.DefaultQuery("knnK", "none")
 //	glb.Debug.Println(group)
 //	glb.Debug.Println(newK)
-//	if group != "noneasdf" {
+//	if group != "none" {
 //		newKnnK, err := strconv.Atoi(newK)
 //		if err == nil {
 //			err2 := dbm.SetSharedPrf(group,"KnnK", newKnnK)
@@ -558,12 +764,12 @@ func PutKnnKRange(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	group := strings.ToLower(c.DefaultQuery("group", "none"))
 	kRangeRawStr := c.DefaultQuery("range", "none")
 	glb.Debug.Println(group)
 	glb.Debug.Println(kRangeRawStr)
 
-	if group != "noneasdf" && kRangeRawStr != "none" {
+	if group != "none" && kRangeRawStr != "none" {
 		// convert string to int slice
 		kRangeRawStr = strings.TrimSpace(kRangeRawStr)
 		kRangeRawStr = kRangeRawStr[1:][:len(kRangeRawStr)-2]
@@ -603,12 +809,12 @@ func PutKnnMinClusterRSSRange(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	group := strings.ToLower(c.DefaultQuery("group", "none"))
 	rssRangeRawStr := c.DefaultQuery("range", "none")
 	glb.Debug.Println(group)
 	glb.Debug.Println(rssRangeRawStr)
 
-	if group != "noneasdf" && rssRangeRawStr != "none" {
+	if group != "none" && rssRangeRawStr != "none" {
 		// convert string to int slice
 		rssRangeRawStr = strings.TrimSpace(rssRangeRawStr)
 		rssRangeRawStr = rssRangeRawStr[1:][:len(rssRangeRawStr)-2]
@@ -652,16 +858,16 @@ func PutMaxMovement(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	group := strings.ToLower(c.DefaultQuery("group", "none"))
 	MaxMovementStr := c.DefaultQuery("maxMovement", "none")
 	glb.Debug.Println(group)
 	glb.Debug.Println(MaxMovementStr)
 
-	if group != "noneasdf" && MaxMovementStr != "none" {
+	if group != "none" && MaxMovementStr != "none" {
 		MaxMovement, err := strconv.ParseFloat(MaxMovementStr, 64)
 		if err == nil {
 			if MaxMovement == float64(-1) {
-				MaxMovement = glb.MaxMovement
+				MaxMovement = glb.DefaultMaxMovement
 			}
 			err2 := dbm.SetSharedPrf(group, "MaxMovement", MaxMovement)
 			if err2 == nil {
@@ -678,7 +884,42 @@ func PutMaxMovement(c *gin.Context) {
 	}
 }
 
+func PutMaxEuclideanRssDist(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	MaxEuclideanRssDistStr := c.DefaultQuery("maxEuclideanRssDist", "none")
+
+	glb.Debug.Println(groupName)
+	glb.Debug.Println(MaxEuclideanRssDistStr)
+
+	if groupName != "none" && MaxEuclideanRssDistStr != "none" {
+		MaxEuclideanRssDist, err := strconv.Atoi(MaxEuclideanRssDistStr)
+		if err == nil {
+			if MaxEuclideanRssDist == -1 {
+				MaxEuclideanRssDist = glb.DefaultMaxEuclideanRssDist
+			}
+
+			cd := dbm.GM.GetGroup(groupName).Get_ConfigData()
+			knnParams := cd.Get_KnnParameters()
+			knnParams.MaxEuclideanRssDist = MaxEuclideanRssDist
+			cd.Set_KnnParameters(knnParams)
+
+			c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding MaxEuclideanRssDist for " + groupName + ", now set to " + MaxEuclideanRssDistStr})
+
+		} else {
+			glb.Error.Println(err.Error())
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or maxEuclideanRssDist isn't given"})
+	}
+}
 
 func ChooseMap(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
@@ -688,26 +929,26 @@ func ChooseMap(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	group := strings.ToLower(c.DefaultQuery("group", "none"))
 	mapName := c.DefaultQuery("mapName", "none")
 	glb.Debug.Println(group)
 	glb.Debug.Println(mapName)
 
-	if group != "noneasdf" && mapName != "none" {
+	if group != "none" && mapName != "none" {
 		//MaxMovement, err := strconv.ParseFloat(MaxMovementStr, 64)
 		//if err == nil {
 		//	if MaxMovement == float64(-1) {
-		//		MaxMovement = glb.MaxMovement
+		//		MaxMovement = glb.DefaultMaxMovement
 		//	}
 		mapNamesList := glb.ListMaps()
 		MapWidth := mapNamesList[mapName][0]
 		MapHeight := mapNamesList[mapName][1]
-		MapDimensions := []int {MapWidth,MapHeight}
-		glb.Debug.Println("***MapDimensions : ",MapDimensions)
+		MapDimensions := []int{MapWidth, MapHeight}
+		glb.Debug.Println("***MapDimensions : ", MapDimensions)
 		err2 := dbm.SetSharedPrf(group, "MapName", mapName)
 		err3 := dbm.SetSharedPrf(group, "MapDimensions", MapDimensions)
 
-		if err2 == nil && err3==nil {
+		if err2 == nil && err3 == nil {
 
 			//optimizePriorsThreaded(strings.ToLower(group))
 			glb.Debug.Println(dbm.GetSharedPrf(group).MapName)
@@ -717,8 +958,6 @@ func ChooseMap(c *gin.Context) {
 		}
 	}
 }
-
-
 
 // Calls setCutoffOverride() and then calls optimizePriorsThreaded()
 // GET parameters: group, cutoff
@@ -730,11 +969,11 @@ func PutMinRss(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	group := strings.ToLower(c.DefaultQuery("group", "none"))
 	minRss := c.DefaultQuery("minRss", "none")
 	glb.Debug.Println(group)
 	glb.Debug.Println(minRss)
-	if group != "noneasdf" && minRss != "none" {
+	if group != "none" && minRss != "none" {
 		newMinRss, err := strconv.Atoi(minRss)
 		if err == nil {
 			err2 := dbm.SetSharedPrf(group, "MinRss", newMinRss)
@@ -763,10 +1002,10 @@ func PutMinRss(c *gin.Context) {
 //	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 //	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 //
-//	group := c.DefaultQuery("group", "noneasdf")
+//	group := c.DefaultQuery("group", "none")
 //	oldname := c.DefaultQuery("oldname", "none")
 //	newname := c.DefaultQuery("newname", "none")
-//	if group != "noneasdf" {
+//	if group != "none" {
 //		//glb.Debug.Println("Attempting renaming ", group, oldname, newname)
 //		dbm.RenameNetwork(group, oldname, newname)
 //		CalculateLearn(group)
@@ -787,10 +1026,10 @@ func EditLoc(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := c.DefaultQuery("group", "noneasdf")
+	groupName := c.DefaultQuery("group", "none")
 	oldloc := strings.TrimSpace(c.DefaultQuery("oldloc", "none"))
 	newloc := strings.TrimSpace(c.DefaultQuery("newloc", "none"))
-	if groupName != "noneasdf" && oldloc != "none" && newloc != "none" {
+	if groupName != "none" && oldloc != "none" && newloc != "none" {
 		numChanges := dbm.EditLocDB(oldloc, newloc, groupName)
 		glb.Debug.Println("Changed location of " + strconv.Itoa(numChanges) + " fingerprints")
 		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
@@ -809,10 +1048,10 @@ func EditLocBaseDB(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := c.DefaultQuery("group", "noneasdf")
+	groupName := c.DefaultQuery("group", "none")
 	oldloc := strings.TrimSpace(c.DefaultQuery("oldloc", "none"))
 	newloc := strings.TrimSpace(c.DefaultQuery("newloc", "none"))
-	if groupName != "noneasdf" && oldloc != "none" && newloc != "none" {
+	if groupName != "none" && oldloc != "none" && newloc != "none" {
 		numChanges := dbm.EditLocBaseDB(oldloc, newloc, groupName)
 		dbm.EditLocDB(oldloc, newloc, groupName)
 		glb.Debug.Println("Changed location of " + strconv.Itoa(numChanges) + " fingerprints")
@@ -824,8 +1063,6 @@ func EditLocBaseDB(c *gin.Context) {
 	}
 }
 
-
-
 // Changes a mac name in db(fingerprints and fingerprints-track buckets)
 // GET parameters: group, oldmac, newmac
 func EditMac(c *gin.Context) {
@@ -836,16 +1073,34 @@ func EditMac(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := c.DefaultQuery("group", "noneasdf")
+	groupName := c.DefaultQuery("group", "none")
 	oldmac := c.DefaultQuery("oldmac", "none")
 	newmac := c.DefaultQuery("newmac", "none")
-	if groupName != "noneasdf" && oldmac != "none" && newmac != "none" {
-		numChanges := dbm.EditMacDB(oldmac, newmac, groupName)
-		glb.Debug.Println("Changed mac of " + strconv.Itoa(numChanges) + " fingerprints")
-		algorithms.CalculateLearn(groupName)
-		//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
+	forceEdit := c.DefaultQuery("forceEdit", "none")
 
-		c.JSON(http.StatusOK, gin.H{"message": "Changed mac of " + strconv.Itoa(numChanges) + " fingerprints", "success": true})
+	if groupName != "none" && oldmac != "none" && newmac != "none" {
+		gp := dbm.GM.GetGroup(groupName)
+		fpData := gp.Get_RawData().Get_Fingerprints()
+
+		dbMacs := []string{}
+		for _,fp := range fpData{
+			for _,rt := range fp.WifiFingerprint{
+				if !glb.StringInSlice(rt.Mac,dbMacs){
+					dbMacs = append(dbMacs,rt.Mac)
+				}
+			}
+		}
+
+		if glb.StringInSlice(newmac,dbMacs) && forceEdit != "true"{
+			glb.Error.Println("There are some fingerprints that conatins the newmac already(edit newmac first)")
+			c.JSON(http.StatusOK, gin.H{"success": false, "message":"There are some fingerprints that conatins the newmac already(edit newmac first)"})
+		}else{
+			numChanges := dbm.EditMacDB(oldmac, newmac, groupName)
+			glb.Debug.Println("Changed mac of " + strconv.Itoa(numChanges) + " fingerprints")
+			//algorithms.CalculateLearn(groupName)
+			//bayes.OptimizePriorsThreaded(strings.ToLower(groupName))
+			c.JSON(http.StatusOK, gin.H{"message": "Changed mac of " + strconv.Itoa(numChanges) + " fingerprints", "success": true})
+		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
@@ -861,10 +1116,10 @@ func EditUserName(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	user := strings.ToLower(c.DefaultQuery("user", "none"))
 	newname := strings.ToLower(c.DefaultQuery("newname", "none"))
-	if groupName != "noneasdf" && user != "none" && newname != "none" {
+	if groupName != "none" && user != "none" && newname != "none" {
 		numChanges := dbm.EditUserNameDB(user, newname, groupName)
 
 		// reset the cache (cache.go)
@@ -887,10 +1142,10 @@ func DeleteLocation(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	//gp := dbm.GM.GetGroup(groupName)
 	location := strings.ToLower(c.DefaultQuery("location", "none"))
-	if groupName != "noneasdf" && location != "none" {
+	if groupName != "none" && location != "none" {
 		numChanges := dbm.DeleteLocationDB(location, groupName)
 
 		// todo: can't calculateLearn( there is problem with goroutine)
@@ -911,10 +1166,10 @@ func DeleteLocationBaseDB(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	//gp := dbm.GM.GetGroup(groupName)
 	location := strings.ToLower(c.DefaultQuery("location", "none"))
-	if groupName != "noneasdf" && location != "none" {
+	if groupName != "none" && location != "none" {
 		numChangesBaseDB := dbm.DeleteLocationBaseDB(location, groupName)
 		numChangesGpCache := dbm.DeleteLocationDB(location, groupName)
 		if (numChangesBaseDB != numChangesGpCache) {
@@ -938,9 +1193,9 @@ func DeleteLocations(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	locationsQuery := strings.ToLower(c.DefaultQuery("names", "none"))
-	if groupName != "noneasdf" && locationsQuery != "none" {
+	if groupName != "none" && locationsQuery != "none" {
 		locations := strings.Split(strings.ToLower(locationsQuery), ",")
 		numChangesBaseDB := dbm.DeleteLocationsBaseDB(locations, groupName)
 		numChangesGpCache := dbm.DeleteLocationsDB(locations, groupName)
@@ -966,9 +1221,9 @@ func DeleteLocationsBaseDB(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	locationsQuery := strings.ToLower(c.DefaultQuery("names", "none"))
-	if groupName != "noneasdf" && locationsQuery != "none" {
+	if groupName != "none" && locationsQuery != "none" {
 		locations := strings.Split(strings.ToLower(locationsQuery), ",")
 		numChanges := dbm.DeleteLocationsDB(locations, groupName)
 		// todo: can't calculateLearn( there is problem with goroutine)
@@ -990,9 +1245,9 @@ func DeleteUser(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
-	user := strings.ToLower(c.DefaultQuery("user", "noneasdf"))
-	if group != "noneasdf" && user != "noneasdf" {
+	group := strings.ToLower(c.DefaultQuery("group", "none"))
+	user := strings.ToLower(c.DefaultQuery("user", "none"))
+	if group != "none" && user != "none" {
 		numChanges := dbm.DeleteUser(user, group)
 		// reset the cache (cache.go)
 		go dbm.ResetCache("usersCache")
@@ -1063,10 +1318,10 @@ func Getfiltermacs(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	group := c.DefaultQuery("group", "noneasdf")
+	group := c.DefaultQuery("group", "none")
 	var err error
 	var FilterMacs []string
-	if group != "noneasdf" {
+	if group != "none" {
 		//err, FilterMacs = dbm.GetFilterMacDB(group)
 		//glb.Debug.Println("filterMacs")
 		FilterMacs = dbm.GetSharedPrf(group).FilterMacsMap
@@ -1084,83 +1339,292 @@ func Getfiltermacs(c *gin.Context) {
 
 }
 
-// Set graph
 // POST parameters: graph
-func Setgraph(c *gin.Context) { // not complete
+func AddNodeToGraph(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	var filterMacs parameters.FilterMacs
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	type st struct {
+		NewVertexKey string `json:newVertexKey`
+	}
+	gp := dbm.GM.GetGroup(groupName)
+	curGroupGraph := gp.Get_ConfigData().Get_GroupGraph()
 
-	//x, _ := ioutil.ReadAll(c.Request.Body)
-	//Warning.Println("%s", string(x))
+	//glb.Debug.Println(curGroupGraph.GetNearestNode("998.0,1040.0").Label)
+	//glb.Debug.Println(curGroupGraph.GetNearestNode("-252,-1223").Label)
+	//glb.Debug.Println(curGroupGraph.GetNearestNode("-246,1534").Label)
 
-	if glb.BindJSON(&filterMacs, c) == nil {
-		if len(filterMacs.Macs) == 0 {
-			//glb.RuntimeArgs.NeedToFilter[filterMacs.Group] = false
-			//glb.RuntimeArgs.NotNullFilterList[filterMacs.Group] = false
-			dbm.SetRuntimePrf(filterMacs.Group, "NeedToFilter", false)
-			dbm.SetRuntimePrf(filterMacs.Group, "NotNullFilterList", false)
-		} else {
-			//glb.RuntimeArgs.NeedToFilter[filterMacs.Group] = true
-			//glb.RuntimeArgs.NotNullFilterList[filterMacs.Group] = true
-			dbm.SetRuntimePrf(filterMacs.Group, "NeedToFilter", true)
-			dbm.SetRuntimePrf(filterMacs.Group, "NotNullFilterList", true)
-		}
-
-		//err := dbm.SetFilterMacDB(filterMacs.Group, filterMacs.Macs)
-		err := dbm.SetSharedPrf(filterMacs.Group, "FilterMacsMap", filterMacs.Macs)
-		if err == nil {
-			//glb.RuntimeArgs.FilterMacsMap[filterMacs.Group] = filterMacs.Macs
-			glb.Debug.Println("MacFilter set successfully ")
-			if len(filterMacs.Macs) == 0 {
-				c.JSON(http.StatusOK, gin.H{"message": "MacFilter Cleared.", "success": true})
+	var tempSt st
+	if groupName != "none" {
+		//glb.Debug.Println(c.Request.GetBody())
+		if err := c.ShouldBindJSON(&tempSt); err == nil {
+			//glb.Debug.Println("newVertexLabel : %%%---------> ",tempSt.NewVertexKey)
+			newVertexLabel := tempSt.NewVertexKey
+			//glb.Debug.Println("newVertexLabel : ---------> ",newVertexLabel)
+			curGroupGraph.AddNodeByLabel(newVertexLabel)
+			//curGroupGraph.DeleteGraph()
+			//glb.Debug.Println("graph after adding : ---------> ",curGroupGraph.GetGraphMap())
+			cd := gp.Get_ConfigData()
+			cd.Set_GroupGraph(curGroupGraph)
+			//glb.Debug.Println("####### exited AddNodeByLabel in the bindJson ########")
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			} else {
-				c.JSON(http.StatusOK, gin.H{"message": "MacFilter set successfully", "success": true})
+				c.JSON(http.StatusOK, gin.H{"success": true})
 			}
 		} else {
-			glb.Warning.Println(err)
-			c.JSON(http.StatusOK, gin.H{"message": "setFilterMacDB problem", "success": false})
+			glb.Warning.Println("Can't bind json")
+			glb.Error.Println(err)
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:" + err.Error()})
+			//c.JSON(http.StatusOK, gin.H{"message": "Nums of the FilterMacs are zero", "success": false})
 		}
 	} else {
-		glb.Warning.Println("Can't bind json")
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json"})
-		//c.JSON(http.StatusOK, gin.H{"message": "Nums of the FilterMacs are zero", "success": false})
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
 	}
 }
 
-// Get filterMacs
-// Get parameters: group
-func Getgraph(c *gin.Context) { // not complete
+func SaveEdgesToDB(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	group := c.DefaultQuery("group", "noneasdf")
+	group := c.DefaultQuery("group", "none")
 	var err error
-	var FilterMacs []string
-	if group != "noneasdf" {
-		//err, FilterMacs = dbm.GetFilterMacDB(group)
-		//glb.Debug.Println("filterMacs")
-		FilterMacs = dbm.GetSharedPrf(group).FilterMacsMap
+
+	if group != "none" {
+		gp := dbm.GM.GetGroup(group)
+		curGroupGraph := gp.Get_ConfigData().Get_GroupGraph()
+		cd := gp.Get_ConfigData()
+		cd.Set_GroupGraph(curGroupGraph)
+		//glb.Debug.Println("$$$$ the graph is saved to DB")
+		//graphMap = curGraphMap.GetGraphMap()
+		//glb.Debug.Println(graphMap)
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "group field is null", "success": false})
 	}
 
 	if err == nil {
-		glb.Debug.Println("FilterMacs: ", FilterMacs)
-		c.JSON(http.StatusOK, gin.H{"message": FilterMacs, "success": true})
+		//glb.Debug.Println("graphMap:",graphMap)
+		c.JSON(http.StatusOK, gin.H{"message": "edges saved to DB", "success": true})
 	} else {
 		glb.Warning.Println(err)
 		c.JSON(http.StatusOK, gin.H{"message": err.Error(), "success": false})
 	}
 
+}
+
+func DeleteWholeGraph(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	group := c.DefaultQuery("group", "none")
+	var err error
+	//glb.Debug.Println("### entered delete whole graph api ###")
+	if group != "none" {
+		gp := dbm.GM.GetGroup(group)
+		curGroupGraph := gp.Get_ConfigData().Get_GroupGraph()
+		curGroupGraph.DeleteGraph()
+		cd := gp.Get_ConfigData()
+		cd.Set_GroupGraph(curGroupGraph)
+		//glb.Debug.Println("$$$$ the graph is removed from DB")
+	} else {
+		c.JSON(http.StatusOK, gin.H{"message": "group field is null", "success": false})
+	}
+
+	if err == nil {
+		//glb.Debug.Println("graphMap:",graphMap)
+		c.JSON(http.StatusOK, gin.H{"message": "the graph has been removed", "success": true})
+	} else {
+		glb.Warning.Println(err)
+		c.JSON(http.StatusOK, gin.H{"message": err.Error(), "success": false})
+	}
+
+}
+
+func AddEdgeToGraph(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	type st struct {
+		NewEdge []string `json:NewEdge`
+	}
+	gp := dbm.GM.GetGroup(groupName)
+	curGroupGraph := gp.Get_ConfigData().Get_GroupGraph()
+	var tempSt st
+	if groupName != "none" {
+		if err := c.ShouldBindJSON(&tempSt); err == nil {
+			newEdgeLabel := tempSt.NewEdge
+			glb.Debug.Println("newVertexLabel : ---------> ", newEdgeLabel)
+			curGroupGraph.AddEdgeByLabel(newEdgeLabel[0], newEdgeLabel[1])
+			//glb.Debug.Println("graph after adding : ---------> ",curGroupGraph.GetGraphMap())
+			//ad := gp.Get_AlgoData() // saving to DB has been moved to another function
+			//ad.Set_GroupGraph(curGroupGraph)
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			}
+		} else {
+			glb.Warning.Println("Can't bind json")
+			glb.Error.Println(err)
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:" + err.Error()})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
+	}
+}
+
+func RemoveEdgesOrVertices(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	type st struct {
+		RemovedVertices []string `json:"removed_vertices"`
+		RemovedEdges    []string `json:"removed_edges"`
+	}
+	gp := dbm.GM.GetGroup(groupName)
+	curGroupGraph := gp.Get_ConfigData().Get_GroupGraph()
+	var tempSt st
+	if groupName != "none" {
+		if err := c.ShouldBindJSON(&tempSt); err == nil {
+			ToBeRemovedVertices := tempSt.RemovedVertices
+			ToBeRemovedEdges := tempSt.RemovedEdges
+			glb.Debug.Println(ToBeRemovedEdges, ToBeRemovedVertices, curGroupGraph)
+			for k, _ := range ToBeRemovedEdges {
+				//glb.Debug.Println("%%% ToBeRemovedEdges[k] %%%",ToBeRemovedEdges[k])
+				curGroupGraph.RemoveEdgeByLabel(ToBeRemovedEdges[k])
+			}
+			for k, _ := range ToBeRemovedVertices {
+				//glb.Debug.Println("%%% ToBeRemovedVertices[k] %%%",ToBeRemovedVertices[k])
+				curGroupGraph.RemoveNodeByLabel(ToBeRemovedVertices[k])
+			}
+
+			cd := gp.Get_ConfigData()
+			cd.Set_GroupGraph(curGroupGraph)
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			}
+		} else {
+			glb.Warning.Println("Can't bind json")
+			glb.Error.Println(err)
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:" + err.Error()})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
+	}
+}
+
+// Get Graph of Group in the format of a map that its key is like "10#10" and values are a slice of strings
+// Get parameters: group
+func Getgraph(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	group := c.DefaultQuery("group", "none")
+	var err error
+	graphMap := make(map[string][]string)
+	//graphMap["10,10"] = append(graphMap["10,10"], "20,20")
+	//graphMap["10,10"] = append(graphMap["10,10"], "20,30")
+	//graphMap["20,20"] = append(graphMap["20,20"], "10,10")
+	//graphMap["20,20"] = append(graphMap["20,20"], "20,30")
+	//graphMap["20,30"] = append(graphMap["20,30"], "10,10")
+	//graphMap["20,30"] = append(graphMap["20,30"], "20,20")
+	//graphMap["20,30"] = append(graphMap["20,30"], "50,50")
+	//graphMap["40,40"] = make([]string, 0)
+	//graphMap["50,50"] = append(graphMap["50,50"], "20,30")
+
+	if group != "none" {
+		gp := dbm.GM.GetGroup(group)
+		graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
+		graphMap = graphMapPointer.GetGraphMap()
+		glb.Debug.Println("graphmap", graphMap)
+		//glb.Debug.Println(graphMap)
+		//root,_ := graphMapPointer.GetNodeByLabel("-1152,1334")
+		//glb.Debug.Println("returned value from BFSTraverse",graphMapPointer.BFSTraverse(root))
+		//	{glb.Debug.Printf("%v\n", n)
+		//})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"message": "group field is null", "success": false})
+	}
+
+	if err == nil {
+		//glb.Debug.Println("graphMap:",graphMap)
+		c.JSON(http.StatusOK, gin.H{"message": graphMap, "success": true})
+	} else {
+		glb.Warning.Println(err)
+		c.JSON(http.StatusOK, gin.H{"message": err.Error(), "success": false})
+	}
+
+}
+
+// Get Adjacent fingerprint locations to a specific node of graph
+// Get parameters: group, node
+func GetGraphNodeAdjacentFPs(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	group := strings.ToLower(c.DefaultQuery("group", "none"))
+	node := strings.ToLower(c.DefaultQuery("node", "none"))
+	if group != "none" && node != "none" {
+		gp := dbm.GM.GetGroup(group)
+		knnAlgoData := gp.Get_AlgoData().Get_KnnFPs()
+		node2FPs := knnAlgoData.Node2FPs
+		fpData := gp.Get_RawData().Get_Fingerprints()
+		glb.Debug.Println("node:", node)
+		glb.Debug.Println("Graph node2fps details:")
+		node2FPSLen := 0
+		for node, fps := range node2FPs {
+			glb.Debug.Println(node, ": number of adjacent fps = ", len(fps))
+			node2FPSLen += len(fps)
+		}
+
+		if node2FPSLen != 0 {
+			fpIndexes := node2FPs[node]
+			glb.Debug.Println("Num of adjacent Fingerprints: ", len(fpIndexes))
+			fpLocations := []string{}
+			otherFpLocations := []string{}
+			for fpTime, fp := range fpData {
+				if glb.StringInSlice(fpTime, fpIndexes) {
+					fpLocations = append(fpLocations, fp.Location)
+				} else {
+					otherFpLocations = append(otherFpLocations, fp.Location)
+				}
+			}
+			c.JSON(http.StatusOK, gin.H{"fpLocations": fpLocations, "otherFpLocations": otherFpLocations, "success": true})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"message": "can get adjacent fps, calculate first ", "success": false})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"message": "group or node field is null", "success": false})
+	}
 }
 
 // Get uniquemacs
@@ -1172,10 +1636,10 @@ func GetUniqueMacs(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET")
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	groupName := c.DefaultQuery("group", "noneasdf")
+	groupName := c.DefaultQuery("group", "none")
 	var err error
 	var uniqueMacs []string
-	if groupName != "noneasdf" {
+	if groupName != "none" {
 		//err, FilterMacs = dbm.GetFilterMacDB(groupName)
 		//glb.Debug.Println("filterMacs")
 		uniqueMacs = dbm.GM.GetGroup(groupName).Get_MiddleData().Get_UniqueMacs()
@@ -1203,9 +1667,9 @@ func ReformDB(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	group := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	group := strings.ToLower(c.DefaultQuery("group", "none"))
 
-	if group != "noneasdf" {
+	if group != "none" {
 		numChanges := dbm.ReformDBDB(group)
 		glb.Debug.Println("DB reformed successfully")
 		c.JSON(http.StatusOK, gin.H{"message": "Changed name of " + strconv.Itoa(numChanges) + " things", "success": true})
@@ -1222,9 +1686,9 @@ func CVResults(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 
-	if groupName != "noneasdf" {
+	if groupName != "none" {
 		algoAccuracy := dbm.GetCVResults(groupName)
 
 		glb.Debug.Println("Got algorithms accuracy")
@@ -1242,13 +1706,13 @@ func CalcCompletionLevel(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 
-	if groupName != "noneasdf" {
+	if groupName != "none" {
 		cmpLevel := dbm.GetCalcCompletionLevel()
 		if (cmpLevel > 0 && cmpLevel <= 1) {
 			//cmpLevel = float64(int(cmpLevel*10000000))/100000
-			glb.Debug.Printf("Calculation level: %f % \n", cmpLevel)
+			//glb.Debug.Printf("Calculation level: %f % \n", cmpLevel)
 			c.JSON(http.StatusOK, gin.H{"success": true, "message": cmpLevel,})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "No calculation is running"})
@@ -1268,13 +1732,54 @@ func BuildGroup(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 
-	if groupName != "noneasdf" {
+	if groupName != "none" {
+
+		//1: reform legacy db
 		dbm.ReformDBDB(groupName)
+
+		err := dbm.CorrectLearnFPsTimestamp(groupName)
+		if err != nil {
+			glb.Error.Println(err.Error())
+		}
+		//2: form raw groupcache and rawdata initialization with raw data in db
 		dbm.BuildGroupDB(groupName)
-		//algorithms.PreProcess(groupName) //added to calculate learn
+		//3.relocate fp with true location that was uploaded
+		if dbm.GetSharedPrf(groupName).NeedToRelocateFP {
+			err := dbm.RelocateFPLoc(groupName)
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				return
+			}
+		}
+		//4. Preprocess on rss raw data
+		//rd := dbm.GM.GetGroup(groupName).Get_RawData()
+		//needToRelocateFP := dbm.GetSharedPrf(groupName).NeedToRelocateFP
+		//algorithms.PreProcess(rd, needToRelocateFP) // use preprocess just once in buildgroup(not use in calculatelearn)
+		//5. Run learning for raw data
 		algorithms.CalculateLearn(groupName)
+
+		// test-valid hyper parameters selecting
+		rsd := dbm.GM.GetGroup(groupName).Get_ResultData()
+		testValidTracks := rsd.Get_TestValidTracks()
+		if glb.GraphEnabled && len(testValidTracks) != 0 {
+
+			// Find true locations
+			gp := dbm.GM.GetGroup(groupName)
+			rsd := gp.Get_ResultData()
+			_, _, _, testValidTracksRes := dbm.CalculateTestError(groupName, testValidTracks)
+			rsd.Set_TestValidTracks(testValidTracksRes)
+
+			// calculate beset graphfactors
+			algorithms.CalculateGraphFactor(groupName)
+		} else if !glb.GraphEnabled {
+			rsd.Set_AlgoAccuracy("knn_testvalid", 0)
+			rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
+		}
+
+
 		glb.Debug.Println("Struct reformed successfully")
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "struct renewed"})
 	} else {
@@ -1290,13 +1795,13 @@ func AddArbitLocations(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	type st struct {
 		Locations []string `json:"locations"`
 	}
 
 	var tempSt st
-	if groupName != "noneasdf" {
+	if groupName != "none" {
 		//glb.Warning.Println(c.Request.GetBody())
 		if err := c.ShouldBindJSON(&tempSt); err == nil {
 			locations := tempSt.Locations
@@ -1326,13 +1831,13 @@ func DelArbitLocations(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	type st struct {
 		Locations []string `json:"locations"`
 	}
 	var tempSt st
 
-	if groupName != "noneasdf" {
+	if groupName != "none" {
 		if err := c.ShouldBindJSON(&tempSt); err == nil {
 			locations := tempSt.Locations
 			err := dbm.DelArbitLocations(groupName, locations)
@@ -1361,9 +1866,9 @@ func GetArbitLocations(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 
-	if groupName != "noneasdf" {
+	if groupName != "none" {
 		locations := dbm.GetArbitLocations(groupName)
 		c.JSON(http.StatusOK, gin.H{"success": true, "locations": locations})
 	} else {
@@ -1403,10 +1908,10 @@ func DelResults(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	user := strings.ToLower(c.DefaultQuery("user", "none"))
 
-	if groupName != "noneasdf" && user != "none" {
+	if groupName != "none" && user != "none" {
 		err := dbm.GM.GetGroup(groupName).Get_ResultData().Clear_UserResults(user)
 		//locations := dbm.DelResults(groupName)
 		if err == nil {
@@ -1428,11 +1933,11 @@ func FingerprintLikeness(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	location := strings.ToLower(c.DefaultQuery("location", "none"))
 	maxFPDistStr := strings.ToLower(c.DefaultQuery("maxFPDist", "none"))
 
-	if groupName != "noneasdf" && location != "none" && maxFPDistStr != "none" {
+	if groupName != "none" && location != "none" && maxFPDistStr != "none" {
 		maxFPDist, err := strconv.ParseFloat(maxFPDistStr, 64)
 		if err == nil {
 			resultMap, fingerprintRssDetails := dbm.FingerprintLikeness(groupName, location, maxFPDist)
@@ -1462,10 +1967,10 @@ func GetFingerprint(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	fpId := strings.ToLower(c.DefaultQuery("id", "none"))
 
-	if groupName != "noneasdf" {
+	if groupName != "none" {
 		fpData := dbm.GM.GetGroup(groupName).Get_RawData().Get_Fingerprints()
 		if fpId != "none" {
 			if fp, ok := fpData[fpId]; ok {
@@ -1494,8 +1999,8 @@ func GetMostSeenMacsAPI(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
-	if groupName != "noneasdf" {
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	if groupName != "none" {
 		mostSeenMacs := dbm.GetMostSeenMacs(groupName)
 		c.JSON(http.StatusOK, gin.H{"success": true, "macs": mostSeenMacs})
 	} else {
@@ -1505,33 +2010,123 @@ func GetMostSeenMacsAPI(c *gin.Context) {
 }
 
 func UploadTrueLocationLog(c *gin.Context) {
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
-	file, header, err := c.Request.FormFile("file")
-	//filename := header.Filename
-	if err != nil {
-		glb.Error.Println(err)
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": err})
-		return
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	method := c.DefaultQuery("method", "none") // must be learn,learnAppend,test,testAppend
+
+	if groupName != "none" && method != "none" {
+
+		//1:File upload:
+
+		// Set file path according to method
+		filePath := "/" + groupName + ".log"
+		mainMethod := ""
+		if method == "learn" || method == "learnAppend" {
+			filePath = "/TrueLocationLogs/learn" + filePath
+			mainMethod = "learn"
+		} else if method == "test" || method == "testAppend" {
+			filePath = "/TrueLocationLogs/test" + filePath
+			mainMethod = "test"
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "method must be learn,learnAppend,test or testAppend"})
+			return
+		}
+
+		// Get uploaded file
+		file, _, err := c.Request.FormFile("file")
+		defer file.Close()
+		//filename := header.Filename
+		if err != nil {
+			glb.Error.Println(err)
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			return
+		}
+
+		// Append to last file or replace it
+		if method == "learnAppend" || method == "testAppend" { // Append to existent file if exists
+			//Read old file
+			out, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, filePath), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+			defer out.Close()
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				return
+			}
+
+			//Read uploaded file
+			newDataByte, err := ioutil.ReadAll(file)
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				return
+			}
+			//glb.Debug.Println(string(newDataByte))
+
+			if _, err = out.Write(newDataByte); err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				return
+			} else {
+				glb.Debug.Println("New log file was created or appended to " + filePath)
+
+				//2(A): insert logs from uploaded file to groupcache
+				err := dbm.SetTrueLocationFromLog(groupName, mainMethod)
+				if err != nil {
+					c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				} else {
+					c.JSON(http.StatusOK, gin.H{"success": true})
+				}
+			}
+
+		} else if method == "learn" || method == "test" { //replace new file instead of last file
+
+			//todo: why os.openFile can't replace file!?
+			//out, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, filePath), os.O_CREATE|os.O_RDWR, 0666)
+			//defer out.Close()
+			//if err != nil {
+			//	glb.Error.Println(err)
+			//	c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			//	return
+			//}
+			out, err := os.Create(path.Join(glb.RuntimeArgs.SourcePath, filePath))
+			defer out.Close()
+
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				return
+			}
+
+			_, err = io.Copy(out, file) // copy file
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			} else {
+				glb.Debug.Println("New log file was created or replaced with " + filePath)
+
+				//2(B): insert logs from uploaded file to groupcache
+				err := dbm.SetTrueLocationFromLog(groupName, mainMethod)
+				if err != nil {
+					c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				} else {
+					c.JSON(http.StatusOK, gin.H{"success": true})
+				}
+			}
+		}
+
+		// 3:After file learning file upload , set NeedToRelocateFP variable to true
+		if method == "learn" || method == "learnAppend" {
+			err := dbm.SetSharedPrf(groupName, "NeedToRelocateFP", true)
+			if err != nil {
+				glb.Error.Println(err.Error())
+			}
+		}
 	} else {
-		glb.Debug.Println(header.Filename)
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or method isn't mentioned"})
 	}
 
-
-	out, err := os.Create(path.Join(glb.RuntimeArgs.SourcePath, "TrueLocationLogs/"+groupName+".log"))
-	if err != nil {
-		glb.Error.Println(err)
-	}
-	defer out.Close()
-	_, err = io.Copy(out, file)
-	if err != nil {
-		glb.Error.Println(err)
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": err})
-	} else {
-		c.JSON(http.StatusOK, gin.H{"success": true})
-	}
 }
 
-func RelocateFPLocAPI(c *gin.Context) {
+func SetRelocateFPLocStateAPI(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -1539,16 +2134,51 @@ func RelocateFPLocAPI(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
-	if groupName != "noneasdf" {
-		err := dbm.RelocateFPLoc(groupName)
-		if err == nil {
-			c.JSON(http.StatusOK, gin.H{"success": true})
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	relocateFP := strings.ToLower(c.DefaultQuery("relocateFP", "none"))
+
+	if groupName != "none" && relocateFP != "none" {
+		//err := dbm.RelocateFPLoc(groupName)
+		if (relocateFP == "true") {
+			err := dbm.SetSharedPrf(groupName, "NeedToRelocateFP", true)
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			}
+		} else if (relocateFP == "false") {
+			err := dbm.SetSharedPrf(groupName, "NeedToRelocateFP", false)
+			if err != nil {
+				glb.Error.Println(err)
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			} else {
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			}
 		} else {
-			c.JSON(http.StatusOK, gin.H{"success": true, "message": err.Error()})
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "relocateFP must be true or false"})
 		}
 	} else {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or id not mentioned"})
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or relocateFP not mentioned"})
+	}
+
+}
+
+func GetRelocateFPLocStateAPI(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		needToRelocateFP := dbm.GetSharedPrf(groupName).NeedToRelocateFP
+		c.JSON(http.StatusOK, gin.H{"success": true, "needToRelocateFP": needToRelocateFP})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group is not mentioned"})
 	}
 
 }
@@ -1561,10 +2191,10 @@ func GetRSSDataAPI(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "noneasdf"))
-	mac := c.DefaultQuery("mac", "noneasdf")
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	mac := c.DefaultQuery("mac", "none")
 
-	if groupName != "noneasdf" && mac != "noneasdf" {
+	if groupName != "none" && mac != "none" {
 		uniqueMacs := dbm.GM.GetGroup(groupName).Get_MiddleData().Get_UniqueMacs()
 		if !glb.StringInSlice(mac, uniqueMacs) {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "mac doesn't exist"})
@@ -1578,4 +2208,73 @@ func GetRSSDataAPI(c *gin.Context) {
 
 }
 
+func GetMapDetails(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		if dbm.GroupExists(groupName) {
+			MapName := dbm.GetSharedPrf(groupName).MapName
+			MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
+			MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
+			c.JSON(http.StatusOK, gin.H{"success": true, "MapName": MapName, "MapPath": MapPath, "MapDimensions": MapDimensions})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist"})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group is not mentioned"})
+	}
+
+}
+
+func ClearConfigData(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "DELETE, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		if dbm.GroupExists(groupName) {
+			gp := dbm.GM.GetGroup(groupName)
+			gp.Set_ConfigData(gp.NewConfigDataStruct())
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist"})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group is not mentioned"})
+	}
+
+}
+
+// Reload groupcache from db, Note: if group cache flushes before this function call reloadDB doesn't have any influence!
+func ReloadDB(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+
+		dbm.GM.ReloadGroup(groupName)
+		c.JSON(http.StatusOK, gin.H{"success": true})
+
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group is not mentioned"})
+	}
+
+}

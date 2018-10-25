@@ -324,7 +324,7 @@ func CopyFileContents(src, dst string) (err error) {
 	return
 }
 
-func SortDictByVal(W map[string]float64) []string {
+func SortReverseDictByVal(W map[string]float64) []string {
 	var keySorted []string
 	reverseMap := map[float64][]string{}
 	var valueList sort.Float64Slice
@@ -345,7 +345,28 @@ func SortDictByVal(W map[string]float64) []string {
 	return keySorted
 }
 
-// Like SortDictByVal but when there are some fingerprints(specific mac) with same rss,
+func SortIntKeyDictByIntVal(W map[int]int) []int {
+	var keySorted []int
+	reverseMap := map[int][]int{}
+	var valueList sort.IntSlice
+	for k, v := range W {
+		reverseMap[v] = append(reverseMap[v], k)
+	}
+	for k := range reverseMap {
+		valueList = append(valueList, k)
+	}
+	valueList.Sort()
+	sort.Sort(valueList)
+
+	for _, k := range valueList {
+		for _, s := range reverseMap[k] {
+			keySorted = append(keySorted, s)
+		}
+	}
+	return keySorted
+}
+
+// Like SortReverseDictByVal but when there are some fingerprints(specific mac) with same rss,
 //		sort them according to their timestamp(actually there is no difference between them) to avoid side effects
 // 			(because random ordering of these FP may cause some wrong priorities).
 //		of course, we must solve this problem by correcting the algorithms. It's difficult, because maybe there are many FPs(specific mac) with same rss
@@ -703,6 +724,9 @@ func IsValidXY(dot string) bool {
 func GetDotFromString(dotStr string) (float64, float64) {
 	x_y := strings.Split(dotStr, ",")
 	//Debug.Println(x_y)
+	if len(x_y) != 2 {
+		Error.Println("Invalid x,y format:", x_y)
+	}
 	locXstr := x_y[0]
 	locYstr := x_y[1]
 	locX, _ := strconv.ParseFloat(locXstr, 64)
@@ -826,3 +850,82 @@ func SortedInsert(s []int64, f int64) []int64 {
 	return newS
 }
 
+func GetGraphSlicesRangeRecursive(first []float64, last []float64, step float64) ([][]float64) {
+	return getGraphSlicesRangeRecursive(first, last, 0,step)
+}
+// gets first slice, last slice and level which it must be entered 0 at normal calls. (its goal is for recursive calls inside the function)
+func getGraphSlicesRangeRecursive (first []float64 , last []float64 , level int,step float64) ([][]float64) {
+	if len(first) != len(last){
+		errors.New("length of first and last are not equal")
+	}
+	result := [][]float64{}
+
+	if level == len(first){
+		//fmt.Println("level at end" ,level)
+		return result
+	}else {
+		a := []float64{}
+		for u:=0;u<len(first);u++{
+			a=append(a,0)
+		}
+		copy(a, first)
+
+		for j := float64(0); j < (last[level] - first[level]); j+=step {
+
+			b := []float64{}
+			for u:=0;u<len(first);u++{
+				b=append(b,0)
+			}
+			copy(b, a)
+			result = append(result, b)
+
+			a[level]+=step
+			tempResults := getGraphSlicesRangeRecursive(a,last,level+1,step)
+
+			result = append(result,tempResults...)
+		}
+		b := []float64{}
+		for u:=0;u<len(first);u++{
+			b=append(b,0)
+		}
+		copy(b, a)
+		result = append(result, b)
+	}
+	//fmt.Println(result)
+	finalResult := [][]float64{}
+	new := true
+	for i:=0; i<len(result);i++{
+		for j:=0;j<len(finalResult);j++{
+			if testEq(result[i],finalResult[j])==true {
+				//fmt.Println(result[i]," ", finalResult[j])
+				new = false
+			}
+		}
+		for k:=0;k<len(result[i])-1;k++{
+			if (result[i][k]<result[i][k+1]){
+				new = false
+			}
+		}
+		if new==true {
+			finalResult = append(finalResult, result[i])
+		}
+		new = true
+	}
+	return finalResult
+}
+
+func testEq(a, b []float64) bool { //tests whether two slices are the same
+	// If one is nil, the other must also be nil.
+	if (a == nil) != (b == nil) {
+		return false;
+	}
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}

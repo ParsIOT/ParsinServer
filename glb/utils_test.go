@@ -19,3 +19,24 @@ func TestListMaps(t *testing.T) {
 
 	assert.Equal(t, sortedList, []int64{1, 2, 3, 4})
 }
+func TestSortIntKeyDictByIntVal(t *testing.T) {
+	newMap := make(map[int]int)
+	newMap[1] = 10
+	newMap[3] = 30
+	newMap[2] = 20
+	sortedKey := SortIntKeyDictByIntVal(newMap)
+	assert.Equal(t, []int{1, 2, 3}, sortedKey)
+}
+
+func TestGetGraphSlicesRangeRecursive(t *testing.T) {
+	beginSlice := []float64{1, 1, 1, 1}
+	endSlice := []float64{10, 10, 10, 10}
+	step := 5.0
+
+	rangeSlices := GetGraphSlicesRangeRecursive(beginSlice, endSlice,step)
+	Debug.Println(rangeSlices)
+	Debug.Println(len(rangeSlices))
+
+	assert.Equal(t, true, false)
+
+}

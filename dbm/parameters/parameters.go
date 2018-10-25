@@ -6,19 +6,45 @@
 
 package parameters
 
+import "ParsinServer/glb"
 
 // PersistentParameters are not reloaded each time
 //type PersistentParameters struct {
 //	NetworkRenamed map[string][]string // key:networkName, value:mac list; e.g.: {"1":["mac1","mac2"]}
 //}
 
+// Constant parameters that set manually are in KnnParameters
+type KnnParameters struct {
+	MaxEuclideanRssDist int
+}
+
+func NewKnnParameters() KnnParameters {
+	return KnnParameters{
+		MaxEuclideanRssDist: glb.DefaultMaxEuclideanRssDist,
+	}
+}
+
+// Constant parameters that set by cross-validation are in KnnHyperParameters
+type KnnHyperParameters struct {
+	K             int       `json:"K"`
+	MinClusterRss int       `json:"MinClusterRss"`
+	GraphFactors  []float64 `json:"GraphFactors"`
+}
+
+func NewKnnHyperParameters() KnnHyperParameters {
+	return KnnHyperParameters{
+		K:             glb.DefaultKnnKRange[0],
+		MinClusterRss: glb.DefaultKnnMinCRssRange[0],
+		GraphFactors:  glb.DefaultGraphFactorsRange[0],
+	}
+}
 
 type KnnFingerprints struct {
 	FingerprintsInMemory map[string]Fingerprint `json:"FingerprintsInMemory"`
 	FingerprintsOrdering []string               `json:"FingerprintsOrdering"`
 	Clusters             map[string][]string    `json:"Clusters"`
-	K                    int                    `json:"K"`
-	MinClusterRss        int                    `json:"MinClusterRss"`
+	HyperParameters      KnnHyperParameters     `json:"HyperParameters"`
+	Node2FPs             map[string][]string    `json:"Node2FPs"`
 }
 
 func NewKnnFingerprints() KnnFingerprints {
@@ -26,8 +52,8 @@ func NewKnnFingerprints() KnnFingerprints {
 		FingerprintsInMemory: make(map[string]Fingerprint),
 		FingerprintsOrdering: []string{},
 		Clusters:             make(map[string][]string),
-		K:                    10,
-		MinClusterRss:        -70,
+		HyperParameters:      NewKnnHyperParameters(),
+		Node2FPs:             make(map[string][]string),
 	}
 }
 
@@ -118,6 +144,11 @@ type UserPositionJSON struct {
 	KnnData     map[string]float64 `json:"knndata"` // fpTime --> 1/(1+RssVectordistance) or weight
 	PDRLocation string             `json:"pdrlocation"`
 	Fingerprint Fingerprint        `json:"fingerprint"` // raw fingerprint data
+}
+
+type TestValidTrack struct {
+	TrueLocation string           `json:"truelocation"`
+	UserPosition UserPositionJSON `json:"userposition"`
 }
 
 //	filterMacs is used for set filtermacs
