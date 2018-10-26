@@ -30,7 +30,7 @@ var UserHistoryEffectFactors []float64
 var UserHistoryGaussVariance float64
 var UserHistoryTimeDelayFactor float64
 // Default K in KNN algorithm
-var DefaultKnnMinCRssRange,DefaultKnnKRange []int
+var DefaultKnnMinClusterRssRange, DefaultKnnKRange, DefaultMaxEuclideanRssDistRange, DefaultMaxMovementRange []int
 var DefaultGraphFactorsRange [][]float64
 
 var DefaultMapName string
@@ -43,8 +43,8 @@ var DefaultMaxMovement float64
 
 var PDREnabledForDynamicSubareaMethod bool
 
-var GraphEnabled bool
-var DefaultMaxEuclideanRssDist int
+var DefaultGraphEnabled, DefaultDSAEnabled bool
+var DefaultMaxEuclideanRssDist int // must be deprecated
 
 var FastLearn bool //ignore some crossvalidation calculation(rss regulating & get rss avg of adjacency dots) to learn fast
 
@@ -61,8 +61,10 @@ func init() {
 	DefaultMaxEuclideanRssDist = 30 //=ble, 50=wifi
 	ProgressBarLength = 0
 	ProgressBarCurLevel = 0
-	DefaultKnnKRange = []int{25, 26}         //{10,30}
-	DefaultKnnMinCRssRange = []int{-75, -76} //{-60,-90}
+	DefaultKnnKRange = []int{25, 26}                //{10,30}
+	DefaultKnnMinClusterRssRange = []int{-75, -76}  //{-60,-90}
+	DefaultMaxEuclideanRssDistRange = []int{30, 50} // wifi:50, ble:30
+	DefaultMaxMovementRange = []int{10, 100}
 	DefaultGraphFactorsRange = [][]float64{{1, 1, 1, 1}, {2, 2, 2, 1}}
 
 	//MinClusterRss = -75
@@ -83,7 +85,8 @@ func init() {
 	DefaultMapDimensions = []int{3400,3600}
 	DefaultMapHeight = 3400
 	DefaultMapWidth = 3600
-	GraphEnabled = true
+	DefaultGraphEnabled = true
+	DefaultDSAEnabled = false
 	PDREnabledForDynamicSubareaMethod = false
 
 	FastLearn = false

@@ -178,18 +178,22 @@ func SlashDashboard(c *gin.Context) {
 	dash.VarabilityCutoff = make(map[string]float64)
 
 
-	kRange := dbm.GetSharedPrf(groupName).KnnKRange
-	knnMinCRssRange := dbm.GetSharedPrf(groupName).KnnMinCRssRange
-
 	gp := dbm.GM.GetGroup(groupName)
 	md := gp.Get_MiddleData_Val()
 	rsd := gp.Get_ResultData()
+	cd := gp.Get_ConfigData()
+
+	knnConfig := cd.Get_KnnConfig()
+
+	kRange := knnConfig.KRange
+	knnMinCRssRange := knnConfig.MinClusterRssRange
+
 
 	knnHyperParams := gp.Get_AlgoData().Get_KnnFPs().HyperParameters
 	bestK := knnHyperParams.K
 	bestMinClusterRss := knnHyperParams.MinClusterRss
 	maxMovement := dbm.GetSharedPrf(groupName).MaxMovement
-	maxEuclideanRssDist := gp.Get_ConfigData().Get_KnnParameters().MaxEuclideanRssDist
+	maxEuclideanRssDist := gp.Get_ConfigData().Get_KnnConfig().MaxEuclideanRssDist
 
 	for n := range md.NetworkLocs {
 		//dash.Mixin[n] = gp.Get_Priors()[n].Special["MixIn"]
@@ -218,6 +222,8 @@ func SlashDashboard(c *gin.Context) {
 	dash.KnnTestValidAccuracy = algoAccuracies["knn_testvalid"]
 	dash.KnnTestValidGraphAccuracy = algoAccuracies["knn_testvalid_graph"]
 
+	KnnConfigData := gp.Get_ConfigData().Get_KnnConfig()
+
 	//glb.Debug.Println(dash)
 	mapNamesList := glb.ListMaps()
 	c.HTML(http.StatusOK, "dashboard.tmpl", gin.H{
@@ -232,6 +238,7 @@ func SlashDashboard(c *gin.Context) {
 		"maxMovement":         maxMovement,
 		"maxEuclideanRssDist": maxEuclideanRssDist,
 		"mapNamesList":        mapNamesList,
+		"KnnConfigData":       KnnConfigData,
 	})
 }
 

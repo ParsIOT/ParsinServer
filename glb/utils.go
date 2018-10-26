@@ -11,27 +11,27 @@ import (
 	"compress/flate"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"math"
-	"math/rand"
-	"net"
-	"os"
-	"strings"
-	"time"
-	"log"
-	"sort"
-	"runtime"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"errors"
-	"strconv"
-	"math/big"
-	"path/filepath"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
+	"io/ioutil"
+	"log"
+	"math"
+	"math/big"
+	"math/rand"
+	"net"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
 )
 
 var (
@@ -935,3 +935,51 @@ func testEq(a, b []float64) bool { //tests whether two slices are the same
 	}
 	return true
 }
+
+//// Deprecated use  json.Unmarshal([]byte(str), &newStruct)
+//func ConvertStr2IntSlice(str string)([]int,error){
+//	str = strings.TrimSpace(str)
+//	if len(str) < 3 { // like [0]
+// 		return nil,errors.New("Invalid slice string")
+//	}
+//	str = str[1:][:len(str)-2]
+//	sliceStrSplited := strings.Split(str, ",")
+//	intSlice := []int{}
+//
+//	for _, numStr := range sliceStrSplited {
+//		num, err := strconv.Atoi(numStr)
+//		if err != nil {
+//			//Error.Println(err)
+//			return nil,errors.New("Invalid slice string")
+//		}
+//		intSlice = append(intSlice, num)
+//	}
+//	return intSlice,nil
+//}
+//
+//
+//func ConvertStr22DimIntSlice(str string)([][]int,error){
+//	str = strings.TrimSpace(str)
+//	str = str[1:][:len(str)-2]
+//
+//	// first converting to int slices
+//	StrSplited1 := strings.Split(str, "[")
+//	subSlicesStr := []string{}
+//	for _,subStr := range StrSplited1[1:]{
+//		StrSplited2 := strings.Split(subStr, "]")
+//		subSlicesStr = append(subSlicesStr, StrSplited2[0])
+//	}
+//
+//	// then convert each int slice string to int slice
+//	resSlice := [][]int{}
+//	for _,sliceStr := range subSlicesStr{
+//		intSlice, err := ConvertStr2IntSlice("["+sliceStr+"]")
+//		if err!=nil{
+//			//Error.Println(err)
+//			return nil,errors.New("Invalid 2 dim slice string")
+//		}
+//		resSlice = append(resSlice,intSlice)
+//	}
+//
+//	return resSlice,nil
+//}

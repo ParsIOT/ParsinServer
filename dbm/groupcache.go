@@ -52,8 +52,8 @@ type ConfigDataStruct struct {
 	mutex *sync.RWMutex
 	group *Group
 	//Learned data:
-	KnnParameters parameters.KnnParameters
-	GroupGraph    parameters.Graph
+	KnnConfig  parameters.KnnConfig
+	GroupGraph parameters.Graph
 	//Note: Run easyjson.sh after editing
 }
 
@@ -881,10 +881,10 @@ func (gp *Group) NewRawDataStruct() *RawDataStruct {
 }
 func (gp *Group) NewConfigDataStruct() *ConfigDataStruct {
 	return &ConfigDataStruct{
-		mutex:         &sync.RWMutex{},
-		group:         gp,
-		KnnParameters: parameters.NewKnnParameters(),
-		GroupGraph:    parameters.NewGraph(),
+		mutex:      &sync.RWMutex{},
+		group:      gp,
+		KnnConfig:  parameters.NewKnnConfig(),
+		GroupGraph: parameters.NewGraph(),
 	}
 }
 
@@ -1736,17 +1736,17 @@ func (confdata *ConfigDataStruct) Set_GroupGraph(new_item parameters.Graph) {
 	confdata.Unlock()
 }
 
-func (confdata *ConfigDataStruct) Get_KnnParameters() parameters.KnnParameters {
+func (confdata *ConfigDataStruct) Get_KnnConfig() parameters.KnnConfig {
 	confdata.RLock()
-	item := confdata.KnnParameters
+	item := confdata.KnnConfig
 	confdata.RUnlock()
 	return item
 }
-func (confdata *ConfigDataStruct) Set_KnnParameters(new_item parameters.KnnParameters) {
+func (confdata *ConfigDataStruct) Set_KnnConfig(new_item parameters.KnnConfig) {
 	defer confdata.SetDirtyBit()
 
 	confdata.Lock()
-	confdata.KnnParameters = new_item
+	confdata.KnnConfig = new_item
 	confdata.Unlock()
 }
 

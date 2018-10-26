@@ -34,20 +34,20 @@
                     <hr>*/}}
                     <div class="input-group form-group">
                         <span class="input-group-addon">K range: </span>
-                        <span class="input-group-addon">[25 26]</span>
+                        <span class="input-group-addon">{{$.KnnConfigData.KRange}}</span>
                         <input id="kRange" name="kRange" class="form-control input-lg" type="text"
                                placeholder="[begin,end] or [specific K]; example:[1,30]">
                     </div>
                     <div class="input-group form-group">
                         <span class="input-group-addon">Min cluster RSS range: </span>
-                        <span class="input-group-addon">[-60 -70]</span>
+                        <span class="input-group-addon">{{$.KnnConfigData.MinClusterRssRange}}</span>
                         <input id="minClusterRssRange" name="minClusterRssRange" class="form-control input-lg"
                                type="text"
                                placeholder="[begin,end] or [specific rss]; example:[-60,-90]">
                     </div>
                     <div class="input-group form-group">
                         <span class="input-group-addon">Max Euclidean Rss Dist range: </span>
-                        <span class="input-group-addon">[30 60]</span>
+                        <span class="input-group-addon">{{$.KnnConfigData.MaxEuclideanRssDistRange}}</span>
                         <input id="maxEuclideanRssDistRange" name="maxEuclideanRssDistRange"
                                class="form-control input-lg" type="text"
                                placeholder="[begin,end] or [specific rss dist]; example:[30,50]">
@@ -56,23 +56,33 @@
                     <div class="volume-fees-panel">
                         <h4>Graph Settings: </h4>
                         <div class="input-group form-group">
-                            <span class="input-group-addon">Graph enabled: </span>
-                            <span class="input-group-addon">Active</span>
+                            <span class="input-group-addon">Graph enabled:</span>
+                            <span class="input-group-addon">{{$.KnnConfigData.GraphEnabled}}</span>
                             <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            {{if $.KnnConfigData.GraphEnabled}}
                                 <label class="btn btn-info btn-secondary active">
-                                    <input type="radio" name="graphState" id="graphStateOn" value="on" checked> On
+                                    <input type="radio" name="graphEnabled" id="graphEnabledOn" value="true" checked> On
                                 </label>
                                 <label class="btn btn-secondary btn-danger">
-                                    <input type="radio" name="graphState" id="graphStateOff" value="off"> Off
+                                    <input type="radio" name="graphEnabled" id="graphEnabledOff" value="false"> Off
                                 </label>
+                            {{else}}
+                                <label class="btn btn-info btn-secondary active">
+                                    <input type="radio" name="graphEnabled" id="graphEnabledOn" value="true"> On
+                                </label>
+                                <label class="btn btn-secondary btn-danger">
+                                    <input type="radio" name="graphEnabled" id="graphEnabledOff" value="false" checked>
+                                    Off
+                                </label>
+                            {{end}}
                             </div>
                         </div>
                         <div class="input-group form-group">
                             <span class="input-group-addon">Graph factor range: </span>
-                            <span class="input-group-addon">[[1,1,1,1] [10,10,10,10]]</span>
+                            <span class="input-group-addon">{{$.KnnConfigData.GraphFactorRange}}</span>
                             <input id="graphFactorRange" name="graphFactorRange" class="form-control input-lg"
                                    type="text"
-                                   placeholder="[begin,end] or [specific factor slice]; example:[[1,1,1,1] [10,10,10,10]]">
+                                   placeholder="[begin,end] or [specific factor slice]; example:[[1,1,1,1],[10,10,10,10]]">
                         </div>
                     </div>
                     <hr>
@@ -80,19 +90,28 @@
                         <h4>Dynamic subarea method Settings: </h4>
                         <div class="input-group form-group">
                             <span class="input-group-addon">DSA enabled: </span>
-                            <span class="input-group-addon">Active</span>
+                            <span class="input-group-addon">{{$.KnnConfigData.DSAEnabled}}</span>
                             <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            {{if $.KnnConfigData.DSAEnabled}}
                                 <label class="btn btn-info btn-secondary active">
-                                    <input type="radio" name="dsaState" id="dsaStateOn" value="on" checked> On
+                                    <input type="radio" name="dsaEnabled" id="dsaEnabledOn" value="true" checked> On
                                 </label>
                                 <label class="btn btn-secondary btn-danger">
-                                    <input type="radio" name="dsaState" id="dsaStateOff" value="off"> Off
+                                    <input type="radio" name="dsaEnabled" id="dsaEnabledOff" value="false"> Off
                                 </label>
+                            {{else}}
+                                <label class="btn btn-info btn-secondary active">
+                                    <input type="radio" name="dsaEnabled" id="dsaEnabledOn" value="true"> On
+                                </label>
+                                <label class="btn btn-secondary btn-danger">
+                                    <input type="radio" name="dsaEnabled" id="dsaEnabledOff" value="false" checked> Off
+                                </label>
+                            {{end}}
                             </div>
                         </div>
                         <div class="input-group form-group">
                             <span class="input-group-addon">Max movement range: </span>
-                            <span class="input-group-addon">[100 10000]</span>
+                            <span class="input-group-addon">{{$.KnnConfigData.MaxMovementRange}}</span>
                             <input id="maxMovementRange" name="maxMovementRange" class="form-control input-lg"
                                    type="text"
                                    placeholder="[begin,end] or [specific dist]; example:[100 1000]">

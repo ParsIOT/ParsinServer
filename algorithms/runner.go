@@ -235,6 +235,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	//}
 
 	gp := dbm.GM.GetGroup(groupName)
+	knnConfig := gp.Get_ConfigData().Get_KnnConfig()
 	// Calculating KNN
 	//glb.Debug.Println(curFingerprint)
 	err, knnGuess, knnData := TrackKnn(gp, curFingerprint, true)
@@ -276,7 +277,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
 	location, accuracyCircleRadius = HistoryEffect(userJSON, userHistory)
 
-	if glb.GraphEnabled {
+	if knnConfig.GraphEnabled {
 		location = knnGuess
 	}
 	userJSON.Location = location
@@ -434,7 +435,7 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 	//userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
 	//location, accuracyCircleRadius = HistoryEffect(userPosJson, userHistory)
 
-	//if glb.GraphEnabled {
+	//if glb.DefaultGraphEnabled {
 		location = knnGuess
 	//}
 	userPosJson.Location = location
@@ -529,7 +530,7 @@ func RecalculateTrackFingerprintKnnCrossValidation(curFingerprint parameters.Fin
 	// Parameters list creation
 		// 1.K
 	validKs := glb.MakeRange(glb.DefaultKnnKRange[0],glb.DefaultKnnKRange[1])
-	knnKRange := dbm.GetSharedPrf(gp.Get_Name()).KnnKRange
+	knnKRange := dbm.GetSharedPrf(gp.Get_Name()).KRange
 	if len(knnKRange) == 1{
 		validKs = glb.MakeRange(knnKRange[0],knnKRange[0])
 	}else if len(knnKRange) == 2{
@@ -538,7 +539,7 @@ func RecalculateTrackFingerprintKnnCrossValidation(curFingerprint parameters.Fin
 		glb.Error.Println("Can't set valid Knn K values")
 	}
 		//2.MinClusterRSS
-	validMinClusterRSSs := glb.MakeRange(glb.DefaultKnnMinCRssRange[0],glb.DefaultKnnMinCRssRange[1])
+	validMinClusterRSSs := glb.MakeRange(glb.DefaultKnnMinClusterRssRange[0],glb.DefaultKnnMinClusterRssRange[1])
 
 	minClusterRSSRange := dbm.GetSharedPrf(gp.Get_Name()).KnnMinCRssRange
 	if len(minClusterRSSRange) == 1{
@@ -1523,6 +1524,7 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	tempGp := dbm.GM.GetGroup(groupName, false) //permanent:false
 	//tempGp.Set_Permanent(false)
 	tempGp.Set_ConfigData(cd)
+	knnConfig := cd.Get_KnnConfig()
 
 	//totalErrorList := []int{}
 	//knnErrHyperParameters := make(map[int]parameters.KnnHyperParameters)
@@ -1538,7 +1540,7 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	// Parameters list creation
 	// 1.K
 	validKs := glb.MakeRange(glb.DefaultKnnKRange[0], glb.DefaultKnnKRange[1])
-	knnKRange := shprf.KnnKRange
+	knnKRange := knnConfig.KRange
 	if len(knnKRange) == 1 {
 		validKs = glb.MakeRange(knnKRange[0], knnKRange[0])
 	} else if len(knnKRange) == 2 {
@@ -1548,9 +1550,9 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 		glb.Error.Println("Can't set valid Knn K values")
 	}
 	//2.MinClusterRSS
-	validMinClusterRSSs := glb.MakeRange(glb.DefaultKnnMinCRssRange[0], glb.DefaultKnnMinCRssRange[1])
+	validMinClusterRSSs := glb.MakeRange(glb.DefaultKnnMinClusterRssRange[0], glb.DefaultKnnMinClusterRssRange[1])
 
-	minClusterRSSRange := shprf.KnnMinCRssRange
+	minClusterRSSRange := knnConfig.MinClusterRssRange
 	if len(minClusterRSSRange) == 1 {
 		validMinClusterRSSs = glb.MakeRange(minClusterRSSRange[0], minClusterRSSRange[0])
 	} else if len(minClusterRSSRange) == 2 {
@@ -1729,6 +1731,7 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreferences, cd *dbm.ConfigDataStruct, crossValidationPartsList []crossValidationParts) parameters.KnnHyperParameters {
 	// CrossValidation
 	tempGp := dbm.GM.GetGroup(groupName, false) //permanent:false
+	knnConfig := cd.Get_KnnConfig()
 	tempGp.Set_ConfigData(cd)
 
 	totalErrorList := []int{}
@@ -1742,7 +1745,8 @@ func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreference
 	// Parameters list creation
 	// 1.K
 	validKs := glb.MakeRange(glb.DefaultKnnKRange[0], glb.DefaultKnnKRange[1])
-	knnKRange := shprf.KnnKRange
+	//knnKRange := shprf.KRange
+	knnKRange := knnConfig.KRange
 	if len(knnKRange) == 1 {
 		validKs = glb.MakeRange(knnKRange[0], knnKRange[0])
 	} else if len(knnKRange) == 2 {
@@ -1752,9 +1756,9 @@ func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreference
 		glb.Error.Println("Can't set valid Knn K values")
 	}
 	//2.MinClusterRSS
-	validMinClusterRSSs := glb.MakeRange(glb.DefaultKnnMinCRssRange[0], glb.DefaultKnnMinCRssRange[1])
+	validMinClusterRSSs := glb.MakeRange(glb.DefaultKnnMinClusterRssRange[0], glb.DefaultKnnMinClusterRssRange[1])
 
-	minClusterRSSRange := shprf.KnnMinCRssRange
+	minClusterRSSRange := knnConfig.MinClusterRssRange
 	if len(minClusterRSSRange) == 1 {
 		validMinClusterRSSs = glb.MakeRange(minClusterRSSRange[0], minClusterRSSRange[0])
 	} else if len(minClusterRSSRange) == 2 {
@@ -1938,13 +1942,27 @@ func SelectBestFromErrMap(allErrDetails map[int][]int) (int, []int, map[int]int)
 		}*/
 }
 
+func DisableGraphTemprary(cd *dbm.ConfigDataStruct) bool {
+	knnConfig := cd.Get_KnnConfig()
+	if knnConfig.GraphEnabled { // Todo: graphEnabled must be declared in sharedPrf
+		knnConfig.GraphEnabled = false
+		cd.Set_KnnConfig(knnConfig)
+	}
+	return true
+}
+
+func EnableGraphTemprary(cd *dbm.ConfigDataStruct, graphDisabled bool) {
+	knnConfig := cd.Get_KnnConfig()
+	if graphDisabled {
+		knnConfig.GraphEnabled = true
+		cd.Set_KnnConfig(knnConfig)
+	}
+}
+
+
 func CalculateLearn(groupName string) {
 	// Now performance isn't important in learning, just care about performance on track (it helps to code easily!)
-	graphDisabled := false
-	if glb.GraphEnabled { // Todo: graphEnabled must be declared in sharedPrf
-		glb.GraphEnabled = false
-		graphDisabled = true
-	}
+
 
 	glb.Debug.Println("################### CalculateLearn ##################")
 	gp := dbm.GM.GetGroup(groupName)
@@ -1956,6 +1974,11 @@ func CalculateLearn(groupName string) {
 	cd := gp.Get_ConfigData()
 	ad := gp.Get_AlgoData()
 	rs := gp.Get_ResultData()
+
+	//knnConfig := cd.Get_KnnConfig()
+	graphDisabled := false
+	graphDisabled = DisableGraphTemprary(cd)     // disable graph
+	defer EnableGraphTemprary(cd, graphDisabled) // enabled graph at end
 
 	knnLocAccuracy := make(map[string]int)
 	var crossValidationPartsList []crossValidationParts
@@ -2089,30 +2112,40 @@ func CalculateLearn(groupName string) {
 	//		glb.Warning.Println(err)
 	//	}
 	//}
-	if graphDisabled {
-		glb.GraphEnabled = true
-	}
+
 	//runnerLock.Unlock()
 }
 
 func CalculateGraphFactor(groupName string) {
 	gp := dbm.GM.GetGroup(groupName)
 	rsd := gp.Get_ResultData()
+	cd := gp.Get_ConfigData()
 	ad := gp.Get_AlgoData()
+	knnConfig := gp.Get_ConfigData().Get_KnnConfig()
 	knnFPs := ad.Get_KnnFPs()
 
 	//GraphFactors range:
 	//validGraphFactorsRange = [][]float64{}
 	//validGraphFactors := [][]float64{{0.5, 0.5, 1, 1, 1}, {2, 1, 1, 1}, {100, 100, 100, 100, 3, 2, 1}, {10, 10, 10, 10, 3, 2, 1}, {8, 8, 8, 8, 3, 2, 1}, {1, 1, 1, 1}}
 
-	beginSlice := []float64{1, 1, 1, 1, 1, 1, 1}
+	//beginSlice := []float64{1, 1, 1, 1, 1, 1, 1}
 	//endSlice := []float64{10, 10, 10, 10, 3, 2, 1}
-	endSlice := []float64{2, 1, 1, 1, 1, 1, 1}
-	validGraphFactors := glb.GetGraphSlicesRangeRecursive(beginSlice, endSlice)
-	validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
-	validGraphFactors = append(validGraphFactors, []float64{10, 10, 10, 10, 3, 2, 1})
+	graphFactorRange := knnConfig.GraphFactorRange
 
-
+	var validGraphFactors [][]float64
+	if len(graphFactorRange) == 0 {
+		glb.Error.Println("graphFactorRange is empty, CalculateGraphFactor is ignored!")
+		return
+	} else if len(graphFactorRange) == 1 {
+		validGraphFactors = graphFactorRange[:1]
+	} else if len(graphFactorRange) == 2 {
+		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1])
+		validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
+	} else {
+		glb.Error.Println("graphFactorRange length must be lower than 2(now range created by first and second members)")
+		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1])
+		validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
+	}
 
 	//if len(validGraphFactorsRange) == 1{
 	//
@@ -2132,7 +2165,8 @@ func CalculateGraphFactor(groupName string) {
 	// 1. TestValid without graph:
 	/*	testValidTrueLoc := []string{}
 		testvalidGuessLoc := []string{}*/
-	glb.GraphEnabled = false
+	//glb.DefaultGraphEnabled = false
+	graphDisabled1 := DisableGraphTemprary(cd)
 	{
 		learnedKnnData, _ := LearnKnn(gp, knnHyperParams)
 		ad.Set_KnnFPs(learnedKnnData)
@@ -2177,7 +2211,7 @@ func CalculateGraphFactor(groupName string) {
 		glb.Debug.Println("testvalid error without graph:", newErrorMap[0])
 		rsd.Set_AlgoAccuracy("knn_testvalid", newErrorMap[0])
 	}
-	glb.GraphEnabled = true
+	EnableGraphTemprary(cd, graphDisabled1)
 	/*	glb.Error.Println("testValidTrueLoc",testValidTrueLoc)
 		glb.Error.Println("testvalidGuessLoc",testvalidGuessLoc)*/
 
@@ -2275,6 +2309,7 @@ func CalculateGraphFactor(groupName string) {
 func CalculateGraphFactorLegacy(groupName string) {
 	gp := dbm.GM.GetGroup(groupName)
 	rsd := gp.Get_ResultData()
+	cd := gp.Get_ConfigData()
 	ad := gp.Get_AlgoData()
 	knnFPs := ad.Get_KnnFPs()
 
@@ -2300,7 +2335,8 @@ func CalculateGraphFactorLegacy(groupName string) {
 	// 1. TestValid without graph:
 	/*	testValidTrueLoc := []string{}
 		testvalidGuessLoc := []string{}*/
-	glb.GraphEnabled = false
+	//glb.DefaultGraphEnabled = false
+	graphDisabled1 := DisableGraphTemprary(cd)
 	{
 		learnedKnnData, _ := LearnKnn(gp, knnHyperParams)
 		ad.Set_KnnFPs(learnedKnnData)
@@ -2338,7 +2374,8 @@ func CalculateGraphFactorLegacy(groupName string) {
 		glb.Error.Println("testvalid error without graph:", totalDistError/trackedPointsNum)
 		rsd.Set_AlgoAccuracy("knn_testvalid", totalDistError/trackedPointsNum)
 	}
-	glb.GraphEnabled = true
+	//glb.DefaultGraphEnabled = true
+	EnableGraphTemprary(cd, graphDisabled1)
 	/*	glb.Error.Println("testValidTrueLoc",testValidTrueLoc)
 		glb.Error.Println("testvalidGuessLoc",testvalidGuessLoc)*/
 

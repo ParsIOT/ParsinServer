@@ -13,14 +13,28 @@ import "ParsinServer/glb"
 //	NetworkRenamed map[string][]string // key:networkName, value:mac list; e.g.: {"1":["mac1","mac2"]}
 //}
 
-// Constant parameters that set manually are in KnnParameters
-type KnnParameters struct {
-	MaxEuclideanRssDist int
+// Constant parameters that set manually by user are in KnnConfig
+type KnnConfig struct {
+	KRange                   []int
+	MinClusterRssRange       []int
+	MaxEuclideanRssDistRange []int
+	GraphEnabled             bool
+	GraphFactorRange         [][]float64
+	DSAEnabled               bool
+	MaxMovementRange         []int
+	MaxEuclideanRssDist      int
 }
 
-func NewKnnParameters() KnnParameters {
-	return KnnParameters{
-		MaxEuclideanRssDist: glb.DefaultMaxEuclideanRssDist,
+func NewKnnConfig() KnnConfig {
+	return KnnConfig{
+		KRange:                   glb.DefaultKnnKRange,
+		MinClusterRssRange:       glb.DefaultKnnMinClusterRssRange,
+		MaxEuclideanRssDistRange: glb.DefaultMaxEuclideanRssDistRange,
+		GraphEnabled:             glb.DefaultGraphEnabled,
+		GraphFactorRange:         glb.DefaultGraphFactorsRange,
+		DSAEnabled:               glb.DefaultDSAEnabled,
+		MaxMovementRange:         glb.DefaultMaxMovementRange,
+		MaxEuclideanRssDist:      glb.DefaultMaxEuclideanRssDist,
 	}
 }
 
@@ -30,11 +44,10 @@ type KnnHyperParameters struct {
 	MinClusterRss int       `json:"MinClusterRss"`
 	GraphFactors  []float64 `json:"GraphFactors"`
 }
-
 func NewKnnHyperParameters() KnnHyperParameters {
 	return KnnHyperParameters{
 		K:             glb.DefaultKnnKRange[0],
-		MinClusterRss: glb.DefaultKnnMinCRssRange[0],
+		MinClusterRss: glb.DefaultKnnMinClusterRssRange[0],
 		GraphFactors:  glb.DefaultGraphFactorsRange[0],
 	}
 }
@@ -46,7 +59,6 @@ type KnnFingerprints struct {
 	HyperParameters      KnnHyperParameters     `json:"HyperParameters"`
 	Node2FPs             map[string][]string    `json:"Node2FPs"`
 }
-
 func NewKnnFingerprints() KnnFingerprints {
 	return KnnFingerprints{
 		FingerprintsInMemory: make(map[string]Fingerprint),
@@ -121,7 +133,6 @@ func NewPriorParameters() *PriorParameters {
 		Special:  make(map[string]float64),
 	}
 }
-
 // NewResultsParameters generates a blank ResultsParameters
 func NewResultsParameters() *ResultsParameters {
 	return &ResultsParameters{

@@ -1,8 +1,9 @@
 package glb
 
 import (
-	"testing"
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 //func TestListMaps(t *testing.T) {
@@ -37,4 +38,35 @@ func TestGetGraphSlicesRangeRecursive(t *testing.T) {
 
 	assert.Equal(t, true, false)
 
+}
+
+func TestConvertStr2IntSlice(t *testing.T) {
+	sliceStr := "[1,2]"
+	slice := []int{1, 2}
+	sliceRes, err := ConvertStr2IntSlice(sliceStr)
+	Debug.Println(sliceStr)
+	if err != nil {
+		Error.Println(err)
+	}
+	Debug.Println(sliceRes)
+	assert.Equal(t, slice, sliceRes)
+}
+
+func TestConvertStr22DimIntSlice(t *testing.T) {
+	sliceStr := "[[1,2],[3,4],[5,6,7]]"
+	//slice := [][]int{{1,2},{3,4},{5,6,7}}
+
+	res := [][]int{}
+	if err := json.Unmarshal([]byte(sliceStr), &res); err != nil {
+		panic(err)
+	}
+	Debug.Println(res)
+
+	sliceRes, err := ConvertStr22DimIntSlice(sliceStr)
+	Debug.Println(sliceStr)
+	if err != nil {
+		Error.Println(err)
+	}
+	Debug.Println(sliceRes)
+	assert.Equal(t, true, sliceRes)
 }

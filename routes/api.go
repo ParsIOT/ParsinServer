@@ -11,6 +11,7 @@ import (
 	"ParsinServer/dbm"
 	"ParsinServer/dbm/parameters"
 	"ParsinServer/glb"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
@@ -342,9 +343,11 @@ func Calculate(c *gin.Context) {
 		}
 
 		// test-valid hyper parameters selecting
-		rsd := dbm.GM.GetGroup(groupName).Get_ResultData()
+		gp := dbm.GM.GetGroup(groupName)
+		rsd := gp.Get_ResultData()
+		knnConfig := gp.Get_ConfigData().Get_KnnConfig()
 		testValidTracks := rsd.Get_TestValidTracks()
-		if glb.GraphEnabled && len(testValidTracks) != 0 {
+		if knnConfig.GraphEnabled && len(testValidTracks) != 0 {
 
 			// Find true locations
 			gp := dbm.GM.GetGroup(groupName)
@@ -360,7 +363,7 @@ func Calculate(c *gin.Context) {
 
 			// calculate beset graphfactors
 			algorithms.CalculateGraphFactor(groupName)
-		} else if !glb.GraphEnabled {
+		} else if !knnConfig.GraphEnabled {
 			rsd.Set_AlgoAccuracy("knn_testvalid", 0)
 			rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
 		}
@@ -811,6 +814,7 @@ func PutKnnKRange(c *gin.Context) {
 		kRangeListStr := strings.Split(kRangeRawStr, ",")
 		kRange := []int{}
 
+
 		for _, numStr := range kRangeListStr {
 			num, _ := strconv.Atoi(numStr)
 			kRange = append(kRange, num)
@@ -819,13 +823,17 @@ func PutKnnKRange(c *gin.Context) {
 		// check kRange length
 		if len(kRange) == 1 || len(kRange) == 2 {
 			//validKs := glb.MakeRange(kRange[0],kRange[0])
-			err := dbm.SetSharedPrf(group, "KnnKRange", kRange)
-			if err == nil {
-				//optimizePriorsThreaded(strings.ToLower(group))
+			cd := dbm.GM.GetGroup(group).Get_ConfigData()
+			knnConfig := cd.Get_KnnConfig()
+			//err := dbm.SetSharedPrf(group, "KRange", kRange)
+			knnConfig.KRange = kRange
+			cd.Set_KnnConfig(knnConfig)
+			//if err == nil {
+			//	//optimizePriorsThreaded(strings.ToLower(group))
 				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K range for " + group + ", now set to " + kRangeRawStr})
-			} else {
-				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-			}
+			//} else {
+			//	c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			//}
 			//}else if( len(kRange) == 2){
 			//	algorithms.ValidKs = glb.MakeRange(kRange[0],kRange[1])
 		} else {
@@ -868,13 +876,18 @@ func PutKnnMinClusterRSSRange(c *gin.Context) {
 		// check kRange length
 		if len(minCRssRange) == 1 || len(minCRssRange) == 2 {
 			//validKs := glb.MakeRange(kRange[0],kRange[0])
-			err := dbm.SetSharedPrf(group, "KnnMinCRssRange", minCRssRange)
-			if err == nil {
+			cd := dbm.GM.GetGroup(group).Get_ConfigData()
+			knnConfig := cd.Get_KnnConfig()
+			//err := dbm.SetSharedPrf(group, "KnnMinCRssRange", minCRssRange)
+			knnConfig.MinClusterRssRange = minCRssRange
+			cd.Set_KnnConfig(knnConfig)
+
+			//if err == nil {
 				//optimizePriorsThreaded(strings.ToLower(group))
 				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K range for " + group + ", now set to " + rssRangeRawStr})
-			} else {
-				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-			}
+			//} else {
+			//	c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			//}
 			//}else if( len(kRange) == 2){
 			//	algorithms.ValidKs = glb.MakeRange(kRange[0],kRange[1])
 		} else {
@@ -941,9 +954,9 @@ func PutMaxEuclideanRssDist(c *gin.Context) {
 			}
 
 			cd := dbm.GM.GetGroup(groupName).Get_ConfigData()
-			knnParams := cd.Get_KnnParameters()
+			knnParams := cd.Get_KnnConfig()
 			knnParams.MaxEuclideanRssDist = MaxEuclideanRssDist
-			cd.Set_KnnParameters(knnParams)
+			cd.Set_KnnConfig(knnParams)
 
 			c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding MaxEuclideanRssDist for " + groupName + ", now set to " + MaxEuclideanRssDistStr})
 
@@ -1800,9 +1813,11 @@ func BuildGroup(c *gin.Context) {
 		algorithms.CalculateLearn(groupName)
 
 		// test-valid hyper parameters selecting
-		rsd := dbm.GM.GetGroup(groupName).Get_ResultData()
+		gp := dbm.GM.GetGroup(groupName)
+		rsd := gp.Get_ResultData()
+		knnConfig := gp.Get_ConfigData().Get_KnnConfig()
 		testValidTracks := rsd.Get_TestValidTracks()
-		if glb.GraphEnabled && len(testValidTracks) != 0 {
+		if knnConfig.GraphEnabled && len(testValidTracks) != 0 {
 
 			// Find true locations
 			gp := dbm.GM.GetGroup(groupName)
@@ -1818,7 +1833,7 @@ func BuildGroup(c *gin.Context) {
 
 			// calculate beset graphfactors
 			algorithms.CalculateGraphFactor(groupName)
-		} else if !glb.GraphEnabled {
+		} else if !knnConfig.GraphEnabled {
 			rsd.Set_AlgoAccuracy("knn_testvalid", 0)
 			rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
 		}
@@ -2353,21 +2368,101 @@ func KnnConfigPOST(c *gin.Context) {
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 
-	kRange := c.PostForm("kRange")
-	minClusterRssRange := c.PostForm("minClusterRssRange")
-	maxEuclideanRssDistRange := c.PostForm("maxEuclideanRssDistRange")
-	graphState := c.PostForm("graphState")
-	graphFactorRange := c.PostForm("graphFactorRange")
-	dsaState := c.PostForm("dsaState")
-	maxMovementRange := c.PostForm("maxMovementRange")
+	kRangeStr := strings.TrimSpace(c.PostForm("kRange"))
+	minClusterRssRangeStr := strings.TrimSpace(c.PostForm("minClusterRssRange"))
+	maxEuclideanRssDistRangeStr := strings.TrimSpace(c.PostForm("maxEuclideanRssDistRange"))
+	graphEnabledStr := strings.TrimSpace(c.PostForm("graphEnabled"))
+	graphFactorRangeStr := strings.TrimSpace(c.PostForm("graphFactorRange"))
+	dsaEnabledStr := strings.TrimSpace(c.PostForm("dsaEnabled"))
+	maxMovementRangeStr := strings.TrimSpace(c.PostForm("maxMovementRange"))
 
-	glb.Debug.Println(kRange)
-	glb.Debug.Println(minClusterRssRange)
-	glb.Debug.Println(maxEuclideanRssDistRange)
-	glb.Debug.Println(graphState)
-	glb.Debug.Println(graphFactorRange)
-	glb.Debug.Println(dsaState)
-	glb.Debug.Println(maxMovementRange)
+	if groupName != "none" {
 
+		cd := dbm.GM.GetGroup(groupName).Get_ConfigData()
+		knnConfig := cd.Get_KnnConfig()
+		glb.Debug.Println(knnConfig)
+
+		// Parsing KRangeStr
+		if kRangeStr != "" {
+			var kRange []int
+			if err := json.Unmarshal([]byte(kRangeStr), &kRange); err != nil {
+				glb.Error.Println(err)
+			} else {
+				glb.Debug.Println("kRange: ", kRange)
+				knnConfig.KRange = kRange
+			}
+		}
+
+		// Parsing minClusterRssRange
+		if minClusterRssRangeStr != "" {
+			var minClusterRssRange []int
+			if err := json.Unmarshal([]byte(minClusterRssRangeStr), &minClusterRssRange); err != nil {
+				glb.Error.Println(err)
+			} else {
+				glb.Debug.Println("minClusterRssRange: ", minClusterRssRange)
+				knnConfig.MinClusterRssRange = minClusterRssRange
+			}
+		}
+
+		// Parsing maxEuclideanRssDistRange
+		if maxEuclideanRssDistRangeStr != "" {
+			var maxEuclideanRssDistRange []int
+			if err := json.Unmarshal([]byte(maxEuclideanRssDistRangeStr), &maxEuclideanRssDistRange); err != nil {
+				glb.Error.Println(err)
+			} else {
+				glb.Debug.Println("maxEuclideanRssDistRange: ", maxEuclideanRssDistRange)
+				knnConfig.MaxEuclideanRssDistRange = maxEuclideanRssDistRange
+			}
+		}
+
+		// Parsing graphState
+		if graphEnabledStr != "" {
+			graphEnabled, err := strconv.ParseBool(graphEnabledStr)
+			if err != nil {
+				glb.Error.Println(err)
+				glb.Error.Println("Can't parse graphEnabled")
+			} else {
+				glb.Debug.Println("graphEnabled: ", graphEnabled)
+				knnConfig.GraphEnabled = graphEnabled
+			}
+		}
+
+		// Parsing graphState
+		if graphFactorRangeStr != "" {
+			var graphFactorRange [][]float64
+			if err := json.Unmarshal([]byte(graphFactorRangeStr), &graphFactorRange); err != nil {
+				glb.Error.Println(err)
+			} else {
+				glb.Debug.Println("graphFactorRange: ", graphFactorRange)
+				knnConfig.GraphFactorRange = graphFactorRange
+			}
+		}
+
+		// Parsing graphState
+		if dsaEnabledStr != "" {
+			dsaEnabled, err := strconv.ParseBool(dsaEnabledStr)
+			if err != nil {
+				glb.Error.Println(err)
+				glb.Error.Println("Can't parse dsaEnabled")
+			} else {
+				glb.Debug.Println("dsaEnabled: ", dsaEnabled)
+				knnConfig.DSAEnabled = dsaEnabled
+			}
+		}
+
+		// Parsing maxMovementRange
+		if maxMovementRangeStr != "" {
+			var maxMovementRange []int
+			if err := json.Unmarshal([]byte(maxMovementRangeStr), &maxMovementRange); err != nil {
+				glb.Error.Println(err)
+			} else {
+				glb.Debug.Println("maxMovementRange: ", maxMovementRange)
+				knnConfig.MaxMovementRange = maxMovementRange
+			}
+		}
+
+		cd.Set_KnnConfig(knnConfig)
+
+	}
 	c.Redirect(http.StatusFound, "/dashboard/"+groupName)
 }

@@ -157,6 +157,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	//md := gp.Get_MiddleData()
 
 	tempKnnFingerprints := gp.Get_AlgoData().Get_KnnFPs()
+	knnConfig := gp.Get_ConfigData().Get_KnnConfig()
 
 	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
 	var mainFingerprintsOrdering []string
@@ -197,7 +198,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	node2FPs = tempKnnFingerprints.Node2FPs
 	uniqueMacs = gp.Get_MiddleData().Get_UniqueMacs()
 
-	knnParams := gp.Get_ConfigData().Get_KnnParameters()
+	knnParams := gp.Get_ConfigData().Get_KnnConfig()
 	MaxEuclideanRssDist = knnParams.MaxEuclideanRssDist
 
 	//tempList := []string{}
@@ -318,7 +319,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		//glb.Error.Println(baseLoc)
 
 		if baseLoc != "" { // ignore when baseLoc is empty (for example there is no userhistory!)
-			if glb.GraphEnabled {
+			if knnConfig.GraphEnabled {
 				var tempFingerprintOrdering []string
 				graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
 
@@ -457,14 +458,13 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 	close(chanJobs)
 
-	if glb.GraphEnabled && len(FP2AFactor) != 0 { //FP2AFactor length is zero when user history is empty
+	if knnConfig.GraphEnabled && len(FP2AFactor) != 0 { //FP2AFactor length is zero when user history is empty
 		for i := 1; i <= numJobs; i++ {
 			res := <-chanResults
-			if (res.weight*FP2AFactor[res.fpTime]*float64(repeatFP[res.fpTime]) == 0) {
-				glb.Error.Println("EYBAABA")
-				glb.Error.Println(FP2AFactor[res.fpTime])
-				glb.Error.Println(FP2AFactor)
-			}
+			/*			if (res.weight*FP2AFactor[res.fpTime]*float64(repeatFP[res.fpTime]) == 0) {
+							glb.Error.Println(FP2AFactor[res.fpTime])
+							glb.Error.Println(FP2AFactor)
+						}*/
 			W[res.fpTime] = res.weight * FP2AFactor[res.fpTime] * float64(repeatFP[res.fpTime])
 		}
 	} else {
