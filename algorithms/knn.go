@@ -330,13 +330,22 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 					for i, levelSliceOfHops := range sliceOfHops {
 						var factor float64
-						if (i <= maxHopLevel) {
+						if (i <= maxHopLevel && adjacencyFactors[i]!=0) {
 							factor = adjacencyFactors[i]
-						} else if minAdjacencyFactor != 0 { // last member of adjacencyFactors is minAdjacencyFactor
+						} else if (minAdjacencyFactor != 0) { // last member of adjacencyFactors is minAdjacencyFactor
 							factor = minAdjacencyFactor
 						} else { // if minAdjacencyFactor is zero ignore remaining fingerprints(related to father graph nodes)
 							break
 						}
+						//for i, levelSliceOfHops := range sliceOfHops {
+						//var factor float64
+						//if (i <= maxHopLevel) {
+						//	factor = adjacencyFactors[i]
+						//} else if (minAdjacencyFactor != 0) { // last member of adjacencyFactors is minAdjacencyFactor
+						//	factor = minAdjacencyFactor
+						//} else { // if minAdjacencyFactor is zero ignore remaining fingerprints(related to father graph nodes)
+						//	break
+						//}
 
 						for _, node := range levelSliceOfHops {
 							//hopFPs := append(hopFPs,node2FPs[node]...)

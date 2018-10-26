@@ -1982,8 +1982,8 @@ func CalculateLearn(groupName string) {
 
 	knnLocAccuracy := make(map[string]int)
 	var crossValidationPartsList []crossValidationParts
-	glb.Debug.Println(mainFPOrdering)
-	glb.Debug.Println(mainFPData)
+	//glb.Debug.Println(mainFPOrdering)
+	//glb.Debug.Println(mainFPData)
 	crossValidationPartsList = GetCrossValidationParts(gp, mainFPOrdering, mainFPData)
 	// ToDo: Need to learn algorithms concurrently
 
@@ -2131,6 +2131,7 @@ func CalculateGraphFactor(groupName string) {
 	//beginSlice := []float64{1, 1, 1, 1, 1, 1, 1}
 	//endSlice := []float64{10, 10, 10, 10, 3, 2, 1}
 	graphFactorRange := knnConfig.GraphFactorRange
+	step := 1.0
 
 	var validGraphFactors [][]float64
 	if len(graphFactorRange) == 0 {
@@ -2139,11 +2140,11 @@ func CalculateGraphFactor(groupName string) {
 	} else if len(graphFactorRange) == 1 {
 		validGraphFactors = graphFactorRange[:1]
 	} else if len(graphFactorRange) == 2 {
-		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1])
+		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1],step)
 		validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
 	} else {
 		glb.Error.Println("graphFactorRange length must be lower than 2(now range created by first and second members)")
-		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1])
+		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1],step)
 		validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
 	}
 
@@ -2284,6 +2285,7 @@ func CalculateGraphFactor(groupName string) {
 	bestKey, sortedErrDetails, newErrorMap := SelectBestFromErrMap(allErrDetails)
 	bestErrHyperParameters := allHyperParamDetails[bestKey]
 	bestResult := newErrorMap[bestKey]
+	glb.Debug.Println("%%%%%%% best result %%%%%%",bestResult)
 
 	for _, i := range sortedErrDetails {
 		glb.Debug.Println("-----------------------------")
