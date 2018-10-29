@@ -108,6 +108,7 @@ func LoadFingerprint(jsonByte []byte, doFilter bool) parameters.Fingerprint{
 	//glb.Debug.Println(fp)
 	if len(fp.Group)==0{
 		glb.Error.Println("fingerprint doesn't have group name!")
+		panic("fingerprint doesn't have group name!")
 		return fp
 	}
 	//t1 := len(fp.WifiFingerprint)

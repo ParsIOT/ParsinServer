@@ -164,6 +164,7 @@ func SlashDashboard(c *gin.Context) {
 		LocationAccuracy          map[string]int
 		KnnTestValidAccuracy      int
 		KnnTestValidGraphAccuracy int
+		KnnTestValidDSAAccuracy   int
 		LocationCount             map[string]int
 		Mixin                     map[string]float64
 		VarabilityCutoff          map[string]float64
@@ -192,8 +193,8 @@ func SlashDashboard(c *gin.Context) {
 	knnHyperParams := gp.Get_AlgoData().Get_KnnFPs().HyperParameters
 	bestK := knnHyperParams.K
 	bestMinClusterRss := knnHyperParams.MinClusterRss
-	maxMovement := dbm.GetSharedPrf(groupName).MaxMovement
-	maxEuclideanRssDist := gp.Get_ConfigData().Get_KnnConfig().MaxEuclideanRssDist
+	bestMaxEuclideanRssDist := knnHyperParams.MaxEuclideanRssDist
+	bestMaxMovement := knnHyperParams.MaxMovement
 
 	for n := range md.NetworkLocs {
 		//dash.Mixin[n] = gp.Get_Priors()[n].Special["MixIn"]
@@ -221,24 +222,25 @@ func SlashDashboard(c *gin.Context) {
 	algoAccuracies := rsd.Get_AlgoAccuracy()
 	dash.KnnTestValidAccuracy = algoAccuracies["knn_testvalid"]
 	dash.KnnTestValidGraphAccuracy = algoAccuracies["knn_testvalid_graph"]
+	dash.KnnTestValidDSAAccuracy = algoAccuracies["knn_testvalid_dsa"]
 
 	KnnConfigData := gp.Get_ConfigData().Get_KnnConfig()
 
 	//glb.Debug.Println(dash)
 	mapNamesList := glb.ListMaps()
 	c.HTML(http.StatusOK, "dashboard.tmpl", gin.H{
-		"Message":             glb.RuntimeArgs.Message,
-		"Group":               groupName,
-		"Dash":                dash,
-		"Users":               people,
-		"kRange":              kRange,
-		"knnMinCRssRange":     knnMinCRssRange,
-		"bestK":               bestK,
-		"bestMinClusterRss":   bestMinClusterRss,
-		"maxMovement":         maxMovement,
-		"maxEuclideanRssDist": maxEuclideanRssDist,
-		"mapNamesList":        mapNamesList,
-		"KnnConfigData":       KnnConfigData,
+		"Message":                 glb.RuntimeArgs.Message,
+		"Group":                   groupName,
+		"Dash":                    dash,
+		"Users":                   people,
+		"kRange":                  kRange,
+		"knnMinCRssRange":         knnMinCRssRange,
+		"bestK":                   bestK,
+		"bestMinClusterRss":       bestMinClusterRss,
+		"bestMaxMovement":         bestMaxMovement,
+		"bestMaxEuclideanRssDist": bestMaxEuclideanRssDist,
+		"mapNamesList":            mapNamesList,
+		"KnnConfigData":           KnnConfigData,
 	})
 }
 

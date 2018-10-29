@@ -1216,6 +1216,10 @@ func easyjson224c90e0DecodeParsinServerDbmParameters4(in *jlexer.Lexer, out *Knn
 			out.K = int(in.Int())
 		case "MinClusterRss":
 			out.MinClusterRss = int(in.Int())
+		case "MaxEuclideanRssDist":
+			out.MaxEuclideanRssDist = int(in.Int())
+		case "MaxMovement":
+			out.MaxMovement = int(in.Int())
 		case "GraphFactors":
 			if in.IsNull() {
 				in.Skip()
@@ -1272,6 +1276,26 @@ func easyjson224c90e0EncodeParsinServerDbmParameters4(out *jwriter.Writer, in Kn
 			out.RawString(prefix)
 		}
 		out.Int(int(in.MinClusterRss))
+	}
+	{
+		const prefix string = ",\"MaxEuclideanRssDist\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int(int(in.MaxEuclideanRssDist))
+	}
+	{
+		const prefix string = ",\"MaxMovement\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int(int(in.MaxMovement))
 	}
 	{
 		const prefix string = ",\"GraphFactors\":"
@@ -1796,8 +1820,6 @@ func easyjson224c90e0DecodeParsinServerDbmParameters6(in *jlexer.Lexer, out *Knn
 				}
 				in.Delim(']')
 			}
-		case "MaxEuclideanRssDist":
-			out.MaxEuclideanRssDist = int(in.Int())
 		default:
 			in.SkipRecursive()
 		}
@@ -1947,16 +1969,6 @@ func easyjson224c90e0EncodeParsinServerDbmParameters6(out *jwriter.Writer, in Kn
 			}
 			out.RawByte(']')
 		}
-	}
-	{
-		const prefix string = ",\"MaxEuclideanRssDist\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.Int(int(in.MaxEuclideanRssDist))
 	}
 	out.RawByte('}')
 }

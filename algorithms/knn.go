@@ -17,7 +17,7 @@ var minkowskyQ float64
 var maxrssInNormal, minrssInNormal float64
 //var topRssList []int
 var distAlgo string
-var MaxEuclideanRssDist int
+var MaxEuclideanRssDist float64 // used in thread so must be declared as global variable(just reading so there's not any race condition)
 var uniqueMacs []string
 //var ValidKs []int = defaultValidKs()
 //var ValidMinClusterRSSs []int = defaultValidMinClusterRSSs()
@@ -198,9 +198,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	node2FPs = tempKnnFingerprints.Node2FPs
 	uniqueMacs = gp.Get_MiddleData().Get_UniqueMacs()
 
-	knnParams := gp.Get_ConfigData().Get_KnnConfig()
-	MaxEuclideanRssDist = knnParams.MaxEuclideanRssDist
-
+	MaxEuclideanRssDist = float64(hyperParams.MaxEuclideanRssDist)
+	MaxMovement := float64(hyperParams.MaxMovement)
 	//tempList := []string{}
 	//tempList = append(tempList,mainFingerprintsOrdering...)
 	//sort.Sort(sort.StringSlice(tempList))
@@ -330,7 +329,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 					for i, levelSliceOfHops := range sliceOfHops {
 						var factor float64
-						if (i <= maxHopLevel && adjacencyFactors[i]!=0) {
+						if (i <= maxHopLevel && adjacencyFactors[i] != 0) {
 							factor = adjacencyFactors[i]
 						} else if (minAdjacencyFactor != 0) { // last member of adjacencyFactors is minAdjacencyFactor
 							factor = minAdjacencyFactor
@@ -361,10 +360,9 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 					//glb.Error.Println(FP2AFactor)
 				}
 
-			} else {
+			} else if knnConfig.DSAEnabled {
 				var tempFingerprintOrdering []string
 				baseLocX, baseLocY := glb.GetDotFromString(baseLoc)
-				maxMovement := dbm.GetSharedPrf(gp.Get_Name()).MaxMovement
 				//glb.Error.Println()
 				//maxMovement = float64(1)
 				//hist := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
@@ -376,8 +374,9 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 					//glb.Error.Println(baseLoc)
 					//glb.Error.Println(fp.Location)
 					//glb.Error.Println(fp)
+					//glb.Error.Println(fpLocX,",",fpLocY," - ",baseLocX,",",baseLocY)
 					//glb.Error.Println(glb.CalcDist(fpLocX,fpLocY,baseLocX,baseLocY))
-					if glb.CalcDist(fpLocX, fpLocY, baseLocX, baseLocY) < maxMovement {
+					if glb.CalcDist(fpLocX, fpLocY, baseLocX, baseLocY) < MaxMovement {
 						//glb.Error.Println("OK addded")
 						tempFingerprintOrdering = append(tempFingerprintOrdering, fpTime)
 					}
@@ -661,7 +660,7 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 				//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
 				//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
 			} else if glb.StringInSlice(curMac, uniqueMacs) {
-				distance = distance + math.Pow(float64(MaxEuclideanRssDist), minkowskyQ)
+				distance = distance + math.Pow(MaxEuclideanRssDist, minkowskyQ)
 				length++
 				//distance = distance + 9
 				//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)
@@ -705,7 +704,7 @@ func calcWeight1(id int, jobs <-chan jobW, results chan<- resultW) {
 				//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
 				//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
 			} else if glb.StringInSlice(curMac, uniqueMacs) {
-				distance = distance + math.Pow(float64(MaxEuclideanRssDist), minkowskyQ)
+				distance = distance + math.Pow(MaxEuclideanRssDist, minkowskyQ)
 				length++
 				//distance = distance + 9
 				//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)

@@ -304,7 +304,6 @@ func GetLearnFingerPrints(group string,doFilter bool)([]string,map[string]parame
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			fingerprintsInMemory[string(k)] = LoadFingerprint(v,doFilter)
-
 			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
 		}
 		return nil

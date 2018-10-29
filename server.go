@@ -342,9 +342,9 @@ func main() {
 			needToLoadSettings.PUT("/database", routes.MigrateDatabase)
 			needToLoadSettings.PUT("/SetKnnKRange", routes.PutKnnKRange)
 			needToLoadSettings.PUT("/SetKnnMinClusterRSSRange", routes.PutKnnMinClusterRSSRange)
-			needToLoadSettings.PUT("/SetMaxMovement", routes.PutMaxMovement)
+			//needToLoadSettings.PUT("/SetMaxMovement", routes.PutMaxMovement)
 			needToLoadSettings.PUT("/minrss", routes.PutMinRss)
-			needToLoadSettings.PUT("/SetMaxEuclideanRssDist", routes.PutMaxEuclideanRssDist)
+			//needToLoadSettings.PUT("/SetMaxEuclideanRssDist", routes.PutMaxEuclideanRssDist)
 
 			needToLoadSettings.GET("/lastfingerprint", routes.GetLastFingerprint)
 			needToLoadSettings.GET("/reformdb", routes.ReformDB)

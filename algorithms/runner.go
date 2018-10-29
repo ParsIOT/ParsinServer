@@ -7,6 +7,7 @@ import (
 	"ParsinServer/glb"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/copier"
 	"math"
 	"net/http"
 	"sort"
@@ -22,18 +23,6 @@ const (
 )
 
 var threadedCross bool = false //don't use, it's not safe now!
-
-type KnnJob struct {
-	gp                       *dbm.Group
-	K                        int
-	MinClusterRss            int
-	crossValidationPartsList []crossValidationParts
-}
-
-type KnnJobResult struct {
-	TotalError            int
-	KnnErrHyperParameters []interface{}
-}
 
 // track api that calls trackFingerprint() function
 func TrackFingerprintPOST(c *gin.Context) {
@@ -436,7 +425,7 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 	//location, accuracyCircleRadius = HistoryEffect(userPosJson, userHistory)
 
 	//if glb.DefaultGraphEnabled {
-		location = knnGuess
+	location = knnGuess
 	//}
 	userPosJson.Location = location
 	glb.Debug.Println("Knn guess: ", knnGuess)
@@ -1563,9 +1552,21 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 		glb.Error.Println("Can't set valid min cluster rss values")
 	}
 
+	//3.MaxEuclideanRssDist
+	validMaxEuclideanRssDists := glb.MakeRange(glb.DefaultMaxEuclideanRssDistRange[0], glb.DefaultMaxEuclideanRssDistRange[1])
+	maxEuclideanRssDistRange := knnConfig.MaxEuclideanRssDistRange
+	if len(maxEuclideanRssDistRange) == 1 {
+		validMaxEuclideanRssDists = glb.MakeRange(maxEuclideanRssDistRange[0], maxEuclideanRssDistRange[0])
+	} else if len(maxEuclideanRssDistRange) == 2 {
+		validMaxEuclideanRssDists = glb.MakeRange(maxEuclideanRssDistRange[0], maxEuclideanRssDistRange[1])
+	} else {
+		glb.Error.Println("maxEuclideanRssDistRange:", maxEuclideanRssDistRange)
+		glb.Error.Println("Can't set valid maxEuclidean Rss Dist Range values")
+	}
+
 	// Set length of calculation progress bar
 	// This is shared between all threads, so it's invalid when two calculateLearn thread run
-	calculationLen := len(validMinClusterRSSs) * len(validKs)
+	calculationLen := len(validMinClusterRSSs) * len(validKs) * len(validMaxEuclideanRssDists)
 	glb.ProgressBarLength = calculationLen
 
 	adTemp := tempGp.NewAlgoDataStruct()
@@ -1574,116 +1575,119 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	//allErrDetailsList = make([][]int,calculationLen)
 
 	paramUniqueKey := 0 // just creating unique key for each possible the parameters permutation
-	for i, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
-		for j, K := range validKs { // for over KnnK
-			glb.ProgressBarCurLevel = i*len(validKs) + j
-			totalDistError := 0
+	for l, maxEuclideanRssDist := range validMaxEuclideanRssDists {
+		for i, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
+			for j, K := range validKs { // for over KnnK
+				glb.ProgressBarCurLevel = l*len(validMinClusterRSSs) + i*len(validKs) + j
+				totalDistError := 0
 
-			tempHyperParameters := parameters.NewKnnHyperParameters()
-			//glb.Error.Println(tempHyperParameters)
-			tempHyperParameters.K = K
-			tempHyperParameters.MinClusterRss = minClusterRss
+				tempHyperParameters := parameters.NewKnnHyperParameters()
+				//glb.Error.Println(tempHyperParameters)
+				tempHyperParameters.K = K
+				tempHyperParameters.MinClusterRss = minClusterRss
+				tempHyperParameters.MaxEuclideanRssDist = maxEuclideanRssDist
 
-			paramUniqueKey++
-			allHyperParamDetails[paramUniqueKey] = tempHyperParameters
-			tempAllErrDetailList := []int{}
-			//tempAllErrDetailList := make([]int,len(crossValidationPartsList))
+				paramUniqueKey++
+				allHyperParamDetails[paramUniqueKey] = tempHyperParameters
+				tempAllErrDetailList := []int{}
+				//tempAllErrDetailList := make([]int,len(crossValidationPartsList))
 
-			// 1-foldCrossValidation (each round one location select as test set)
-			for CVNum, CVParts := range crossValidationPartsList {
-				glb.Debug.Println("CrossValidation Part num :", CVNum)
+				// 1-foldCrossValidation (each round one location select as test set)
+				for CVNum, CVParts := range crossValidationPartsList {
+					glb.Debug.Println("CrossValidation Part num :", CVNum)
 
-				// Learn:
-				trainSetTemp := CVParts.GetTrainSet(tempGp)
-				rdTemp.Set_Fingerprints(trainSetTemp.Fingerprints)
-				rdTemp.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
-				rdTemp.Set_FingerprintsBackup(trainSetTemp.Fingerprints)
-				rdTemp.Set_FingerprintsOrderingBackup(trainSetTemp.FingerprintsOrdering)
+					// Learn:
+					trainSetTemp := CVParts.GetTrainSet(tempGp)
+					rdTemp.Set_Fingerprints(trainSetTemp.Fingerprints)
+					rdTemp.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
+					rdTemp.Set_FingerprintsBackup(trainSetTemp.Fingerprints)
+					rdTemp.Set_FingerprintsOrderingBackup(trainSetTemp.FingerprintsOrdering)
 
-				testFPs := CVParts.testSet.Fingerprints
-				testFPsOrdering := CVParts.testSet.FingerprintsOrdering
+					testFPs := CVParts.testSet.Fingerprints
+					testFPsOrdering := CVParts.testSet.FingerprintsOrdering
 
-				GetParametersWithGP(tempGp)
+					GetParametersWithGP(tempGp)
 
-				PreProcess(rdTemp, shprf.NeedToRelocateFP)
+					PreProcess(rdTemp, shprf.NeedToRelocateFP)
 
-				learnedKnnData, _ := LearnKnn(tempGp, tempHyperParameters)
+					learnedKnnData, _ := LearnKnn(tempGp, tempHyperParameters)
 
-				/*			// Set hyper parameters
-							learnedKnnData.HyperParameters = parameters.NewKnnHyperParameters()
-							learnedKnnData.HyperParameters.K = K
-							learnedKnnData.HyperParameters.MinClusterRss = minClusterRss*/
+					/*			// Set hyper parameters
+						learnedKnnData.HyperParameters = parameters.NewKnnHyperParameters()
+						learnedKnnData.HyperParameters.K = K
+						learnedKnnData.HyperParameters.MinClusterRss = minClusterRss*/
 
-				//learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K: K, MinClusterRss: minClusterRss}
+					//learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K: K, MinClusterRss: minClusterRss}
 
-				adTemp.Set_KnnFPs(learnedKnnData)
+					adTemp.Set_KnnFPs(learnedKnnData)
 
-				// Set to main group
-				tempGp.GMutex.Lock() //For each group there's a lock to avoid race between concurrent calculateLearn s
-				tempGp.Set_AlgoData(adTemp)
+					// Set to main group
+					tempGp.GMutex.Lock() //For each group there's a lock to avoid race between concurrent calculateLearn s
+					tempGp.Set_AlgoData(adTemp)
 
-				// Error calculation for this round
-				distError := 0
-				trackedPointsNum := 0
-				testLocation := testFPs[testFPsOrdering[0]].Location
-				for _, index := range testFPsOrdering {
-					fp := testFPs[index]
+					// Error calculation for this round
+					distError := 0
+					trackedPointsNum := 0
+					testLocation := testFPs[testFPsOrdering[0]].Location
+					for _, index := range testFPsOrdering {
+						fp := testFPs[index]
 
-					resultDot := ""
-					var err error
-					err, resultDot, _ = TrackKnn(tempGp, fp, false)
-					if err != nil {
-						if err.Error() == "NumofAP_lowerThan_MinApNum" {
-							glb.Error.Println("NumofAP_lowerThan_MinApNum")
-							continue
-						} else if err.Error() == "NoValidFingerprints" {
-							glb.Error.Println("NoValidFingerprints")
-							continue
+						resultDot := ""
+						var err error
+						err, resultDot, _ = TrackKnn(tempGp, fp, false)
+						if err != nil {
+							if err.Error() == "NumofAP_lowerThan_MinApNum" {
+								glb.Error.Println("NumofAP_lowerThan_MinApNum")
+								continue
+							} else if err.Error() == "NoValidFingerprints" {
+								glb.Error.Println("NoValidFingerprints")
+								continue
+							}
+						} else {
+							trackedPointsNum++
 						}
-					} else {
-						trackedPointsNum++
-					}
 
-					//glb.Debug.Println(fp.Timestamp)
-					resx, resy := glb.GetDotFromString(resultDot)
-					x, y := glb.GetDotFromString(testLocation)
-					//if fp.Timestamp==int64(1516794991872647445){
-					//	glb.Error.Println("ResultDot = ",resultDot)
-					//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
-					//}
-					tempDistError := int(glb.CalcDist(x, y, resx, resy))
-					if tempDistError < 0 { //print if distError is lower than zero(it's for error detection)
-						glb.Error.Println(fp)
-						glb.Error.Println(resultDot)
-						_, resultDot, _ = TrackKnn(tempGp, fp, false)
-						glb.Error.Println(x, y)
-						glb.Error.Println(resx, resy)
-					} else {
-						distError += tempDistError
-						tempAllErrDetailList = append(tempAllErrDetailList, tempDistError)
-						//tempAllErrDetailList[CVNum] = tempDistError
-						//allErrDetails[paramUniqueKey] = append(allErrDetails[paramUniqueKey],tempDistError)
+						//glb.Debug.Println(fp.Timestamp)
+						resx, resy := glb.GetDotFromString(resultDot)
+						x, y := glb.GetDotFromString(testLocation)
+						//if fp.Timestamp==int64(1516794991872647445){
+						//	glb.Error.Println("ResultDot = ",resultDot)
+						//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
+						//}
+						tempDistError := int(glb.CalcDist(x, y, resx, resy))
+						if tempDistError < 0 { //print if distError is lower than zero(it's for error detection)
+							glb.Error.Println(fp)
+							glb.Error.Println(resultDot)
+							_, resultDot, _ = TrackKnn(tempGp, fp, false)
+							glb.Error.Println(x, y)
+							glb.Error.Println(resx, resy)
+						} else {
+							distError += tempDistError
+							tempAllErrDetailList = append(tempAllErrDetailList, tempDistError)
+							//tempAllErrDetailList[CVNum] = tempDistError
+							//allErrDetails[paramUniqueKey] = append(allErrDetails[paramUniqueKey],tempDistError)
+						}
 					}
+					if trackedPointsNum == 0 {
+						glb.Error.Println("For loc:", testLocation, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
+					} else {
+						//distError = distError / trackedPointsNum
+						//totalDistError += distError
+					}
+					tempGp.GMutex.Unlock()
 				}
-				if trackedPointsNum == 0 {
-					glb.Error.Println("For loc:", testLocation, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
-				} else {
-					//distError = distError / trackedPointsNum
-					//totalDistError += distError
-				}
-				tempGp.GMutex.Unlock()
+
+				allErrDetails[paramUniqueKey] = tempAllErrDetailList
+				//allErrDetailsList[paramUniqueKey] = tempAllErrDetailList
+				glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d,maxEuclideanRssDist=%d) = %d \n", minClusterRss, K, maxEuclideanRssDist, totalDistError)
+
+				//if(bestResult==-1 || totalDistError<bestResult){
+				//	bestResult = totalDistError
+				//	bestK = K
+				//}
+				//totalErrorList = append(totalErrorList, totalDistError)
+				//knnErrHyperParameters[totalDistError] = tempHyperParameters
 			}
-
-			allErrDetails[paramUniqueKey] = tempAllErrDetailList
-			//allErrDetailsList[paramUniqueKey] = tempAllErrDetailList
-			glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d) = %d \n", minClusterRss, K, totalDistError)
-
-			//if(bestResult==-1 || totalDistError<bestResult){
-			//	bestResult = totalDistError
-			//	bestK = K
-			//}
-			//totalErrorList = append(totalErrorList, totalDistError)
-			//knnErrHyperParameters[totalDistError] = tempHyperParameters
 		}
 	}
 
@@ -1769,112 +1773,128 @@ func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreference
 		glb.Error.Println("Can't set valid min cluster rss values")
 	}
 
+	//3.MaxEuclideanRssDist
+	validMaxEuclideanRssDists := glb.MakeRange(glb.DefaultMaxEuclideanRssDistRange[0], glb.DefaultMaxEuclideanRssDistRange[1])
+	maxEuclideanRssDistRange := knnConfig.MaxEuclideanRssDistRange
+	if len(maxEuclideanRssDistRange) == 1 {
+		validMaxEuclideanRssDists = glb.MakeRange(maxEuclideanRssDistRange[0], maxEuclideanRssDistRange[0])
+	} else if len(maxEuclideanRssDistRange) == 2 {
+		validMaxEuclideanRssDists = glb.MakeRange(maxEuclideanRssDistRange[0], maxEuclideanRssDistRange[1])
+	} else {
+		glb.Error.Println("maxEuclideanRssDistRange:", maxEuclideanRssDistRange)
+		glb.Error.Println("Can't set valid maxEuclidean Rss Dist Range values")
+	}
+
 	// Set length of calculation progress bar
 	// This is shared between all threads, so it's invalid when two calculateLearn thread run
-	glb.ProgressBarLength = len(validMinClusterRSSs) * len(validKs)
+	glb.ProgressBarLength = len(validMinClusterRSSs) * len(validKs) * len(validMaxEuclideanRssDists)
 
 	adTemp := tempGp.NewAlgoDataStruct()
 	rdTemp := tempGp.Get_RawData()
+	for l, maxEuclideanRssDist := range validMaxEuclideanRssDists {
 
-	for i, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
-		for j, K := range validKs { // for over KnnK
-			glb.ProgressBarCurLevel = i*len(validKs) + j
-			totalDistError := 0
+		for i, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
+			for j, K := range validKs { // for over KnnK
 
-			tempHyperParameters := parameters.NewKnnHyperParameters()
-			//glb.Error.Println(tempHyperParameters)
-			tempHyperParameters.K = K
-			tempHyperParameters.MinClusterRss = minClusterRss
+				glb.ProgressBarCurLevel = l*len(validMinClusterRSSs) + i*len(validKs) + j
+				totalDistError := 0
 
-			// 1-foldCrossValidation (each round one location select as test set)
-			for CVNum, CVParts := range crossValidationPartsList {
-				glb.Debug.Println("CrossValidation Part num :", CVNum)
+				tempHyperParameters := parameters.NewKnnHyperParameters()
+				//glb.Error.Println(tempHyperParameters)
+				tempHyperParameters.K = K
+				tempHyperParameters.MinClusterRss = minClusterRss
+				tempHyperParameters.MaxEuclideanRssDist = maxEuclideanRssDist
 
-				// Learn:
-				trainSetTemp := CVParts.GetTrainSet(tempGp)
-				rdTemp.Set_Fingerprints(trainSetTemp.Fingerprints)
-				rdTemp.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
-				rdTemp.Set_FingerprintsBackup(trainSetTemp.Fingerprints)
-				rdTemp.Set_FingerprintsOrderingBackup(trainSetTemp.FingerprintsOrdering)
+				// 1-foldCrossValidation (each round one location select as test set)
+				for CVNum, CVParts := range crossValidationPartsList {
+					glb.Debug.Println("CrossValidation Part num :", CVNum)
 
-				testFPs := CVParts.testSet.Fingerprints
-				testFPsOrdering := CVParts.testSet.FingerprintsOrdering
+					// Learn:
+					trainSetTemp := CVParts.GetTrainSet(tempGp)
+					rdTemp.Set_Fingerprints(trainSetTemp.Fingerprints)
+					rdTemp.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
+					rdTemp.Set_FingerprintsBackup(trainSetTemp.Fingerprints)
+					rdTemp.Set_FingerprintsOrderingBackup(trainSetTemp.FingerprintsOrdering)
 
-				GetParametersWithGP(tempGp)
+					testFPs := CVParts.testSet.Fingerprints
+					testFPsOrdering := CVParts.testSet.FingerprintsOrdering
 
-				PreProcess(rdTemp, shprf.NeedToRelocateFP)
+					GetParametersWithGP(tempGp)
 
-				learnedKnnData, _ := LearnKnn(tempGp, tempHyperParameters)
+					PreProcess(rdTemp, shprf.NeedToRelocateFP)
 
-				/*			// Set hyper parameters
+					learnedKnnData, _ := LearnKnn(tempGp, tempHyperParameters)
+
+					/*			// Set hyper parameters
 							learnedKnnData.HyperParameters = parameters.NewKnnHyperParameters()
 							learnedKnnData.HyperParameters.K = K
 							learnedKnnData.HyperParameters.MinClusterRss = minClusterRss*/
 
-				//learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K: K, MinClusterRss: minClusterRss}
+					//learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K: K, MinClusterRss: minClusterRss}
 
-				adTemp.Set_KnnFPs(learnedKnnData)
+					adTemp.Set_KnnFPs(learnedKnnData)
 
-				// Set to main group
-				tempGp.GMutex.Lock() //For each group there's a lock to avoid race between concurrent calculateLearn s
-				tempGp.Set_AlgoData(adTemp)
+					// Set to main group
+					tempGp.GMutex.Lock() //For each group there's a lock to avoid race between concurrent calculateLearn s
+					tempGp.Set_AlgoData(adTemp)
 
-				// Error calculation for this round
-				distError := 0
-				trackedPointsNum := 0
-				testLocation := testFPs[testFPsOrdering[0]].Location
-				for _, index := range testFPsOrdering {
-					fp := testFPs[index]
+					// Error calculation for this round
+					distError := 0
+					trackedPointsNum := 0
+					testLocation := testFPs[testFPsOrdering[0]].Location
+					for _, index := range testFPsOrdering {
+						fp := testFPs[index]
 
-					resultDot := ""
-					var err error
-					err, resultDot, _ = TrackKnn(tempGp, fp, false)
-					if err != nil {
-						if err.Error() == "NumofAP_lowerThan_MinApNum" {
-							glb.Error.Println("NumofAP_lowerThan_MinApNum")
-							continue
-						} else if err.Error() == "NoValidFingerprints" {
-							glb.Error.Println("NoValidFingerprints")
-							continue
+						resultDot := ""
+						var err error
+						err, resultDot, _ = TrackKnn(tempGp, fp, false)
+						if err != nil {
+							if err.Error() == "NumofAP_lowerThan_MinApNum" {
+								glb.Error.Println("NumofAP_lowerThan_MinApNum")
+								continue
+							} else if err.Error() == "NoValidFingerprints" {
+								glb.Error.Println("NoValidFingerprints")
+								continue
+							}
+						} else {
+							trackedPointsNum++
 						}
+
+						//glb.Debug.Println(fp.Timestamp)
+						resx, resy := glb.GetDotFromString(resultDot)
+						x, y := glb.GetDotFromString(testLocation)
+						//if fp.Timestamp==int64(1516794991872647445){
+						//	glb.Error.Println("ResultDot = ",resultDot)
+						//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
+						//}
+						distError += int(glb.CalcDist(x, y, resx, resy))
+						if distError < 0 { //print if distError is lower than zero(it's for error detection)
+							glb.Error.Println(fp)
+							glb.Error.Println(resultDot)
+							_, resultDot, _ = TrackKnn(tempGp, fp, false)
+							glb.Error.Println(x, y)
+							glb.Error.Println(resx, resy)
+						}
+					}
+					if trackedPointsNum == 0 {
+						glb.Error.Println("For loc:", testLocation, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
 					} else {
-						trackedPointsNum++
+						distError = distError / trackedPointsNum
+						totalDistError += distError
 					}
 
-					//glb.Debug.Println(fp.Timestamp)
-					resx, resy := glb.GetDotFromString(resultDot)
-					x, y := glb.GetDotFromString(testLocation)
-					//if fp.Timestamp==int64(1516794991872647445){
-					//	glb.Error.Println("ResultDot = ",resultDot)
-					//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
-					//}
-					distError += int(glb.CalcDist(x, y, resx, resy))
-					if distError < 0 { //print if distError is lower than zero(it's for error detection)
-						glb.Error.Println(fp)
-						glb.Error.Println(resultDot)
-						_, resultDot, _ = TrackKnn(tempGp, fp, false)
-						glb.Error.Println(x, y)
-						glb.Error.Println(resx, resy)
-					}
-				}
-				if trackedPointsNum == 0 {
-					glb.Error.Println("For loc:", testLocation, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
-				} else {
-					distError = distError / trackedPointsNum
-					totalDistError += distError
+					tempGp.GMutex.Unlock()
 				}
 
-				tempGp.GMutex.Unlock()
+				glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d,maxEuclideanRssDist=%d) = %d \n", minClusterRss, K, maxEuclideanRssDist, totalDistError)
+
+				//if(bestResult==-1 || totalDistError<bestResult){
+				//	bestResult = totalDistError
+				//	bestK = K
+				//}
+				totalErrorList = append(totalErrorList, totalDistError)
+				knnErrHyperParameters[totalDistError] = tempHyperParameters
 			}
-
-			glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d) = %d \n", minClusterRss, K, totalDistError)
-
-			//if(bestResult==-1 || totalDistError<bestResult){
-			//	bestResult = totalDistError
-			//	bestK = K
-			//}
-			totalErrorList = append(totalErrorList, totalDistError)
-			knnErrHyperParameters[totalDistError] = tempHyperParameters
 		}
 	}
 
@@ -1893,6 +1913,7 @@ func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreference
 	//glb.Debug.Println()
 	glb.Debug.Println("Best K : ", bestErrHyperParameters.K)
 	glb.Debug.Println("Best MinClusterRss : ", bestErrHyperParameters.MinClusterRss)
+	glb.Debug.Println("Best MaxEuclideanRssDist : ", bestErrHyperParameters.MaxEuclideanRssDist)
 	glb.Debug.Println("Minimum error = ", bestResult)
 
 	return bestErrHyperParameters
@@ -1942,27 +1963,28 @@ func SelectBestFromErrMap(allErrDetails map[int][]int) (int, []int, map[int]int)
 		}*/
 }
 
-func DisableGraphTemprary(cd *dbm.ConfigDataStruct) bool {
-	knnConfig := cd.Get_KnnConfig()
+func DisableHistoryConsideredMethodTemprorary(cd *dbm.ConfigDataStruct) parameters.KnnConfig {
+	lastKnnConfig := cd.Get_KnnConfig()
+	knnConfig := parameters.KnnConfig{}
+	copier.Copy(&knnConfig, &lastKnnConfig)
 	if knnConfig.GraphEnabled { // Todo: graphEnabled must be declared in sharedPrf
 		knnConfig.GraphEnabled = false
-		cd.Set_KnnConfig(knnConfig)
 	}
-	return true
+	if knnConfig.DSAEnabled {
+		knnConfig.DSAEnabled = false
+	}
+	cd.Set_KnnConfig(knnConfig)
+	glb.Debug.Println("Disabling history considered methods, learning with knnconfig:", knnConfig)
+	return lastKnnConfig
 }
 
-func EnableGraphTemprary(cd *dbm.ConfigDataStruct, graphDisabled bool) {
-	knnConfig := cd.Get_KnnConfig()
-	if graphDisabled {
-		knnConfig.GraphEnabled = true
-		cd.Set_KnnConfig(knnConfig)
-	}
+func EnableHistoryConsideredMethodTemprorary(cd *dbm.ConfigDataStruct, lastKnnConfig parameters.KnnConfig) {
+	glb.Debug.Println("Enabling history considered methods, learning with knnconfig:", lastKnnConfig)
+	cd.Set_KnnConfig(lastKnnConfig)
 }
-
 
 func CalculateLearn(groupName string) {
 	// Now performance isn't important in learning, just care about performance on track (it helps to code easily!)
-
 
 	glb.Debug.Println("################### CalculateLearn ##################")
 	gp := dbm.GM.GetGroup(groupName)
@@ -1976,9 +1998,9 @@ func CalculateLearn(groupName string) {
 	rs := gp.Get_ResultData()
 
 	//knnConfig := cd.Get_KnnConfig()
-	graphDisabled := false
-	graphDisabled = DisableGraphTemprary(cd)     // disable graph
-	defer EnableGraphTemprary(cd, graphDisabled) // enabled graph at end
+
+	lastKnnConfigs := DisableHistoryConsideredMethodTemprorary(cd)    // disable graph
+	defer EnableHistoryConsideredMethodTemprorary(cd, lastKnnConfigs) // enabled graph at end
 
 	knnLocAccuracy := make(map[string]int)
 	var crossValidationPartsList []crossValidationParts
@@ -2116,7 +2138,7 @@ func CalculateLearn(groupName string) {
 	//runnerLock.Unlock()
 }
 
-func CalculateGraphFactor(groupName string) {
+func CalculateByTestValidTracks(groupName string) {
 	gp := dbm.GM.GetGroup(groupName)
 	rsd := gp.Get_ResultData()
 	cd := gp.Get_ConfigData()
@@ -2124,29 +2146,9 @@ func CalculateGraphFactor(groupName string) {
 	knnConfig := gp.Get_ConfigData().Get_KnnConfig()
 	knnFPs := ad.Get_KnnFPs()
 
-	//GraphFactors range:
-	//validGraphFactorsRange = [][]float64{}
-	//validGraphFactors := [][]float64{{0.5, 0.5, 1, 1, 1}, {2, 1, 1, 1}, {100, 100, 100, 100, 3, 2, 1}, {10, 10, 10, 10, 3, 2, 1}, {8, 8, 8, 8, 3, 2, 1}, {1, 1, 1, 1}}
 
-	//beginSlice := []float64{1, 1, 1, 1, 1, 1, 1}
-	//endSlice := []float64{10, 10, 10, 10, 3, 2, 1}
-	graphFactorRange := knnConfig.GraphFactorRange
-	step := 1.0
 
-	var validGraphFactors [][]float64
-	if len(graphFactorRange) == 0 {
-		glb.Error.Println("graphFactorRange is empty, CalculateGraphFactor is ignored!")
-		return
-	} else if len(graphFactorRange) == 1 {
-		validGraphFactors = graphFactorRange[:1]
-	} else if len(graphFactorRange) == 2 {
-		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1],step)
-		validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
-	} else {
-		glb.Error.Println("graphFactorRange length must be lower than 2(now range created by first and second members)")
-		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1],step)
-		validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
-	}
+
 
 	//if len(validGraphFactorsRange) == 1{
 	//
@@ -2162,12 +2164,12 @@ func CalculateGraphFactor(groupName string) {
 	//reset temp params
 	knnHyperParams := knnFPs.HyperParameters
 
-	glb.Debug.Println("bestKnnHyperParams before CalculateGraphFactor :", knnHyperParams)
+	glb.Debug.Println("bestKnnHyperParams before CalculateByTestValidTracks :", knnHyperParams)
 	// 1. TestValid without graph:
 	/*	testValidTrueLoc := []string{}
 		testvalidGuessLoc := []string{}*/
 	//glb.DefaultGraphEnabled = false
-	graphDisabled1 := DisableGraphTemprary(cd)
+	lastKnnConfigs := DisableHistoryConsideredMethodTemprorary(cd)
 	{
 		learnedKnnData, _ := LearnKnn(gp, knnHyperParams)
 		ad.Set_KnnFPs(learnedKnnData)
@@ -2212,7 +2214,7 @@ func CalculateGraphFactor(groupName string) {
 		glb.Debug.Println("testvalid error without graph:", newErrorMap[0])
 		rsd.Set_AlgoAccuracy("knn_testvalid", newErrorMap[0])
 	}
-	EnableGraphTemprary(cd, graphDisabled1)
+	EnableHistoryConsideredMethodTemprorary(cd, lastKnnConfigs)
 	/*	glb.Error.Println("testValidTrueLoc",testValidTrueLoc)
 		glb.Error.Println("testvalidGuessLoc",testvalidGuessLoc)*/
 
@@ -2222,8 +2224,49 @@ func CalculateGraphFactor(groupName string) {
 	//bestResult := -1
 
 	// graphfactor used in online phase so learning must be done one time
-	learnedKnnData, _ := LearnKnn(gp, knnHyperParams)
+	var bestErrHyperParameters parameters.KnnHyperParameters
+	if knnConfig.GraphEnabled {
+		glb.Debug.Println("Selecting best graph factors by test-valid tracks ...")
+		bestErrHyperParameters = SelectBestGraphFactorsByTestValidTracks(gp, testValidTracks, knnConfig, knnHyperParams)
+	} else if knnConfig.DSAEnabled {
+		glb.Debug.Println("Selecting best max movement factor by test-valid tracks ...")
+		bestErrHyperParameters = SelectBestMaxMovementByTestValidTracks(gp, testValidTracks, knnConfig, knnHyperParams)
+	} else {
+		bestErrHyperParameters = knnHyperParams
+	}
 
+	knnFPs.HyperParameters = bestErrHyperParameters
+	ad.Set_KnnFPs(knnFPs)
+}
+
+func SelectBestGraphFactorsByTestValidTracks(gp *dbm.Group, testValidTracks []parameters.TestValidTrack, knnConfig parameters.KnnConfig, knnHyperParams parameters.KnnHyperParameters) parameters.KnnHyperParameters {
+	learnedKnnData, _ := LearnKnn(gp, knnHyperParams)
+	ad := gp.Get_AlgoData()
+	rsd := gp.Get_ResultData()
+	// GraphFactors range:
+	//validGraphFactorsRange = [][]float64{}
+	//validGraphFactors := [][]float64{{0.5, 0.5, 1, 1, 1}, {2, 1, 1, 1}, {100, 100, 100, 100, 3, 2, 1}, {10, 10, 10, 10, 3, 2, 1}, {8, 8, 8, 8, 3, 2, 1}, {1, 1, 1, 1}}
+
+	//beginSlice := []float64{1, 1, 1, 1, 1, 1, 1}
+	//endSlice := []float64{10, 10, 10, 10, 3, 2, 1}
+	graphFactorRange := knnConfig.GraphFactorRange
+	step := 1.0
+	var validGraphFactors [][]float64
+	if len(graphFactorRange) == 0 {
+		glb.Error.Println("graphFactorRange is empty, CalculateByTestValidTracks is ignored!")
+		return knnHyperParams
+	} else if len(graphFactorRange) == 1 {
+		validGraphFactors = graphFactorRange[:1]
+	} else if len(graphFactorRange) == 2 {
+		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1], step)
+		validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
+	} else {
+		glb.Error.Println("graphFactorRange length must be lower than 2(now range created by first and second members)")
+		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1], step)
+		validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
+	}
+
+	// Iterate over all of test-valid tracks
 	allHyperParamDetails := make(map[int]parameters.KnnHyperParameters)
 	allErrDetails := make(map[int][]int)
 	paramUniqueKey := 0 // just creating unique key for each possible the parameters permutation
@@ -2285,7 +2328,7 @@ func CalculateGraphFactor(groupName string) {
 	bestKey, sortedErrDetails, newErrorMap := SelectBestFromErrMap(allErrDetails)
 	bestErrHyperParameters := allHyperParamDetails[bestKey]
 	bestResult := newErrorMap[bestKey]
-	glb.Debug.Println("%%%%%%% best result %%%%%%",bestResult)
+	glb.Debug.Println("%%%%%%% best result %%%%%%", bestResult)
 
 	for _, i := range sortedErrDetails {
 		glb.Debug.Println("-----------------------------")
@@ -2296,19 +2339,117 @@ func CalculateGraphFactor(groupName string) {
 	for _, i := range sortedErrDetails {
 		glb.Debug.Println(allHyperParamDetails[i], " ", newErrorMap[i])
 	}
-
 	glb.Debug.Println("Best HyperParameters: ", bestErrHyperParameters)
-
-	knnFPs.HyperParameters = bestErrHyperParameters
 	glb.Debug.Println("Best GraphFactors : ", bestErrHyperParameters.GraphFactors)
-
-	ad.Set_KnnFPs(knnFPs)
 	rsd.Set_AlgoAccuracy("knn_testvalid_graph", bestResult)
 
+	return bestErrHyperParameters
 }
 
+func SelectBestMaxMovementByTestValidTracks(gp *dbm.Group, testValidTracks []parameters.TestValidTrack, knnConfig parameters.KnnConfig, knnHyperParams parameters.KnnHyperParameters) parameters.KnnHyperParameters {
+	learnedKnnData, _ := LearnKnn(gp, knnHyperParams)
+	ad := gp.Get_AlgoData()
+	rsd := gp.Get_ResultData()
+
+	// Maxmovement range
+	validMaxMovements := glb.MakeRange(glb.DefaultMaxMovementRange[0], glb.DefaultMaxMovementRange[1])
+	maxMovementRange := knnConfig.MaxMovementRange
+	if len(maxMovementRange) == 1 {
+		validMaxMovements = glb.MakeRange(maxMovementRange[0], maxMovementRange[0])
+	} else if len(maxMovementRange) == 2 {
+		validMaxMovements = glb.MakeRange(maxMovementRange[0], maxMovementRange[1])
+	} else if len(maxMovementRange) == 3 {
+		validMaxMovements = glb.MakeRange(maxMovementRange[0], maxMovementRange[1], maxMovementRange[2])
+	} else {
+		glb.Error.Println("maxMovementRange:", maxMovementRange)
+		glb.Error.Println("Can't set valid maxMovement Range values")
+	}
+
+	glb.Debug.Println(validMaxMovements)
+
+	// Iterate over all of test-valid tracks
+	allHyperParamDetails := make(map[int]parameters.KnnHyperParameters)
+	allErrDetails := make(map[int][]int)
+	paramUniqueKey := 0 // just creating unique key for each possible the parameters permutation
+	for _, maxMovement := range validMaxMovements { // for over the validGraphFactors
+		gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear userhistory to check knn error with new graphfactor
+
+		allHyperParamDetails[0] = learnedKnnData.HyperParameters
+
+		tempHyperParameters := knnHyperParams
+		tempHyperParameters.MaxMovement = maxMovement
+		learnedKnnData.HyperParameters = tempHyperParameters
+		ad.Set_KnnFPs(learnedKnnData)
+
+		paramUniqueKey++
+		allHyperParamDetails[paramUniqueKey] = tempHyperParameters
+		tempAllErrDetailList := []int{}
+
+		//totalDistError := 0
+		trackedPointsNum := 0
+		for _, testValidTrack := range testValidTracks {
+			fp := testValidTrack.UserPosition.Fingerprint
+			testLocation := testValidTrack.TrueLocation
+			resultDot := RecalculateTrackFingerprintKnnCrossValidation(fp)
+
+			/*	if (testLocation=="-428.0,906.0"){
+					glb.Debug.Println("-33.0,946.0 resultdot:",resultDot)
+					glb.Debug.Println(fp)
+				}
+	*/
+			resx, resy := glb.GetDotFromString(resultDot)
+			x, y := glb.GetDotFromString(testLocation)
+			tempDistError := int(glb.CalcDist(x, y, resx, resy))
+			if tempDistError < 0 { //print if totalDistError is lower than zero(it's for error detection)
+				glb.Error.Println(fp)
+				glb.Error.Println(resultDot)
+				glb.Error.Println("totalDistError is negetive!")
+			} else {
+				trackedPointsNum++
+				//totalDistError += tempDistError
+				tempAllErrDetailList = append(tempAllErrDetailList, tempDistError)
+			}
+		}
+
+		if trackedPointsNum == 0 {
+			glb.Error.Println("trackedPointsNum is zero!")
+		} else {
+			/*			totalDistError = totalDistError / trackedPointsNum
+						totalErrorList = append(totalErrorList, totalDistError)
+						knnErrHyperParameters[totalDistError] = tempHyperParameters*/
+		}
+		allErrDetails[paramUniqueKey] = tempAllErrDetailList
+		glb.Debug.Println("Calculation for maxMovement=", maxMovement, " ended ", )
+	}
+
+	/*	sort.Ints(totalErrorList)
+		bestResult = totalErrorList[0]
+		bestErrHyperParameters := knnErrHyperParameters[bestResult]*/
+
+	bestKey, sortedErrDetails, newErrorMap := SelectBestFromErrMap(allErrDetails)
+	bestErrHyperParameters := allHyperParamDetails[bestKey]
+	bestResult := newErrorMap[bestKey]
+	glb.Debug.Println("%%%%%%% best result %%%%%%", bestResult)
+
+	for _, i := range sortedErrDetails {
+		glb.Debug.Println("-----------------------------")
+		glb.Debug.Println("Hyper Params:", allHyperParamDetails[i])
+		glb.Debug.Println("Error:", newErrorMap[i])
+	}
+
+	for _, i := range sortedErrDetails {
+		glb.Debug.Println(allHyperParamDetails[i], " ", newErrorMap[i])
+	}
+	glb.Debug.Println("Best HyperParameters: ", bestErrHyperParameters)
+	glb.Debug.Println("Best MaxMovement : ", bestErrHyperParameters.MaxMovement)
+	rsd.Set_AlgoAccuracy("knn_testvalid_dsa", bestResult)
+
+	return bestErrHyperParameters
+}
+
+
 // Error calculation using mean as error algorithm
-func CalculateGraphFactorLegacy(groupName string) {
+func CalculateByTestValidTracksLegacy(groupName string) {
 	gp := dbm.GM.GetGroup(groupName)
 	rsd := gp.Get_ResultData()
 	cd := gp.Get_ConfigData()
@@ -2333,12 +2474,12 @@ func CalculateGraphFactorLegacy(groupName string) {
 	//reset temp params
 	knnHyperParams := knnFPs.HyperParameters
 
-	glb.Debug.Println("bestKnnHyperParams before CalculateGraphFactor :", knnHyperParams)
+	glb.Debug.Println("bestKnnHyperParams before CalculateByTestValidTracks :", knnHyperParams)
 	// 1. TestValid without graph:
 	/*	testValidTrueLoc := []string{}
 		testvalidGuessLoc := []string{}*/
 	//glb.DefaultGraphEnabled = false
-	graphDisabled1 := DisableGraphTemprary(cd)
+	lastKnnConfigs := DisableHistoryConsideredMethodTemprorary(cd)
 	{
 		learnedKnnData, _ := LearnKnn(gp, knnHyperParams)
 		ad.Set_KnnFPs(learnedKnnData)
@@ -2377,7 +2518,7 @@ func CalculateGraphFactorLegacy(groupName string) {
 		rsd.Set_AlgoAccuracy("knn_testvalid", totalDistError/trackedPointsNum)
 	}
 	//glb.DefaultGraphEnabled = true
-	EnableGraphTemprary(cd, graphDisabled1)
+	EnableHistoryConsideredMethodTemprorary(cd, lastKnnConfigs)
 	/*	glb.Error.Println("testValidTrueLoc",testValidTrueLoc)
 		glb.Error.Println("testvalidGuessLoc",testvalidGuessLoc)*/
 

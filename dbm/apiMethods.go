@@ -907,8 +907,8 @@ func BuildGroupDB(groupName string) { //Todo: After each update in groupcache.go
 		//glb.Debug.Println(fp.Location)
 		fingerprintInMemory[key] = fp
 	}
-	//glb.Debug.Println(fingerprintOrdering)
-	//glb.Debug.Println(fingerprintInMemory[fingerprintOrdering[0]])
+	glb.Debug.Println(fingerprintOrdering)
+	glb.Debug.Println(fingerprintInMemory[fingerprintOrdering[0]])
 	//glb.Debug.Println(groupName)
 	//gp := GM.GetGroup(groupName)
 
@@ -929,6 +929,7 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 
 	gp := GM.GetGroup(groupName)
 	rd := gp.Get_RawData()
+	cd := gp.Get_ConfigData()
 	md := gp.Get_MiddleData()
 
 	FingerprintsOrdering := rd.Get_FingerprintsOrdering()
@@ -996,8 +997,8 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 			}
 
 			distance := float64(0)
-			knnParams := gp.Get_ConfigData().Get_KnnConfig()
-			MaxEuclideanRssDist := knnParams.MaxEuclideanRssDist
+			MaxEuclideanRssDist := cd.Get_KnnConfig().MaxEuclideanRssDistRange[0]
+			glb.Debug.Println("MaxEuclideanRssDist is ", MaxEuclideanRssDist)
 
 			for mainMac, mainRssi := range mac2RssMain {
 				if fpRss, ok := mac2Rss[mainMac]; ok {
@@ -1201,7 +1202,13 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string) 
 		timeStamps = glb.SortedInsert(timeStamps, timestamp)
 	}
 	lessUntil := 0
+	//stopit := true
 	for i, timeStamp := range timeStamps {
+
+		/*	if timeStamp < int64(1537973812090) && fp.Location=="-22.0,39.0" && stopit{
+				glb.Error.Println("Found it ",allLocationLogs[timeStamp])
+				stopit = false
+			}*/
 		//glb.Debug.Println(timeStamp-fpTimeStamp)
 		if fpTimeStamp > timeStamp {
 			lessUntil = i
@@ -1274,7 +1281,8 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string) 
 			}
 		}
 	}
-	glb.Error.Println("FindTrueFPloc on " + fp.Location + " ended but timestamp ranges doesn't match to relocate any fp")
+	glb.Error.Println("FindTrueFPloc on ", fp.Location, ":", fp.Timestamp, " ended but timestamp ranges doesn't match to relocate any fp")
+	glb.Error.Println("UWB timestamp range is :", timeStamps[0], " to ", timeStamps[len(timeStamps)-1])
 	return "", errors.New("Timestamp range problem")
 
 }

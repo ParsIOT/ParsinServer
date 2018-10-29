@@ -1,7 +1,6 @@
 package glb
 
 import (
-	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -29,44 +28,56 @@ func TestSortIntKeyDictByIntVal(t *testing.T) {
 	assert.Equal(t, []int{1, 2, 3}, sortedKey)
 }
 
-func TestGetGraphSlicesRangeRecursive(t *testing.T) {
-	beginSlice := []float64{1, 1, 1, 1, 1, 1, 1}
-	endSlice := []float64{10, 10, 10, 10, 3, 2, 1}
-	rangeSlices := GetGraphSlicesRangeRecursive(beginSlice, endSlice)
-	//Debug.Println(rangeSlices)
-	Debug.Println(len(rangeSlices))
+//func TestGetGraphSlicesRangeRecursive(t *testing.T) {
+//	beginSlice := []float64{1, 1, 1, 1, 1, 1, 1}
+//	endSlice := []float64{10, 10, 10, 10, 3, 2, 1}
+//	rangeSlices := GetGraphSlicesRangeRecursive(beginSlice, endSlice)
+//	//Debug.Println(rangeSlices)
+//	Debug.Println(len(rangeSlices))
+//
+//	assert.Equal(t, true, false)
+//
+//}
+//
+//func TestConvertStr2IntSlice(t *testing.T) {
+//	sliceStr := "[1,2]"
+//	slice := []int{1, 2}
+//	sliceRes, err := ConvertStr2IntSlice(sliceStr)
+//	Debug.Println(sliceStr)
+//	if err != nil {
+//		Error.Println(err)
+//	}
+//	Debug.Println(sliceRes)
+//	assert.Equal(t, slice, sliceRes)
+//}
 
-	assert.Equal(t, true, false)
+//func TestConvertStr22DimIntSlice(t *testing.T) {
+//	sliceStr := "[[1,2],[3,4],[5,6,7]]"
+//	//slice := [][]int{{1,2},{3,4},{5,6,7}}
+//
+//	res := [][]int{}
+//	if err := json.Unmarshal([]byte(sliceStr), &res); err != nil {
+//		panic(err)
+//	}
+//	Debug.Println(res)
+//
+//	sliceRes, err := ConvertStr22DimIntSlice(sliceStr)
+//	Debug.Println(sliceStr)
+//	if err != nil {
+//		Error.Println(err)
+//	}
+//	Debug.Println(sliceRes)
+//	assert.Equal(t, true, sliceRes)
+//}
 
-}
+func TestMakeRange(t *testing.T) {
+	r1 := MakeRange(1, 13, 5)
+	r2 := MakeRange(13, 1, 5)
+	r3 := MakeRange(-13, -1, 5)
+	r4 := MakeRange(-1, -13, 5)
 
-func TestConvertStr2IntSlice(t *testing.T) {
-	sliceStr := "[1,2]"
-	slice := []int{1, 2}
-	sliceRes, err := ConvertStr2IntSlice(sliceStr)
-	Debug.Println(sliceStr)
-	if err != nil {
-		Error.Println(err)
-	}
-	Debug.Println(sliceRes)
-	assert.Equal(t, slice, sliceRes)
-}
-
-func TestConvertStr22DimIntSlice(t *testing.T) {
-	sliceStr := "[[1,2],[3,4],[5,6,7]]"
-	//slice := [][]int{{1,2},{3,4},{5,6,7}}
-
-	res := [][]int{}
-	if err := json.Unmarshal([]byte(sliceStr), &res); err != nil {
-		panic(err)
-	}
-	Debug.Println(res)
-
-	sliceRes, err := ConvertStr22DimIntSlice(sliceStr)
-	Debug.Println(sliceStr)
-	if err != nil {
-		Error.Println(err)
-	}
-	Debug.Println(sliceRes)
-	assert.Equal(t, true, sliceRes)
+	assert.Equal(t, r1, []int{1, 6, 11})
+	assert.Equal(t, r2, []int{13, 8, 3})
+	assert.Equal(t, r3, []int{-13, -8, -3})
+	assert.Equal(t, r4, []int{-1, -6, -11})
 }

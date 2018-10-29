@@ -15,7 +15,6 @@ type RawSharedPreferences struct {
 	MinRssOpt        int      `json:"MinRssOpt"`
 	FilterMacsMap    []string `json:"FilterMacsMap"`
 	ArbitLocations   []string `json:"ArbitLocations"`
-	MaxMovement      float64  `json:"DefaultMaxMovement"`
 	MapName          string   `json:"MapName"`
 	MapDimensions    []int    `json:"MapDimensions"`
 	MapWidth         int      `json:"MapWidth"`
@@ -35,8 +34,6 @@ func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}
 		shPrf.FilterMacsMap = val.([]string)
 	case "ArbitLocations":
 		shPrf.ArbitLocations = val.([]string)
-	case "DefaultMaxMovement":
-		shPrf.MaxMovement = val.(float64)
 	case "MapName":
 		shPrf.MapName = val.(string)
 	case "MapDimensions":
@@ -79,7 +76,6 @@ func NewRawSharedPreferences() RawSharedPreferences {
 		MinRssOpt:        int(glb.RuntimeArgs.MinRssOpt),
 		FilterMacsMap:    []string{},
 		ArbitLocations:   []string{},
-		MaxMovement:      float64(glb.DefaultMaxMovement),
 		MapName:          glb.DefaultMapName,
 		MapDimensions:    glb.DefaultMapDimensions,
 		MapWidth:         glb.DefaultMapWidth,

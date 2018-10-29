@@ -127,6 +127,7 @@ func GetLocationList(c *gin.Context) {
 
 	fpData := gp.Get_RawData().Get_Fingerprints()
 	uniqueLocations := []string{}
+	//glb.Debug.Println(fpData)
 	for _, fp := range fpData {
 		if !glb.StringInSlice(fp.Location, uniqueLocations) {
 			uniqueLocations = append(uniqueLocations, fp.Location)
@@ -327,7 +328,7 @@ func Calculate(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
-	justCalcGraphFactors := strings.ToLower(c.DefaultQuery("justCalcGraphFactors", "none"))
+	justCalcTestValidTracks := strings.ToLower(c.DefaultQuery("justCalcTestValidTracks", "none"))
 
 	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
@@ -336,43 +337,49 @@ func Calculate(c *gin.Context) {
 			return
 		}
 
-		if justCalcGraphFactors != "true" {
-			algorithms.CalculateLearn(groupName)
-		} else {
-			glb.Debug.Println("Just Calculating Graph Factors")
-		}
-
-		// test-valid hyper parameters selecting
-		gp := dbm.GM.GetGroup(groupName)
-		rsd := gp.Get_ResultData()
-		knnConfig := gp.Get_ConfigData().Get_KnnConfig()
-		testValidTracks := rsd.Get_TestValidTracks()
-		if knnConfig.GraphEnabled && len(testValidTracks) != 0 {
-
-			// Find true locations
-			gp := dbm.GM.GetGroup(groupName)
-			rsd := gp.Get_ResultData()
-			_, _, _, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, testValidTracks)
-			if len(testValidTracksRes) != 0 { // if truelocations doesn't match avoid reseting testvalidtracks(testValidTracksRes is empty!)
-				rsd.Set_TestValidTracks(testValidTracksRes)
-			} else if len(testValidTracksRes) != len(testValidTracks) {
-				glb.Error.Println("testValidTracksRes length and testValidTracks length doesn't equal")
-			} else {
-				glb.Error.Println("Empty testValidTracksRes(truelocations and testvalids timestamp don't match.)")
-			}
-
-			// calculate beset graphfactors
-			algorithms.CalculateGraphFactor(groupName)
-		} else if !knnConfig.GraphEnabled {
-			rsd.Set_AlgoAccuracy("knn_testvalid", 0)
-			rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
-		}
+		calculateLearnData(groupName, justCalcTestValidTracks)
 
 		go dbm.ResetCache("userPositionCache")
 		go dbm.SetLearningCache(groupName, false)
 		c.JSON(http.StatusOK, gin.H{"message": "Parameters optimized.", "success": true})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
+	}
+}
+
+func calculateLearnData(groupName string, justCalcGraphFactors string) {
+
+	if justCalcGraphFactors != "true" {
+		algorithms.CalculateLearn(groupName)
+	} else {
+		glb.Debug.Println("Just Calculating Graph Factors")
+	}
+
+	// test-valid hyper parameters selecting
+	gp := dbm.GM.GetGroup(groupName)
+	rsd := gp.Get_ResultData()
+	knnConfig := gp.Get_ConfigData().Get_KnnConfig()
+	testValidTracks := rsd.Get_TestValidTracks()
+	if len(testValidTracks) != 0 {
+
+		// Find true locations
+		gp := dbm.GM.GetGroup(groupName)
+		rsd := gp.Get_ResultData()
+		_, _, _, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, testValidTracks)
+		if len(testValidTracksRes) != 0 { // if truelocations doesn't match avoid reseting testvalidtracks(testValidTracksRes is empty!)
+			rsd.Set_TestValidTracks(testValidTracksRes)
+		} else if len(testValidTracksRes) != len(testValidTracks) {
+			glb.Error.Println("testValidTracksRes length and testValidTracks length doesn't equal")
+		} else {
+			glb.Error.Println("Empty testValidTracksRes(truelocations and testvalids timestamp don't match.)")
+		}
+
+		// calculate beset graphfactors
+		algorithms.CalculateByTestValidTracks(groupName)
+	} else if !knnConfig.GraphEnabled {
+		rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
+	} else if !knnConfig.DSAEnabled {
+		rsd.Set_AlgoAccuracy("knn_testvalid_dsa", 0)
 	}
 }
 
@@ -898,7 +905,7 @@ func PutKnnMinClusterRSSRange(c *gin.Context) {
 	}
 }
 
-func PutMaxMovement(c *gin.Context) {
+/*func PutMaxMovement(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -930,9 +937,9 @@ func PutMaxMovement(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
-}
+}*/
 
-func PutMaxEuclideanRssDist(c *gin.Context) {
+/*func PutMaxEuclideanRssDist(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -950,7 +957,7 @@ func PutMaxEuclideanRssDist(c *gin.Context) {
 		MaxEuclideanRssDist, err := strconv.Atoi(MaxEuclideanRssDistStr)
 		if err == nil {
 			if MaxEuclideanRssDist == -1 {
-				MaxEuclideanRssDist = glb.DefaultMaxEuclideanRssDist
+				MaxEuclideanRssDist = glb.DefaultMaxEuclideanRssDistRange[0]
 			}
 
 			cd := dbm.GM.GetGroup(groupName).Get_ConfigData()
@@ -968,7 +975,7 @@ func PutMaxEuclideanRssDist(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or maxEuclideanRssDist isn't given"})
 	}
 }
-
+*/
 func ChooseMap(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -1810,33 +1817,7 @@ func BuildGroup(c *gin.Context) {
 		//needToRelocateFP := dbm.GetSharedPrf(groupName).NeedToRelocateFP
 		//algorithms.PreProcess(rd, needToRelocateFP) // use preprocess just once in buildgroup(not use in calculatelearn)
 		//5. Run learning for raw data
-		algorithms.CalculateLearn(groupName)
-
-		// test-valid hyper parameters selecting
-		gp := dbm.GM.GetGroup(groupName)
-		rsd := gp.Get_ResultData()
-		knnConfig := gp.Get_ConfigData().Get_KnnConfig()
-		testValidTracks := rsd.Get_TestValidTracks()
-		if knnConfig.GraphEnabled && len(testValidTracks) != 0 {
-
-			// Find true locations
-			gp := dbm.GM.GetGroup(groupName)
-			rsd := gp.Get_ResultData()
-			_, _, _, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, testValidTracks)
-			if len(testValidTracksRes) != 0 { // if truelocations doesn't match avoid reseting testvalidtracks(testValidTracksRes is empty!)
-				rsd.Set_TestValidTracks(testValidTracksRes)
-			} else if len(testValidTracksRes) != len(testValidTracks) {
-				glb.Error.Println("testValidTracksRes length and testValidTracks length doesn't equal")
-			} else {
-				glb.Error.Println("Empty testValidTracksRes(truelocations and testvalids timestamp don't match.)")
-			}
-
-			// calculate beset graphfactors
-			algorithms.CalculateGraphFactor(groupName)
-		} else if !knnConfig.GraphEnabled {
-			rsd.Set_AlgoAccuracy("knn_testvalid", 0)
-			rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
-		}
+		calculateLearnData(groupName, "false")
 
 		glb.Debug.Println("Struct reformed successfully")
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "struct renewed"})
@@ -2184,7 +2165,7 @@ func UploadTrueLocationLog(c *gin.Context) {
 
 }
 
-func  SetRelocateFPLocStateAPI(c *gin.Context) {
+func SetRelocateFPLocStateAPI(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")

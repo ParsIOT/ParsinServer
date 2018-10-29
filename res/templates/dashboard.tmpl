@@ -244,11 +244,11 @@
                     <br>
                     bestMinClusterRss:{{ $.bestMinClusterRss }}
                     <br>
-                    MaxMovement: {{ $.maxMovement}}
+                bestMaxMovement: {{ $.bestMaxMovement}}
                     <br>
-                    MaxEuclideanRssDist: {{$.maxEuclideanRssDist}} [ble:30,wifi=50]
+                bestMaxEuclideanRssDist: {{$.bestMaxEuclideanRssDist}} [ble:30,wifi=50]
                 <div class="pull-right">
-                    <input id="just_calc_graph_factors_check" data-toggle="toggle" data-on="JustGraphFactors"
+                    <input id="just_calc_test_valid_tracks" data-toggle="toggle" data-on="JustCalcTestValid"
                            data-off="CompleteCalculation"
                            type="checkbox">
                 </div>
@@ -275,19 +275,10 @@
                                 title="Reclaculate the machine learning parameters and update your statistics.">
                             Recalculate
                         </button>
-                        <!--</div>
-                            <div class="col-sm-2 col-xs-6">
-                          <button type="submit" class="btn btn-success btn-block" id="getMQTT" title="Get MQTT password.">Get MQTT</button>
-                        </div>-->
                     </div>
                     <div class="col-sm-2 col-xs-6">
                         <button type="submit" class="btn btn-success btn-block" id="buildGroup"
                                 title="Build and recalculate group from learned data.">Build group
-                        </button>
-                    </div>
-                    <div class="col-sm-2 col-xs-6">
-                        <button type="submit" class="btn btn-danger btn-block" id="setMaxMovement"
-                                title="Set Max Movement parameter.">Set MaxMovement
                         </button>
                     </div>
                     <div class="col-sm-2 col-xs-6">
@@ -301,21 +292,18 @@
                         </button>
                     </div>
                     <div class="col-sm-2 col-xs-6">
-                        <button type="submit" class="btn btn-warning btn-block" id="setMaxEuclideanRssDist"
-                                title="Set Max Euclidean Rss Distance">
-                            Set
-                            MaxEuclideanRssDist
-                        </button>
-                    </div>
-                </div>
-                <!-- Komeil: -->
-                <br/>
-                <div class="row">
-                    <div class="col-sm-2 col-xs-6">
                         <button type="submit" class="btn btn-warning btn-block" id="chooseMap" title="chooseMap">
                             Choose map
                         </button>
                     </div>
+                    <div class="col-sm-2 col-xs-6">
+                        <button type="submit" class="btn btn-danger btn-block" id="clearConfigData"
+                                title="Clear ConfigData(graph, ...)">Clear ConfigData
+                        </button>
+                    </div>
+                </div>
+                <br/>
+                <div class="row">
                     <div class="col-sm-2 col-xs-6">
                         <button type="submit" class="btn btn-info btn-block" data-toggle="modal"
                                 data-target="#uploadUWBLogModal">
@@ -351,11 +339,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-sm-2 col-xs-6">
-                        <button type="submit" class="btn btn-danger btn-block" id="clearConfigData"
-                                title="Clear ConfigData(graph, ...)">Clear ConfigData
-                        </button>
                     </div>
                     <div class="col-sm-2 col-xs-6">
                         <button type="submit" class="btn btn-success btn-block" data-toggle="modal"
@@ -457,6 +440,19 @@
                             <dd>
                                 <div>
                                 {{ index $.Dash.KnnTestValidGraphAccuracy }}
+                                </div>
+                            </dd>
+                        </dl>
+                        <dl>
+                            <dt>
+                                <div>
+                                    TestValid DSA-based Knn Accuracy:
+                                </div>
+                                &nbsp;
+                            </dt>
+                            <dd>
+                                <div>
+                                {{ index $.Dash.KnnTestValidDSAAccuracy }}
                                 </div>
                             </dd>
                         </dl>
@@ -1106,7 +1102,7 @@
                     preConfirm: setInterval(getdata, 1000)
                     $.get("/calculate", {
                                 "group": "{{ .Group }}",
-                                "justCalcGraphFactors": ($('#just_calc_graph_factors_check').is(":checked") ? "true" : "false"),
+                                "justCalcTestValidTracks": ($('#just_calc_test_valid_tracks').is(":checked") ? "true" : "false"),
                             },
                             function (data) {
                                 console.log(data);
@@ -1163,23 +1159,23 @@
                 })
     });*/
 
-    $('#setMaxMovement').click(function () {
-        swal({
-                    title: "Set MaxMovement",
-                    text: "Enter the new MaxMovement (between 0 and 1, or -1 to set automatically):",
-                    type: "input",
-                    showCancelButton: true,
-                    closeOnConfirm: false,
-                    animation: "slide-from-top",
-                    inputPlaceholder: "newlocation"
-                },
-                function (inputValue) {
-                    if (inputValue === false || inputValue === "") {
-                        swal.showInputError("You need to write something!");
-                        return false
-                    }
-                    $.ajax({
-                        url: "/SetMaxMovement?group={{ .Group }}&maxMovement=" + inputValue,
+    /* $('#setMaxMovement').click(function () {
+         swal({
+                     title: "Set MaxMovement",
+                     text: "Enter the new MaxMovement (between 0 and 1, or -1 to set automatically):",
+                     type: "input",
+                     showCancelButton: true,
+                     closeOnConfirm: false,
+                     animation: "slide-from-top",
+                     inputPlaceholder: "newlocation"
+                 },
+                 function (inputValue) {
+                     if (inputValue === false || inputValue === "") {
+                         swal.showInputError("You need to write something!");
+                         return false
+                     }
+                     $.ajax({
+                         url: "/SetMaxMovement?group={{ .Group }}&maxMovement=" + inputValue,
                         type: "PUT",
                         success: function (data) {
                             console.log(data);
@@ -1198,7 +1194,7 @@
                         }
                     });
                 });
-    });
+    });*/
 
     $('#setKnnMinRss').click(function () {
         swal({
@@ -1276,24 +1272,24 @@
                 });
     });
 
-    $('#setMaxEuclideanRssDist').click(function () {
-        swal({
-                    title: "Set Max Euclidean Rss Dist",
-                    text: "Enter the new Max Euclidean Rss Dist (BLE:30,WiFi:50):",
-                    type: "input",
-                    showCancelButton: true,
-                    closeOnConfirm: false,
-                    animation: "slide-from-top",
-                    inputPlaceholder: "newlocation"
-                },
-                function (inputValue) {
-                    if (inputValue === false || inputValue === "") {
-                        swal.showInputError("You need to write something!");
-                        return false
-                    }
+    /* $('#setMaxEuclideanRssDist').click(function () {
+         swal({
+                     title: "Set Max Euclidean Rss Dist",
+                     text: "Enter the new Max Euclidean Rss Dist (BLE:30,WiFi:50):",
+                     type: "input",
+                     showCancelButton: true,
+                     closeOnConfirm: false,
+                     animation: "slide-from-top",
+                     inputPlaceholder: "newlocation"
+                 },
+                 function (inputValue) {
+                     if (inputValue === false || inputValue === "") {
+                         swal.showInputError("You need to write something!");
+                         return false
+                     }
 
-                    $.ajax({
-                        url: "/SetMaxEuclideanRssDist?group={{ .Group }}&maxEuclideanRssDist=" + inputValue,
+                     $.ajax({
+                         url: "/SetMaxEuclideanRssDist?group={{ .Group }}&maxEuclideanRssDist=" + inputValue,
                         type: "PUT",
                         success: function (data) {
                             console.log(data);
@@ -1313,7 +1309,7 @@
                     });
                 });
     });
-
+*/
     $('#chooseMap').click(function () {
         swal2({
             title: "put your map in map folder, Then choose here",

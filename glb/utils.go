@@ -610,21 +610,39 @@ func Round(num float64, precision int) float64 {
 	return float64(Float64toInt(num*output)) / output
 }
 
-func MakeRange(min, max int) []int {
-	if min < max{
-		a := make([]int, max-min+1)
-		for i := range a {
-			a[i] = min + i
+func MakeRange(min, max int, options ...interface{}) []int {
+	optionsLength := len(options)
+	if optionsLength > 0 {
+		step := options[0].(int)
+		if min < max {
+			a := make([]int, (max-min)/step+1)
+			for i := range a {
+				a[i] = min + i*step
+			}
+			return a
+		} else {
+			a := make([]int, (min-max)/step+1)
+			for i := range a {
+				a[i] = min - i*step
+			}
+			return a
 		}
-		return a
-	}else{
-		a := make([]int, min-max+1)
-		for i := range a {
-			a[i] = min - i
-		}
-		return a
-	}
 
+	}else{
+		if min < max {
+			a := make([]int, max-min+1)
+			for i := range a {
+				a[i] = min + i
+			}
+			return a
+		} else {
+			a := make([]int, min-max+1)
+			for i := range a {
+				a[i] = min - i
+			}
+			return a
+		}
+	}
 }
 
 func DuplicateCountString(list []string) map[string]int {
@@ -851,10 +869,10 @@ func SortedInsert(s []int64, f int64) []int64 {
 }
 
 func GetGraphSlicesRangeRecursive(first []float64, last []float64, step float64) ([][]float64) {
-	return getGraphSlicesRangeRecursive(first, last, 0,step)
+	return getGraphSlicesRangeRecursive(first, last, 0, step)
 }
 // gets first slice, last slice and level which it must be entered 0 at normal calls. (its goal is for recursive calls inside the function)
-func getGraphSlicesRangeRecursive (first []float64 , last []float64 , level int,step float64) ([][]float64) {
+func getGraphSlicesRangeRecursive(first []float64, last []float64, level int, step float64) ([][]float64) {
 	if len(first) != len(last){
 		errors.New("length of first and last are not equal")
 	}
@@ -870,7 +888,7 @@ func getGraphSlicesRangeRecursive (first []float64 , last []float64 , level int,
 		}
 		copy(a, first)
 
-		for j := float64(0); j < (last[level] - first[level]); j+=step {
+		for j := float64(0); j < (last[level] - first[level]); j += step {
 
 			b := []float64{}
 			for u:=0;u<len(first);u++{
@@ -879,8 +897,8 @@ func getGraphSlicesRangeRecursive (first []float64 , last []float64 , level int,
 			copy(b, a)
 			result = append(result, b)
 
-			a[level]+=step
-			tempResults := getGraphSlicesRangeRecursive(a,last,level+1,step)
+			a[level] += step
+			tempResults := getGraphSlicesRangeRecursive(a, last, level+1, step)
 
 			result = append(result,tempResults...)
 		}
@@ -894,15 +912,15 @@ func getGraphSlicesRangeRecursive (first []float64 , last []float64 , level int,
 	//fmt.Println(result)
 	finalResult := [][]float64{}
 	new := true
-	for i:=0; i<len(result);i++{
+	for i := 0; i < len(result); i++ {
 		for j:=0;j<len(finalResult);j++{
 			if testEq(result[i],finalResult[j])==true {
 				//fmt.Println(result[i]," ", finalResult[j])
 				new = false
 			}
 		}
-		for k:=0;k<len(result[i])-1;k++{
-			if (result[i][k]<result[i][k+1]){
+		for k := 0; k < len(result[i])-1; k++ {
+			if (result[i][k] < result[i][k+1]) {
 				new = false
 			}
 		}

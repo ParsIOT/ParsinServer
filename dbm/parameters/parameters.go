@@ -22,7 +22,6 @@ type KnnConfig struct {
 	GraphFactorRange         [][]float64
 	DSAEnabled               bool
 	MaxMovementRange         []int
-	MaxEuclideanRssDist      int
 }
 
 func NewKnnConfig() KnnConfig {
@@ -34,21 +33,24 @@ func NewKnnConfig() KnnConfig {
 		GraphFactorRange:         glb.DefaultGraphFactorsRange,
 		DSAEnabled:               glb.DefaultDSAEnabled,
 		MaxMovementRange:         glb.DefaultMaxMovementRange,
-		MaxEuclideanRssDist:      glb.DefaultMaxEuclideanRssDist,
 	}
 }
 
 // Constant parameters that set by cross-validation are in KnnHyperParameters
 type KnnHyperParameters struct {
-	K             int       `json:"K"`
-	MinClusterRss int       `json:"MinClusterRss"`
-	GraphFactors  []float64 `json:"GraphFactors"`
+	K                   int       `json:"K"`
+	MinClusterRss       int       `json:"MinClusterRss"`
+	MaxEuclideanRssDist int       `json:"MaxEuclideanRssDist"`
+	MaxMovement         int       `json:"MaxMovement"`
+	GraphFactors        []float64 `json:"GraphFactors"`
 }
 func NewKnnHyperParameters() KnnHyperParameters {
 	return KnnHyperParameters{
-		K:             glb.DefaultKnnKRange[0],
-		MinClusterRss: glb.DefaultKnnMinClusterRssRange[0],
-		GraphFactors:  glb.DefaultGraphFactorsRange[0],
+		K:                   glb.DefaultKnnKRange[0],
+		MinClusterRss:       glb.DefaultKnnMinClusterRssRange[0],
+		MaxEuclideanRssDist: glb.DefaultMaxEuclideanRssDistRange[0],
+		MaxMovement:         glb.DefaultMaxMovementRange[0],
+		GraphFactors:        glb.DefaultGraphFactorsRange[0],
 	}
 }
 
