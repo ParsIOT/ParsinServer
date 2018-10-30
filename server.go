@@ -45,13 +45,13 @@ func main() {
 	})
 
 	/*	go func() {
-			for {
-				time.Sleep(20 * time.Second)
-				fmt.Println("Free up memory...")
-				debug.FreeOSMemory()
-			}
+		for {
+			time.Sleep(20 * time.Second)
+			fmt.Println("Free up memory...")
+			debug.FreeOSMemory()
+		}
 
-		}()*/
+	}()*/
 
 	dbm.Wg.Add(1)
 	defer dbm.Wg.Wait()
@@ -438,4 +438,3 @@ func main() {
 // 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 // 	}
 // }
-

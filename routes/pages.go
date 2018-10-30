@@ -7,21 +7,18 @@
 package routes
 
 import (
+	"ParsinServer/dbm"
+	"ParsinServer/dbm/parameters"
+	"ParsinServer/glb"
 	"fmt"
+	"github.com/gin-gonic/contrib/sessions"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
 	"path"
-	"strings"
-	"github.com/gin-gonic/contrib/sessions"
-	"github.com/gin-gonic/gin"
-	"ParsinServer/glb"
-	"ParsinServer/dbm"
 	"sort"
-	"ParsinServer/dbm/parameters"
-
+	"strings"
 )
-
-
 
 // slash returns the dashboard, if logged in, else it redirects to login page.
 func Slash(c *gin.Context) {
@@ -56,7 +53,7 @@ func SlashLoginPOST(c *gin.Context) {
 			c.Redirect(http.StatusFound, "/dashboard/"+cookieGroup.(string))
 		}
 	} else {
-		c.HTML(http.StatusOK, "login.tmpl", gin.H{"ErrorMessage": "Invalid Username or Password",})
+		c.HTML(http.StatusOK, "login.tmpl", gin.H{"ErrorMessage": "Invalid Username or Password"})
 	}
 }
 
@@ -84,7 +81,7 @@ func SlashChangeDb(c *gin.Context) {
 	errorMessage := c.DefaultQuery("error", "none")
 
 	if errorMessage != "none" {
-		if errorMessage == "groupNotExists"{
+		if errorMessage == "groupNotExists" {
 			c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
 				"ErrorMessage": "There is no group with this name.",
 			})
@@ -157,7 +154,6 @@ func SlashDashboard(c *gin.Context) {
 	//}
 	//glb.Debug.Println("3333333333")
 
-
 	type DashboardData struct {
 		Networks                  []string
 		Locations                 map[string][]string
@@ -176,7 +172,6 @@ func SlashDashboard(c *gin.Context) {
 	dash.LocationCount = make(map[string]int)
 	dash.Mixin = make(map[string]float64)
 	dash.VarabilityCutoff = make(map[string]float64)
-
 
 	kRange := dbm.GetSharedPrf(groupName).KnnKRange
 	knnMinCRssRange := dbm.GetSharedPrf(groupName).KnnMinCRssRange
@@ -199,7 +194,7 @@ func SlashDashboard(c *gin.Context) {
 		uniqueLocs := md.UniqueLocs
 		sort.Sort(sort.StringSlice(uniqueLocs))
 
-		for _,loc := range uniqueLocs {
+		for _, loc := range uniqueLocs {
 			dash.Locations[n] = append(dash.Locations[n], loc)
 
 			//dash.LocationAccuracy[loc] = gp.Get_Results()[n].Accuracy[loc]
@@ -248,16 +243,16 @@ func LiveLocationMap(c *gin.Context) {
 	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
 	//MapWidth := dbm.GetSharedPrf(groupName).MapWidth
 	//MapHeight := dbm.GetSharedPrf(groupName).MapHeight
-	MapPath := path.Join(glb.RuntimeArgs.MapPath,MapName)
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
 	//MapPathCorrected := filepath.FromSlash(MapPath)
 	glb.Debug.Println("final MapPath: ", MapPath)
 	glb.Debug.Println("final MapWidth: ", MapDimensions[0])
 	glb.Debug.Println("final MapHeight: ", MapDimensions[1])
 	c.HTML(http.StatusOK, "live_location_map.tmpl", gin.H{
-		"Group": groupName,
-		"MapPath": MapPath,
-		"MapWidth":MapDimensions[0],
-		"MapHeight":MapDimensions[1],
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
 	})
 }
 
@@ -270,13 +265,13 @@ func LocationsOnMap(c *gin.Context) {
 		return
 	}
 	MapName := dbm.GetSharedPrf(groupName).MapName
-	MapPath := path.Join(glb.RuntimeArgs.MapPath,MapName)
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
 	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
 	c.HTML(http.StatusOK, "locations_map.tmpl", gin.H{
-		"Group": groupName,
-		"MapPath": MapPath,
-		"MapWidth":MapDimensions[0],
-		"MapHeight":MapDimensions[1],
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
 	})
 }
 
@@ -289,13 +284,13 @@ func ArbitraryLocations(c *gin.Context) {
 		return
 	}
 	MapName := dbm.GetSharedPrf(groupName).MapName
-	MapPath := path.Join(glb.RuntimeArgs.MapPath,MapName)
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
 	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
 	c.HTML(http.StatusOK, "arbitrary_locations.tmpl", gin.H{
-		"Group": groupName,
-		"MapPath": MapPath,
-		"MapWidth":MapDimensions[0],
-		"MapHeight":MapDimensions[1],
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
 	})
 }
 
@@ -309,13 +304,13 @@ func UserHistoryMap(c *gin.Context) {
 		return
 	}
 	MapName := dbm.GetSharedPrf(groupName).MapName
-	MapPath := path.Join(glb.RuntimeArgs.MapPath,MapName)
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
 	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
 	c.HTML(http.StatusOK, "trace_history_map.tmpl", gin.H{
-		"Group": groupName,
-		"MapPath": MapPath,
-		"MapWidth":MapDimensions[0],
-		"MapHeight":MapDimensions[1],
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
 	})
 }
 
@@ -357,8 +352,6 @@ func TestValidTracksDetails(c *gin.Context) {
 	})
 }
 
-
-
 func FingerprintAmbiguity(c *gin.Context) {
 	groupName := c.Param("group")
 	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
@@ -368,13 +361,13 @@ func FingerprintAmbiguity(c *gin.Context) {
 		return
 	}
 	MapName := dbm.GetSharedPrf(groupName).MapName
-	MapPath := path.Join(glb.RuntimeArgs.MapPath,MapName)
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
 	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
 	c.HTML(http.StatusOK, "fingerprint_ambiguity_map.tmpl", gin.H{
-		"Group": groupName,
-		"MapPath": MapPath,
-		"MapWidth":MapDimensions[0],
-		"MapHeight":MapDimensions[1],
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
 	})
 }
 
@@ -387,13 +380,13 @@ func Heatmap(c *gin.Context) {
 		return
 	}
 	MapName := dbm.GetSharedPrf(groupName).MapName
-	MapPath := path.Join(glb.RuntimeArgs.MapPath,MapName)
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
 	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
 	c.HTML(http.StatusOK, "heatmap.tmpl", gin.H{
-		"Group": groupName,
-		"MapPath": MapPath,
-		"MapWidth":MapDimensions[0],
-		"MapHeight":MapDimensions[1],
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
 	})
 }
 
@@ -415,8 +408,6 @@ func UWBUserMap(c *gin.Context) {
 		"MapHeight": MapDimensions[1],
 	})
 }
-
-
 
 // slash Location returns location (to be deprecated)
 //func SlashLocation(c *gin.Context) {
@@ -587,7 +578,6 @@ func Macfilterform(c *gin.Context) {
 	})
 }
 
-
 // show graph form
 func Graphform(c *gin.Context) {
 	groupName := c.Param("group")
@@ -598,14 +588,12 @@ func Graphform(c *gin.Context) {
 		return
 	}
 	MapName := dbm.GetSharedPrf(groupName).MapName
-	MapPath := path.Join(glb.RuntimeArgs.MapPath,MapName)
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
 	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
 	c.HTML(http.StatusOK, "graph.tmpl", gin.H{
-		"Group": groupName,
-		"MapPath": MapPath,
-		"MapWidth":MapDimensions[0],
-		"MapHeight":MapDimensions[1],
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
 	})
 }
-
-

@@ -1,15 +1,14 @@
 package dbm
 
 import (
-	"fmt"
 	"ParsinServer/dbm/parameters"
-	"github.com/boltdb/bolt"
-	"path"
 	"ParsinServer/glb"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/boltdb/bolt"
+	"path"
 )
-
 
 //return cached ps(a FullParameters instance) or get it from db then return
 //func OpenParameters(group string) (parameters.FullParameters, error) {
@@ -147,12 +146,12 @@ func SetKnnFingerprints(tempKnnFingerprints parameters.KnnFingerprints, group st
 	return nil
 }
 
-func GetKnnFingerprints(group string) (parameters.KnnFingerprints,error){
+func GetKnnFingerprints(group string) (parameters.KnnFingerprints, error) {
 	var tempKnnFingerprints parameters.KnnFingerprints
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	defer db.Close()
 	if err != nil {
-		return tempKnnFingerprints,err
+		return tempKnnFingerprints, err
 	}
 
 	err = db.View(func(tx *bolt.Tx) error {
@@ -163,7 +162,7 @@ func GetKnnFingerprints(group string) (parameters.KnnFingerprints,error){
 			return errors.New("")
 		}
 		KnnFingerprintsJson := b.Get([]byte("knnFingerprints"))
-		err = json.Unmarshal(KnnFingerprintsJson,&tempKnnFingerprints)
+		err = json.Unmarshal(KnnFingerprintsJson, &tempKnnFingerprints)
 		if err != nil {
 			glb.Error.Println(err)
 		}
@@ -172,12 +171,12 @@ func GetKnnFingerprints(group string) (parameters.KnnFingerprints,error){
 	})
 
 	if err != nil {
-		return tempKnnFingerprints,err
+		return tempKnnFingerprints, err
 	}
-	return tempKnnFingerprints,nil
+	return tempKnnFingerprints, nil
 }
 
-func SetResourceInBucket(keyName string,input interface{},bucketName string,group string) error {
+func SetResourceInBucket(keyName string, input interface{}, bucketName string, group string) error {
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0755, nil)
 	defer db.Close()
 	if err != nil {
@@ -189,7 +188,7 @@ func SetResourceInBucket(keyName string,input interface{},bucketName string,grou
 		if err != nil {
 			return fmt.Errorf("create bucket: %s", err)
 		}
-		tempInput,_ := json.Marshal(input)
+		tempInput, _ := json.Marshal(input)
 		err = bucket.Put([]byte(keyName), []byte(tempInput)) //why svmData is not marshal?
 		if err != nil {
 			return fmt.Errorf("could add to bucket: %s", err)
@@ -199,7 +198,7 @@ func SetResourceInBucket(keyName string,input interface{},bucketName string,grou
 	return err
 }
 
-func GetResourceInBucket(keyName string,input interface{},bucketName string,group string) error {
+func GetResourceInBucket(keyName string, input interface{}, bucketName string, group string) error {
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0755, nil)
 	defer db.Close()
 	if err != nil {
@@ -255,8 +254,7 @@ func GetResourceInBucket(keyName string,input interface{},bucketName string,grou
 //	return nil
 //}
 
-
-func SetByteResourceInBucket(input []byte,keyName string,bucketName string,group string) error {
+func SetByteResourceInBucket(input []byte, keyName string, bucketName string, group string) error {
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	defer db.Close()
 	if err != nil {
@@ -277,15 +275,13 @@ func SetByteResourceInBucket(input []byte,keyName string,bucketName string,group
 	return err
 }
 
-
-
-func GetBytejsonResourceInBucket(keyName string,bucketName string,groupName string) ([]byte, error) {
+func GetBytejsonResourceInBucket(keyName string, bucketName string, groupName string) ([]byte, error) {
 	output := []byte{}
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db"), 0600, nil)
 	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
-		return output,err
+		return output, err
 	}
 
 	err = db.View(func(tx *bolt.Tx) error {
@@ -297,13 +293,13 @@ func GetBytejsonResourceInBucket(keyName string,bucketName string,groupName stri
 		}
 		//gets some data from db
 		v := b.Get([]byte(keyName))
-		output = make([]byte,len(v))
-		copy(output,v)
+		output = make([]byte, len(v))
+		copy(output, v)
 		return err
 	})
 	if err != nil {
 		glb.Error.Println(err)
-		return output,err
+		return output, err
 	}
-	return output,nil
+	return output, nil
 }

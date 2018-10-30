@@ -1,8 +1,8 @@
 package glb
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 //func TestListMaps(t *testing.T) {
@@ -33,7 +33,7 @@ func TestGetGraphSlicesRangeRecursive(t *testing.T) {
 	endSlice := []float64{10, 10, 10, 10}
 	step := 5.0
 
-	rangeSlices := GetGraphSlicesRangeRecursive(beginSlice, endSlice,step)
+	rangeSlices := GetGraphSlicesRangeRecursive(beginSlice, endSlice, step)
 	Debug.Println(rangeSlices)
 	Debug.Println(len(rangeSlices))
 

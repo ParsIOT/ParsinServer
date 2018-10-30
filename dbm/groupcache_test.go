@@ -1,10 +1,10 @@
 package dbm
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
-	"ParsinServer/glb"
 	"ParsinServer/dbm/parameters"
+	"ParsinServer/glb"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestAdd_UserHistory(t *testing.T) {
@@ -39,9 +39,7 @@ func TestAdd_UserHistory(t *testing.T) {
 	assert.Equal(t, userHistory, result)
 }
 
-
-
-func TestGetNearestNode(t *testing.T){
+func TestGetNearestNode(t *testing.T) {
 	gp := GM.GetGroup("arman_28_3_97_ble_1")
 
 	//glb.Debug.Println(len(fingerprintsInMemory1))

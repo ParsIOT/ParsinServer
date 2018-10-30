@@ -57,7 +57,6 @@ func NewKnnFingerprints() KnnFingerprints {
 	}
 }
 
-
 // PriorParameters contains the network-specific bayesian priors and Mac frequency, as well as special variables
 type PriorParameters struct {
 	P map[string]map[string][]float32 // probability of each mac's rssi for each location;e.g.:P["P1"]["MAC1"][-50] = 0.1
@@ -77,6 +76,7 @@ type ResultsParameters struct {
 	CorrectLocations map[string]int            // number of times guessed correctly
 	Guess            map[string]map[string]int // correct(real location) -> guess -> times
 }
+
 //
 //// FullParameters is the full parameter set for a given group
 //type FullParameters struct {
@@ -176,7 +176,3 @@ type FilterMacs struct {
 //	res2.UnmarshalJSON(glb.DecompressByte(jsonByte))
 //	return res2
 //}
-
-
-
-

@@ -4,6 +4,7 @@ import (
 	"ParsinServer/dbm/parameters"
 	"ParsinServer/glb"
 	"fmt"
+	"sort"
 	"testing"
 	"time"
 )
@@ -66,6 +67,9 @@ func TestTrackKnn(t *testing.T) {
 
 	glb.Debug.Println(fp.WifiFingerprint)
 	glb.Debug.Println(fpTemp.WifiFingerprint)
+	sort.Slice(fp.WifiFingerprint, func(i, j int) bool {
+		return fp.WifiFingerprint[i].Mac < fp.WifiFingerprint[j].Mac
+	})
 	for i := 0; i < len(fp.WifiFingerprint)-1; i++ {
 		currRouter := fp.WifiFingerprint[i]
 		for j := i + 1; j < len(fp.WifiFingerprint); j++ {
@@ -77,22 +81,11 @@ func TestTrackKnn(t *testing.T) {
 		}
 
 	}
-	/*	if strings.Contains(fpTemp.WifiFingerprint[0].Mac, "#") {
-		fmt.Println("string contains #")
-	}*/
-	//fmt.Println(len(fp.WifiFingerprint))
+
+	fmt.Println(len(fp.WifiFingerprint))
 	/*	sort.Slice(fpTemp.WifiFingerprint, func(i, j int) bool {
 		return fpTemp.WifiFingerprint[i].Mac < fpTemp.WifiFingerprint[j].Mac
 	})*/
-	//fmt.Println(fpTemp.WifiFingerprint)
-	/*	for i := 0; i < 10000; i++ {
-			_, resultDot, _ := TrackKnn(gp, fp, false)
+	fmt.Println(fpTemp.WifiFingerprint)
 
-			if (resultDot != "-12.000004,1411.999993") {
-
-				glb.Debug.Println(resultDot)
-				assert.Equal(t, resultDot, "-12.000004,1411.999993")
-			}
-		}
-	*/
 }

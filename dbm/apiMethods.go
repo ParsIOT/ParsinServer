@@ -1037,7 +1037,7 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 
 				physicalDistance := glb.CalcDist(mainLocX, mainLocY, otherLocX, otherLocY)
 				//glb.Debug.Println("### physical: ",physicalDistance,"knndistance:",distance)
-				CalculatedDistanceOverall [fpMain.Location] = append(CalculatedDistanceOverall [fpMain.Location], physicalDistance/distance)
+				CalculatedDistanceOverall[fpMain.Location] = append(CalculatedDistanceOverall[fpMain.Location], physicalDistance/distance)
 			}
 		}
 	}
@@ -1085,7 +1085,7 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 				if rt.Mac == mac {
 					line = append(line, strconv.Itoa(rt.Rssi))
 					macFound = true
-					break;
+					break
 				}
 			}
 			if !macFound {
@@ -1148,7 +1148,7 @@ func GetMostSeenMacs(groupName string) []string {
 
 	glb.Debug.Println(macSorted)
 
-	if (len(macSorted) < NumOfMustSeenMacs) {
+	if len(macSorted) < NumOfMustSeenMacs {
 		return macSorted
 	} else {
 		return macSorted[:NumOfMustSeenMacs]
@@ -1287,7 +1287,7 @@ func GetRSSData(groupName string, mac string) [][]int {
 
 	for _, fp := range fpData {
 		for _, rt := range fp.WifiFingerprint {
-			if (rt.Mac == mac) {
+			if rt.Mac == mac {
 				xy := strings.Split(fp.Location, ",")
 				x, err1 := glb.StringToFloat(xy[0])
 				y, err2 := glb.StringToFloat(xy[1])
@@ -1402,11 +1402,11 @@ func SetTrueLocationFromLog(groupName string, method string) error {
 			locLog[i] = strings.TrimSpace(item)
 		}
 
-		if (len(locLog) != 5) {
+		if len(locLog) != 5 {
 			return errors.New("Uploaded file doesn't have true location log format(timestamp,tag_name,x,y,z)")
 		}
 		tagName := locLog[1]
-		if (tagName == "None") { // x,y,z are None too.
+		if tagName == "None" { // x,y,z are None too.
 			glb.Debug.Println("None location")
 			continue
 		}

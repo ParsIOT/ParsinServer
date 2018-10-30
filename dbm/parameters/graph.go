@@ -1,20 +1,18 @@
 package parameters
 
-
 import (
-	"fmt"
-	"sync"
-	"errors"
-	"strings"
-	"strconv"
 	"ParsinServer/glb"
+	"errors"
+	"fmt"
 	"math"
+	"strconv"
+	"strings"
+	"sync"
 )
-
 
 // Node a single node that composes the tree
 type Node struct {
-	Label string	`json:"Label"`
+	Label string `json:"Label"`
 }
 
 func (n *Node) String() string {
@@ -24,15 +22,16 @@ func (n *Node) String() string {
 
 // ItemGraph the Items graph
 type Graph struct {
-	Nodes []*Node			`json:"Nodes"`
-	Edges map[Node][]*Node	`json:"Edges"`
+	Nodes []*Node          `json:"Nodes"`
+	Edges map[Node][]*Node `json:"Edges"`
 	lock  sync.RWMutex
 }
+
 func NewGraph() Graph {
 	return Graph{
-		Nodes: 		[]*Node{},
-		Edges: 		make(map[Node][]*Node),
-		lock:		sync.RWMutex{},
+		Nodes: []*Node{},
+		Edges: make(map[Node][]*Node),
+		lock:  sync.RWMutex{},
 	}
 }
 
@@ -43,27 +42,27 @@ func (g *Graph) AddNode(n *Node) {
 	g.lock.Unlock()
 }
 
-func (g *Graph) GetNodeByLabel (label string) (*Node,error){
+func (g *Graph) GetNodeByLabel(label string) (*Node, error) {
 	g.lock.Lock()
 	for i := 0; i < len(g.Nodes); i++ {
 		if g.Nodes[i].String() == label {
 			g.lock.Unlock()
-			return g.Nodes[i],nil
+			return g.Nodes[i], nil
 		}
 	}
 	g.lock.Unlock()
-	fmt.Printf("couldn't find specified node for %s",label)
+	fmt.Printf("couldn't find specified node for %s", label)
 	return nil, errors.New("not found")
 }
 
-func (g *Graph) RemoveNodeByLabel (label string){
+func (g *Graph) RemoveNodeByLabel(label string) {
 	g.lock.Lock()
-	glb.Debug.Println("you see ",label)
+	glb.Debug.Println("you see ", label)
 	for i := 0; i < len(g.Nodes); i++ {
 		glb.Debug.Println(g.Nodes[i].String())
 		if g.Nodes[i].String() == label {
 			g.Nodes = append(g.Nodes[:i], g.Nodes[i+1:]...)
-			glb.Debug.Printf("found specified node for %s and removed",label)
+			glb.Debug.Printf("found specified node for %s and removed", label)
 			//g.lock.Unlock()
 			// g.Nodes[i]
 		}
@@ -85,24 +84,30 @@ func (g *Graph) AddNodeByLabel(coords string) {
 	//glb.Debug.Println("####### exited AddNodeByLabel ########")
 }
 
-func (node *Node) GetNodeLocation() (float64, float64){
+func (node *Node) GetNodeLocation() (float64, float64) {
 	//n := g.GetNodeByLabel(coords)
 	coords := node.Label
 	result := strings.Split(coords, ",")
-	x,err := strconv.ParseFloat(result[0],64)
-	if err!=nil {glb.Error.Println(err)}
-	y,err := strconv.ParseFloat(result[1],64)
-	if err!=nil {glb.Error.Println(err)}
-	return x,y
+	x, err := strconv.ParseFloat(result[0], 64)
+	if err != nil {
+		glb.Error.Println(err)
+	}
+	y, err := strconv.ParseFloat(result[1], 64)
+	if err != nil {
+		glb.Error.Println(err)
+	}
+	return x, y
 }
 
-func ConvertStringLocToXY(coords string) (float64, float64){
+func ConvertStringLocToXY(coords string) (float64, float64) {
 	//n := g.GetNodeByLabel(coords)
-	result := strings.Split(coords,",") // this function is for locations from hadi
-	x,err := strconv.ParseFloat(result[0],64)
-	if err!=nil {fmt.Println(err)}
-	y,err := strconv.ParseFloat(result[1],64)
-	return x,y
+	result := strings.Split(coords, ",") // this function is for locations from hadi
+	x, err := strconv.ParseFloat(result[0], 64)
+	if err != nil {
+		fmt.Println(err)
+	}
+	y, err := strconv.ParseFloat(result[1], 64)
+	return x, y
 }
 
 // AddEdge adds an edge to the graph
@@ -120,15 +125,15 @@ func (g *Graph) AddEdgeByLabel(n1, n2 string) {
 	if g.Edges == nil {
 		g.Edges = make(map[Node][]*Node)
 	}
-	n1Node,_ := g.GetNodeByLabel(n1)
-	n2Node,_ := g.GetNodeByLabel(n2)
+	n1Node, _ := g.GetNodeByLabel(n1)
+	n2Node, _ := g.GetNodeByLabel(n2)
 	flag := true
 	for _, b := range g.Edges[*n1Node] {
 		if b == n2Node {
 			flag = false
 		}
 	}
-	if flag==true {
+	if flag == true {
 		g.lock.Lock()
 		//glb.Debug.Println("******** it is about to add to the edeges ********")
 		g.Edges[*n1Node] = append(g.Edges[*n1Node], n2Node)
@@ -138,11 +143,11 @@ func (g *Graph) AddEdgeByLabel(n1, n2 string) {
 }
 
 func (g *Graph) RemoveEdgeByLabel(n string) {
-	result := strings.Split(n,"&")
+	result := strings.Split(n, "&")
 	n1Label := result[0]
 	n2Label := result[1]
-	n1Node,_ := g.GetNodeByLabel(n1Label)
-	n2Node,_ := g.GetNodeByLabel(n2Label)
+	n1Node, _ := g.GetNodeByLabel(n1Label)
+	n2Node, _ := g.GetNodeByLabel(n2Label)
 	g.lock.Lock()
 	for i := 0; i < len(g.Edges[*n1Node]); i++ {
 		//glb.Debug.Println(g.Nodes[i].String())
@@ -181,7 +186,6 @@ func (g *Graph) String() {
 	g.lock.RUnlock()
 }
 
-
 func (g *Graph) GetGraphMap() map[string][]string {
 	//g.lock.RLock()
 	graphMap := make(map[string][]string)
@@ -210,8 +214,6 @@ func (g *Graph) DeleteGraph() {
 	glb.Debug.Println(g.Nodes)
 }
 
-
-
 func (g *Graph) GetNearestNode(location string) *Node {
 	curX, curY := ConvertStringLocToXY(location)
 	minimumDist := math.MaxFloat64 // maybe should define a variable like the one hadi made for maxEucleadian distance
@@ -222,12 +224,12 @@ func (g *Graph) GetNearestNode(location string) *Node {
 	xys := []float64{}
 
 	for i := 0; i < len(g.Nodes); i++ {
-		x,y := g.Nodes[i].GetNodeLocation()
-		xys = append(xys,x)
-		xys = append(xys,y)
-		curDist = glb.CalcDist(curX,curY,x,y)
-		curDistants = append(curDistants,curDist)
-		if curDist<minimumDist{
+		x, y := g.Nodes[i].GetNodeLocation()
+		xys = append(xys, x)
+		xys = append(xys, y)
+		curDist = glb.CalcDist(curX, curY, x, y)
+		curDistants = append(curDistants, curDist)
+		if curDist < minimumDist {
 			minimumDist = curDist
 			ownerOfMinimumDist = g.Nodes[i]
 		}
@@ -246,14 +248,14 @@ func (g *Graph) BFSTraverse(startNode *Node) [][]*Node {
 	q.Enqueue(*n)
 	//visited := make(map[*Node]bool)
 	visited := make(map[string]bool)
-	k:=1
+	k := 1
 	flag := true
 	//result := make(map[int][]*Node)
 	result := [][]*Node{}
-	result = append(result,[]*Node{})
+	result = append(result, []*Node{})
 	//result = append(result,[]*Node{})
 	//result = append(result,[]*Node{})
-	result[0] = append(result[0],startNode)
+	result[0] = append(result[0], startNode)
 	//glb.Debug.Println("result: ",result)
 
 	for {
@@ -267,16 +269,16 @@ func (g *Graph) BFSTraverse(startNode *Node) [][]*Node {
 		for i := 0; i < len(near); i++ {
 			j := near[i]
 			if !visited[j.Label] {
-				if k>=len(result){
+				if k >= len(result) {
 					//glb.Debug.Println("k is bigger than len")
-					result = append(result,[]*Node{})
+					result = append(result, []*Node{})
 				}
 				//glb.Debug.Println("result: ",result)
-				result[k] = append(result[k],j)
+				result[k] = append(result[k], j)
 				q.Enqueue(*j)
 				visited[j.Label] = true
 				flag = true
-			}else {
+			} else {
 				flag = false
 			}
 		}

@@ -1,6 +1,9 @@
 package algorithms
 
 import (
+	"ParsinServer/dbm"
+	"ParsinServer/dbm/parameters"
+	"ParsinServer/glb"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -10,9 +13,6 @@ import (
 	"os"
 	"path"
 	"time"
-	"ParsinServer/glb"
-	"ParsinServer/dbm/parameters"
-	"ParsinServer/dbm"
 )
 
 func RandomString(strlen int) string {
@@ -61,7 +61,7 @@ func ScikitLearn(groupName string) string {
 
 	rd := dbm.GM.GetGroup(groupName).Get_RawData()
 	fingerprintInMemory := rd.Get_Fingerprints()
-	for _,fp := range fingerprintInMemory{
+	for _, fp := range fingerprintInMemory {
 		bJSON, _ := json.Marshal(fp)
 		f.WriteString(string(bJSON) + "\n")
 	}
@@ -93,7 +93,7 @@ func ScikitLearn(groupName string) string {
 	return classSuccessResStr
 }
 
-func ScikitClassify(group string, fingerprint parameters.Fingerprint) (map[string]string) {
+func ScikitClassify(group string, fingerprint parameters.Fingerprint) map[string]string {
 	var algorithmsPrediction map[string]string
 	tempFile := RandomString(10)
 	d1, _ := json.Marshal(fingerprint)

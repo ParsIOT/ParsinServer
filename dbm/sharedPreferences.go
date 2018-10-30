@@ -1,12 +1,10 @@
 package dbm
 
 import (
-	"sync"
 	"ParsinServer/glb"
 	"errors"
+	"sync"
 )
-
-
 
 type RawSharedPreferences struct {
 	Mixin            float64  `json:"Mixin"`
@@ -25,7 +23,7 @@ type RawSharedPreferences struct {
 	NeedToRelocateFP bool     `json:"NeedToRelocateFP"`
 }
 
-func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}) error{
+func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}) error {
 	switch prfName {
 	case "Mixin":
 		shPrf.Mixin = val.(float64)
@@ -60,6 +58,7 @@ func (shPrf *RawSharedPreferences) setPreference(prfName string, val interface{}
 	}
 	return nil
 }
+
 //func (shPrf *RawSharedPreferences) getPreference(prfName string) interface{}{
 //	switch prfName {
 //		case "Mixin":
@@ -99,11 +98,11 @@ func NewRawSharedPreferences() RawSharedPreferences {
 }
 
 type RawRuntimeSharedPreferences struct {
-	NeedToFilter       bool 		`json:"NeedToFilter"`//check needing for filtering
-	NotNullFilterList  bool			`json:"NotNullFilterList"` //check that filterMap is null(used to avoid filter fingerprint with null map)
+	NeedToFilter      bool `json:"NeedToFilter"`      //check needing for filtering
+	NotNullFilterList bool `json:"NotNullFilterList"` //check that filterMap is null(used to avoid filter fingerprint with null map)
 }
 
-func (shPrf *RawRuntimeSharedPreferences) setPreference(prfName string, val interface{}) error{
+func (shPrf *RawRuntimeSharedPreferences) setPreference(prfName string, val interface{}) error {
 	switch prfName {
 	case "NeedToFilter":
 		shPrf.NeedToFilter = val.(bool)
@@ -117,46 +116,45 @@ func (shPrf *RawRuntimeSharedPreferences) setPreference(prfName string, val inte
 
 var SavedSharedPreferencesCache = struct {
 	sync.RWMutex
-	isLoad map[string]bool
+	isLoad   map[string]bool
 	dbFields map[string]RawSharedPreferences
 }{
-	isLoad:			   make(map[string]bool),
-	dbFields:          make(map[string]RawSharedPreferences),
+	isLoad:   make(map[string]bool),
+	dbFields: make(map[string]RawSharedPreferences),
 }
 
 var RuntimeSharedPreferencesCache = struct {
 	sync.RWMutex
 	isChangedShrPrf map[string]bool
-	runtimeFields map[string]RawRuntimeSharedPreferences
+	runtimeFields   map[string]RawRuntimeSharedPreferences
 }{
 	isChangedShrPrf: make(map[string]bool),
-	runtimeFields:     make(map[string]RawRuntimeSharedPreferences),
+	runtimeFields:   make(map[string]RawRuntimeSharedPreferences),
 }
 
-func NewRuntimeSharedPreferences() RawRuntimeSharedPreferences{
+func NewRuntimeSharedPreferences() RawRuntimeSharedPreferences {
 	return RawRuntimeSharedPreferences{
-		NeedToFilter:     		false,
-		NotNullFilterList:    	false,
+		NeedToFilter:      false,
+		NotNullFilterList: false,
 	}
 }
 
-
-func GetSharedPrf(group string) RawSharedPreferences{
+func GetSharedPrf(group string) RawSharedPreferences {
 	//SavedSharedPreferencesCache.Lock()
 	SavedSharedPreferencesCache.RLock()
 	loaded := SavedSharedPreferencesCache.isLoad[group]
 	//SavedSharedPreferencesCache.Unlock()
 	SavedSharedPreferencesCache.RUnlock()
 
-	if loaded{ // the group was loaded
+	if loaded { // the group was loaded
 		SavedSharedPreferencesCache.RLock()
 		sharedPrf := SavedSharedPreferencesCache.dbFields[group]
 		SavedSharedPreferencesCache.RUnlock()
 		return sharedPrf
-	}else{ // load shared preferences
+	} else { // load shared preferences
 
-		tempSharedPreferences,err := loadSharedPreferences(group)
-		if err != nil{
+		tempSharedPreferences, err := loadSharedPreferences(group)
+		if err != nil {
 			glb.Error.Println(err.Error())
 			glb.Error.Println(group)
 			//panic(err.Error())
@@ -180,7 +178,7 @@ func SetSharedPrf(group string, prfName string, val interface{}) error {
 	loaded := SavedSharedPreferencesCache.isLoad[group]
 	SavedSharedPreferencesCache.RUnlock()
 
-	if loaded{
+	if loaded {
 		SavedSharedPreferencesCache.RLock()
 		sharedPrf := SavedSharedPreferencesCache.dbFields[group]
 		SavedSharedPreferencesCache.RUnlock()
@@ -190,13 +188,13 @@ func SetSharedPrf(group string, prfName string, val interface{}) error {
 		SavedSharedPreferencesCache.dbFields[group] = sharedPrf
 		SavedSharedPreferencesCache.Unlock()
 		err := putSharedPreferences(group, sharedPrf)
-		if err != nil{
+		if err != nil {
 			glb.Error.Println(err)
 			return errors.New("Can't reset shared preferences")
 		}
-	}else{
+	} else {
 		err := initializeSharedPreferences(group)
-		if err != nil{
+		if err != nil {
 			glb.Error.Println(err)
 			return errors.New("Can't reset shared preferences")
 		}
@@ -213,7 +211,7 @@ func SetSharedPrf(group string, prfName string, val interface{}) error {
 		SavedSharedPreferencesCache.Unlock()
 
 		err = loadRuntimePreferences(group)
-		if err != nil{
+		if err != nil {
 			glb.Error.Println("Problem in loadRuntimePreferences")
 			return errors.New("Problem in loadRuntimePreferences")
 		}
@@ -222,7 +220,7 @@ func SetSharedPrf(group string, prfName string, val interface{}) error {
 		SavedSharedPreferencesCache.isLoad[group] = true
 		SavedSharedPreferencesCache.Unlock()
 		err = putSharedPreferences(group, sharedPrf)
-		if err != nil{
+		if err != nil {
 			glb.Error.Println(err)
 			return errors.New("Can't reset shared preferences")
 		}
@@ -241,7 +239,7 @@ func loadRuntimePreferences(group string) error {
 
 	// Set NotNullFilterList and NeedToFilter
 	filterMacsList := shrPrf.FilterMacsMap
-	if(len(filterMacsList) != 0){
+	if len(filterMacsList) != 0 {
 		RuntimeSharedPreferencesCache.RLock()
 		runtimePreferences := RuntimeSharedPreferencesCache.runtimeFields[group]
 		RuntimeSharedPreferencesCache.RUnlock()
@@ -256,11 +254,11 @@ func loadRuntimePreferences(group string) error {
 	return nil
 }
 
-func GetRuntimePrf(group string) RawRuntimeSharedPreferences{
+func GetRuntimePrf(group string) RawRuntimeSharedPreferences {
 	SavedSharedPreferencesCache.RLock()
 	loaded := SavedSharedPreferencesCache.isLoad[group]
 	SavedSharedPreferencesCache.RUnlock()
-	if !loaded{
+	if !loaded {
 		GetSharedPrf(group) //load SavedSharedPreferences
 	}
 
@@ -280,7 +278,7 @@ func GetRuntimePrf(group string) RawRuntimeSharedPreferences{
 		runtimePreferences := RuntimeSharedPreferencesCache.runtimeFields[group]
 		RuntimeSharedPreferencesCache.Unlock()
 		return runtimePreferences
-	}else{
+	} else {
 		RuntimeSharedPreferencesCache.RLock()
 		runtimePreferences := RuntimeSharedPreferencesCache.runtimeFields[group]
 		RuntimeSharedPreferencesCache.RUnlock()
@@ -293,13 +291,13 @@ func SetRuntimePrf(group string, prfName string, val interface{}) error {
 	SavedSharedPreferencesCache.RLock()
 	loaded := SavedSharedPreferencesCache.isLoad[group]
 	SavedSharedPreferencesCache.RUnlock()
-	if loaded{
+	if loaded {
 		RuntimeSharedPreferencesCache.RLock()
 		runtimePrf := RuntimeSharedPreferencesCache.runtimeFields[group]
 		RuntimeSharedPreferencesCache.RUnlock()
 		//sharedPrf[prfName] = val
-		err := runtimePrf.setPreference(prfName,val)
-		if err != nil{
+		err := runtimePrf.setPreference(prfName, val)
+		if err != nil {
 			glb.Error.Println("Problem to Runtime setPreference")
 			return errors.New("Problem to Runtime setPreference")
 		}
@@ -307,7 +305,7 @@ func SetRuntimePrf(group string, prfName string, val interface{}) error {
 		RuntimeSharedPreferencesCache.Lock()
 		RuntimeSharedPreferencesCache.runtimeFields[group] = runtimePrf
 		RuntimeSharedPreferencesCache.Unlock()
-	}else{
+	} else {
 		GetSharedPrf(group) //load SavedSharedPreferences
 		//if err != nil{
 		//	glb.Error.Println("Problem to GetSharedPrf")
@@ -318,8 +316,8 @@ func SetRuntimePrf(group string, prfName string, val interface{}) error {
 		runtimePrf := RuntimeSharedPreferencesCache.runtimeFields[group]
 		RuntimeSharedPreferencesCache.RUnlock()
 		//sharedPrf[prfName] = val
-		err := runtimePrf.setPreference(prfName,val)
-		if err != nil{
+		err := runtimePrf.setPreference(prfName, val)
+		if err != nil {
 			glb.Error.Println("Problem to Runtime setPreference")
 			return errors.New("Problem to Runtime setPreference")
 		}

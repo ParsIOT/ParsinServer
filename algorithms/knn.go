@@ -16,9 +16,12 @@ import (
 var knn_regression bool
 var minkowskyQ float64
 var maxrssInNormal, minrssInNormal float64
+var heterogeneousAvailability bool
 
 //var topRssList []int
 var distAlgo string
+var MaxEuclideanRssDist int
+var uniqueMacs []string
 
 //var ValidKs []int = defaultValidKs()
 //var ValidMinClusterRSSs []int = defaultValidMinClusterRSSs()
@@ -48,6 +51,7 @@ func init() {
 	//topRssList = []int{-60,-79,-90}
 	maxrssInNormal = -55.0
 	minrssInNormal = float64(glb.MinRssi) - 5.0
+	heterogeneousAvailability = false
 }
 
 type resultW struct {
@@ -61,11 +65,13 @@ type jobW struct {
 	mac2RssFP  map[string]int
 }
 
-func LearnKnn(md *dbm.MiddleDataStruct, rd dbm.RawDataStruct, hyperParameters []interface{}) (parameters.KnnFingerprints, error) {
+func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (parameters.KnnFingerprints, error) {
 	//Debug.Println(Cosine([]float64{1,2,3},[]float64{1,2,4}))
 	//jsonFingerprint = calcMacRate(jsonFingerprint,false)
 	//K := hyperParameters[0].(int)
-	//MinClusterRSS := hyperParameters[1].(int) //komeil: min threshold for determining whether ...
+	rd := gp.Get_RawData()
+
+	//MinClusterRSS := hyperParameters.MinClusterRss //komeil: min threshold for determining whether ...
 	// a fingerprint is in the cluster of a beacon or not
 	//glb.Debug.Printf("Knn is running (K:%d, MinClusterRss:%d)\n",K,MinClusterRSS)
 	//jsonFingerprint = calcMacJustRate(jsonFingerprint,false)
@@ -82,7 +88,6 @@ func LearnKnn(md *dbm.MiddleDataStruct, rd dbm.RawDataStruct, hyperParameters []
 	//var fingerprintsOrdering []string
 	clusters := make(map[string][]string) // komeil: key of map: Mac - value: fpTime
 	//var err error
-
 	fingerprints := rd.Fingerprints
 	fingerprintsOrdering := rd.FingerprintsOrdering // komeil: timestamps of fingerprints as id
 
@@ -90,37 +95,64 @@ func LearnKnn(md *dbm.MiddleDataStruct, rd dbm.RawDataStruct, hyperParameters []
 	//if err!=nil {
 	//	return err
 	//}
-	tempFingerprints := make(map[string]parameters.Fingerprint)
-	for fpTime, fp := range fingerprints {
-		/*for _, rt := range fp.WifiFingerprint { //rt ==> Router = mac + RSS of an Access Point
-			if (rt.Rssi >= MinClusterRSS) {
-				clusters[rt.Mac] = append(clusters[rt.Mac], fpTime)
+	/*
+		for fpTime, fp := range fingerprints {
+			for _, rt := range fp.WifiFingerprint { //rt ==> Router = mac + RSS of an Access Point
+				if rt.Rssi >= MinClusterRSS {
+					clusters[rt.Mac] = append(clusters[rt.Mac], fpTime)
+				}
 			}
-		}*/
-		/*		if strings.Contains(fp.WifiFingerprint[0].Mac, "#") {
-				break
-			}*/
-		fpTemp := fp
-		fpTemp.WifiFingerprint = nil
-		for i := 0; i < len(fp.WifiFingerprint)-1; i++ {
-			sort.Slice(fpTemp.WifiFingerprint, func(i, j int) bool {
-				return fpTemp.WifiFingerprint[i].Mac < fpTemp.WifiFingerprint[j].Mac
-			})
-			currRouter := fp.WifiFingerprint[i]
-			for j := i + 1; j < len(fp.WifiFingerprint); j++ {
-				var r parameters.Router
-				nextRouter := fp.WifiFingerprint[j]
-				r.Mac = fmt.Sprintf("%v#%v", currRouter.Mac, nextRouter.Mac)
-				r.Rssi = currRouter.Rssi - nextRouter.Rssi
-				fpTemp.WifiFingerprint = append(fpTemp.WifiFingerprint, r)
+		}
+	*/
+	if heterogeneousAvailability {
+		tempFingerprints := make(map[string]parameters.Fingerprint)
+		for fpTime, fp := range fingerprints {
+
+			fpTemp := fp
+			fpTemp.WifiFingerprint = nil
+			for i := 0; i < len(fp.WifiFingerprint)-1; i++ {
+				sort.Slice(fp.WifiFingerprint, func(i, j int) bool {
+					return fp.WifiFingerprint[i].Mac < fp.WifiFingerprint[j].Mac
+				})
+				currRouter := fp.WifiFingerprint[i]
+				for j := i + 1; j < len(fp.WifiFingerprint); j++ {
+					var r parameters.Router
+					nextRouter := fp.WifiFingerprint[j]
+					r.Mac = fmt.Sprintf("%v#%v", currRouter.Mac, nextRouter.Mac)
+					r.Rssi = currRouter.Rssi - nextRouter.Rssi
+					fpTemp.WifiFingerprint = append(fpTemp.WifiFingerprint, r)
+				}
+
 			}
 
+			tempFingerprints[fpTime] = fpTemp
 		}
 
-		tempFingerprints[fpTime] = fpTemp
+		fingerprints = tempFingerprints
 	}
 
-	fingerprints = tempFingerprints
+	node2FPs := make(map[string][]string)
+	graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
+	if !graphMapPointer.IsEmpty() {
+		for fpTime, fp := range fingerprints {
+			nearNodeGraph := graphMapPointer.GetNearestNode(fp.Location)
+			//glb.Debug.Println("near node Graph: ",nearNodeGraph.Label)
+			if nearNodeGraph == nil {
+				glb.Error.Println("Nearest node is empty!")
+				continue
+			}
+			nodeLabel := nearNodeGraph.Label
+			if tempFPList, ok := node2FPs[nodeLabel]; ok {
+				node2FPs[nodeLabel] = append(tempFPList, fpTime)
+			} else {
+				if nearNodeGraph == nil {
+					glb.Error.Println("*** near node was nil for ", fp.Location)
+				} else {
+					node2FPs[nodeLabel] = []string{fpTime}
+				}
+			}
+		}
+	}
 	//// Cluster print
 	//for key,val := range clusters{
 	//	fmt.Println("mac: "+key+" ")
@@ -136,7 +168,8 @@ func LearnKnn(md *dbm.MiddleDataStruct, rd dbm.RawDataStruct, hyperParameters []
 	tempKnnFingerprints.FingerprintsInMemory = fingerprints
 	tempKnnFingerprints.FingerprintsOrdering = fingerprintsOrdering
 	tempKnnFingerprints.Clusters = clusters
-
+	tempKnnFingerprints.Node2FPs = node2FPs
+	tempKnnFingerprints.HyperParameters = hyperParameters
 	//dbm.GM.GetGroup(groupName).Get_AlgoData().Set_KnnFPs(tempKnnFingerprints)
 
 	//err = dbm.SetKnnFingerprints(tempKnnFingerprints, groupName)
@@ -159,7 +192,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
 	var mainFingerprintsOrdering []string
 	var fingerprintsOrdering []string
-	//clusters := make(map[string][]string)
+	clusters := make(map[string][]string)
+	node2FPs := make(map[string][]string)
 	//
 	//tempKnnFingerprints, ok := dbm.GetKnnFPCache(curFingerprint.Group)
 	//if ok {
@@ -188,26 +222,37 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	//tempKnnFingerprints := dbm.GM.GetGroup(curFingerprint.Group).Get_AlgoData().Get_KnnFPs()
 	fingerprintsInMemory = tempKnnFingerprints.FingerprintsInMemory
 	mainFingerprintsOrdering = tempKnnFingerprints.FingerprintsOrdering
-	//clusters = tempKnnFingerprints.Clusters
+	clusters = tempKnnFingerprints.Clusters
+	hyperParams := tempKnnFingerprints.HyperParameters
+	//node2FPs = tempKnnFingerprints.Node2FPs
+	node2FPs = tempKnnFingerprints.Node2FPs
+	uniqueMacs = gp.Get_MiddleData().Get_UniqueMacs()
 
-	//explain: convert fingerprint to diff
-	convertedFingerprint := curFingerprint
-	convertedFingerprint.WifiFingerprint = nil
-	for i := 0; i < len(curFingerprint.WifiFingerprint)-1; i++ {
-		sort.Slice(curFingerprint.WifiFingerprint, func(i, j int) bool {
-			return curFingerprint.WifiFingerprint[i].Mac < curFingerprint.WifiFingerprint[j].Mac
-		})
-		currRouter := curFingerprint.WifiFingerprint[i]
-		for j := i + 1; j < len(curFingerprint.WifiFingerprint); j++ {
-			var r parameters.Router
-			nextRouter := curFingerprint.WifiFingerprint[j]
-			r.Mac = fmt.Sprintf("%v#%v", currRouter.Mac, nextRouter.Mac)
-			r.Rssi = currRouter.Rssi - nextRouter.Rssi
-			convertedFingerprint.WifiFingerprint = append(convertedFingerprint.WifiFingerprint, r)
+	knnParams := gp.Get_ConfigData().Get_KnnParameters()
+	MaxEuclideanRssDist = knnParams.MaxEuclideanRssDist
+
+	if heterogeneousAvailability {
+		//glb.Debug.Println("heterogeneous is available")
+		//explain: convert fingerprint to diff
+		tempCurFingerprint := curFingerprint
+		convertedFingerprint := tempCurFingerprint
+		convertedFingerprint.WifiFingerprint = nil
+		for i := 0; i < len(tempCurFingerprint.WifiFingerprint)-1; i++ {
+			sort.Slice(tempCurFingerprint.WifiFingerprint, func(i, j int) bool {
+				return tempCurFingerprint.WifiFingerprint[i].Mac < tempCurFingerprint.WifiFingerprint[j].Mac
+			})
+			currRouter := tempCurFingerprint.WifiFingerprint[i]
+			for j := i + 1; j < len(tempCurFingerprint.WifiFingerprint); j++ {
+				var r parameters.Router
+				nextRouter := tempCurFingerprint.WifiFingerprint[j]
+				r.Mac = fmt.Sprintf("%v#%v", currRouter.Mac, nextRouter.Mac)
+				r.Rssi = currRouter.Rssi - nextRouter.Rssi
+				convertedFingerprint.WifiFingerprint = append(convertedFingerprint.WifiFingerprint, r)
+			}
+
 		}
-
+		curFingerprint = convertedFingerprint
 	}
-	curFingerprint = convertedFingerprint
 
 	//tempList := []string{}
 	//tempList = append(tempList,mainFingerprintsOrdering...)
@@ -241,25 +286,61 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	//}
 
 	// fingerprintOrdering Creation according to clusters and rss rates
-	highRateRssExist := false // komeil: a variable to decide if it is needed to search all fingerprints instead of one or some clusters
-	/*	for _, rt := range curFingerprint.WifiFingerprint {
-		if (rt.Rssi >= tempKnnFingerprints.MinClusterRss) {
-			if cluster, ok := clusters[rt.Mac]; ok {
-				highRateRssExist = true
-				fingerprintsOrdering = append(fingerprintsOrdering, cluster...)
+	repeatFP := make(map[string]int)
+	for _, fpTime := range mainFingerprintsOrdering {
+		repeatFP[fpTime] = 1
+	}
+
+	if glb.MinRssClustringEnabled || hyperParams.MinClusterRss == 0 {
+		AtleastInOneCluster := false // komeil: a variable to decide if it is needed to search all fingerprints instead of one or some clusters
+		for _, rt := range curFingerprint.WifiFingerprint {
+			if rt.Rssi >= hyperParams.MinClusterRss {
+				if cluster, ok := clusters[rt.Mac]; ok {
+					//glb.Error.Println(rt.Mac,":",rt.Rssi)
+					AtleastInOneCluster = true
+					for _, fpTimeMem := range cluster {
+						//if !glb.StringInSlice(fpTimeMem,fingerprintsOrdering){
+						fingerprintsOrdering = append(fingerprintsOrdering, fpTimeMem)
+						//}else{
+						//	//repeatFP[fpTimeMem] *=10
+						//	repeatFP[fpTimeMem] +=1
+						//
+						//}
+					}
+					//fingerprintsOrdering = append(fingerprintsOrdering, cluster...)
+
+				}
 			}
 		}
-	}*/
-	if !highRateRssExist {
+		if !AtleastInOneCluster {
+			//glb.Error.Println("Not in cluster")
+			fingerprintsOrdering = mainFingerprintsOrdering
+		}
+	} else {
 		fingerprintsOrdering = mainFingerprintsOrdering
 	}
 
+	/*	if (curFingerprint.Timestamp == int64(1538064063095)){
+			glb.Error.Println(fingerprintsOrdering)
+		}
+	*/
+	FP2AFactor := make(map[string]float64)
+	//hyperParams.GraphFactors = []float64{10,10,3,2,1}
+	maxHopLevel := len(hyperParams.GraphFactors) - 2 // last item is minAdjacencyFactor
+
+	adjacencyFactors := hyperParams.GraphFactors
+	minAdjacencyFactor := hyperParams.GraphFactors[maxHopLevel+1] // assigning zero make errors in other functions
+	for _, fpTime := range fingerprintsOrdering {
+		FP2AFactor[fpTime] = minAdjacencyFactor
+	}
+
 	// History effect:
+	//historyConsidered = false // Note:deleteit .
 	// Idea from: Dynamic Subarea Method in "A Hybrid Indoor Positioning Algorithm based on WiFi Fingerprinting and Pedestrian Dead Reckoning""
 	var tempFingerprintOrdering []string
 	if historyConsidered {
-		baseLoc := ""                      // according to last location or pdr location, filter far fingerprints
-		if curFingerprint.Location != "" { // Current PDRLocation is available
+		baseLoc := ""                                                               // according to last location or pdr location, filter far fingerprints
+		if curFingerprint.Location != "" && glb.PDREnabledForDynamicSubareaMethod { // Current PDRLocation is available
 			baseLoc = curFingerprint.Location
 			// todo : we can use lastUserPos.Location even when PDRLocation is available too.
 		} else {
@@ -268,45 +349,78 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				lastUserPos := userPosHistory[len(userPosHistory)-1]
 				//glb.Error.Println(lastUserPos)
 				// todo:use lastUserPos.loction instead of knnguess
+
 				baseLoc = lastUserPos.Location // Current PDRLocation isn't  available, use last location estimated
+				/*				if strconv.FormatInt(curFingerprint.Timestamp, 10) == "1538071196747"{ //1538071209118
+								glb.Error.Println(len(userPosHistory))
+								glb.Error.Println(baseLoc)
+							}*/
 				//glb.Debug.Println(lastUserPos.KnnGuess)
 				//glb.Debug.Println(lastUserPos.Location)
 			}
 		}
 		//glb.Error.Println(baseLoc)
-		if baseLoc != "" { // ignore when baseLoc is empty (for example there is no userhistory!)
-			baseLocX, baseLocY := glb.GetDotFromString(baseLoc)
-			maxMovement := dbm.GetSharedPrf(gp.Get_Name()).MaxMovement
-			//glb.Error.Println()
-			//maxMovement = float64(1)
-			//hist := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
 
-			for _, fpTime := range fingerprintsOrdering {
-				fp := fingerprintsInMemory[fpTime]
-				fpLocX, fpLocY := glb.GetDotFromString(fp.Location)
+		if baseLoc != "" { // ignore when baseLoc is empty (for example there is no userhistory!)
+			if glb.GraphEnabled {
+				graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
+
+				if !graphMapPointer.IsEmpty() {
+
+					baseNodeGraph := graphMapPointer.GetNearestNode(baseLoc)
+					sliceOfHops := graphMapPointer.BFSTraverse(baseNodeGraph) // edit this function to return a nested slice with
+					// nodes with corresponding hops
+
+					for i, levelSliceOfHops := range sliceOfHops {
+						for _, node := range levelSliceOfHops {
+							//hopFPs := append(hopFPs,node2FPs[node]...)
+							hopFPs := node2FPs[node.Label]
+							for _, fp := range hopFPs {
+								if i <= maxHopLevel {
+									FP2AFactor[fp] = adjacencyFactors[i]
+								}
+							}
+						}
+					}
+
+					//glb.Error.Println(FP2AFactor)
+				}
+
+			} else {
+				baseLocX, baseLocY := glb.GetDotFromString(baseLoc)
+				maxMovement := dbm.GetSharedPrf(gp.Get_Name()).MaxMovement
 				//glb.Error.Println()
-				//glb.Error.Println(baseLoc)
-				//glb.Error.Println(fp.Location)
-				//glb.Error.Println(fp)
-				//glb.Error.Println(glb.CalcDist(fpLocX,fpLocY,baseLocX,baseLocY))
-				if glb.CalcDist(fpLocX, fpLocY, baseLocX, baseLocY) < maxMovement {
-					//glb.Error.Println("OK addded")
-					tempFingerprintOrdering = append(tempFingerprintOrdering, fpTime)
+				//maxMovement = float64(1)
+				//hist := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
+
+				for _, fpTime := range fingerprintsOrdering {
+					fp := fingerprintsInMemory[fpTime]
+					fpLocX, fpLocY := glb.GetDotFromString(fp.Location)
+					//glb.Error.Println()
+					//glb.Error.Println(baseLoc)
+					//glb.Error.Println(fp.Location)
+					//glb.Error.Println(fp)
+					//glb.Error.Println(glb.CalcDist(fpLocX,fpLocY,baseLocX,baseLocY))
+					if glb.CalcDist(fpLocX, fpLocY, baseLocX, baseLocY) < maxMovement {
+						//glb.Error.Println("OK addded")
+						tempFingerprintOrdering = append(tempFingerprintOrdering, fpTime)
+					}
+				}
+				if len(tempFingerprintOrdering) != 0 {
+					//glb.Error.Println(len(fingerprintsOrdering))
+					//glb.Error.Println(len(tempFingerprintOrdering))
+					fingerprintsOrdering = tempFingerprintOrdering
+				} else {
+					glb.Error.Println("There is long distance between base location(last location or PDR current location) and current location")
 				}
 			}
-			if len(tempFingerprintOrdering) != 0 {
-				glb.Error.Println(len(fingerprintsOrdering))
-				glb.Error.Println(len(tempFingerprintOrdering))
-				fingerprintsOrdering = tempFingerprintOrdering
-			} else {
-				glb.Error.Println("There is long distance between base location(last location or PDR current location) and current location")
-			}
+
 		}
 	}
 
 	//tempList := []string{}
 	//tempList = append(tempList,fingerprintsOrdering...)
-	//sort.Sort(sort.StringSlice(fingerprintsOrdering))
+	sort.Sort(sort.StringSlice(fingerprintsOrdering))
 	//
 	//sum := int64(0)
 	//for _,i := range tempList{
@@ -327,7 +441,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	//	glb.Error.Println("Nums of AP must be greater than 3")
 	//}
 
-	knnK := tempKnnFingerprints.K
+	knnK := hyperParams.K
 
 	//knnK := dbm.GetSharedPrf(curFingerprint.Group).KnnK
 
@@ -343,7 +457,11 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	if distAlgo == "Euclidean" {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			//wgKnn.Add(1)
-			go calcWeight(id, chanJobs, chanResults)
+			if glb.NewDistAlgo {
+				go calcWeight1(id, chanJobs, chanResults)
+			} else {
+				go calcWeight(id, chanJobs, chanResults)
+			}
 		}
 	} else if distAlgo == "Cosine" {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
@@ -375,7 +493,10 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 	for i := 1; i <= numJobs; i++ {
 		res := <-chanResults
-		W[res.fpTime] = res.weight
+		W[res.fpTime] = res.weight * FP2AFactor[res.fpTime] * float64(repeatFP[res.fpTime])
+	}
+	if glb.NewDistAlgo {
+		W = ConvertDist2Wigth(W)
 	}
 
 	close(chanResults)
@@ -403,7 +524,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		return errors.New("NumofAP_lowerThan_MinApNum"), ",", nil
 	}
 
-	fingerprintSorted := glb.SortDictByVal(W)
+	fingerprintSorted := glb.SortReverseDictByVal(W)
 
 	ws := []float64{}
 	for _, w := range W {
@@ -477,10 +598,13 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				//glb.Error.Println(currentY)
 				//glb.Error.Println(currentX,"::",currentY)
 				//}
-				currentX = currentX + int64(W[fpTime]*locX)
-				currentY = currentY + int64(glb.Round(glb.Round(W[fpTime], 5)*locY, 5))
+				curW := W[fpTime]
+				//glb.Debug.Println(curW)
+				//curW := W[fpTime]
+				currentX = currentX + int64(curW*locX)
+				currentY = currentY + int64(curW*locY)
 				//Debug.Println(W[fpTime]*locX)
-				sumW = sumW + W[fpTime]
+				sumW = sumW + curW
 			} else {
 				break
 			}
@@ -504,9 +628,9 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 			return errors.New("NoValidFingerprints"), "", nil
 		}
 
+		//glb.Error.Println(float64(currentX) / sumW , ",",float64(currentY) / sumW)
 		currentXint := int(float64(currentX) / sumW)
 		currentYint := int(float64(currentY) / sumW)
-
 		//glb.Debug.Println(curFingerprint.Location)
 		//glb.Debug.Println(glb.IntToString(currentXint) + ".0," + glb.IntToString(currentYint)+".0")
 		//Debug.Println(currentX)
@@ -525,7 +649,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				break
 			}
 		}
-		sortedKNNList := glb.SortDictByVal(KNNList)
+		sortedKNNList := glb.SortReverseDictByVal(KNNList)
 		//glb.Debug.Println(sortedKNNList[0])
 		return nil, sortedKNNList[0], KNNList
 	}
@@ -535,14 +659,61 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 
 	for job := range jobs {
 		distance := float64(0)
+		length := float64(0.000001)
 		for curMac, curRssi := range job.mac2RssCur {
 			if fpRss, ok := job.mac2RssFP[curMac]; ok {
 				distance = distance + math.Pow(float64(curRssi-fpRss), minkowskyQ)
+				length++
 				//curDist := math.Pow(10.0,float64(curRssi)*0.05)
 				//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
 				//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
-			} else {
-				distance = distance + math.Pow(float64(glb.MaxEuclideanRssVectorDist), minkowskyQ)
+			} else if glb.StringInSlice(curMac, uniqueMacs) {
+				distance = distance + math.Pow(float64(MaxEuclideanRssDist), minkowskyQ)
+				length++
+				//distance = distance + 9
+				//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)
+			}
+		}
+		//distance = distance / float64(len(job.mac2RssCur))
+		distance = distance / float64(length)
+		//if(distance==float64(0)){
+		//	glb.Error.Println("###@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+		//}
+		precision := 10
+		distance = glb.Round(math.Pow(distance, float64(1.0)/minkowskyQ), precision)
+		if distance == float64(0) {
+			//glb.Error.Println("Distance zero")
+			//glb.Error.Println(job.mac2RssCur)
+			//glb.Error.Println(job.mac2RssFP)
+			distance = math.Pow(10, -1*float64(precision))
+			//distance = maxDist
+		}
+		weight := glb.Round(float64(1.0)/(float64(1.0)+distance), 5)
+
+		//glb.Debug.Println("distance: ",distance)
+		//glb.Debug.Println("weight: ",weight)
+		results <- resultW{fpTime: job.fpTime,
+			weight: weight * 100}
+	}
+
+}
+
+func calcWeight1(id int, jobs <-chan jobW, results chan<- resultW) {
+
+	for job := range jobs {
+		distance := float64(0)
+		length := float64(0.000001)
+
+		for curMac, curRssi := range job.mac2RssCur {
+			if fpRss, ok := job.mac2RssFP[curMac]; ok {
+				distance = distance + math.Pow(float64(curRssi-fpRss), minkowskyQ)
+				length++
+				//curDist := math.Pow(10.0,float64(curRssi)*0.05)
+				//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
+				//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
+			} else if glb.StringInSlice(curMac, uniqueMacs) {
+				distance = distance + math.Pow(float64(MaxEuclideanRssDist), minkowskyQ)
+				length++
 				//distance = distance + 9
 				//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)
 			}
@@ -560,7 +731,8 @@ func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 			distance = math.Pow(10, -1*float64(precision))
 			//distance = maxDist
 		}
-		weight := glb.Round(float64(1.0)/(float64(1.0)+distance), 5)
+		//weight := glb.Round(float64(1.0)/(float64(1.0)+distance), 5)
+		weight := distance
 
 		//glb.Debug.Println("distance: ",distance)
 		//glb.Debug.Println("weight: ",weight)
@@ -718,4 +890,26 @@ func norm2zeroToOne(x float64) float64 {
 	b := -1 * maxrssInNormal * a
 	x = x*a + b
 	return x
+}
+
+func ConvertDist2Wigth(distMap map[string]float64) map[string]float64 {
+	maxDist := float64(-1)
+	minDist := math.MaxFloat64
+	newDistMap := make(map[string]float64)
+
+	for _, dist := range distMap {
+		if dist > maxDist {
+			maxDist = dist
+		}
+		if dist < minDist {
+			minDist = dist
+		}
+	}
+
+	for fpTime, dist := range distMap {
+		newDistMap[fpTime] = dist*-1 + maxDist
+	}
+
+	return newDistMap
+
 }

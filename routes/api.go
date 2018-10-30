@@ -237,7 +237,7 @@ func GetCurrentPositionOfAllUsers(groupName string) map[string]parameters.UserPo
 	userFingerprints := make(map[string]parameters.Fingerprint)
 	var err error
 	userPositions, userFingerprints, err = dbm.TrackFingerprintsEmptyPosition(groupName)
-	if (err != nil) {
+	if err != nil {
 		return userPositions
 	}
 
@@ -313,7 +313,6 @@ func Calculate(c *gin.Context) {
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	justCalcGraphFactors := strings.ToLower(c.DefaultQuery("justCalcGraphFactors", "none"))
-
 
 	if groupName != "none" {
 		if !dbm.GroupExists(groupName) {
@@ -1083,18 +1082,18 @@ func EditMac(c *gin.Context) {
 		fpData := gp.Get_RawData().Get_Fingerprints()
 
 		dbMacs := []string{}
-		for _,fp := range fpData{
-			for _,rt := range fp.WifiFingerprint{
-				if !glb.StringInSlice(rt.Mac,dbMacs){
-					dbMacs = append(dbMacs,rt.Mac)
+		for _, fp := range fpData {
+			for _, rt := range fp.WifiFingerprint {
+				if !glb.StringInSlice(rt.Mac, dbMacs) {
+					dbMacs = append(dbMacs, rt.Mac)
 				}
 			}
 		}
 
-		if glb.StringInSlice(newmac,dbMacs) && forceEdit != "true"{
+		if glb.StringInSlice(newmac, dbMacs) && forceEdit != "true" {
 			glb.Error.Println("There are some fingerprints that conatins the newmac already(edit newmac first)")
-			c.JSON(http.StatusOK, gin.H{"success": false, "message":"There are some fingerprints that conatins the newmac already(edit newmac first)"})
-		}else{
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "There are some fingerprints that conatins the newmac already(edit newmac first)"})
+		} else {
 			numChanges := dbm.EditMacDB(oldmac, newmac, groupName)
 			glb.Debug.Println("Changed mac of " + strconv.Itoa(numChanges) + " fingerprints")
 			//algorithms.CalculateLearn(groupName)
@@ -1172,7 +1171,7 @@ func DeleteLocationBaseDB(c *gin.Context) {
 	if groupName != "none" && location != "none" {
 		numChangesBaseDB := dbm.DeleteLocationBaseDB(location, groupName)
 		numChangesGpCache := dbm.DeleteLocationDB(location, groupName)
-		if (numChangesBaseDB != numChangesGpCache) {
+		if numChangesBaseDB != numChangesGpCache {
 			glb.Error.Printf("number of deletation from (baseDB,groupCache) are not equal: (%d,%d)\n", numChangesBaseDB, numChangesGpCache)
 		}
 		// todo: can't calculateLearn( there is problem with goroutine)
@@ -1199,7 +1198,7 @@ func DeleteLocations(c *gin.Context) {
 		locations := strings.Split(strings.ToLower(locationsQuery), ",")
 		numChangesBaseDB := dbm.DeleteLocationsBaseDB(locations, groupName)
 		numChangesGpCache := dbm.DeleteLocationsDB(locations, groupName)
-		if (numChangesBaseDB != numChangesGpCache) {
+		if numChangesBaseDB != numChangesGpCache {
 			glb.Error.Printf("number of deletation from (baseDB,groupCache) are not equal: (%d,%d)\n", numChangesBaseDB, numChangesGpCache)
 		}
 		// todo: can't calculateLearn( there is problem with goroutine)
@@ -1692,7 +1691,7 @@ func CVResults(c *gin.Context) {
 		algoAccuracy := dbm.GetCVResults(groupName)
 
 		glb.Debug.Println("Got algorithms accuracy")
-		c.JSON(http.StatusOK, gin.H{"Algorithms Accuracy": algoAccuracy,})
+		c.JSON(http.StatusOK, gin.H{"Algorithms Accuracy": algoAccuracy})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
@@ -1710,10 +1709,10 @@ func CalcCompletionLevel(c *gin.Context) {
 
 	if groupName != "none" {
 		cmpLevel := dbm.GetCalcCompletionLevel()
-		if (cmpLevel > 0 && cmpLevel <= 1) {
+		if cmpLevel > 0 && cmpLevel <= 1 {
 			//cmpLevel = float64(int(cmpLevel*10000000))/100000
 			//glb.Debug.Printf("Calculation level: %f % \n", cmpLevel)
-			c.JSON(http.StatusOK, gin.H{"success": true, "message": cmpLevel,})
+			c.JSON(http.StatusOK, gin.H{"success": true, "message": cmpLevel})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "No calculation is running"})
 		}
@@ -1778,7 +1777,6 @@ func BuildGroup(c *gin.Context) {
 			rsd.Set_AlgoAccuracy("knn_testvalid", 0)
 			rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
 		}
-
 
 		glb.Debug.Println("Struct reformed successfully")
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "struct renewed"})
@@ -2139,7 +2137,7 @@ func SetRelocateFPLocStateAPI(c *gin.Context) {
 
 	if groupName != "none" && relocateFP != "none" {
 		//err := dbm.RelocateFPLoc(groupName)
-		if (relocateFP == "true") {
+		if relocateFP == "true" {
 			err := dbm.SetSharedPrf(groupName, "NeedToRelocateFP", true)
 			if err != nil {
 				glb.Error.Println(err)
@@ -2147,7 +2145,7 @@ func SetRelocateFPLocStateAPI(c *gin.Context) {
 			} else {
 				c.JSON(http.StatusOK, gin.H{"success": true})
 			}
-		} else if (relocateFP == "false") {
+		} else if relocateFP == "false" {
 			err := dbm.SetSharedPrf(groupName, "NeedToRelocateFP", false)
 			if err != nil {
 				glb.Error.Println(err)

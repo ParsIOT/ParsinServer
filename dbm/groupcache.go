@@ -293,7 +293,7 @@ func (gm *GroupManger) NewGroup(groupName string) *Group {
 	groups := GM.groups
 	GM.RUnlock()
 	for gpName, gp := range groups {
-		if (groupName == gpName) {
+		if groupName == gpName {
 			glb.Error.Println("There is a group exists with same Name:" + groupName)
 			return gp
 		}
@@ -502,7 +502,7 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group) {
 		gm.Unlock()
 	}
 
-	if (dirtyBit) {
+	if dirtyBit {
 		//glb.Debug.Println("Dirtybit is true")
 		if !loaded {
 			glb.Error.Println("DB isn't loaded!")
@@ -627,7 +627,7 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group) {
 				defer dblock.Unlock()
 
 				for key, val := range dbData {
-					if (key == "Results") {
+					if key == "Results" {
 						for timeStamp, fp := range resultDataList { // must put the list to db instantly
 							err1 := SetByteResourceInBucket(parameters.DumpFingerprint(fp), timeStamp, "Results", groupName)
 							if err1 != nil {
@@ -799,7 +799,7 @@ func (gm *GroupManger) InstantFlushDB(groupName string) {
 				defer dblock.Unlock()
 
 				for key, val := range dbData {
-					if (key == "Results") {
+					if key == "Results" {
 						err1 := SetByteResourceInBucket(val, key, "Results", groupName)
 						if err1 != nil {
 							fmt.Errorf(err1.Error())
@@ -1078,7 +1078,7 @@ func (gp *Group) Set_RawData(newItem *RawDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1112,7 +1112,7 @@ func (gp *Group) Set_RawData_Val(newItem RawDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1187,7 +1187,7 @@ func (gp *Group) Set_ConfigData(newItem *ConfigDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1220,7 +1220,7 @@ func (gp *Group) Set_ConfigData_Val(newItem ConfigDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1277,7 +1277,7 @@ func (gp *Group) Set_MiddleData(newItem *MiddleDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1310,7 +1310,7 @@ func (gp *Group) Set_MiddleData_Val(newItem MiddleDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1381,7 +1381,7 @@ func (gp *Group) Set_AlgoData(newItem *AlgoDataStruct) {
 		field := elm.Field(i)
 		//item.Unlock()
 		//glb.Debug.Println(itemType.Field(i).Name)
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1416,7 +1416,7 @@ func (gp *Group) Set_AlgoData_Val(newItemRaw AlgoDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//glb.Debug.Println(itemType.Field(i).Name)
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
@@ -1826,7 +1826,7 @@ func (rs *ResultDataStruct) Append_UserHistory(user string, userPos parameters.U
 			rs.UserHistory[user] = tempUserHistory
 		}
 	} else {
-		//Todo: must provide standard way when new item added to groupcache structs 
+		//Todo: must provide standard way when new item added to groupcache structs
 		if rs.UserHistory == nil { // in old db there is now userHistory
 			rs.UserHistory = make(map[string][]parameters.UserPositionJSON)
 		}
@@ -1921,7 +1921,7 @@ func (rs *ResultDataStruct) Clear_UserResults(user string) error {
 	defer rs.SetDirtyBit()
 
 	rs.Lock()
-	if val, ok := rs.UserResults[user]; (ok && len(val) != 0) {
+	if val, ok := rs.UserResults[user]; ok && len(val) != 0 {
 		rs.UserResults[user] = []parameters.UserPositionJSON{}
 		rs.Unlock()
 		return nil

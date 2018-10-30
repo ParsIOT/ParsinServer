@@ -47,7 +47,7 @@ func TrackFingerprintPOST(c *gin.Context) {
 	//glb.Info.Println(fp)
 
 	if glb.BindJSON(&fp, c) == nil {
-		if (len(fp.WifiFingerprint) >= glb.MinApNum) {
+		if len(fp.WifiFingerprint) >= glb.MinApNum {
 			glb.Debug.Println("Track json: ", fp)
 			if !glb.IsValidXY(fp.Location) {
 				// Mobile PDR data isn't available
@@ -435,7 +435,7 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 	//location, accuracyCircleRadius = HistoryEffect(userPosJson, userHistory)
 
 	//if glb.GraphEnabled {
-		location = knnGuess
+	location = knnGuess
 	//}
 	userPosJson.Location = location
 	glb.Debug.Println("Knn guess: ", knnGuess)
@@ -943,7 +943,7 @@ func GetCrossValidationParts(gp *dbm.Group, fpOrdering []string, fpData map[stri
 		tempCVParts.testSet = dbm.RawDataStruct{}
 		tempCVParts.trainSet = []dbm.RawDataStruct{}
 		for loc, RD := range locRDMap {
-			if (loc == locMain) {
+			if loc == locMain {
 				// add to test set
 				tempCVParts.testSet = RD
 			} else {
@@ -1302,13 +1302,13 @@ func PreProcess(rd *dbm.RawDataStruct, needToRelocateFP bool) {
 	if !glb.FastLearn {
 		if needToRelocateFP {
 			if glb.AvgRSSAdjacentDots {
-				maxValidFPDistAVG := float64(100); // 100 cm
+				maxValidFPDistAVG := float64(100) // 100 cm
 
 				tempFingerprintsData2 := make(map[string]parameters.Fingerprint)
 				for fpOMain, fpMain := range tempFingerprintsData {
 					adjacentFPs := []parameters.Fingerprint{}
 					for fpO, fp := range tempFingerprintsData {
-						if (fpO == fpOMain) {
+						if fpO == fpOMain {
 							continue
 						}
 						xyMain := strings.Split(fpMain.Location, ",")
@@ -1571,7 +1571,7 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 
 	//allErrDetailsList = make([][]int,calculationLen)
 
-	paramUniqueKey := 0 // just creating unique key for each possible the parameters permutation
+	paramUniqueKey := 0                                 // just creating unique key for each possible the parameters permutation
 	for i, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
 		for j, K := range validKs { // for over KnnK
 			glb.ProgressBarCurLevel = i*len(validKs) + j
@@ -2104,8 +2104,6 @@ func CalculateGraphFactor(groupName string) {
 	step := 2.0
 	validGraphFactors := glb.GetGraphSlicesRangeRecursive(beginSlice, endSlice, step)
 
-
-
 	//if len(validGraphFactorsRange) == 1{
 	//
 	//}else if len(validGraphFactorsRange) == 2{
@@ -2183,7 +2181,7 @@ func CalculateGraphFactor(groupName string) {
 
 	allHyperParamDetails := make(map[int]parameters.KnnHyperParameters)
 	allErrDetails := make(map[int][]int)
-	paramUniqueKey := 0 // just creating unique key for each possible the parameters permutation
+	paramUniqueKey := 0                             // just creating unique key for each possible the parameters permutation
 	for _, graphFactor := range validGraphFactors { // for over the validGraphFactors
 		gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear userhistory to check knn error with new graphfactor
 
@@ -2209,7 +2207,7 @@ func CalculateGraphFactor(groupName string) {
 					glb.Debug.Println("-33.0,946.0 resultdot:",resultDot)
 					glb.Debug.Println(fp)
 				}
-	*/
+			*/
 			resx, resy := glb.GetDotFromString(resultDot)
 			x, y := glb.GetDotFromString(testLocation)
 			tempDistError := int(glb.CalcDist(x, y, resx, resy))
@@ -2232,7 +2230,7 @@ func CalculateGraphFactor(groupName string) {
 						knnErrHyperParameters[totalDistError] = tempHyperParameters*/
 		}
 		allErrDetails[paramUniqueKey] = tempAllErrDetailList
-		glb.Debug.Println("Calculation for graphfactor=", graphFactor, " ended ", )
+		glb.Debug.Println("Calculation for graphfactor=", graphFactor, " ended ")
 	}
 
 	/*	sort.Ints(totalErrorList)
@@ -2362,7 +2360,7 @@ func CalculateGraphFactorLegacy(groupName string) {
 					glb.Debug.Println("-33.0,946.0 resultdot:",resultDot)
 					glb.Debug.Println(fp)
 				}
-	*/
+			*/
 			resx, resy := glb.GetDotFromString(resultDot)
 			x, y := glb.GetDotFromString(testLocation)
 			distErrorTemp := int(glb.CalcDist(x, y, resx, resy))

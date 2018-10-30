@@ -9,19 +9,18 @@
 package dbm
 
 import (
+	"ParsinServer/dbm/parameters"
+	"ParsinServer/glb"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/boltdb/bolt"
 	"log"
 	"os"
 	"path"
-	"strings"
-	"encoding/json"
-	"github.com/boltdb/bolt"
-	"fmt"
-	"ParsinServer/glb"
 	"strconv"
-	"errors"
-	"ParsinServer/dbm/parameters"
+	"strings"
 )
-
 
 func boltOpen(path string, mode os.FileMode, options *bolt.Options) (*bolt.DB, error) {
 	// Works before db open
@@ -93,7 +92,6 @@ func GetUsers(group string) []string {
 		log.Fatal(err)
 	}
 
-
 	db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("Results"))
@@ -119,11 +117,11 @@ func GetUsers(group string) []string {
 func GetUniqueMacs(group string) []string {
 	uniqueMacs := []string{}
 
-	_,fingerprintInMemory,err := GetLearnFingerPrints(group,true)
-	if err!=nil{
+	_, fingerprintInMemory, err := GetLearnFingerPrints(group, true)
+	if err != nil {
 		return uniqueMacs
 	}
-	for _,fp := range fingerprintInMemory{
+	for _, fp := range fingerprintInMemory {
 		for _, router := range fp.WifiFingerprint {
 			if !glb.StringInSlice(router.Mac, uniqueMacs) {
 				uniqueMacs = append(uniqueMacs, router.Mac)
@@ -138,11 +136,11 @@ func GetUniqueMacs(group string) []string {
 func GetUniqueLocations(group string) []string {
 
 	var uniqueLocs []string
-	_,fingerprintInMemory,err := GetLearnFingerPrints(group,true)
-	if err!=nil{
+	_, fingerprintInMemory, err := GetLearnFingerPrints(group, true)
+	if err != nil {
 		return uniqueLocs
 	}
-	for _,fp := range fingerprintInMemory{
+	for _, fp := range fingerprintInMemory {
 		if !glb.StringInSlice(fp.Location, uniqueLocs) {
 			uniqueLocs = append(uniqueLocs, fp.Location)
 		}
@@ -154,11 +152,11 @@ func GetUniqueLocations(group string) []string {
 func GetMacCount(group string) (macCount map[string]int) {
 	macCount = make(map[string]int)
 
-	_,fingerprintInMemory,err := GetLearnFingerPrints(group,true)
-	if err!=nil{
+	_, fingerprintInMemory, err := GetLearnFingerPrints(group, true)
+	if err != nil {
 		return macCount
 	}
-	for _,fp := range fingerprintInMemory{
+	for _, fp := range fingerprintInMemory {
 		for _, router := range fp.WifiFingerprint {
 			if _, ok := macCount[router.Mac]; !ok {
 				macCount[router.Mac] = 0
@@ -173,11 +171,11 @@ func GetMacCount(group string) (macCount map[string]int) {
 func GetMacCountByLoc(group string) (macCountByLoc map[string]map[string]int) {
 	macCountByLoc = make(map[string]map[string]int)
 
-	_,fingerprintInMemory,err := GetLearnFingerPrints(group,true)
-	if err!=nil{
+	_, fingerprintInMemory, err := GetLearnFingerPrints(group, true)
+	if err != nil {
 		return macCountByLoc
 	}
-	for _,fp := range fingerprintInMemory{
+	for _, fp := range fingerprintInMemory {
 		if _, ok := macCountByLoc[fp.Location]; !ok {
 			macCountByLoc[fp.Location] = make(map[string]int)
 		}
@@ -284,8 +282,7 @@ func GetMacCountByLoc(group string) (macCountByLoc map[string]map[string]int) {
 //	return err
 //}
 
-
-func GetLearnFingerPrints(group string,doFilter bool)([]string,map[string]parameters.Fingerprint,error){
+func GetLearnFingerPrints(group string, doFilter bool) ([]string, map[string]parameters.Fingerprint, error) {
 	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
 	var fingerprintsOrdering []string
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
@@ -303,7 +300,7 @@ func GetLearnFingerPrints(group string,doFilter bool)([]string,map[string]parame
 		}
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			fingerprintsInMemory[string(k)] = LoadFingerprint(v,doFilter)
+			fingerprintsInMemory[string(k)] = LoadFingerprint(v, doFilter)
 
 			fingerprintsOrdering = append(fingerprintsOrdering, string(k))
 		}
@@ -312,9 +309,9 @@ func GetLearnFingerPrints(group string,doFilter bool)([]string,map[string]parame
 	if err != nil {
 		glb.Debug.Println(group)
 		glb.Error.Println("Can't get learn fingerprints.")
-		return fingerprintsOrdering,fingerprintsInMemory,err
+		return fingerprintsOrdering, fingerprintsInMemory, err
 	}
-	return fingerprintsOrdering,fingerprintsInMemory,nil
+	return fingerprintsOrdering, fingerprintsInMemory, nil
 }
 
 func CorrectLearnFPsTimestamp(groupName string) error {
@@ -429,8 +426,7 @@ func PutDataIntoDatabase(res parameters.Fingerprint, database string) error {
 	return err
 }
 
-
-func loadSharedPreferences(group string) (RawSharedPreferences,error) {
+func loadSharedPreferences(group string) (RawSharedPreferences, error) {
 	//glb.Debug.Println(group)
 	tempSharedPreferences := NewRawSharedPreferences()
 	//glb.Debug.Println(path.Join(glb.RuntimeArgs.SourcePath, group+".db"))
@@ -438,9 +434,8 @@ func loadSharedPreferences(group string) (RawSharedPreferences,error) {
 	defer db.Close()
 	if err != nil {
 		glb.Error.Println(err)
-		return tempSharedPreferences,errors.New("Can't reset shared preferences")
+		return tempSharedPreferences, errors.New("Can't reset shared preferences")
 	}
-
 
 	err = db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
@@ -449,11 +444,11 @@ func loadSharedPreferences(group string) (RawSharedPreferences,error) {
 			return errors.New("Resources dont exist")
 		}
 		temp := b.Get([]byte("sharedPreferences"))
-		if len(temp) == 0{
+		if len(temp) == 0 {
 			glb.Error.Println("Empty sharedPreferences")
 			return nil
 		}
-		err = json.Unmarshal(temp,&tempSharedPreferences)
+		err = json.Unmarshal(temp, &tempSharedPreferences)
 		if err != nil {
 			return err
 		}
@@ -463,9 +458,9 @@ func loadSharedPreferences(group string) (RawSharedPreferences,error) {
 
 	if err != nil {
 		glb.Error.Println(err)
-		return tempSharedPreferences,errors.New("Can't reset shared preferences")
+		return tempSharedPreferences, errors.New("Can't reset shared preferences")
 	}
-	return tempSharedPreferences,nil
+	return tempSharedPreferences, nil
 }
 
 func initializeSharedPreferences(group string) error {
@@ -499,7 +494,6 @@ func initializeSharedPreferences(group string) error {
 	}
 	return nil
 }
-
 
 func putSharedPreferences(group string, prf RawSharedPreferences) error {
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
