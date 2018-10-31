@@ -863,7 +863,9 @@ func ReformDBDB(groupName string) int {
 			c := b.Cursor()
 			for k, v := c.Last(); k != nil; k, v = c.Prev() {
 				v2 := LoadFingerprint(v, false)
-
+				if v2.Timestamp == 0 {
+					continue
+				}
 				v2.Group = groupName
 				toUpdate[string(k)] = string(parameters.DumpFingerprint(v2))
 
