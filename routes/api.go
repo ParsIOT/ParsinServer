@@ -54,7 +54,7 @@ func PreLoadSettings(c *gin.Context) {
 		if groupExists {
 			dbm.GetSharedPrf(group1)
 		} else {
-			glb.Error.Println("Group doesn't exist")
+			glb.Error.Println("Group haven't loaded")
 			//c.JSON(http.StatusOK, gin.H{
 			//	"message":   fmt.Sprintf("There is no group with this group name: ",group1),
 			//	"success":   false})

@@ -41,6 +41,7 @@ var DefaultMapHeight int
 var PDREnabledForDynamicSubareaMethod bool
 
 var DefaultGraphEnabled, DefaultDSAEnabled bool
+var DefaultGraphStep float64
 
 var FastLearn bool //ignore some crossvalidation calculation(rss regulating & get rss avg of adjacency dots) to learn fast
 
@@ -61,6 +62,7 @@ func init() {
 	DefaultMaxEuclideanRssDistRange = []int{30, 50} // wifi:50, ble:30
 	DefaultMaxMovementRange = []int{100, 1000}
 	DefaultGraphFactorsRange = [][]float64{{1, 1, 1, 1}, {2, 2, 2, 1}}
+	DefaultGraphStep = 1.0
 
 	//MinClusterRss = -75
 	MaxUserHistoryLen = 2

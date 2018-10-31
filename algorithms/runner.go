@@ -2250,21 +2250,26 @@ func SelectBestGraphFactorsByTestValidTracks(gp *dbm.Group, testValidTracks []pa
 	//beginSlice := []float64{1, 1, 1, 1, 1, 1, 1}
 	//endSlice := []float64{10, 10, 10, 10, 3, 2, 1}
 	graphFactorRange := knnConfig.GraphFactorRange
-	step := 1.0
 	var validGraphFactors [][]float64
 	if len(graphFactorRange) == 0 {
-		glb.Error.Println("graphFactorRange is empty, CalculateByTestValidTracks is ignored!")
+		glb.Debug.Println("graphFactorRange is empty, CalculateByTestValidTracks is ignored!")
 		return knnHyperParams
 	} else if len(graphFactorRange) == 1 {
 		validGraphFactors = graphFactorRange[:1]
 	} else if len(graphFactorRange) == 2 {
-		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1], step)
+		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1], glb.DefaultGraphStep)
+		validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
+	} else if len(graphFactorRange) == 3 {
+		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1], graphFactorRange[2][0])
 		validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
 	} else {
-		glb.Error.Println("graphFactorRange length must be lower than 2(now range created by first and second members)")
-		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1], step)
+		glb.Error.Println("graphFactorRange length must be lower than 3(now range created by first and second members)")
+		validGraphFactors = glb.GetGraphSlicesRangeRecursive(graphFactorRange[0], graphFactorRange[1], graphFactorRange[2][0])
 		validGraphFactors = append(validGraphFactors, []float64{1, 1, 1, 1})
 	}
+
+	////Note: Delete it!
+	//validGraphFactors = [][]float64{{10,0,10,0,10,10,10},{10,0,0,10,10,0,0},{10,0,0,0,0,10,10},{10,10,10,0,0,10,10},{10,0,10,10,10,10,0},{10,10,0,0,0,10,0},{10,0,0,10,10,10,10},{10,10,0,10,10,0,10},{10,10,10,0,0,0,0},{10,10,10,10,10,0,0},{10,0,0,10,0,0,10},{10,10,0,10,10,10,0},{10,0,10,10,0,10,10},{10,0,0,10,0,10,0},{10,10,0,0,10,0,0},{10,0,0,0,10,10,0},{10,10,10,0,10,10,0},{10,0,0,0,0,0,0},{10,0,10,0,10,0,0},{10,10,0,10,0,10,10},{10,10,0,10,0,0,0},{10,10,10,10,10,10,10},{10,0,10,0,0,0,10},{10,10,10,0,10,0,10},{10,10,0,0,10,10,10},{10,0,10,10,10,0,10},{10,0,0,0,10,0,10},{10,0,10,0,0,10,0},{10,10,0,0,0,0,10},{10,10,10,10,0,10,0},{10,10,10,10,0,0,10}}
 
 	// Iterate over all of test-valid tracks
 	allHyperParamDetails := make(map[int]parameters.KnnHyperParameters)
