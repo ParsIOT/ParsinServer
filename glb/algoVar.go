@@ -78,8 +78,8 @@ func init() {
 
 	PreprocessOutlinePercent = float64(0.333) // third part of fingerprints are considered as outline
 	NormalRssDev = 5
-	RssRegulation = true
-	AvgRSSAdjacentDots = true
+	RssRegulation = false
+	AvgRSSAdjacentDots = false
 
 	DefaultMapName = "DefaultMap.png"
 	DefaultMapDimensions = []int{3400, 3600}
