@@ -1,7 +1,8 @@
 import time
 import serial
-import signal 
+import signal
 
+print("Just run with python3")
 resultFileName = "result.log"
 
 open(resultFileName, 'w').close()
