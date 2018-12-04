@@ -45,7 +45,7 @@ var DefaultGraphStep float64
 
 var FastLearn bool //ignore some crossvalidation calculation(rss regulating & get rss avg of adjacency dots) to learn fast
 
-var NewDistAlgo bool
+var NewDistAlgo string
 
 var TesterUsername string
 
@@ -81,12 +81,11 @@ func init() {
 	DefaultMapDimensions = []int{3400,3600}
 	DefaultMapHeight = 3400
 	DefaultMapWidth = 3600
-	DefaultGraphEnabled = true
+	DefaultGraphEnabled = false
 	DefaultDSAEnabled = false
 	PDREnabledForDynamicSubareaMethod = false
 
 	FastLearn = false
-	NewDistAlgo = false
 	TesterUsername = "tester"
 	MinRssClustringEnabled = true
 }

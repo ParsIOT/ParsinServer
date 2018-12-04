@@ -609,6 +609,7 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 				glb.Debug.Println("Repredicting test-valid tracks")
 				gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
 
+				//for i:=0; i<99; i++ {
 				// Repredict test-valid FPs
 				for i, testValidTrack := range testValidTracks {
 					fp := testValidTrack.UserPosition.Fingerprint
@@ -617,6 +618,7 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 					//glb.Debug.Println(newUserPositiong)
 					testValidTracks[i].UserPosition = newUserPositiong
 				}
+				//}
 			}
 
 			// testValidTracksRes is a temporary variable, don't save it in db
@@ -2258,6 +2260,7 @@ func GetRSSDataAPI(c *gin.Context) {
 		uniqueMacs := dbm.GM.GetGroup(groupName).Get_MiddleData().Get_UniqueMacs()
 		if !glb.StringInSlice(mac, uniqueMacs) {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "mac doesn't exist"})
+			glb.Debug.Println("this mac doesn't exist")
 		} else {
 			LatLngRSS := dbm.GetRSSData(groupName, mac)
 			c.JSON(http.StatusOK, gin.H{"success": true, "LatLngRSS": LatLngRSS}) // list  of (x,y,rss)
