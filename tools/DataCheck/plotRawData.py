@@ -3,7 +3,7 @@ from matplotlib import cm
 import random
 # resultDic --> location:ap:rssList
 
-
+print("to see rss-dist chart : 1. byMac --> enter the mac name 2. historyMath 2.1. enter y 2.2 enter ap location")
 
 resultDic = {}
 apList = []
