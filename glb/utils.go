@@ -103,6 +103,10 @@ func GetLocalIP() string {
 	return bestIP
 }
 
+func RemoveStringSliceItem(s []string, index int) []string {
+	return append(s[:index], s[index+1:]...)
+}
+
 // stringInSlice returns boolean of whether a string is in a slice.
 func StringInSlice(s string, strings []string) bool {
 	for _, k := range strings {
@@ -111,6 +115,14 @@ func StringInSlice(s string, strings []string) bool {
 		}
 	}
 	return false
+}
+func FindStringInSlice(s string, strings []string) int {
+	for i, k := range strings {
+		if s == k {
+			return i
+		}
+	}
+	return -1
 }
 
 func Int64InSlice(item int64, itemList []int64) bool {
@@ -581,7 +593,6 @@ func RoundLocationDim(loc string) string{
 	locYint :=  int(math.Floor(locY))
 	return IntToString(locXint) + ".0," + IntToString(locYint)+".0"
 }
-
 func FloatToString(input_num float64) string {
 	// to convert a float number to a string
 	return strconv.FormatFloat(input_num, 'f', 3, 64)
