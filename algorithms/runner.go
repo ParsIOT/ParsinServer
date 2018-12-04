@@ -1606,9 +1606,8 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 					testFPs := CVParts.testSet.Fingerprints
 					testFPsOrdering := CVParts.testSet.FingerprintsOrdering
 
-					GetParametersWithGP(tempGp)
-
 					PreProcess(rdTemp, shprf.NeedToRelocateFP)
+					GetParametersWithGP(tempGp)
 
 					learnedKnnData, _ := LearnKnn(tempGp, tempHyperParameters)
 
@@ -1819,9 +1818,9 @@ func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreference
 					testFPs := CVParts.testSet.Fingerprints
 					testFPsOrdering := CVParts.testSet.FingerprintsOrdering
 
-					GetParametersWithGP(tempGp)
 
 					PreProcess(rdTemp, shprf.NeedToRelocateFP)
+					GetParametersWithGP(tempGp)
 
 					learnedKnnData, _ := LearnKnn(tempGp, tempHyperParameters)
 
@@ -2031,9 +2030,9 @@ func CalculateLearn(groupName string) {
 		rd.Set_FingerprintsOrderingBackup(trainSetTemp.FingerprintsOrdering)
 		testFPs := CVParts.testSet.Fingerprints
 		testFPsOrdering := CVParts.testSet.FingerprintsOrdering
-		GetParametersWithGP(gp)
 
 		PreProcess(rd, shprf.NeedToRelocateFP)
+		GetParametersWithGP(gp)
 
 		learnedKnnData, _ := LearnKnn(gp, bestKnnHyperParams)
 		// Set hyper parameters
@@ -2105,12 +2104,13 @@ func CalculateLearn(groupName string) {
 	rd.Set_FingerprintsOrdering(mainFPOrdering)
 	rd.Set_FingerprintsBackup(mainFPData)
 	rd.Set_FingerprintsOrderingBackup(mainFPOrdering)
-	GetParametersWithGP(gp)
 
 	gp.GMutex.Lock()
-	glb.Debug.Println(gp.Get_MiddleData().Get_UniqueMacs())
 
 	PreProcess(rd, shprf.NeedToRelocateFP)
+
+	GetParametersWithGP(gp)
+	glb.Debug.Println(gp.Get_MiddleData().Get_UniqueMacs())
 
 	// learn algorithm
 	learnedKnnData, _ := LearnKnn(gp, bestKnnHyperParams)
