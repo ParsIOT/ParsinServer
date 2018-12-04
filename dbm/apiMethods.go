@@ -906,6 +906,7 @@ func BuildGroupDB(groupName string) { //Todo: After each update in groupcache.go
 	fingerprintInMemory := make(map[string]parameters.Fingerprint)
 	for key, fp := range fingerprintInMemoryRaw {
 		fp.Location = glb.RoundLocationDim(fp.Location)
+		fp.WifiFingerprint = parameters.ConvertSharpToUnderlineInFP(fp.WifiFingerprint) //Note:Delete it if isn't needed
 		//glb.Debug.Println(fp.Location)
 		fingerprintInMemory[key] = fp
 	}

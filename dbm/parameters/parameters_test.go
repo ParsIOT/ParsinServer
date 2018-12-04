@@ -1,19 +1,18 @@
 package parameters
 
 import (
-	"path"
-	"testing"
-	"github.com/boltdb/bolt"
 	"ParsinServer/glb"
-	"fmt"
-	"strconv"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"log"
 	"os"
 	"os/exec"
-	"log"
-	"github.com/gin-gonic/gin"
+	"path"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
+	"testing"
 )
 
 
@@ -103,3 +102,30 @@ func init() {
 //	}
 //}
 
+func TestConvertSharpToSemiColonInFP(t *testing.T) {
+	fps := []Router{
+		Router{
+			Mac:  "WIFI#b4:52:7d:26:e3:f3",
+			Rssi: -45,
+		},
+		Router{
+			Mac:  "BLE#14:51:7E:22:A1:E4",
+			Rssi: -50,
+		},
+	}
+
+	fpsRes := []Router{
+		Router{
+			Mac:  "WIFI;b4:52:7d:26:e3:f3",
+			Rssi: -45,
+		},
+		Router{
+			Mac:  "BLE;14:51:7E:22:A1:E4",
+			Rssi: -50,
+		},
+	}
+
+	res := ConvertSharpToUnderlineInFP(fps)
+	glb.Debug.Println(res)
+	assert.Equal(t, fpsRes, res)
+}

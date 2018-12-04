@@ -6,7 +6,10 @@
 
 package parameters
 
-import "ParsinServer/glb"
+import (
+	"ParsinServer/glb"
+	"strings"
+)
 
 // PersistentParameters are not reloaded each time
 //type PersistentParameters struct {
@@ -190,6 +193,12 @@ type FilterMacs struct {
 //	return res2
 //}
 
-
-
+func ConvertSharpToUnderlineInFP(routers []Router) []Router {
+	newRouters := []Router{}
+	for _, rt := range routers {
+		rt.Mac = strings.Replace(rt.Mac, "#", "_", -1)
+		newRouters = append(newRouters, rt)
+	}
+	return newRouters
+}
 
