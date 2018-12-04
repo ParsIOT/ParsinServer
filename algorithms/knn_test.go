@@ -83,4 +83,57 @@ func TestConvertDist2Wigth(t *testing.T) {
 
 }
 
+func TestTriangulateWith3Point(t *testing.T) {
+	x1 := float64(0)
+	y1 := float64(0)
+	r1 := float64(1)
+
+	x2 := float64(1)
+	y2 := float64(1)
+	r2 := float64(1)
+
+	x3 := float64(3)
+	y3 := float64(0)
+	r3 := float64(1.5)
+
+	traingulationVals := []float64{x1, y1, r1, x2, y2, r2, x3, y3, r3}
+
+	mid12X, mid12Y := GetMiddleOfLine([]float64{x1, y1, 1 / r1, x2, y2, 1 / r2})
+	mid23X, mid23Y := GetMiddleOfLine([]float64{x2, y2, 1 / r2, x3, y3, 1 / r3})
+	mid13X, mid13Y := GetMiddleOfLine([]float64{x1, y1, 1 / r1, x3, y3, 1 / r3})
+
+	glb.Debug.Println(mid12X, ",", mid12Y)
+	glb.Debug.Println(mid23X, ",", mid23Y)
+	glb.Debug.Println(mid13X, ",", mid13Y)
+
+	resultX, resultY := TriangulateWith3Point(traingulationVals)
+	glb.Debug.Println(resultX, ",", resultY)
+
+	distFromMid12 := glb.CalcDist(mid12X, mid12Y, resultX, resultY)
+	distFromMid23 := glb.CalcDist(mid23X, mid23Y, resultX, resultY)
+	distFromMid13 := glb.CalcDist(mid13X, mid13Y, resultX, resultY)
+
+	glb.Debug.Println(distFromMid12)
+	glb.Debug.Println(distFromMid23)
+	glb.Debug.Println(distFromMid13)
+
+	//glb.Debug.Println((math.Pow(r1,2)+math.Pow(r2,2)+math.Pow(r3,2))/3)
+	assert.Equal(t, true, false)
+}
+
+func TestGetMiddleOfLine(t *testing.T) {
+	x1 := float64(0)
+	y1 := float64(0)
+	w1 := float64(2)
+
+	x2 := float64(1)
+	y2 := float64(1)
+	w2 := float64(4000)
+
+	dotVals := []float64{x1, y1, w1, x2, y2, w2}
+
+	resultX, resultY := GetMiddleOfLine(dotVals)
+	glb.Debug.Println(resultX, ",", resultY)
+	assert.Equal(t, true, false)
+}
 
