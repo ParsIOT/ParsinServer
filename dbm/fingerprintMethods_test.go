@@ -71,7 +71,7 @@ func TestFilterFingerprint(t *testing.T){
 	}
 
 	//glb.Debug.Println(fpRes)
-	FilterFingerprint(&fp)
+	fp = FilterFingerprint(fp)
 	//glb.Debug.Println(fp)
 	assert.Equal(t, fp, fpRes)
 }

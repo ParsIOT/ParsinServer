@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/copier"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -522,17 +523,25 @@ func GetTestValidTracksDetails(c *gin.Context) {
 				gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
 
 				// Repredict test-valid FPs
-				for i, testValidTrack := range testValidTracks {
+				tempTestValidTracks := []parameters.TestValidTrack{}
+				for _, testValidTrack := range testValidTracks {
 					fp := testValidTrack.UserPosition.Fingerprint
-					newUserPositiong := algorithms.RecalculateTrackFingerprint(fp)
-					testValidTracks[i].UserPosition = newUserPositiong
+					if (len(fp.WifiFingerprint) >= glb.MinApNum) {
+						newUserPositiong := algorithms.RecalculateTrackFingerprint(fp)
+						testValidTrack.UserPosition = newUserPositiong
+						tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
+					} else {
+						glb.Error.Println("For testValidTrack:", fp.Timestamp, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
+					}
 				}
-				c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks, "fpdata": fpData})
+				c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": tempTestValidTracks, "fpdata": fpData})
 			} else if repredict == "false" {
-				gp := dbm.GM.GetGroup(groupName)
-				testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
-				fpData := gp.Get_RawData().Get_Fingerprints()
-				c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks, "fpdata": fpData})
+				//gp := dbm.GM.GetGroup(groupName)
+				//testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
+				//fpData := gp.Get_RawData().Get_Fingerprints()
+				//c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks, "fpdata": fpData})
+				c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": []parameters.TestValidTrack{}})
+
 			} else {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": "repredict parameter must be true or false"})
 			}
@@ -605,26 +614,37 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 		rsd := gp.Get_ResultData()
 		testValidTracks := rsd.Get_TestValidTracks()
 		if len(testValidTracks) != 0 {
+			tempTestValidTracks := []parameters.TestValidTrack{}
+
 			if repredict {
 				glb.Debug.Println("Repredicting test-valid tracks")
 				gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
 
 				//for i:=0; i<99; i++ {
 				// Repredict test-valid FPs
-				for i, testValidTrack := range testValidTracks {
+				for _, testValidTrack := range testValidTracks {
 					fp := testValidTrack.UserPosition.Fingerprint
-					//glb.Error.Println("Fp:",fp)
-					newUserPositiong := algorithms.RecalculateTrackFingerprint(fp)
-					//glb.Debug.Println(newUserPositiong)
-					testValidTracks[i].UserPosition = newUserPositiong
+					if (len(fp.WifiFingerprint) >= glb.MinApNum) {
+						//glb.Error.Println("Fp:",fp)
+						newUserPositiong := algorithms.RecalculateTrackFingerprint(fp)
+						//glb.Debug.Println(newUserPositiong)
+						testValidTrack.UserPosition = newUserPositiong
+						tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
+					} else {
+						glb.Error.Println("For testValidTrack:", fp.Timestamp, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
+					}
+
 				}
 				//}
+			} else {
+				//for _, testValidTrack := range testValidTracks {
+				copier.Copy(&tempTestValidTracks, &testValidTracks)
+				//}
 			}
-
 			// testValidTracksRes is a temporary variable, don't save it in db
-			err, errDetails, details, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, testValidTracks)
+			err, errDetails, details, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, tempTestValidTracks)
 
-			if len(testValidTracksRes) != len(testValidTracks) {
+			if len(testValidTracksRes) != len(tempTestValidTracks) {
 				glb.Error.Println("testValidTracksRes length and testValidTracks length doesn't equal")
 			} else {
 				glb.Error.Println("Empty testValidTracksRes(truelocations and testvalids timestamp don't match.)")
@@ -823,7 +843,6 @@ func PutKnnKRange(c *gin.Context) {
 		kRangeListStr := strings.Split(kRangeRawStr, ",")
 		kRange := []int{}
 
-
 		for _, numStr := range kRangeListStr {
 			num, _ := strconv.Atoi(numStr)
 			kRange = append(kRange, num)
@@ -839,7 +858,7 @@ func PutKnnKRange(c *gin.Context) {
 			cd.Set_KnnConfig(knnConfig)
 			//if err == nil {
 			//	//optimizePriorsThreaded(strings.ToLower(group))
-				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K range for " + group + ", now set to " + kRangeRawStr})
+			c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K range for " + group + ", now set to " + kRangeRawStr})
 			//} else {
 			//	c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			//}
@@ -892,8 +911,8 @@ func PutKnnMinClusterRSSRange(c *gin.Context) {
 			cd.Set_KnnConfig(knnConfig)
 
 			//if err == nil {
-				//optimizePriorsThreaded(strings.ToLower(group))
-				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K range for " + group + ", now set to " + rssRangeRawStr})
+			//optimizePriorsThreaded(strings.ToLower(group))
+			c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K range for " + group + ", now set to " + rssRangeRawStr})
 			//} else {
 			//	c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			//}

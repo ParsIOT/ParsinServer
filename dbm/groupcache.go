@@ -1046,6 +1046,7 @@ func (gp *Group) Get_RawData_Val() RawDataStruct {
 	return item
 }
 
+/*
 func (gp *Group) Get_RawData_Filtered_Val() RawDataStruct {
 	gp.RLock()
 	item := *gp.RawData
@@ -1059,7 +1060,7 @@ func (gp *Group) Get_RawData_Filtered_Val() RawDataStruct {
 
 	return item
 }
-
+*/
 //Note: Use it just in buildgroup
 func (gp *Group) Set_RawData(newItem *RawDataStruct) {
 	gp.RLock()

@@ -270,7 +270,7 @@
         testvalidtracks = {};
         testValidTrackMap = {};
         tvTrackTimes = [];
-        clearHistory();
+        // clearHistory();
         getTestValidTracksDetails();
     }
 
@@ -282,6 +282,7 @@
     }
 
     function getTestValidTracksDetails() {
+        clearHistory();
         getTestValidTrackMapButton.toggle();
 
         $.getJSON("/getTestValidTracksDetails?group={{ .Group }}&repredict=" + ($('#repredict_check').is(":checked") ? "true" : "false"), function (data) {

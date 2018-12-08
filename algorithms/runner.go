@@ -146,8 +146,9 @@ func LearnFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool) {
 func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, string, string, map[string]float64, string, map[string]float64, string, map[string]string, float64) {
 	// Classify with filter curFingerprint
 	//fullFingerprint := curFingerprint
+	parameters.CleanFingerprint(&curFingerprint)
+	filteredCurFingerprint := dbm.FilterFingerprint(curFingerprint) // Use this as algorithm inputs, also curFingerprint saved as main fingerprint in UserJson
 
-	dbm.FilterFingerprint(&curFingerprint)
 
 	groupName := strings.ToLower(curFingerprint.Group)
 
@@ -162,36 +163,35 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	pdrLocation := curFingerprint.Location
 	accuracyCircleRadius := float64(0)
 
-	parameters.CleanFingerprint(&curFingerprint)
 	if !dbm.GroupExists(curFingerprint.Group) || len(curFingerprint.Group) == 0 {
 		return "You should insert fingerprints before tracking", false, "", "", bayesData, "", make(map[string]float64), "", make(map[string]string), float64(0)
 	}
-	if len(curFingerprint.WifiFingerprint) == 0 {
+	if len(curFingerprint.WifiFingerprint) == 0 || len(filteredCurFingerprint.WifiFingerprint) == 0 {
 		return "No fingerprints found to track, see API", false, "", "", bayesData, "", make(map[string]float64), "", make(map[string]string), float64(0)
 	}
 	if len(curFingerprint.Username) == 0 {
 		return "No username defined, see API", false, "", "", bayesData, "", make(map[string]float64), "", make(map[string]string), float64(0)
 	}
 
-	wasLearning, ok := dbm.GetLearningCache(strings.ToLower(curFingerprint.Group))
-	if ok {
-		if wasLearning {
-			glb.Debug.Println("Was learning, calculating priors")
+	/*	wasLearning, ok := dbm.GetLearningCache(strings.ToLower(curFingerprint.Group))
+		if ok {
+			if wasLearning {
+				glb.Debug.Println("Was learning, calculating priors")
 
-			go dbm.SetLearningCache(groupName, false)
-			//bayes.OptimizePriorsThreaded(groupName)
-			//if glb.RuntimeArgs.Svm {
-			//	DumpFingerprintsSVM(groupName)
-			//	CalculateSVM(groupName)
-			//}
-			//if glb.RuntimeArgs.Scikit {
-			//	ScikitLearn(groupName)
-			//}
-			//LearnKnn(groupName)
-			CalculateLearn(groupName)
-			go dbm.AppendUserCache(groupName, curFingerprint.Username)
-		}
-	}
+				go dbm.SetLearningCache(groupName, false)
+				//bayes.OptimizePriorsThreaded(groupName)
+				//if glb.RuntimeArgs.Svm {
+				//	DumpFingerprintsSVM(groupName)
+				//	CalculateSVM(groupName)
+				//}
+				//if glb.RuntimeArgs.Scikit {
+				//	ScikitLearn(groupName)
+				//}
+				//LearnKnn(groupName)
+				CalculateLearn(groupName)
+				go dbm.AppendUserCache(groupName, curFingerprint.Username)
+			}
+		}*/
 	//glb.Info.Println(curFingerprint)
 	//bayesGuess, bayesData = bayes.CalculatePosterior(curFingerprint, nil)
 	//percentBayesGuess := float64(0)
@@ -227,7 +227,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	knnConfig := gp.Get_ConfigData().Get_KnnConfig()
 	// Calculating KNN
 	//glb.Debug.Println(curFingerprint)
-	err, knnGuess, knnData := TrackKnn(gp, curFingerprint, true)
+	err, knnGuess, knnData := TrackKnn(gp, filteredCurFingerprint, true)
 	if err != nil {
 		glb.Error.Println(err)
 	}
@@ -240,7 +240,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 
 	// Calculating Scikit
 	if glb.RuntimeArgs.Scikit {
-		scikitData = ScikitClassify(groupName, curFingerprint)
+		scikitData = ScikitClassify(groupName, filteredCurFingerprint)
 		glb.Debug.Println(scikitData)
 		for algorithm, valueXY := range scikitData {
 			message += " " + algorithm + ":" + valueXY
@@ -317,8 +317,8 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 	// Classify with filter curFingerprint
 	//fullFingerprint := curFingerprint
 
-	dbm.FilterFingerprint(&curFingerprint)
-
+	//dbm.FilterFingerprint(&curFingerprint)
+	curFingerprint = dbm.FilterFingerprint(curFingerprint)
 	groupName := strings.ToLower(curFingerprint.Group)
 
 	bayesGuess := ""
@@ -449,9 +449,10 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 func RecalculateTrackFingerprintKnnCrossValidation(curFingerprint parameters.Fingerprint) string {
 	// Classify with filter curFingerprint
 	gp := dbm.GM.GetGroup(curFingerprint.Group)
-	dbm.FilterFingerprint(&curFingerprint)
+	//dbm.FilterFingerprint(&curFingerprint)
 	parameters.CleanFingerprint(&curFingerprint)
 
+	curFingerprint = dbm.FilterFingerprint(curFingerprint)
 	// Calculating KNN
 	err, knnGuess, knnData := TrackKnn(gp, curFingerprint, true)
 	if err != nil {
@@ -1238,7 +1239,7 @@ func PreProcess(rd *dbm.RawDataStruct, needToRelocateFP bool) {
 	// filter fingerprints according to filtermac list
 	for _, fpIndex := range fingerprintsOrdering {
 		fp := fingerprintsData[fpIndex]
-		dbm.FilterFingerprint(&fp)
+		fp = dbm.FilterFingerprint(fp)
 		fingerprintsData[fpIndex] = fp
 	}
 

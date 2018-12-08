@@ -5,6 +5,7 @@ import (
 	"ParsinServer/glb"
 	"fmt"
 	"github.com/boltdb/bolt"
+	"github.com/jinzhu/copier"
 	"log"
 	"os"
 	"path"
@@ -39,25 +40,28 @@ func PutFingerprintIntoDatabase(res parameters.Fingerprint, database string) err
 }
 
 //returns the filtered macs from macs.json file and remove the other macs from fingerprint
-func FilterFingerprint(res *parameters.Fingerprint) {
+func FilterFingerprint(curFP parameters.Fingerprint) parameters.Fingerprint {
 
-	ok1 := GetRuntimePrf(res.Group).NeedToFilter      //check need for filtering
-	ok2 := GetRuntimePrf(res.Group).NotNullFilterList //check that filterMap is null
+	ok1 := GetRuntimePrf(curFP.Group).NeedToFilter      //check need for filtering
+	ok2 := GetRuntimePrf(curFP.Group).NotNullFilterList //check that filterMap is null
+
+	resFP := parameters.Fingerprint{}
+	copier.Copy(&resFP, &curFP)
 
 	if ok1 && ok2 {
 		//glb.Debug.Println("1")
-		//if _, ok := glb.RuntimeArgs.FilterMacsMap[res.Group]; !ok {
-		//	err, filterMacs := GetFilterMacDB(res.Group)
+		//if _, ok := glb.RuntimeArgs.FilterMacsMap[curFP.Group]; !ok {
+		//	err, filterMacs := GetFilterMacDB(curFP.Group)
 		//
 		//	glb.Warning.Println(filterMacs)
 		//	if err != nil {
 		//		return
 		//	}
-		//	glb.RuntimeArgs.FilterMacsMap[res.Group] = filterMacs
-		//	//Rglb.RuntimeArgs.NeedToFilter[res.Group] = false //ToDo: filtering in loadfingerprint that was called by scikit.go not working! So i comment this line !
+		//	glb.RuntimeArgs.FilterMacsMap[curFP.Group] = filterMacs
+		//	//Rglb.RuntimeArgs.NeedToFilter[curFP.Group] = false //ToDo: filtering in loadfingerprint that was called by scikit.go not working! So i comment this line !
 		//}
 
-		filterMacsTemp := GetSharedPrf(res.Group).FilterMacsMap
+		filterMacsTemp := GetSharedPrf(curFP.Group).FilterMacsMap
 		const (
 			Combined int = 0 //Or general mode
 			WIFIOnly int = 1
@@ -79,51 +83,51 @@ func FilterFingerprint(res *parameters.Fingerprint) {
 			filterMacs = glb.RemoveStringSliceItem(filterMacsTemp, bleFoundIndex)
 		}
 
-		//tempRouters1 := make([]parameters.Router, len(res.WifiFingerprint))
+		//tempRouters1 := make([]parameters.Router, len(curFP.WifiFingerprint))
 		tempRouters1 := []parameters.Router{}
 
 		// filter according to technology
 		// 1.Just WIFI
 		if technologyFilter == WIFIOnly {
-			for _, rt := range res.WifiFingerprint {
+			for _, rt := range curFP.WifiFingerprint {
 				theMac := rt.Mac
 				if theMac[:4] == "WIFI" {
 					//glb.Debug.Println("4")
-					//Error.Println("filtered mac : ",res.WifiFingerprint[i].Mac)
-					//tempRouters1[curNum] = res.WifiFingerprint[i]
+					//Error.Println("filtered mac : ",curFP.WifiFingerprint[i].Mac)
+					//tempRouters1[curNum] = curFP.WifiFingerprint[i]
 					tempRouters1 = append(tempRouters1, rt)
 					//tempRouters1[curNum].Mac = tempRouters1[curNum].Mac[0:len(tempRouters1[curNum].Mac)-1] + "0"
 					//curNum++
 				}
 			}
 		} else if technologyFilter == BLEOnly { // 2.Just BLE
-			for _, rt := range res.WifiFingerprint {
+			for _, rt := range curFP.WifiFingerprint {
 				theMac := rt.Mac
 				if theMac[:3] == "BLE" {
 					//glb.Debug.Println("4")
-					//Error.Println("filtered mac : ",res.WifiFingerprint[i].Mac)
-					//tempRouters1[curNum] = res.WifiFingerprint[i]
+					//Error.Println("filtered mac : ",curFP.WifiFingerprint[i].Mac)
+					//tempRouters1[curNum] = curFP.WifiFingerprint[i]
 					tempRouters1 = append(tempRouters1, rt)
 					//tempRouters1[curNum].Mac = tempRouters1[curNum].Mac[0:len(tempRouters1[curNum].Mac)-1] + "0"
 					//curNum++
 				}
 			}
 		} else { // Combined mode
-			tempRouters1 = res.WifiFingerprint
+			tempRouters1 = curFP.WifiFingerprint
 			filterMacs = filterMacsTemp
 		}
 
 		tempRouters2 := []parameters.Router{}
 
 		if len(filterMacs) == 0 { // Just filter by WIFIOnly or BLEOnly and any mac isn't montioned in the macfilter list
-			res.WifiFingerprint = tempRouters1
+			resFP.WifiFingerprint = tempRouters1
 		} else { // Some macs entered to filter(maybe just in BLEOnly & WIFIOnly or in general(Combined) mode)
 			for _, rt := range tempRouters1 {
 				for _, mac := range filterMacs {
 					if rt.Mac == mac {
 						//glb.Debug.Println("4")
-						//Error.Println("filtered mac : ",res.WifiFingerprint[i].Mac)
-						//tempRouters1[curNum] = res.WifiFingerprint[i]
+						//Error.Println("filtered mac : ",curFP.WifiFingerprint[i].Mac)
+						//tempRouters1[curNum] = curFP.WifiFingerprint[i]
 						tempRouters2 = append(tempRouters2, rt)
 						//tempRouters1[curNum].Mac = tempRouters1[curNum].Mac[0:len(tempRouters1[curNum].Mac)-1] + "0"
 						//curNum++
@@ -132,10 +136,12 @@ func FilterFingerprint(res *parameters.Fingerprint) {
 			}
 
 			//glb.Debug.Println(tempRouters1[0:curNum])
-			res.WifiFingerprint = tempRouters2
+			resFP.WifiFingerprint = tempRouters2
 		}
 
 	}
+
+	return resFP
 }
 
 func LoadFingerprint(jsonByte []byte, doFilter bool) parameters.Fingerprint {
@@ -149,7 +155,7 @@ func LoadFingerprint(jsonByte []byte, doFilter bool) parameters.Fingerprint {
 	}
 	//t1 := len(fp.WifiFingerprint)
 	if (doFilter) {
-		FilterFingerprint(&fp)
+		fp = FilterFingerprint(fp)
 	}
 	//t2 := len(fp.WifiFingerprint)
 	//if(t1 != t2 ){
