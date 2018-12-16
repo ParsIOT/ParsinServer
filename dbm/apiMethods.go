@@ -1414,7 +1414,8 @@ func SetTrueLocationFromLog(groupName string, method string) error {
 		}
 
 		if (len(locLog) != 5) {
-			return errors.New("Uploaded file doesn't have true location log format(timestamp,tag_name,x,y,z)")
+			glb.Error.Println(locLog)
+			continue
 		}
 		tagName := locLog[1]
 		if (tagName == "None") { // x,y,z are None too.
@@ -1441,6 +1442,9 @@ func SetTrueLocationFromLog(groupName string, method string) error {
 		// add to allLocationLogs
 
 		allLocationLogs[timeStamp] = strings.Join(xy, ",")
+	}
+	if len(allLocationLogs) == 0 {
+		return errors.New("Uploaded file doesn't have true location log format(timestamp,tag_name,x,y,z)")
 	}
 	if err := scanner.Err(); err != nil {
 		glb.Error.Println(err)
