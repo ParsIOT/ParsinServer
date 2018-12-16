@@ -31,6 +31,7 @@ var UserHistoryGaussVariance float64
 var UserHistoryTimeDelayFactor float64
 // Default K in KNN algorithm
 var DefaultKnnMinClusterRssRange, DefaultKnnKRange, DefaultMaxEuclideanRssDistRange, DefaultMaxMovementRange []int
+var DefaultBLEFactorRange []float64
 var DefaultGraphFactorsRange [][]float64
 
 var DefaultMapName string
@@ -62,6 +63,7 @@ func init() {
 	DefaultMaxEuclideanRssDistRange = []int{30, 50} // wifi:50, ble:30
 	DefaultMaxMovementRange = []int{100, 1000}
 	DefaultGraphFactorsRange = [][]float64{{1, 1, 1, 1}, {2, 2, 2, 1}}
+	DefaultBLEFactorRange = []float64{1.0, 1.2, 0.1}
 	DefaultGraphStep = 1.0
 
 	//MinClusterRss = -75

@@ -620,6 +620,18 @@ func Round(num float64, precision int) float64 {
 	output := math.Pow(10, float64(precision))
 	return float64(Float64toInt(num*output)) / output
 }
+func GetFloatPrecision(x float64) int { //It doesn't work correctly(exactly), but i don't need exact precision
+	i := 0
+	for (true) {
+		temp := math.Pow(10, float64(i)) * x
+		if temp-float64(int(temp)) == float64(0) {
+			return i
+		}
+		i++
+	}
+	return 0
+}
+
 
 func MakeRange(min, max int, options ...interface{}) []int {
 	optionsLength := len(options)
@@ -650,6 +662,42 @@ func MakeRange(min, max int, options ...interface{}) []int {
 			a := make([]int, min-max+1)
 			for i := range a {
 				a[i] = min - i
+			}
+			return a
+		}
+	}
+}
+
+func MakeRangeFloat(min, max float64, options ...interface{}) []float64 {
+	optionsLength := len(options)
+	if optionsLength > 0 {
+		step := options[0].(float64)
+		precision := GetFloatPrecision(step)
+		if min < max {
+			a := make([]float64, int((max-min)/step)+1)
+			for i := range a {
+				a[i] = Round(min+float64(i)*step, precision)
+			}
+			return a
+		} else {
+			a := make([]float64, int((min-max)/step)+1)
+			for i := range a {
+				a[i] = Round(min-float64(i)*step, precision)
+			}
+			return a
+		}
+
+	} else {
+		if min < max {
+			a := make([]float64, int(max-min)+1)
+			for i := range a {
+				a[i] = min + float64(i)
+			}
+			return a
+		} else {
+			a := make([]float64, int(min-max)+1)
+			for i := range a {
+				a[i] = min - float64(i)
 			}
 			return a
 		}

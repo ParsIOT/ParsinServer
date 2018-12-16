@@ -81,3 +81,24 @@ func TestMakeRange(t *testing.T) {
 	assert.Equal(t, r3, []int{-13, -8, -3})
 	assert.Equal(t, r4, []int{-1, -6, -11})
 }
+
+func TestMakeRangeFloat(t *testing.T) {
+	r1 := MakeRangeFloat(0.1, 2.1, 0.1)
+	r2 := MakeRangeFloat(2.1, 0.1, 0.1)
+	r3 := MakeRangeFloat(-0.1, -2.1, 0.1)
+	r4 := MakeRangeFloat(-2.1, -0.1, 0.1)
+
+	assert.Equal(t, r1, []float64{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.1})
+	assert.Equal(t, r2, []float64{2.1, 2, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2, 1.1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1})
+	assert.Equal(t, r3, []float64{-0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.1})
+	assert.Equal(t, r4, []float64{-2.1, -2, -1.9, -1.8, -1.7, -1.6, -1.5, -1.4, -1.3, -1.2, -1.1, -1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1})
+}
+
+func TestGetFloatPrecision(t *testing.T) {
+	r1 := GetFloatPrecision(1.0)
+	r2 := GetFloatPrecision(1.1)
+	r3 := GetFloatPrecision(-1.13)
+	assert.Equal(t, 0, r1)
+	assert.Equal(t, 1, r2)
+	assert.Equal(t, 2, r3)
+}

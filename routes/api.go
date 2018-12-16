@@ -282,10 +282,10 @@ func GetCurrentPositionOfAllUsers(groupName string) map[string]parameters.UserPo
 // Is like getHistoricalUserPositions but only returns the last location estimation
 func GetCurrentPositionOfUser(groupName string, user string) parameters.UserPositionJSON {
 
-	val, ok := dbm.GetUserPositionCache(groupName + user)
-	if ok {
-		return val
-	}
+	//val, ok := dbm.GetUserPositionCache(groupName + user)
+	//if ok {
+	//	return val
+	//}
 	//var userJSON parameters.UserPositionJSON
 	//var userFingerprint parameters.Fingerprint
 	//var err error
@@ -308,7 +308,21 @@ func GetCurrentPositionOfUser(groupName string, user string) parameters.UserPosi
 	var lastUserPos parameters.UserPositionJSON
 	userPositions := gp.Get_ResultData().Get_UserResults(user)
 	if len(userPositions) > 0 {
+
 		lastUserPos = userPositions[len(userPositions)-1]
+
+		//if userPositions[0].Fingerprint.Username != "04a31697d9c8" {
+		//	lastUserPos = userPositions[len(userPositions)-1]
+		//} else {
+		//	glb.Error.Println("04a31697d9c8")
+		//	for i := range userPositions {
+		//		usrPos := userPositions[len(userPositions)-1-i]
+		//		if len(usrPos.Fingerprint.WifiFingerprint) >= glb.MinApNum {
+		//			return usrPos
+		//		}
+		//	}
+		//}
+
 	}
 
 	//_, userJSON.KnnGuess, userJSON.KnnData = algorithms.TrackKnn(gp, userFingerprint, false)
@@ -2374,6 +2388,7 @@ func KnnConfigPOST(c *gin.Context) {
 	kRangeStr := strings.TrimSpace(c.PostForm("kRange"))
 	minClusterRssRangeStr := strings.TrimSpace(c.PostForm("minClusterRssRange"))
 	maxEuclideanRssDistRangeStr := strings.TrimSpace(c.PostForm("maxEuclideanRssDistRange"))
+	bleFactorRangeStr := strings.TrimSpace(c.PostForm("bleFactorRange"))
 	graphEnabledStr := strings.TrimSpace(c.PostForm("graphEnabled"))
 	graphFactorRangeStr := strings.TrimSpace(c.PostForm("graphFactorRange"))
 	dsaEnabledStr := strings.TrimSpace(c.PostForm("dsaEnabled"))
@@ -2415,6 +2430,17 @@ func KnnConfigPOST(c *gin.Context) {
 			} else {
 				glb.Debug.Println("maxEuclideanRssDistRange: ", maxEuclideanRssDistRange)
 				knnConfig.MaxEuclideanRssDistRange = maxEuclideanRssDistRange
+			}
+		}
+
+		// Parsing bleFactorRange
+		if bleFactorRangeStr != "" {
+			var bleFactorRange []float64
+			if err := json.Unmarshal([]byte(bleFactorRangeStr), &bleFactorRange); err != nil {
+				glb.Error.Println(err)
+			} else {
+				glb.Debug.Println("bleFactorRange: ", bleFactorRange)
+				knnConfig.BLEFactorRange = bleFactorRange
 			}
 		}
 

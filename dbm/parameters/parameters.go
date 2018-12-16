@@ -25,6 +25,7 @@ type KnnConfig struct {
 	GraphFactorRange         [][]float64
 	DSAEnabled               bool
 	MaxMovementRange         []int
+	BLEFactorRange           []float64
 }
 
 func NewKnnConfig() KnnConfig {
@@ -36,6 +37,7 @@ func NewKnnConfig() KnnConfig {
 		GraphFactorRange:         glb.DefaultGraphFactorsRange,
 		DSAEnabled:               glb.DefaultDSAEnabled,
 		MaxMovementRange:         glb.DefaultMaxMovementRange,
+		BLEFactorRange:           glb.DefaultBLEFactorRange,
 	}
 }
 
@@ -46,6 +48,7 @@ type KnnHyperParameters struct {
 	MaxEuclideanRssDist int       `json:"MaxEuclideanRssDist"`
 	MaxMovement         int       `json:"MaxMovement"`
 	GraphFactors        []float64 `json:"GraphFactors"`
+	BLEFactor           float64   `json:"BLEFactor"`
 }
 func NewKnnHyperParameters() KnnHyperParameters {
 	return KnnHyperParameters{
@@ -54,6 +57,7 @@ func NewKnnHyperParameters() KnnHyperParameters {
 		MaxEuclideanRssDist: glb.DefaultMaxEuclideanRssDistRange[0],
 		MaxMovement:         glb.DefaultMaxMovementRange[0],
 		GraphFactors:        glb.DefaultGraphFactorsRange[0],
+		BLEFactor:           glb.DefaultBLEFactorRange[0],
 	}
 }
 

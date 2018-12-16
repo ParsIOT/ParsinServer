@@ -18,6 +18,7 @@ var maxrssInNormal, minrssInNormal float64
 //var topRssList []int
 var distAlgo string
 var MaxEuclideanRssDist float64 // used in thread so must be declared as global variable(just reading so there's not any race condition)
+var BLEFactor float64
 var uniqueMacs []string
 //var ValidKs []int = defaultValidKs()
 //var ValidMinClusterRSSs []int = defaultValidMinClusterRSSs()
@@ -333,6 +334,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	uniqueMacs = gp.Get_MiddleData().Get_UniqueMacs()
 
 	MaxEuclideanRssDist = float64(hyperParams.MaxEuclideanRssDist)
+	BLEFactor = float64(hyperParams.BLEFactor)
+	//BLEFactor = float64(1.5)
 	MaxMovement := float64(hyperParams.MaxMovement)
 	//tempList := []string{}
 	//tempList = append(tempList,mainFingerprintsOrdering...)
@@ -779,23 +782,35 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	}
 }
 
+func IsBLEMac(mac string) bool {
+	if mac[:3] == "BLE" {
+		return true
+	} else {
+		return false
+	}
+}
+
 func calcWeight(id int, jobs <-chan jobW, results chan<- resultW) {
 
 	for job := range jobs {
 		distance := float64(0)
+		techFactor := float64(1)
 		length := float64(0.000001)
 		for curMac, curRssi := range job.mac2RssCur {
 			/*if curRssi < -77 {
 				continue
 			}*/
+			if IsBLEMac(curMac) { //BLE
+				techFactor = BLEFactor
+			}
 			if fpRss, ok := job.mac2RssFP[curMac]; ok {
-				distance = distance + math.Pow(float64(curRssi-fpRss), minkowskyQ)
+				distance = distance + math.Pow(float64(curRssi-fpRss)*techFactor, minkowskyQ)
 				length++
 				//curDist := math.Pow(10.0,float64(curRssi)*0.05)
 				//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
 				//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
 			} else if glb.StringInSlice(curMac, uniqueMacs) {
-				distance = distance + math.Pow(MaxEuclideanRssDist, minkowskyQ)
+				distance = distance + math.Pow(MaxEuclideanRssDist*techFactor, minkowskyQ)
 				length++
 				//distance = distance + 9
 				//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)

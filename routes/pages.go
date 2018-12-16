@@ -195,6 +195,7 @@ func SlashDashboard(c *gin.Context) {
 	bestMinClusterRss := knnHyperParams.MinClusterRss
 	bestMaxEuclideanRssDist := knnHyperParams.MaxEuclideanRssDist
 	bestMaxMovement := knnHyperParams.MaxMovement
+	bestBLEFactor := knnHyperParams.BLEFactor
 
 	for n := range md.NetworkLocs {
 		//dash.Mixin[n] = gp.Get_Priors()[n].Special["MixIn"]
@@ -239,6 +240,7 @@ func SlashDashboard(c *gin.Context) {
 		"bestMinClusterRss":       bestMinClusterRss,
 		"bestMaxMovement":         bestMaxMovement,
 		"bestMaxEuclideanRssDist": bestMaxEuclideanRssDist,
+		"bestBLEFactor":           bestBLEFactor,
 		"mapNamesList":            mapNamesList,
 		"KnnConfigData":           KnnConfigData,
 	})
