@@ -214,6 +214,7 @@ func SlashDashboard(c *gin.Context) {
 		}
 		totalError := 0
 		algoAccuracy := rsd.Get_AlgoLocAccuracy()
+		glb.Error.Println(len(algoAccuracy["knn"]))
 		for loc, accuracy := range algoAccuracy["knn"] {
 			dash.LocationAccuracy[loc] = accuracy
 			totalError += accuracy
@@ -407,6 +408,55 @@ func Heatmap(c *gin.Context) {
 		"MapHeight":MapDimensions[1],
 	})
 }
+
+func ErrorHeatMap(c *gin.Context) {
+	groupName := c.Param("group")
+	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+		})
+		return
+	}
+
+	gp := dbm.GM.GetGroup(groupName)
+	md := gp.Get_MiddleData()
+	rsd := gp.Get_ResultData()
+	totalError := 0
+	algoAccuracy := rsd.Get_AlgoLocAccuracy()
+	LatLngRSS := [][]int{}
+	if len(algoAccuracy["knn"]) > 0 {
+		uniqueLocs := md.UniqueLocs
+		algoAccuracyDetails := algoAccuracy["knn"]
+		for _, loc := range uniqueLocs {
+			error := algoAccuracyDetails[loc]
+			xy := strings.Split(loc, ",")
+			x, err1 := glb.StringToFloat(xy[0])
+			y, err2 := glb.StringToFloat(xy[1])
+			if err1 != nil || err2 != nil {
+				glb.Error.Println(err1)
+				glb.Error.Println(err2)
+			}
+			LatLngRSS = append(LatLngRSS, []int{int(x), int(y), error})
+			totalError += error
+		}
+		totalError = totalError / len(algoAccuracy["knn"])
+	}
+	glb.Error.Println(len(LatLngRSS))
+
+	MapName := dbm.GetSharedPrf(groupName).MapName
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
+	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
+	c.HTML(http.StatusOK, "error_heatmap.tmpl", gin.H{
+		"Group":      groupName,
+		"MapPath":    MapPath,
+		"MapWidth":   MapDimensions[0],
+		"MapHeight":  MapDimensions[1],
+		"LatLngRSS":  LatLngRSS,
+		"TotalError": totalError,
+	})
+}
+
+
 
 func UWBUserMap(c *gin.Context) {
 	groupName := c.Param("group")

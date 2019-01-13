@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8/>
+    <title>PARSIN</title>
+    <link rel="shortcut icon" sizes="16x16 24x24 32x32 48x48 64x64" href="/static/img/favicon.ico"/>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
+    <!-- Bootstrap Core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
+    <link href="/static/css/custom.css" rel="stylesheet">
+    <link href="/static/css/leaflet.css" rel="stylesheet">
+    <link href="/static/css/leaflet.usermarker.css" rel="stylesheet">
+
+    <!--
+    <link href="/static/css/plugins/leaflet/heatmap/commons.css" rel="stylesheet">
+    <link href="/static/css/plugins/leaflet/heatmap/prism.css" rel="stylesheet">  -->
+    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+    <style>
+        #heat-map {
+            height: 500px;
+        }
+
+        #sidebar-container {
+            overflow: scroll;
+        }
+    </style>
+</head>
+
+<body>
+
+{{ template "navbar" . }}
+
+<!-- Page Content -->
+<div class="container-fluid">
+
+    <div class="row">
+        <div class="col-lg-12">
+            <h2 class="page-header">Trace Route Map
+                <small>view users tracking history on map</small>
+            </h2>
+        </div>
+    </div>
+
+    <!--<div class="well">-->
+    <div class="row">
+        <div class="col-md-9 col-sm-12">
+            <div class="panel panel-primary" id="map-panel">
+                <div class="panel-heading">
+                    Map
+                </div>
+                <div class="panel-body">
+                    <div id="heat-map"></div>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-12">
+            <div class="panel panel-success" id="users-list-panel">
+                <div class="panel-heading">
+                    Options
+                </div>
+                <div class="panel-body" id="sidebar-container">
+                    <div id="data-panel" class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
+                        <div class="col-md-12">
+                            <a href="#data" data-toggle="collapse">
+                                <h4 style="text-decoration: underline;">Data</h4>
+                            </a>
+                            <div id="data" class="collapse in">
+                                <div class="form-group">
+                                    <label for="opacity">Circle Opacity (0 - 1)</label>
+                                    <input id="opacity" type="number" step="0.01" max="1" min="0" class="form-control"
+                                           placeholder="Circle Opacity (0 - 1)" value="1"/>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <button id="get-data" onclick="loadErrorHeatmap()"
+                                                class="btn btn-success btn-block">
+                                            Get Data
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="options-panel" class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
+                        <div class="col-md-12">
+                            <a href="#options" data-toggle="collapse">
+                                <h4 style="text-decoration: underline;">Options</h4>
+                            </a>
+                            <div id="options" class="collapse in">
+                                <div class="form-group">
+                                    <label for="minError">Enter Min Error Value</label>
+                                    <input id="minError" type="number" step="20" min="0" class="form-control"
+                                           placeholder="Min Error" value="0"/>
+                                </div>
+                                <div class="form-group">
+                                    <label for="maxError">Enter Max Error Value</label>
+                                    <input id="maxError" type="number" step="20" class="form-control"
+                                           placeholder="Max Error" value="1000"/>
+                                </div>
+                                <div class="form-group">
+                                    <label for="radius">Circle Radius</label>
+                                    <input id="radius" type="number" step="5" class="form-control"
+                                           placeholder="Circle Radius" value="100"/>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <button id="apply-settings" onclick="applyHeatMapSettings()"
+                                                class="btn btn-success btn-block" disabled="">
+                                            Apply Settings
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--</div>-->
+
+
+</div>
+
+<!-- Bootstrap and JQuery JS -->
+<script src="/static/js/jquery-2.0.0.min.js"></script>
+<script src='/static/js/bootstrap.js'></script>
+{{/*<script src='/static/js/leaflet-src.js'></script>*/}}
+<script src='/static/js/leaflet.js'></script>
+
+<script src='/static/js/leaflet.usermarker.js'></script>
+<script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
+<script src="/static/js/sweetalert.min.js"></script>
+
+<script src="/static/js/plugins/leaflet/heatmap/maplet-heatmap.js"></script>
+
+<script type="application/javascript">
+    var map, heatmap, heatmapdata = [];
+
+    $(document).ready(function () {
+        // set height of elements on the page
+        $('#heat-map').css('height', $(window.top).height() - 275);
+        $('#sidebar-container').css('height', $(window.top).height() - 245);
+
+        // initialize the map
+        map = L.map('heat-map', {
+            crs: L.CRS.Simple,
+            minZoom: -50,
+            maxZoom: 10
+        });
+
+        var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
+        L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
+        map.setView([0, 0], -2);
+
+        // initialize the heat-map
+        heatmap = new L.MultiColorDivHeatmapLayer({
+            radius: 100,
+            min_value: 0,
+            max_value: 1000,
+            gradient: {
+                0: 'blue',
+                1: 'red'
+            },
+            animation_delay: 5,
+        }, true);
+
+        // add heat-map to the map
+        heatmap.addTo(map);
+
+    });
+
+    function loadErrorHeatmap() {
+        // $('#get-data').prop("disabled", true);
+        // $("#data-panel").addClass('bs-callout-danger').removeClass('bs-callout-success');
+        opacity = $('#opacity').val();
+        heatmapdata = [];
+    {{ range $indx, $locDetails := $.LatLngRSS }}
+        heatmapdata.push({
+            lat: {{index $locDetails 0}},
+            lng: {{index $locDetails 1}},
+            value: {{index $locDetails 2}},
+            opacity: opacity
+        });
+    {{ end }}
+
+        heatmap.clearData();
+        heatmap.setData(heatmapdata);
+        // $('#get-data').prop("disabled", false);
+        $('#apply-settings').prop("disabled", false);
+        // $("#data-panel").addClass('bs-callout-success').removeClass('bs-callout-danger');
+        $("#options-panel").addClass('bs-callout-success').removeClass('bs-callout-info');
+    }
+
+    function applyHeatMapSettings() {
+        $("#options-panel").addClass('bs-callout-danger').removeClass('bs-callout-success');
+        $('#apply-settings').prop("disabled", true);
+
+        heatmap.setOptions({
+            radius: $('#radius').val(),
+            max_value: $('#maxError').val() * 1, // convert to int
+            min_value: $('#minError').val() * 1, // convert to int
+        }).reDraw();
+
+        $('#apply-settings').prop("disabled", false);
+        $("#options-panel").addClass('bs-callout-success').removeClass('bs-callout-danger');
+    }
+
+
+</script>
+</body>
+
+</html>
