@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import time
 import serial
 import signal
@@ -64,7 +65,7 @@ while 1:
     # (note that I happend a \r\n carriage return and line feed to the characters - this is requested by my device)
     out = ''
     # let's wait one second before reading output (let's give device time to answer)
-    time.sleep(0.2)
+    time.sleep(0.4)
     timestamp = int(time.time()*10**3)
     # print(timestamp)
     while ser.inWaiting() > 0:

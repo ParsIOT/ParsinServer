@@ -950,6 +950,9 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 
 	//glb.Debug.Println(len(FingerprintsOrdering))
 	for _, fpTime := range FingerprintsOrdering {
+		if len(FingerprintsData[fpTime].WifiFingerprint) < glb.MinApNum {
+			continue
+		}
 		if FingerprintsData[fpTime].Location == loc {
 			//glb.Debug.Println("format of loc: ",FingerprintsData[fpTime].Location ) // komeil, Just for test
 			locFingerprintsOrdering = append(locFingerprintsOrdering, fpTime)
@@ -1001,7 +1004,7 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 
 			distance := float64(0)
 			MaxEuclideanRssDist := cd.Get_KnnConfig().MaxEuclideanRssDistRange[0]
-			glb.Debug.Println("MaxEuclideanRssDist is ", MaxEuclideanRssDist)
+			//glb.Debug.Println("MaxEuclideanRssDist is ", MaxEuclideanRssDist)
 
 			for mainMac, mainRssi := range mac2RssMain {
 				if fpRss, ok := mac2Rss[mainMac]; ok {
@@ -1160,22 +1163,39 @@ func GetMostSeenMacs(groupName string) []string {
 }
 
 //Note:Use it before Preprocess
+// Use trueLocation logs and relocate fp to the correct location(for example use UWB logs to set location of FPs)
 func RelocateFPLoc(groupName string) error {
 	gp := GM.GetGroup(groupName)
 	rd := gp.Get_RawData()
 	// Get True Location logs from db
 	allLocationLogs := rd.Get_LearnTrueLocations()
+	allLocationLogsOrdering := rd.Get_LearnTrueLocationsOrdering()
+
+	//allLocationLogsOrdering := []int64{}
+	//for timestamp,_ := range allLocationLogs{
+	//	allLocationLogsOrdering = glb.SortedInsert(allLocationLogsOrdering,timestamp)
+	//}
 	glb.Debug.Println("TrueLocationLog :", allLocationLogs)
 	// Get fingerprints from db
 	fpData := rd.Get_Fingerprints()
+	fpOrdering := rd.Get_FingerprintsOrdering()
 
 	tempfpO := []string{}
 	tempfpData := make(map[string]parameters.Fingerprint)
 
-	for fpTime, fp := range fpData {
+	lastAllLocTimestampIndex := 0
+	for _, fpTime := range fpOrdering {
 		//correct fp location
-		newLoc, err := FindTrueFPloc(fp, allLocationLogs)
+		fp := fpData[fpTime]
+		//glb.Debug.Println(len(allLocationLogsOrdering[lastAllLocTimestampIndex:]))
+		newLoc, foundTimestampIndex, err := FindTrueFPloc(fp, allLocationLogs, allLocationLogsOrdering[lastAllLocTimestampIndex:])
 		if err == nil {
+			if foundTimestampIndex != -1 {
+				lastAllLocTimestampIndex += foundTimestampIndex
+			} else {
+				glb.Error.Println(err)
+			}
+
 			tempfpO = append(tempfpO, fpTime)
 			glb.Debug.Println(fp.Location, "-->", newLoc)
 			fp.Location = newLoc
@@ -1196,17 +1216,18 @@ func RelocateFPLoc(groupName string) error {
 }
 
 // find best fp location according to
-func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string) (string, error) {
+// then return that location and the index of timestamp in allLocationLogsOrdering list that in that time the correct location is found(it's used for optimized search in allLocationLogs)
+func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string, allLocationLogsOrdering []int64) (string, int, error) {
 	fpTimeStamp := fp.Timestamp
 	//newLoc := ""
 
-	timeStamps := []int64{}
-	for timestamp, _ := range allLocationLogs {
-		timeStamps = glb.SortedInsert(timeStamps, timestamp)
-	}
+	//timeStamps := []int64{}
+	//for timestamp, _ := range allLocationLogs {
+	//	timeStamps = glb.SortedInsert(timeStamps, timestamp)
+	//}
 	lessUntil := 0
 	//stopit := true
-	for i, timeStamp := range timeStamps {
+	for i, timeStamp := range allLocationLogsOrdering {
 
 		/*	if timeStamp < int64(1537973812090) && fp.Location=="-22.0,39.0" && stopit{
 				glb.Error.Println("Found it ",allLocationLogs[timeStamp])
@@ -1233,11 +1254,11 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string) 
 					if err1 != nil || err2 != nil {
 						glb.Error.Println(err1)
 						glb.Error.Println(err2)
-						return "", errors.New("Converting string 2 float problem")
+						return "", -1, errors.New("Converting string 2 float problem")
 					}
-					return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", nil
+					return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", lessUntil, nil
 				} else {
-					timeStamp1 := timeStamps[i-1]
+					timeStamp1 := allLocationLogsOrdering[i-1]
 					timeStamp2 := timeStamp
 					if (timeStamp2-fpTimeStamp > int64(1*math.Pow(10, 9))) && (fpTimeStamp-timeStamp1 > int64(1*math.Pow(10, 9))) {
 						break
@@ -1256,9 +1277,9 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string) 
 						if err1 != nil || err2 != nil {
 							glb.Error.Println(err1)
 							glb.Error.Println(err2)
-							return "", errors.New("Converting string 2 float problem")
+							return "", -1, errors.New("Converting string 2 float problem")
 						}
-						return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", nil
+						return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", lessUntil, nil
 						//glb.Debug.Println(newLoc)
 					} else { //set second timestamp location
 						//xy := allLocationLogs[timeStamp2][:2]
@@ -1273,9 +1294,9 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string) 
 						if err1 != nil || err2 != nil {
 							glb.Error.Println(err1)
 							glb.Error.Println(err2)
-							return "", errors.New("Converting string 2 float problem")
+							return "", -1, errors.New("Converting string 2 float problem")
 						}
-						return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", nil
+						return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", lessUntil, nil
 					}
 				}
 				break
@@ -1285,8 +1306,8 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string) 
 		}
 	}
 	glb.Error.Println("FindTrueFPloc on ", fp.Location, ":", fp.Timestamp, " ended but timestamp ranges doesn't match to relocate any fp")
-	glb.Error.Println("UWB timestamp range is :", timeStamps[0], " to ", timeStamps[len(timeStamps)-1])
-	return "", errors.New("Timestamp range problem")
+	glb.Error.Println("UWB timestamp range is :", allLocationLogsOrdering[0], " to ", allLocationLogsOrdering[len(allLocationLogsOrdering)-1])
+	return "", -1, errors.New("Timestamp range problem")
 
 }
 
@@ -1320,10 +1341,11 @@ func CalculateTestErrorAndRelocateTestValid(groupName string, testValidTracks []
 
 	gp := GM.GetGroup(groupName)
 	rsd := gp.Get_ResultData()
-
+	rd := gp.Get_RawData()
 	// Get True Location logs from db
-	allLocationLogs := gp.Get_RawData().Get_TestValidTrueLocations()
 
+	allLocationLogs := rd.Get_TestValidTrueLocations()
+	allLocationLogsOrdering := rd.Get_TestValidTrueLocationsOrdering()
 	//glb.Debug.Println("TrueLocationLog :", allLocationLogs)
 
 	tempTestValidTracks := []parameters.TestValidTrack{}
@@ -1340,7 +1362,8 @@ func CalculateTestErrorAndRelocateTestValid(groupName string, testValidTracks []
 		TrueLoc := ""
 		var err error
 		if len(allLocationLogs) > 0 {
-			TrueLoc, err = FindTrueFPloc(userPos.Fingerprint, allLocationLogs)
+			// We trace all of allLocationLogs because number of testValidTracks are low and we can trace all of allLocationLogs easyily
+			TrueLoc, _, err = FindTrueFPloc(userPos.Fingerprint, allLocationLogs, allLocationLogsOrdering)
 			if err != nil {
 				glb.Error.Println(err)
 				continue
@@ -1403,6 +1426,8 @@ func SetTrueLocationFromLog(groupName string, method string) error {
 	// Get location logs from uploaded true location logs
 	locationLogs := make(map[string]map[int64][]string) // tag:timestamp:location(x,y,z)
 	allLocationLogs := make(map[int64]string)           // timestamp:location(x,y,z)
+	allLocationLogsOrdering := []int64{}
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		locLogStr := scanner.Text()
@@ -1440,8 +1465,9 @@ func SetTrueLocationFromLog(groupName string, method string) error {
 		}
 
 		// add to allLocationLogs
-
-		allLocationLogs[timeStamp] = strings.Join(xy, ",")
+		xyStr := strings.Join(xy, ",")
+		allLocationLogs[timeStamp] = xyStr
+		allLocationLogsOrdering = glb.SortedInsert(allLocationLogsOrdering, timeStamp) // sort when added
 	}
 	if len(allLocationLogs) == 0 {
 		return errors.New("Uploaded file doesn't have true location log format(timestamp,tag_name,x,y,z)")
@@ -1454,9 +1480,11 @@ func SetTrueLocationFromLog(groupName string, method string) error {
 	rd := GM.GetGroup(groupName).Get_RawData()
 	if method == "test" {
 		rd.Set_TestValidTrueLocations(allLocationLogs)
+		rd.Set_TestValidTrueLocationsOrdering(allLocationLogsOrdering)
 		glb.Debug.Println(allLocationLogs)
 	} else { //learn
 		rd.Set_LearnTrueLocations(allLocationLogs)
+		rd.Set_LearnTrueLocationsOrdering(allLocationLogsOrdering)
 		glb.Debug.Println(allLocationLogs)
 	}
 

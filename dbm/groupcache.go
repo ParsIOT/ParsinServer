@@ -26,8 +26,10 @@ type RawDataStruct struct {
 	FingerprintsBackup         map[string]parameters.Fingerprint
 	FingerprintsOrderingBackup []string
 
-	LearnTrueLocations     map[int64]string
-	TestValidTrueLocations map[int64]string //timestamp:location
+	LearnTrueLocations             map[int64]string
+	LearnTrueLocationsOrdering     []int64
+	TestValidTrueLocations         map[int64]string //timestamp:location
+	TestValidTrueLocationsOrdering []int64
 	//Note: Run easyjson.sh after editing
 }
 
@@ -869,14 +871,16 @@ func (gm *GroupManger) InstantFlushDB(groupName string) {
 
 func (gp *Group) NewRawDataStruct() *RawDataStruct {
 	return &RawDataStruct{
-		mutex:                      &sync.RWMutex{},
-		group:                      gp,
-		Fingerprints:               make(map[string]parameters.Fingerprint),
-		FingerprintsOrdering:       []string{},
-		FingerprintsBackup:         make(map[string]parameters.Fingerprint),
-		FingerprintsOrderingBackup: []string{},
-		LearnTrueLocations:         make(map[int64]string),
-		TestValidTrueLocations:     make(map[int64]string),
+		mutex:                          &sync.RWMutex{},
+		group:                          gp,
+		Fingerprints:                   make(map[string]parameters.Fingerprint),
+		FingerprintsOrdering:           []string{},
+		FingerprintsBackup:             make(map[string]parameters.Fingerprint),
+		FingerprintsOrderingBackup:     []string{},
+		LearnTrueLocations:             make(map[int64]string),
+		LearnTrueLocationsOrdering:     []int64{},
+		TestValidTrueLocations:         make(map[int64]string),
+		TestValidTrueLocationsOrdering: []int64{},
 	}
 }
 func (gp *Group) NewConfigDataStruct() *ConfigDataStruct {
@@ -1552,6 +1556,27 @@ func (rd *RawDataStruct) Set_LearnTrueLocations(new_item map[int64]string) {
 	rd.Unlock()
 }
 
+func (rd *RawDataStruct) Get_LearnTrueLocationsOrdering() []int64 {
+	rd.RLock()
+	item := rd.LearnTrueLocationsOrdering
+	LearnTrueLocations := rd.LearnTrueLocations
+	rd.RUnlock()
+	if len(item) == 0 {
+		for timeStamp, _ := range LearnTrueLocations {
+			item = glb.SortedInsert(item, timeStamp)
+		}
+		rd.Set_LearnTrueLocationsOrdering(item)
+	}
+	return item
+}
+func (rd *RawDataStruct) Set_LearnTrueLocationsOrdering(new_item []int64) {
+	defer rd.SetDirtyBit()
+
+	rd.Lock()
+	rd.LearnTrueLocationsOrdering = new_item
+	rd.Unlock()
+}
+
 func (rd *RawDataStruct) Get_TestValidTrueLocations() map[int64]string {
 	rd.RLock()
 	item := rd.TestValidTrueLocations
@@ -1563,6 +1588,28 @@ func (rd *RawDataStruct) Set_TestValidTrueLocations(new_item map[int64]string) {
 
 	rd.Lock()
 	rd.TestValidTrueLocations = new_item
+	rd.Unlock()
+}
+
+func (rd *RawDataStruct) Get_TestValidTrueLocationsOrdering() []int64 {
+	rd.RLock()
+	item := rd.LearnTrueLocationsOrdering
+	TestValidTrueLocations := rd.TestValidTrueLocations
+	rd.RUnlock()
+	if len(item) == 0 {
+		for timeStamp, _ := range TestValidTrueLocations {
+			item = glb.SortedInsert(item, timeStamp)
+		}
+		rd.Set_TestValidTrueLocationsOrdering(item)
+	}
+	return item
+}
+
+func (rd *RawDataStruct) Set_TestValidTrueLocationsOrdering(new_item []int64) {
+	defer rd.SetDirtyBit()
+
+	rd.Lock()
+	rd.TestValidTrueLocationsOrdering = new_item
 	rd.Unlock()
 }
 

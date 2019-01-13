@@ -257,6 +257,8 @@ func GetResourceInBucket(keyName string,input interface{},bucketName string,grou
 
 
 func SetByteResourceInBucket(input []byte,keyName string,bucketName string,group string) error {
+	//glb.Error.Println("#############")
+	//glb.Error.Println(keyName," : ",group)
 	db, err := boltOpen(path.Join(glb.RuntimeArgs.SourcePath, group+".db"), 0600, nil)
 	defer db.Close()
 	if err != nil {

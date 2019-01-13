@@ -53,7 +53,7 @@ var TesterUsername string
 func init() {
 	DefaultMixin = float64(0.1)
 	DefaultCutoff = float64(0.01)
-	MinApNum = 1
+	MinApNum = 3
 	MinRssi = -110
 	MaxRssi = 5
 	ProgressBarLength = 0
@@ -68,7 +68,7 @@ func init() {
 
 	//MinClusterRss = -75
 	MaxUserHistoryLen = 2
-	MaxUserResultsLen = 1000
+	MaxUserResultsLen = 100
 
 	UserHistoryEffectFactors = []float64{0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.5, 0.7, 0.8, 1}
 	UserHistoryGaussVariance = 0.15
@@ -79,7 +79,7 @@ func init() {
 	RssRegulation = true
 	AvgRSSAdjacentDots = true
 
-	DefaultMapName = "DefaultMap.png"
+	DefaultMapName = "ArmanExactMap.png"
 	DefaultMapDimensions = []int{3400,3600}
 	DefaultMapHeight = 3400
 	DefaultMapWidth = 3600

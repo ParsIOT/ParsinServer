@@ -130,6 +130,9 @@ func GetLocationList(c *gin.Context) {
 	uniqueLocations := []string{}
 	//glb.Debug.Println(fpData)
 	for _, fp := range fpData {
+		if len(fp.WifiFingerprint) < glb.MinApNum {
+			continue
+		}
 		if !glb.StringInSlice(fp.Location, uniqueLocations) {
 			uniqueLocations = append(uniqueLocations, fp.Location)
 		}

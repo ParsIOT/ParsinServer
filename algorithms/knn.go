@@ -46,7 +46,7 @@ func init() {
 	minkowskyQ = 2
 	distAlgo = "Euclidean" // Euclidean, Cosine, NewEuclidean, RedpinEuclidean
 	//topRssList = []int{-60,-79,-90}
-	maxrssInNormal = -55.0
+	maxrssInNormal = -40.0
 	minrssInNormal = float64(glb.MinRssi) - 5.0
 }
 

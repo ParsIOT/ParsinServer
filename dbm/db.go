@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"encoding/json"
 	"github.com/boltdb/bolt"
@@ -313,6 +314,7 @@ func GetLearnFingerPrints(group string,doFilter bool)([]string,map[string]parame
 		glb.Error.Println("Can't get learn fingerprints.")
 		return fingerprintsOrdering,fingerprintsInMemory,err
 	}
+	sort.Sort(sort.StringSlice(fingerprintsOrdering))
 	return fingerprintsOrdering,fingerprintsInMemory,nil
 }
 
