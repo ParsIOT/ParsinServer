@@ -44,10 +44,10 @@ var uniqueMacs []string
 func init() {
 	knn_regression = true
 	minkowskyQ = 2
-	distAlgo = "Euclidean" // Euclidean, Cosine, NewEuclidean, RedpinEuclidean
+	distAlgo = "Euclidean" // Euclidean, Cosine, NewEuclidean, RedpinEuclidean, CombinedCosEuclid
 	//topRssList = []int{-60,-79,-90}
-	maxrssInNormal = -40.0
-	minrssInNormal = float64(glb.MinRssi) - 5.0
+	maxrssInNormal = -30.0
+	minrssInNormal = float64(glb.MinRssi)
 }
 
 type resultW struct {
@@ -582,6 +582,10 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			go calcWeightRedpin(id, chanJobs, chanResults)
 		}
+	} else if (distAlgo == "CombinedCosEuclid") {
+		for id := 1; id <= glb.MaxParallelism(); id++ {
+			go calcCombinedCosEuclidWeight(id, chanJobs, chanResults)
+		}
 	}
 
 	NumofMinAPNum := 0
@@ -975,6 +979,69 @@ func calcWeightCosine(id int, jobs <-chan jobW, results chan<- resultW) {
 			weight: weight}
 	}
 }
+
+func calcCombinedCosEuclidWeight(id int, jobs <-chan jobW, results chan<- resultW) {
+
+	for job := range jobs {
+		distance := float64(0)
+		techFactor := float64(1)
+		length := float64(0.000001)
+
+		var a []float64
+		var b []float64
+
+		for curMac, curRssi := range job.mac2RssCur {
+			/*if curRssi < -77 {
+				continue
+			}*/
+			if IsBLEMac(curMac) { //BLE
+				techFactor = BLEFactor
+			}
+			if fpRss, ok := job.mac2RssFP[curMac]; ok {
+				distance = distance + math.Pow(float64(curRssi-fpRss)*techFactor, minkowskyQ)
+				a = append(a, norm2zeroToOne(float64(curRssi)))
+				b = append(b, norm2zeroToOne(float64(fpRss)))
+				length++
+				//curDist := math.Pow(10.0,float64(curRssi)*0.05)
+				//fpDist := math.Pow(10.0,float64(fpRss)*0.05)
+				//distance = distance + math.Pow(curDist-fpDist, minkowskyQ)
+			} else if glb.StringInSlice(curMac, uniqueMacs) {
+				distance = distance + math.Pow(MaxEuclideanRssDist*techFactor, minkowskyQ)
+				a = append(a, norm2zeroToOne(float64(curRssi)))
+				b = append(b, norm2zeroToOne(float64(glb.MinRssi)))
+				length++
+				//distance = distance + 9
+				//distance = distance + math.Pow(math.Pow(10.0,float64(-30)*0.05)-math.Pow(math.E,float64(-90)*0.05), minkowskyQ)
+			}
+		}
+		//distance = distance / float64(len(job.mac2RssCur))
+		distance = distance / float64(length)
+		//if(distance==float64(0)){
+		//	glb.Error.Println("###@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+		//}
+		precision := 10
+		distance = glb.Round(math.Pow(distance, float64(1.0)/minkowskyQ), precision)
+		if distance == float64(0) {
+			//glb.Error.Println("Distance zero")
+			//glb.Error.Println(job.mac2RssCur)
+			//glb.Error.Println(job.mac2RssFP)
+			distance = math.Pow(10, -1*float64(precision))
+			//distance = maxDist
+		}
+		weightEuclid := glb.Round(float64(1.0)/(float64(1.0)+distance), 5)
+		weightCosine, err := Cosine(a, b)
+		if err != nil {
+			glb.Error.Println(err)
+		}
+		weight := weightCosine / weightEuclid
+		//glb.Debug.Println("distance: ",distance)
+		//glb.Debug.Println("weight: ",weight)
+		results <- resultW{fpTime: job.fpTime,
+			weight: weight * 100}
+	}
+
+}
+
 
 func getMac2Rss(routeList []parameters.Router) map[string]int {
 	mac2Rss := make(map[string]int)
