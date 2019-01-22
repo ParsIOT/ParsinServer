@@ -132,7 +132,7 @@ func SlashDashboard(c *gin.Context) {
 			filterUserMap[u] = true
 		}
 	}
-	groupName := c.Param("group")
+	groupName := strings.TrimSpace(c.Param("group"))
 	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
 		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
 			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
@@ -226,24 +226,36 @@ func SlashDashboard(c *gin.Context) {
 	dash.KnnTestValidGraphAccuracy = algoAccuracies["knn_testvalid_graph"]
 	dash.KnnTestValidDSAAccuracy = algoAccuracies["knn_testvalid_dsa"]
 
-	KnnConfigData := gp.Get_ConfigData().Get_KnnConfig()
+	KnnConfigData := knnConfig
+
+	// Create GroupOtherConfigDataPlus and get GroupOtherConfig field from DB
+	type GroupOtherConfigDataPlus struct {
+		GroupOtherConfig parameters.OtherGroupConfig
+		AllGroupName     []string
+	}
+	var gpOtherCDP GroupOtherConfigDataPlus
+	gpOtherCDP.GroupOtherConfig = cd.Get_OtherGroupConfig()
+	gpOtherCDP.AllGroupName = []string{"No CoGroup"}
+	gpOtherCDP.AllGroupName = append(gpOtherCDP.AllGroupName, dbm.AllGroupNames()...)
+
 
 	//glb.Debug.Println(dash)
 	mapNamesList := glb.ListMaps()
 	c.HTML(http.StatusOK, "dashboard.tmpl", gin.H{
-		"Message":                 glb.RuntimeArgs.Message,
-		"Group":                   groupName,
-		"Dash":                    dash,
-		"Users":                   people,
-		"kRange":                  kRange,
-		"knnMinCRssRange":         knnMinCRssRange,
-		"bestK":                   bestK,
-		"bestMinClusterRss":       bestMinClusterRss,
-		"bestMaxMovement":         bestMaxMovement,
-		"bestMaxEuclideanRssDist": bestMaxEuclideanRssDist,
-		"bestBLEFactor":           bestBLEFactor,
-		"mapNamesList":            mapNamesList,
-		"KnnConfigData":           KnnConfigData,
+		"Message":                  glb.RuntimeArgs.Message,
+		"Group":                    groupName,
+		"Dash":                     dash,
+		"Users":                    people,
+		"kRange":                   kRange,
+		"knnMinCRssRange":          knnMinCRssRange,
+		"bestK":                    bestK,
+		"bestMinClusterRss":        bestMinClusterRss,
+		"bestMaxMovement":          bestMaxMovement,
+		"bestMaxEuclideanRssDist":  bestMaxEuclideanRssDist,
+		"bestBLEFactor":            bestBLEFactor,
+		"mapNamesList":             mapNamesList,
+		"KnnConfigData":            KnnConfigData,
+		"GroupOtherConfigDataPlus": gpOtherCDP,
 	})
 }
 

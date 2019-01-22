@@ -76,6 +76,7 @@
 
     <link rel="stylesheet" href="/static/css/jquery-ui.css">
     <script src="/static/js/jquery-ui.js"></script>
+
     <script>
         $(function () {
             $(document).tooltip({
@@ -349,7 +350,14 @@
                         </button>
                     </div>
                 {{ template "knn_config" . }}
+                    <div class="col-sm-2 col-xs-6">
+                        <button type="submit" class="btn btn-warning btn-block" data-toggle="modal"
+                                data-target="#groupOtherConfigModal">
+                            Group other config
+                        </button>
+                    </div>
                 </div>
+            {{ template "group_other_config" . }}
 
             </div>
         </div>

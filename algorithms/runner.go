@@ -224,7 +224,9 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	//}
 
 	gp := dbm.GM.GetGroup(groupName)
-	knnConfig := gp.Get_ConfigData().Get_KnnConfig()
+	cd := gp.Get_ConfigData()
+	//knnConfig := cd.Get_KnnConfig()
+	otherGpConfig := cd.Get_OtherGroupConfig()
 	// Calculating KNN
 	//glb.Debug.Println(curFingerprint)
 	err, knnGuess, knnData := TrackKnn(gp, filteredCurFingerprint, true)
@@ -262,13 +264,13 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	userJSON.Fingerprint = curFingerprint
 
 	// User history effect
-	//location = knnGuess
-	userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
-	location, accuracyCircleRadius = HistoryEffect(userJSON, userHistory)
-
-	if knnConfig.GraphEnabled {
-		location = knnGuess
+	location = knnGuess
+	if otherGpConfig.SimpleHistoryEnabled {
+		userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
+		location, accuracyCircleRadius = SimpleHistoryEffect(userJSON, userHistory)
 	}
+
+
 	userJSON.Location = location
 	glb.Debug.Println("Knn guess: ", knnGuess)
 	glb.Debug.Println("location: ", location)
@@ -329,61 +331,11 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 	knnGuess := ""
 	location := ""
 	pdrLocation := curFingerprint.Location
-	accuracyCircleRadius := float64(0)
-	glb.Debug.Println("accuracy circle:", accuracyCircleRadius)
-	//parameters.CleanFingerprint(&curFingerprint)
 
-	/*	wasLearning, ok := dbm.GetLearningCache(strings.ToLower(curFingerprint.Group))
-		if ok {
-			if wasLearning {
-				glb.Debug.Println("Was learning, calculating priors")
-
-				go dbm.SetLearningCache(groupName, false)
-				//bayes.OptimizePriorsThreaded(groupName)
-				//if glb.RuntimeArgs.Svm {
-				//	DumpFingerprintsSVM(groupName)
-				//	CalculateSVM(groupName)
-				//}
-				//if glb.RuntimeArgs.Scikit {
-				//	ScikitLearn(groupName)
-				//}
-				//LearnKnn(groupName)
-				CalculateLearn(groupName)
-				go dbm.AppendUserCache(groupName, curFingerprint.Username)
-			}
-		}*/
-	//glb.Info.Println(curFingerprint)
-	//bayesGuess, bayesData = bayes.CalculatePosterior(curFingerprint, nil)
-	//percentBayesGuess := float64(0)
-	//total := float64(0)
-	//for _, locBayes := range bayesData {
-	//	total += math.Exp(locBayes)
-	//	if locBayes > percentBayesGuess {
-	//		percentBayesGuess = locBayes
-	//	}
-	//}
-	//percentBayesGuess = math.Exp(bayesData[bayesGuess]) / total * 100.0
-
-	//// todo: add abitlity to save rf, knn, svm guess
-	//curFingerprint.Location = bayesGuess
-
-	//message := ""
-	//glb.Debug.Println("Tracking curFingerprint containing " + strconv.Itoa(len(curFingerprint.WifiFingerprint)) + " APs for " + curFingerprint.Username + " (" + curFingerprint.Group + ") at " + curFingerprint.Location + " (guess)")
-	//message += " BayesGuess: " + bayesGuess //+ " (" + strconv.Itoa(int(percentGuess1)) + "% confidence)"
-	//
-	//// Process SVM if needed
-	//if glb.RuntimeArgs.Svm {
-	//	svmGuess, svmData := SvmClassify(curFingerprint)
-	//	percentSvmGuess := int(100 * math.Exp(svmData[svmGuess]))
-	//	if percentSvmGuess > 100 {
-	//		//todo: wtf? \/ \/ why is could be more than 100
-	//		percentSvmGuess = percentSvmGuess / 10
-	//	}
-	//	message += " svmGuess: " + svmGuess
-	//	//message = "NB: " + locationGuess1 + " (" + strconv.Itoa(int(percentGuess1)) + "%)" + ", SVM: " + locationGuess2 + " (" + strconv.Itoa(int(percentGuess2)) + "%)"
-	//}
 
 	gp := dbm.GM.GetGroup(groupName)
+	cd := gp.Get_ConfigData()
+	otherGpConfig := cd.Get_OtherGroupConfig()
 	// Calculating KNN
 	//glb.Debug.Println(curFingerprint)
 	err, knnGuess, knnData := TrackKnn(gp, curFingerprint, true)
@@ -420,13 +372,15 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 	userPosJson.Fingerprint = curFingerprint
 
 	// User history effect
-	//location = knnGuess
-	//userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
-	//location, accuracyCircleRadius = HistoryEffect(userPosJson, userHistory)
-
-	//if glb.DefaultGraphEnabled {
 	location = knnGuess
-	//}
+	if otherGpConfig.SimpleHistoryEnabled {
+		userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
+		//location, accuracyCircleRadius = SimpleHistoryEffect(userPosJson, userHistory)
+		location, _ = SimpleHistoryEffect(userPosJson, userHistory)
+		/*		glb.Error.Println(location)
+				glb.Error.Println(knnGuess)*/
+	}
+
 	userPosJson.Location = location
 	glb.Debug.Println("Knn guess: ", knnGuess)
 	glb.Debug.Println("location: ", location)
@@ -449,8 +403,13 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 func RecalculateTrackFingerprintKnnCrossValidation(curFingerprint parameters.Fingerprint) string {
 	// Classify with filter curFingerprint
 	gp := dbm.GM.GetGroup(curFingerprint.Group)
+	cd := gp.Get_ConfigData()
+	otherGpConfig := cd.Get_OtherGroupConfig()
 	//dbm.FilterFingerprint(&curFingerprint)
 	parameters.CleanFingerprint(&curFingerprint)
+
+	location := ""
+	//accuracyCircleRadius := float64(0)
 
 	curFingerprint = dbm.FilterFingerprint(curFingerprint)
 	// Calculating KNN
@@ -468,19 +427,15 @@ func RecalculateTrackFingerprintKnnCrossValidation(curFingerprint parameters.Fin
 
 	// User history effect
 
-	//userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
-	//location, _ := HistoryEffect(userPosJson, userHistory)
+	location = knnGuess
+	if otherGpConfig.SimpleHistoryEnabled {
+		userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
+		//location, accuracyCircleRadius = SimpleHistoryEffect(userPosJson, userHistory)
+		location, _ = SimpleHistoryEffect(userPosJson, userHistory)
+	}
 
-	userPosJson.Location = knnGuess
-	//glb.Debug.Println("Knn guess: ", knnGuess)
-	//glb.Debug.Println("location: ", location)
-
+	userPosJson.Location = location
 	gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson) //Todo: if we use this as goroutine the delay until running effect next track
-
-	//glb.Debug.Println(userPosJson)
-	/*	glb.Error.Println("###############")
-		glb.Error.Println(userPosJson.KnnGuess)
-		glb.Error.Println(userPosJson.KnnData)*/
 
 	return userPosJson.Location
 }
@@ -2130,6 +2085,8 @@ func CalculateLearn(groupName string) {
 	} else {
 		rs.Set_AlgoAccuracy("knn", knnDistError/numLocCrossed)
 	}
+
+	rs.Set_ALL_AlgoLocAccuracy(make(map[string]map[string]int))
 	for loc, accuracy := range knnLocAccuracy {
 		rs.Set_AlgoLocAccuracy("knn", loc, accuracy)
 	}

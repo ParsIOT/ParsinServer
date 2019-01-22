@@ -18,7 +18,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form action='/knnConfig?group={{ $.Group }}' id="knnConfigForm" method='POST'>
+            <form action='/setKnnConfig?group={{ $.Group }}' id="knnConfigForm" method='POST'>
             {{/*<form action='#' id="knnConfigForm" method='POST'>*/}}
                 <div class="modal-body">
                 {{/*     <div class="input-group form-group">
@@ -62,6 +62,7 @@
                     <hr>
                     <div class="volume-fees-panel">
                         <h4>Graph Settings: </h4>
+                        <b> Note: Disable SimpleHistoryEffect if needed </b>
                         <div class="input-group form-group">
                             <span class="input-group-addon">Graph enabled:</span>
                             <span class="input-group-addon">{{$.KnnConfigData.GraphEnabled}}</span>
@@ -95,6 +96,7 @@
                     <hr>
                     <div class="volume-fees-panel">
                         <h4>Dynamic subarea method Settings: </h4>
+                        <b> Note: Disable SimpleHistoryEffect if needed </b>
                         <div class="input-group form-group">
                             <span class="input-group-addon">DSA enabled: </span>
                             <span class="input-group-addon">{{$.KnnConfigData.DSAEnabled}}</span>
@@ -115,6 +117,7 @@
                                 </label>
                             {{end}}
                             </div>
+
                         </div>
                         <div class="input-group form-group">
                             <span class="input-group-addon">Max movement range: </span>

@@ -42,6 +42,7 @@ var DefaultMapHeight int
 var PDREnabledForDynamicSubareaMethod bool
 
 var DefaultGraphEnabled, DefaultDSAEnabled bool
+var DefaultSimpleHistoryEnabled bool //Enable SimpleHistoryEffect after running ML algo (for details See SimpleHistoryEffect function)
 var DefaultGraphStep float64
 
 var FastLearn bool //ignore some crossvalidation calculation(rss regulating & get rss avg of adjacency dots) to learn fast
@@ -54,27 +55,27 @@ func init() {
 	DefaultMixin = float64(0.1)
 	DefaultCutoff = float64(0.01)
 	MinApNum = 3
-	MinRssi = -110
+	MinRssi = -100
 	MaxRssi = 5
 	ProgressBarLength = 0
 	ProgressBarCurLevel = 0
-	DefaultKnnKRange = []int{25, 26}                //{10,30}
-	DefaultKnnMinClusterRssRange = []int{-75, -76}  //{-60,-90}
-	DefaultMaxEuclideanRssDistRange = []int{30, 50} // wifi:50, ble:30
+	DefaultKnnKRange = []int{13, 15}                //{10,30}
+	DefaultKnnMinClusterRssRange = []int{-68, -70}  //{-60,-90}
+	DefaultMaxEuclideanRssDistRange = []int{15, 16} // wifi:50, ble:30
 	DefaultMaxMovementRange = []int{100, 1000}
 	DefaultGraphFactorsRange = [][]float64{{1, 1, 1, 1}, {2, 2, 2, 1}}
 	DefaultBLEFactorRange = []float64{1.0, 1.2, 0.1}
 	DefaultGraphStep = 1.0
 
 	//MinClusterRss = -75
-	MaxUserHistoryLen = 2
+	MaxUserHistoryLen = 6 //Note: I don't know why i change it to 3, location not changed very well in live location map!
 	MaxUserResultsLen = 100
 
 	UserHistoryEffectFactors = []float64{0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.5, 0.7, 0.8, 1}
 	UserHistoryGaussVariance = 0.15
 	UserHistoryTimeDelayFactor = 10000
 
-	PreprocessOutlinePercent = float64(0.333) // third part of fingerprints are considered as outline
+	PreprocessOutlinePercent = float64(0.333) // third part of finger	prints are considered as outline
 	NormalRssDev = 5
 	RssRegulation = true
 	AvgRSSAdjacentDots = true
@@ -87,6 +88,7 @@ func init() {
 	DefaultDSAEnabled = false
 	PDREnabledForDynamicSubareaMethod = false
 
+	DefaultSimpleHistoryEnabled = false
 	FastLearn = false
 	TesterUsername = "tester"
 	MinRssClustringEnabled = true

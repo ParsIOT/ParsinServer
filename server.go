@@ -372,7 +372,8 @@ func main() {
 			needToLoadSettings.POST("/delArbitLocations", routes.DelArbitLocations)
 			//needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
 			needToLoadSettings.DELETE("/clearConfigData", routes.ClearConfigData)
-			needToLoadSettings.POST("/knnConfig", routes.KnnConfigPOST)
+			needToLoadSettings.POST("/setKnnConfig", routes.SetKnnConfig)
+			needToLoadSettings.POST("/setGroupOtherConfig", routes.SetGroupOtherConfig)
 		}
 	}
 	r.GET("/getfingerprint/", routes.GetFingerprint)

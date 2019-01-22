@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"encoding/json"
@@ -39,6 +40,27 @@ func GroupExists(group string) bool {
 		return false
 	}
 	return true
+}
+
+// return list of group names that are in data folder.
+func AllGroupNames() []string {
+	var DBs []string
+
+	err := filepath.Walk(glb.RuntimeArgs.SourcePath, func(path string, info os.FileInfo, err error) error {
+		if filepath.Ext(path) == ".db" {
+			dbName := strings.TrimSpace(info.Name())
+			dbName = dbName[:len(dbName)-3]
+			if dbName != "" && dbName != "Settings" {
+				DBs = append(DBs, dbName) // remove '.db' and add the group name
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	sort.Sort(sort.StringSlice(DBs))
+	return DBs
 }
 
 // renames the network, then calls savePersistentParameters() function to save ps

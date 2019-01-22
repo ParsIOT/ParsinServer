@@ -7,10 +7,13 @@ import (
 	"ParsinServer/dbm/parameters"
 )
 
-func HistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory []parameters.UserPositionJSON) (string, float64) {
+func SimpleHistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory []parameters.UserPositionJSON) (string, float64) {
 
 	//glb.Debug.Println(currentUserPos)
 	//glb.Debug.Println(userHistory)
+	if len(userHistory) == 0 {
+		return currentUserPos.KnnGuess, 0
+	}
 
 	locHistory := []string{}
 	tsHistory := []int64{} // timestamps
@@ -81,6 +84,9 @@ func HistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory []par
 
 func HistoryEffectStaticFactors(currentUserPos parameters.UserPositionJSON, userHistory []parameters.UserPositionJSON) (string, float64) {
 
+	if len(userHistory) == 0 {
+		return currentUserPos.KnnGuess, 0
+	}
 	locHistory := []string{}
 	for _, userPos := range userHistory {
 		locHistory = append(locHistory, userPos.KnnGuess)
@@ -91,7 +97,12 @@ func HistoryEffectStaticFactors(currentUserPos parameters.UserPositionJSON, user
 	resY := float64(0)
 	sumFactor := float64(0)
 
-	for i, factor := range glb.UserHistoryEffectFactors {
+	loopLength := len(glb.UserHistoryEffectFactors)
+	if len(locHistory) < loopLength {
+		loopLength = len(locHistory)
+	}
+	for i := 0; i < loopLength; i++ {
+		factor := glb.UserHistoryEffectFactors[i]
 		if i == len(locHistory) {
 			x_y := strings.Split(currentLoc, ",")
 			if !(len(x_y) == 2) {

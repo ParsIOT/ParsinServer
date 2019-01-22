@@ -1346,7 +1346,7 @@ func CalculateTestErrorAndRelocateTestValid(groupName string, testValidTracks []
 
 	allLocationLogs := rd.Get_TestValidTrueLocations()
 	allLocationLogsOrdering := rd.Get_TestValidTrueLocationsOrdering()
-	//glb.Debug.Println("TrueLocationLog :", allLocationLogs)
+	//glb.Error.Println("TrueLocationLog :", allLocationLogsOrdering)
 
 	tempTestValidTracks := []parameters.TestValidTrack{}
 	//glb.Debug.Println(testValidTracks)

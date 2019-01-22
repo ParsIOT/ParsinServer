@@ -1798,6 +1798,8 @@ func easyjson3b8810b5DecodeParsinServerDbm5(in *jlexer.Lexer, out *ConfigDataStr
 			(out.KnnConfig).UnmarshalEasyJSON(in)
 		case "GroupGraph":
 			(out.GroupGraph).UnmarshalEasyJSON(in)
+		case "OtherGroupConfig":
+			(out.OtherGroupConfig).UnmarshalEasyJSON(in)
 		default:
 			in.SkipRecursive()
 		}
@@ -1831,6 +1833,16 @@ func easyjson3b8810b5EncodeParsinServerDbm5(out *jwriter.Writer, in ConfigDataSt
 			out.RawString(prefix)
 		}
 		(in.GroupGraph).MarshalEasyJSON(out)
+	}
+	{
+		const prefix string = ",\"OtherGroupConfig\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		(in.OtherGroupConfig).MarshalEasyJSON(out)
 	}
 	out.RawByte('}')
 }

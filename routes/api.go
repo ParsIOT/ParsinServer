@@ -2324,7 +2324,10 @@ func GetMapDetails(c *gin.Context) {
 			MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
 			c.JSON(http.StatusOK, gin.H{"success": true, "MapName": MapName, "MapPath": MapPath, "MapDimensions": MapDimensions})
 		} else {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist"})
+			MapName := glb.DefaultMapName
+			MapDimensions := glb.DefaultMapDimensions
+			MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist", "MapName": MapName, "MapPath": MapPath, "MapDimensions": MapDimensions})
 		}
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group is not mentioned"})
@@ -2378,7 +2381,7 @@ func ReloadDB(c *gin.Context) {
 
 }
 
-func KnnConfigPOST(c *gin.Context) {
+func SetKnnConfig(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -2498,3 +2501,52 @@ func KnnConfigPOST(c *gin.Context) {
 	}
 	c.Redirect(http.StatusFound, "/dashboard/"+groupName)
 }
+
+func SetGroupOtherConfig(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	coGroupStr := strings.TrimSpace(c.PostForm("coGroup"))
+	simpleHistoryEnabledStr := strings.TrimSpace(c.PostForm("simpleHistoryEnabled"))
+
+	if groupName != "none" {
+
+		cd := dbm.GM.GetGroup(groupName).Get_ConfigData()
+		otherGpConfig := cd.Get_OtherGroupConfig()
+		glb.Debug.Println(otherGpConfig)
+
+		// Parsing coGroupStr
+		if coGroupStr != "" {
+			glb.Debug.Println("CoGroup: ", coGroupStr)
+			if (coGroupStr == "No CoGroup") {
+				otherGpConfig.CoGroup = ""
+			} else {
+				otherGpConfig.CoGroup = coGroupStr
+			}
+		}
+
+		// Parsing simpleHistoryEnabledStr
+		if simpleHistoryEnabledStr != "" {
+			simpleHistoryEnabled, err := strconv.ParseBool(simpleHistoryEnabledStr)
+			if err != nil {
+				glb.Error.Println(err)
+				glb.Error.Println("Can't parse simpleHistoryEnabled")
+			} else {
+				glb.Debug.Println("simpleHistoryEnabled: ", simpleHistoryEnabled)
+				otherGpConfig.SimpleHistoryEnabled = simpleHistoryEnabled
+			}
+		}
+
+		cd.Set_OtherGroupConfig(otherGpConfig)
+	}
+	c.Redirect(http.StatusFound, "/dashboard/"+groupName)
+}
+
+
+

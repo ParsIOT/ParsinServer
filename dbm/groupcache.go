@@ -53,9 +53,11 @@ func (st *RawDataStruct) RUnlock() {
 type ConfigDataStruct struct {
 	mutex *sync.RWMutex
 	group *Group
+
 	//Learned data:
-	KnnConfig  parameters.KnnConfig
-	GroupGraph parameters.Graph
+	KnnConfig        parameters.KnnConfig
+	GroupGraph       parameters.Graph
+	OtherGroupConfig parameters.OtherGroupConfig
 	//Note: Run easyjson.sh after editing
 }
 
@@ -885,10 +887,11 @@ func (gp *Group) NewRawDataStruct() *RawDataStruct {
 }
 func (gp *Group) NewConfigDataStruct() *ConfigDataStruct {
 	return &ConfigDataStruct{
-		mutex:      &sync.RWMutex{},
-		group:      gp,
-		KnnConfig:  parameters.NewKnnConfig(),
-		GroupGraph: parameters.NewGraph(),
+		mutex:            &sync.RWMutex{},
+		group:            gp,
+		KnnConfig:        parameters.NewKnnConfig(),
+		GroupGraph:       parameters.NewGraph(),
+		OtherGroupConfig: parameters.NewOtherGroupConfig(),
 	}
 }
 
@@ -1023,6 +1026,25 @@ func (gp *Group) Set_Permanent(new_item bool) {
 	gp.Permanent = new_item
 	gp.Unlock()
 	GM.SetDirtyBit(gp.Get_Name())
+}
+
+// return cogroup groupcache pointer
+// return false if there's no CoGroup(group) with this name or if it wasn't sat.
+func (gp *Group) Get_CoGroup() (bool, *Group) {
+	cd := gp.Get_ConfigData()
+	CoGroupName := cd.Get_OtherGroupConfig().CoGroup
+	if CoGroupName != "" {
+		if GroupExists(CoGroupName) {
+			coGp := GM.GetGroup(CoGroupName)
+			return true, coGp
+		} else {
+			glb.Error.Println("There isn't any CoGroup(group) with this name")
+			return false, nil
+		}
+	} else {
+		glb.Error.Println("CoGroup field is empty")
+		return false, nil
+	}
 }
 
 func (rd *RawDataStruct) SetDirtyBit() {
@@ -1593,7 +1615,7 @@ func (rd *RawDataStruct) Set_TestValidTrueLocations(new_item map[int64]string) {
 
 func (rd *RawDataStruct) Get_TestValidTrueLocationsOrdering() []int64 {
 	rd.RLock()
-	item := rd.LearnTrueLocationsOrdering
+	item := rd.TestValidTrueLocationsOrdering
 	TestValidTrueLocations := rd.TestValidTrueLocations
 	rd.RUnlock()
 	if len(item) == 0 {
@@ -1798,6 +1820,21 @@ func (confdata *ConfigDataStruct) Set_KnnConfig(new_item parameters.KnnConfig) {
 	confdata.Unlock()
 }
 
+func (confdata *ConfigDataStruct) Get_OtherGroupConfig() parameters.OtherGroupConfig {
+	confdata.RLock()
+	item := confdata.OtherGroupConfig
+	confdata.RUnlock()
+	return item
+}
+func (confdata *ConfigDataStruct) Set_OtherGroupConfig(new_item parameters.OtherGroupConfig) {
+	defer confdata.SetDirtyBit()
+
+	confdata.Lock()
+	confdata.OtherGroupConfig = new_item
+	confdata.Unlock()
+}
+
+
 //func (rs *ResultDataStruct) AppendResult(fp parameters.Fingerprint){
 //	defer rs.SetDirtyBit()
 //	rs.Lock()
@@ -1842,6 +1879,14 @@ func (rs *ResultDataStruct) Get_AlgoLocAccuracy() map[string]map[string]int {
 	item := rs.AlgoAccuracyLoc
 	rs.RUnlock()
 	return item
+}
+func (rs *ResultDataStruct) Set_ALL_AlgoLocAccuracy(new_item map[string]map[string]int) {
+	defer rs.SetDirtyBit()
+
+	//glb.Error.Println(algoName," ",loc," ",distError)
+	rs.Lock()
+	rs.AlgoAccuracyLoc = new_item
+	rs.Unlock()
 }
 func (rs *ResultDataStruct) Set_AlgoLocAccuracy(algoName string, loc string, distError int) {
 	defer rs.SetDirtyBit()

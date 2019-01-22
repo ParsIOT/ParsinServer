@@ -41,6 +41,19 @@ func NewKnnConfig() KnnConfig {
 	}
 }
 
+// Other group configs that aren't in knnconfig and ...
+type OtherGroupConfig struct {
+	CoGroup              string
+	SimpleHistoryEnabled bool
+}
+
+func NewOtherGroupConfig() OtherGroupConfig {
+	return OtherGroupConfig{
+		CoGroup:              "",
+		SimpleHistoryEnabled: glb.DefaultSimpleHistoryEnabled,
+	}
+}
+
 // Constant parameters that set by cross-validation are in KnnHyperParameters
 type KnnHyperParameters struct {
 	K                   int       `json:"K"`
