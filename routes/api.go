@@ -543,13 +543,15 @@ func GetTestValidTracksDetails(c *gin.Context) {
 				tempTestValidTracks := []parameters.TestValidTrack{}
 				for _, testValidTrack := range testValidTracks {
 					fp := testValidTrack.UserPosition.Fingerprint
-					if (len(fp.WifiFingerprint) >= glb.MinApNum) {
-						newUserPositiong := algorithms.RecalculateTrackFingerprint(fp)
+					//if (len(fp.WifiFingerprint) >= glb.MinApNum) {
+					newUserPositiong, err := algorithms.RecalculateTrackFingerprint(fp)
+					if err == nil {
 						testValidTrack.UserPosition = newUserPositiong
 						tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
-					} else {
-						glb.Error.Println("For testValidTrack:", fp.Timestamp, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
 					}
+					//} else {
+					//	glb.Error.Println("For testValidTrack:", fp.Timestamp, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
+					//}
 				}
 				c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": tempTestValidTracks, "fpdata": fpData})
 			} else if repredict == "false" {
@@ -606,7 +608,7 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-ContrgetTestValidTracksDetailsol-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
@@ -641,15 +643,20 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 				// Repredict test-valid FPs
 				for _, testValidTrack := range testValidTracks {
 					fp := testValidTrack.UserPosition.Fingerprint
-					if (len(fp.WifiFingerprint) >= glb.MinApNum) {
+					//if (len(fp.WifiFingerprint) >= glb.MinApNum) {
 						//glb.Error.Println("Fp:",fp)
-						newUserPositiong := algorithms.RecalculateTrackFingerprint(fp)
-						//glb.Debug.Println(newUserPositiong)
+					newUserPositiong, err := algorithms.RecalculateTrackFingerprint(fp)
+					if err == nil {
 						testValidTrack.UserPosition = newUserPositiong
 						tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
-					} else {
-						glb.Error.Println("For testValidTrack:", fp.Timestamp, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
 					}
+					//newUserPositiong := algorithms.RecalculateTrackFingerprint(fp)
+					////glb.Debug.Println(newUserPositiong)
+					//testValidTrack.UserPosition = newUserPositiong
+					//tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
+					//} else {
+					//	glb.Error.Println("For testValidTrack:", fp.Timestamp, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
+					//}
 
 				}
 				//}

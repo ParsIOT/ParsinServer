@@ -166,17 +166,18 @@ func NewResultsParameters() *ResultsParameters {
 }
 
 type UserPositionJSON struct {
-	Time        int64              `json:"time"`
-	Location    string             `json:"location"`
-	BayesGuess  string             `json:"bayesguess"`
-	BayesData   map[string]float64 `json:"bayesdata"`
-	SvmGuess    string             `json:"svmguess"`
-	SvmData     map[string]float64 `json:"svmdata"`
-	ScikitData  map[string]string  `json:"rfdata"`
-	KnnGuess    string             `json:"knnguess"`
-	KnnData     map[string]float64 `json:"knndata"` // fpTime --> 1/(1+RssVectordistance) or weight
-	PDRLocation string             `json:"pdrlocation"`
-	Fingerprint Fingerprint        `json:"fingerprint"` // raw fingerprint data
+	Time            int64              `json:"time"`
+	Location        string             `json:"location"`
+	BayesGuess      string             `json:"bayesguess"`
+	BayesData       map[string]float64 `json:"bayesdata"`
+	SvmGuess        string             `json:"svmguess"`
+	SvmData         map[string]float64 `json:"svmdata"`
+	ScikitData      map[string]string  `json:"rfdata"`
+	KnnGuess        string             `json:"knnguess"`
+	KnnData         map[string]float64 `json:"knndata"` // fpTime --> 1/(1+RssVectordistance) or weight
+	Confidentiality float64            `json:"confidentiality"`
+	PDRLocation     string             `json:"pdrlocation"`
+	Fingerprint     Fingerprint        `json:"fingerprint"` // raw fingerprint data
 }
 
 type TestValidTrack struct {

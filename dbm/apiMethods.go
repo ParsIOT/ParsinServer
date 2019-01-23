@@ -1335,6 +1335,7 @@ func GetRSSData(groupName string, mac string) [][]int {
 
 }
 
+// Find true location of test-valid FPs and calculate error according to estimated location
 func CalculateTestErrorAndRelocateTestValid(groupName string, testValidTracks []parameters.TestValidTrack) (error, []int, [][]string, []parameters.TestValidTrack) { //todo: create a page to show test-valid test fingerprint on map
 	details := [][]string{}
 	errDetails := []int{}
@@ -1342,8 +1343,8 @@ func CalculateTestErrorAndRelocateTestValid(groupName string, testValidTracks []
 	gp := GM.GetGroup(groupName)
 	rsd := gp.Get_ResultData()
 	rd := gp.Get_RawData()
-	// Get True Location logs from db
 
+	// Get True Location logs from db
 	allLocationLogs := rd.Get_TestValidTrueLocations()
 	allLocationLogsOrdering := rd.Get_TestValidTrueLocationsOrdering()
 	//glb.Error.Println("TrueLocationLog :", allLocationLogsOrdering)

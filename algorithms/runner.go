@@ -15,11 +15,21 @@ import (
 	"strings"
 )
 
+//
 const (
 	AUC              string = "AUC"
 	FalseRate        string = "FalseRate"
 	Mean             string = "Mean"
 	LatterPercentile string = "LatterPercentile"
+)
+
+// TrackFingerprint options
+const (
+	KNN                       string = "KNN"
+	BAYES                     string = "BAYES"
+	SVM                       string = "SVM"
+	SCIKIT                    string = "SCIKIT"
+	IgnoreSimpleHistoryEffect string = "IgnoreSimpleHistoryEffect"
 )
 
 var threadedCross bool = false //don't use, it's not safe now!
@@ -36,32 +46,28 @@ func TrackFingerprintPOST(c *gin.Context) {
 	//glb.Info.Println(fp)
 
 	if glb.BindJSON(&fp, c) == nil {
-		if (len(fp.WifiFingerprint) >= glb.MinApNum) {
-			glb.Debug.Println("Track json: ", fp)
-			if !glb.IsValidXY(fp.Location) {
-				// Mobile PDR data isn't available
-				fp.Location = "" // this value check in TrackFingerprint, non-empty fp.Location is considered as PDR data
-			}
-			message, success, location, bayesGuess, _, svmGuess, _, knnGuess, scikitData, accuracyCircleRadius := TrackFingerprint(fp)
-
-			knnGuess = location // todo: this is done for compatability ,use 'location' instead of knn
-			if success {
-				scikitDataStr := glb.StringMap2String(scikitData)
-				resJsonMap := gin.H{"message": message, "success": true, "location": location, "bayes": bayesGuess, "svm": svmGuess, "knn": knnGuess, "accuracyCircleRadius": accuracyCircleRadius}
-				for algorithm, valXY := range scikitData {
-					resJsonMap[algorithm] = valXY
-				}
-
-				glb.Debug.Println("message", message, " success", true, " location", location, " bayes", bayesGuess, " svm", svmGuess, scikitDataStr, " knn", knnGuess, " accuracyCircleRadius", accuracyCircleRadius)
-				c.JSON(http.StatusOK, resJsonMap)
-			} else {
-				glb.Debug.Println(message)
-				c.JSON(http.StatusOK, gin.H{"message": message, "success": false})
-			}
-		} else {
-			glb.Warning.Println("Nums of AP must be greater than 3")
-			c.JSON(http.StatusOK, gin.H{"message": "Nums of AP must be greater than 3", "success": false})
+		glb.Debug.Println("Track json: ", fp)
+		if !glb.IsValidXY(fp.Location) {
+			// Mobile PDR data isn't available
+			fp.Location = "" // this value check in TrackFingerprint, non-empty fp.Location is considered as PDR data
 		}
+		userPosJson, success, message := TrackOnlineFingerprint(fp)
+
+		knnGuess := userPosJson.Location // todo: this is done for compatability ,use 'location' instead of knn
+		if success {
+			scikitDataStr := glb.StringMap2String(userPosJson.ScikitData)
+			resJsonMap := gin.H{"message": message, "success": true, "location": userPosJson.Location, "bayes": userPosJson.BayesGuess, "svm": userPosJson.SvmGuess, "knn": knnGuess, "accuracyCircleRadius": userPosJson.Confidentiality}
+			for algorithm, valXY := range userPosJson.ScikitData {
+				resJsonMap[algorithm] = valXY
+			}
+
+			glb.Debug.Println("message", message, " success", true, " location", userPosJson.Location, " bayes", userPosJson.BayesGuess, " svm", userPosJson.SvmGuess, scikitDataStr, " knn", knnGuess, " accuracyCircleRadius", userPosJson.Confidentiality)
+			c.JSON(http.StatusOK, resJsonMap)
+		} else {
+			glb.Warning.Println(message)
+			c.JSON(http.StatusOK, gin.H{"message": message, "success": false})
+		}
+
 	} else {
 		glb.Warning.Println("Could not bind JSON")
 		c.JSON(http.StatusOK, gin.H{"message": "Could not bind JSON", "success": false})
@@ -143,7 +149,7 @@ func LearnFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool) {
 }
 
 // call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
-func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, string, string, map[string]float64, string, map[string]float64, string, map[string]string, float64) {
+/*func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, string, string, map[string]float64, string, map[string]float64, string, map[string]string, float64) {
 	// Classify with filter curFingerprint
 	//fullFingerprint := curFingerprint
 	parameters.CleanFingerprint(&curFingerprint)
@@ -173,25 +179,26 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 		return "No username defined, see API", false, "", "", bayesData, "", make(map[string]float64), "", make(map[string]string), float64(0)
 	}
 
-	/*	wasLearning, ok := dbm.GetLearningCache(strings.ToLower(curFingerprint.Group))
-		if ok {
-			if wasLearning {
-				glb.Debug.Println("Was learning, calculating priors")
+	//wasLearning, ok := dbm.GetLearningCache(strings.ToLower(curFingerprint.Group))
+	//	if ok {
+	//		if wasLearning {
+	//			glb.Debug.Println("Was learning, calculating priors")
+	//
+	//			go dbm.SetLearningCache(groupName, false)
+	//			//bayes.OptimizePriorsThreaded(groupName)
+	//			//if glb.RuntimeArgs.Svm {
+	//			//	DumpFingerprintsSVM(groupName)
+	//			//	CalculateSVM(groupName)
+	//			//}
+	//			//if glb.RuntimeArgs.Scikit {
+	//			//	ScikitLearn(groupName)
+	//			//}
+	//			//LearnKnn(groupName)
+	//			CalculateLearn(groupName)
+	//			go dbm.AppendUserCache(groupName, curFingerprint.Username)
+	//		}
+	//	}
 
-				go dbm.SetLearningCache(groupName, false)
-				//bayes.OptimizePriorsThreaded(groupName)
-				//if glb.RuntimeArgs.Svm {
-				//	DumpFingerprintsSVM(groupName)
-				//	CalculateSVM(groupName)
-				//}
-				//if glb.RuntimeArgs.Scikit {
-				//	ScikitLearn(groupName)
-				//}
-				//LearnKnn(groupName)
-				CalculateLearn(groupName)
-				go dbm.AppendUserCache(groupName, curFingerprint.Username)
-			}
-		}*/
 	//glb.Info.Println(curFingerprint)
 	//bayesGuess, bayesData = bayes.CalculatePosterior(curFingerprint, nil)
 	//percentBayesGuess := float64(0)
@@ -313,15 +320,60 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint) (string, bool, stri
 	return message, true, location, bayesGuess, bayesData, svmGuess, svmData, knnGuess, scikitData, accuracyCircleRadius
 
 }
+*/
+func TrackOnlineFingerprint(curFingerprint parameters.Fingerprint) (parameters.UserPositionJSON, bool, string) {
+	parameters.CleanFingerprint(&curFingerprint)
 
-// call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
-func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) parameters.UserPositionJSON {
+	pdrLocation := curFingerprint.Location // When raw fingerprint is got from cellphone, pdrLocation is in location field
+	userPosJson, success, message := TrackFingerprint(curFingerprint)
+	userPosJson.PDRLocation = pdrLocation
+
+	if success {
+		gp := dbm.GM.GetGroup(curFingerprint.Group)
+		go dbm.SetUserPositionCache(strings.ToLower(curFingerprint.Group)+strings.ToLower(curFingerprint.Username), userPosJson)
+		go gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
+		go gp.Get_ResultData().Append_UserResults(curFingerprint.Username, userPosJson)
+
+		// Add fingerprint as a test-valid fp to db
+		if curFingerprint.TestValidation && curFingerprint.Username == glb.TesterUsername {
+			glb.Debug.Println("TestValidTrack added ")
+			tempTestValidTrack := parameters.TestValidTrack{UserPosition: userPosJson}
+			go gp.Get_ResultData().Append_TestValidTracks(tempTestValidTrack)
+		}
+	}
+	return userPosJson, success, message
+}
+
+func TrackFingerprint(curFingerprint parameters.Fingerprint, options ...string) (parameters.UserPositionJSON, bool, string) {
+	doAllAlgorithm := true
+	if len(options) > 0 {
+		doAllAlgorithm = false
+	}
+
 	// Classify with filter curFingerprint
-	//fullFingerprint := curFingerprint
+	filteredCurFingerprint := dbm.FilterFingerprint(curFingerprint) // Use this as algorithm inputs, also curFingerprint saved as main fingerprint in UserJson
 
-	//dbm.FilterFingerprint(&curFingerprint)
-	curFingerprint = dbm.FilterFingerprint(curFingerprint)
-	groupName := strings.ToLower(curFingerprint.Group)
+	if (len(curFingerprint.WifiFingerprint) < glb.MinApNum) {
+		glb.Error.Println("For testValidTrack:", curFingerprint.Timestamp, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
+		return parameters.UserPositionJSON{}, false, "NumofAP_lowerThan_MinApNum"
+	}
+	if !dbm.GroupExists(curFingerprint.Group) || len(curFingerprint.Group) == 0 {
+		glb.Error.Println("You should insert fingerprints before tracking")
+		return parameters.UserPositionJSON{}, false, "You should insert fingerprints before tracking"
+	}
+	if len(curFingerprint.WifiFingerprint) == 0 || len(filteredCurFingerprint.WifiFingerprint) == 0 {
+		glb.Error.Println("No fingerprints(maybe after filtering) were found to track, see API")
+		return parameters.UserPositionJSON{}, false, "No fingerprints(maybe after filtering) were found to track, see API"
+	}
+	if len(curFingerprint.Username) == 0 {
+		glb.Error.Println("No username was defined, see API")
+		return parameters.UserPositionJSON{}, false, "No username was defined, see API"
+	}
+
+	groupName := curFingerprint.Group
+	gp := dbm.GM.GetGroup(groupName)
+	cd := gp.Get_ConfigData()
+	otherGpConfig := cd.Get_OtherGroupConfig()
 
 	bayesGuess := ""
 	bayesData := make(map[string]float64)
@@ -329,31 +381,28 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 	svmData := make(map[string]float64)
 	scikitData := make(map[string]string)
 	knnGuess := ""
+	knnData := make(map[string]float64)
+	message := ""
 	location := ""
-	pdrLocation := curFingerprint.Location
+	accuracyCircleRadius := float64(0)
 
-
-	gp := dbm.GM.GetGroup(groupName)
-	cd := gp.Get_ConfigData()
-	otherGpConfig := cd.Get_OtherGroupConfig()
 	// Calculating KNN
-	//glb.Debug.Println(curFingerprint)
-	err, knnGuess, knnData := TrackKnn(gp, curFingerprint, true)
-	if err != nil {
-		glb.Error.Println(err)
+	if doAllAlgorithm || glb.StringInSlice(KNN, options) {
+		var err error
+		err, knnGuess, knnData = TrackKnn(gp, filteredCurFingerprint, true)
+		if err != nil {
+			glb.Error.Println(err)
+		}
+		message += " knnGuess: " + knnGuess
 	}
 
-	//curFingerprint.Location = knnGuess
-	// Insert full curFingerprint
-	//glb.Debug.Println(curFingerprint)
-	//go dbm.PutFingerprintIntoDatabase(fullFingerprint, "fingerprints-track")
-
 	// Calculating Scikit
-	if glb.RuntimeArgs.Scikit {
-		scikitData = ScikitClassify(groupName, curFingerprint)
+
+	if glb.RuntimeArgs.Scikit && (doAllAlgorithm || glb.StringInSlice(SCIKIT, options)) {
+		scikitData = ScikitClassify(groupName, filteredCurFingerprint)
 		glb.Debug.Println(scikitData)
 		for algorithm, valueXY := range scikitData {
-			glb.Debug.Println(algorithm + ":" + valueXY)
+			message += " " + algorithm + ":" + valueXY
 		}
 
 	}
@@ -368,74 +417,45 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) paramete
 	userPosJson.ScikitData = scikitData
 	userPosJson.KnnGuess = knnGuess
 	userPosJson.KnnData = knnData
-	userPosJson.PDRLocation = pdrLocation
 	userPosJson.Fingerprint = curFingerprint
 
 	// User history effect
 	location = knnGuess
-	if otherGpConfig.SimpleHistoryEnabled {
+	if otherGpConfig.SimpleHistoryEnabled && !glb.StringInSlice(IgnoreSimpleHistoryEffect, options) {
 		userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
-		//location, accuracyCircleRadius = SimpleHistoryEffect(userPosJson, userHistory)
-		location, _ = SimpleHistoryEffect(userPosJson, userHistory)
-		/*		glb.Error.Println(location)
-				glb.Error.Println(knnGuess)*/
+		location, accuracyCircleRadius = SimpleHistoryEffect(userPosJson, userHistory)
 	}
 
 	userPosJson.Location = location
-	glb.Debug.Println("Knn guess: ", knnGuess)
-	glb.Debug.Println("location: ", location)
-
-	//location = userPosJson.KnnGuess
-	userPosJson.KnnGuess = location //todo: must add location as seprated variable from knnguess in parameters.UserPositionJSON
-	//go dbm.SetUserPositionCache(strings.ToLower(curFingerprint.Group)+strings.ToLower(curFingerprint.Username), userPosJson)
-	gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson) //Todo: if we use this as goroutine the delay until running effect next track
-
-	//go gp.Get_ResultData().Append_UserResults(curFingerprint.Username, userPosJson)
-
-	//glb.Debug.Println(len(gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)))
+	userPosJson.Confidentiality = accuracyCircleRadius
 
 	glb.Debug.Println(userPosJson)
+	return userPosJson, true, message
+}
 
-	return userPosJson
+// call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
+func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) (parameters.UserPositionJSON, error) {
+	userPosJson, success, message := TrackFingerprint(curFingerprint)
 
+	if success {
+		gp := dbm.GM.GetGroup(curFingerprint.Group)
+		userPosJson.KnnGuess = userPosJson.Location //todo: must add location as seprated variable( from knnguess) in parameters.UserPositionJSON
+		gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
+		return userPosJson, nil
+	} else {
+		return userPosJson, errors.New(message)
+	}
 }
 
 func RecalculateTrackFingerprintKnnCrossValidation(curFingerprint parameters.Fingerprint) string {
-	// Classify with filter curFingerprint
-	gp := dbm.GM.GetGroup(curFingerprint.Group)
-	cd := gp.Get_ConfigData()
-	otherGpConfig := cd.Get_OtherGroupConfig()
-	//dbm.FilterFingerprint(&curFingerprint)
-	parameters.CleanFingerprint(&curFingerprint)
+	//userPosJson, success, message := TrackFingerprint(curFingerprint, KNN, IgnoreSimpleHistoryEffect)
+	userPosJson, success, _ := TrackFingerprint(curFingerprint, KNN)
 
-	location := ""
-	//accuracyCircleRadius := float64(0)
-
-	curFingerprint = dbm.FilterFingerprint(curFingerprint)
-	// Calculating KNN
-	err, knnGuess, knnData := TrackKnn(gp, curFingerprint, true)
-	if err != nil {
-		glb.Error.Println(err)
+	if success {
+		gp := dbm.GM.GetGroup(curFingerprint.Group)
+		userPosJson.KnnGuess = userPosJson.Location //todo: must add location as seprated variable( from knnguess) in parameters.UserPositionJSON
+		gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
 	}
-
-	// Send out the final responses
-	var userPosJson parameters.UserPositionJSON
-	userPosJson.Time = curFingerprint.Timestamp
-	userPosJson.KnnGuess = knnGuess
-	userPosJson.KnnData = knnData
-	userPosJson.Fingerprint = curFingerprint
-
-	// User history effect
-
-	location = knnGuess
-	if otherGpConfig.SimpleHistoryEnabled {
-		userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
-		//location, accuracyCircleRadius = SimpleHistoryEffect(userPosJson, userHistory)
-		location, _ = SimpleHistoryEffect(userPosJson, userHistory)
-	}
-
-	userPosJson.Location = location
-	gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson) //Todo: if we use this as goroutine the delay until running effect next track
 
 	return userPosJson.Location
 }
@@ -1534,7 +1554,6 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 		glb.Error.Println("Can't set valid bleFactor Range values")
 	}
 
-
 	// Set length of calculation progress bar
 	// This is shared between all threads, so it's invalid when two calculateLearn thread run
 	calculationLen := len(validMinClusterRSSs) * len(validKs) * len(validMaxEuclideanRssDists) * len(validMaxEuclideanRssDists) * len(validBLEFactors)
@@ -2139,10 +2158,6 @@ func CalculateByTestValidTracks(groupName string) {
 	knnConfig := gp.Get_ConfigData().Get_KnnConfig()
 	knnFPs := ad.Get_KnnFPs()
 
-
-
-
-
 	//if len(validGraphFactorsRange) == 1{
 	//
 	//}else if len(validGraphFactorsRange) == 2{
@@ -2444,7 +2459,6 @@ func SelectBestMaxMovementByTestValidTracks(gp *dbm.Group, testValidTracks []par
 
 	return bestErrHyperParameters
 }
-
 
 // Error calculation using mean as error algorithm
 func CalculateByTestValidTracksLegacy(groupName string) {
