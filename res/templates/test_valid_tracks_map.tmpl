@@ -440,7 +440,7 @@
 	function calculateErrorByTrueLocation() {
         calculateErrorByTrueLocationButton.toggle();
 
-        $.getJSON("/calculateErrorByTrueLocation?group={{ .Group }}&repredict=" + ($('#repredict_check').is(":checked") ? "true" : "false"), function (data) {
+        $.getJSON("/getTestValidTracksDetails?group={{ .Group }}&calculate_err=true&repredict=" + ($('#repredict_check').is(":checked") ? "true" : "false"), function (data) {
 			if (data.success == true) {
 
                 testValidTracks = data.testvalidtracks;
@@ -493,7 +493,7 @@
                             $("#show-error-details-link").find("a").remove();//remove show rss details link
                             $("<a/>", {
                                 "target": "_blank",
-                                "onclick": "window.open('" + "/calculateErrorByTrueLocation?group={{ .Group }}&repredict=false" + "','pagename','resizable,height=420,width=1000'); return false;",
+                                "onclick": "window.open('" + "/getTestValidTracksDetails?group={{ .Group }}&calculate_err=true&repredict=false" + "','pagename','resizable,height=420,width=1000'); return false;",
                                 html: "See Error details"
                             }).appendTo("#show-error-details-link");
 

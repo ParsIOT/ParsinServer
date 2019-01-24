@@ -206,7 +206,6 @@ func GetLastFingerprint(c *gin.Context) {
 //Returns n of the last location estimations that were stored in fingerprints-track bucket in db
 func GetHistoricalUserPositions(groupName string, user string, n int) []parameters.UserPositionJSON {
 
-
 	//return userJSONs
 	gp := dbm.GM.GetGroup(groupName)
 	tempUserPositions := gp.Get_ResultData().Get_UserResults(user)
@@ -488,59 +487,36 @@ func GetTestValidTracks(c *gin.Context) {
 	}
 }
 
-// Get test-valid tracks details or recalculate track (repredict) location of these FPs
-// GET Parameters: group, repredict
-func GetTestValidTracksDetails(c *gin.Context) {
-	c.Writer.Header().Set("Content-Type", "application/json")
-	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
-	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+func RecalculateTestvalidTrackFingerprint(groupName string, repredict bool) []parameters.TestValidTrack {
+	gp := dbm.GM.GetGroup(groupName)
+	testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
+	tempTestValidTracks := []parameters.TestValidTrack{}
+	if len(testValidTracks) != 0 {
+		if repredict {
+			glb.Debug.Println("Repredicting test-valid tracks")
 
-	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
-	repredict := strings.ToLower(c.DefaultQuery("repredict", "none"))
+			gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
 
-	if groupName != "none" && repredict != "none" {
-		gp := dbm.GM.GetGroup(groupName)
-		testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
-		if len(testValidTracks) != 0 {
-			if repredict == "true" {
-				glb.Debug.Println("Repredicting test-valid tracks")
-				fpData := gp.Get_RawData().Get_Fingerprints()
-				gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
-
-				// Repredict test-valid FPs
-				tempTestValidTracks := []parameters.TestValidTrack{}
-				for _, testValidTrack := range testValidTracks {
-					fp := testValidTrack.UserPosition.Fingerprint
-					//if (len(fp.WifiFingerprint) >= glb.MinApNum) {
-					newUserPositiong, err := algorithms.RecalculateTrackFingerprint(fp)
-					if err == nil {
-						testValidTrack.UserPosition = newUserPositiong
-						tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
-					}
-					//} else {
-					//	glb.Error.Println("For testValidTrack:", fp.Timestamp, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
-					//}
+			// Repredict test-valid FPs
+			for _, testValidTrack := range testValidTracks {
+				fp := testValidTrack.UserPosition.Fingerprint
+				//if (len(fp.WifiFingerprint) >= glb.MinApNum) {
+				newUserPositiong, err := algorithms.RecalculateTrackFingerprint(fp)
+				if err == nil {
+					testValidTrack.UserPosition = newUserPositiong
+					tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
 				}
-				c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": tempTestValidTracks, "fpdata": fpData})
-			} else if repredict == "false" {
-				//gp := dbm.GM.GetGroup(groupName)
-				//testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
-				//fpData := gp.Get_RawData().Get_Fingerprints()
-				//c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks, "fpdata": fpData})
-				c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": []parameters.TestValidTrack{}})
-
-			} else {
-				c.JSON(http.StatusOK, gin.H{"success": false, "message": "repredict parameter must be true or false"})
 			}
+
 		} else {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Empty test-valid track list"})
+			//gp := dbm.GM.GetGroup(groupName)
+			//testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
+			//fpData := gp.Get_RawData().Get_Fingerprints()
+			//c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks, "fpdata": fpData})
+			copier.Copy(&tempTestValidTracks, &testValidTracks)
 		}
-	} else {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or repredict isn't given"})
 	}
+	return tempTestValidTracks
 }
 
 func DelTestValidTracks(c *gin.Context) {
@@ -574,18 +550,21 @@ func DelTestValidTracks(c *gin.Context) {
 	}
 }
 
-func CalculateErrorByTrueLocation(c *gin.Context) {
+// Get test-valid tracks details or recalculate track (repredict) location of these FPs
+// GET Parameters: group, repredict
+/*func GetTestValidTracksDetails(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	c.Writer.Header().Set("Access-ContrgetTestValidTracksDetailsol-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 
 	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
 	repredictStr := strings.ToLower(c.DefaultQuery("repredict", "none"))
 
 	if groupName != "none" && repredictStr != "none" {
+		fpData := dbm.GM.GetGroup(groupName).Get_RawData().Get_Fingerprints()
 		if !dbm.GroupExists(groupName) {
 			glb.Error.Println("Group doesn't exist")
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist"})
@@ -600,57 +579,70 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "repredict must be true or false"})
 			return
 		}
-		gp := dbm.GM.GetGroup(groupName)
-		rsd := gp.Get_ResultData()
-		testValidTracks := rsd.Get_TestValidTracks()
-		if len(testValidTracks) != 0 {
-			tempTestValidTracks := []parameters.TestValidTrack{}
 
-			if repredict {
-				glb.Debug.Println("Repredicting test-valid tracks")
-				gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
+		tempTestValidTracks := RecalculateTestvalidTrackFingerprint(groupName, repredict)
 
-				//for i:=0; i<99; i++ {
-				// Repredict test-valid FPs
-				for _, testValidTrack := range testValidTracks {
-					fp := testValidTrack.UserPosition.Fingerprint
-					//if (len(fp.WifiFingerprint) >= glb.MinApNum) {
-						//glb.Error.Println("Fp:",fp)
-					newUserPositiong, err := algorithms.RecalculateTrackFingerprint(fp)
-					if err == nil {
-						testValidTrack.UserPosition = newUserPositiong
-						tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
-					}
-					//newUserPositiong := algorithms.RecalculateTrackFingerprint(fp)
-					////glb.Debug.Println(newUserPositiong)
-					//testValidTrack.UserPosition = newUserPositiong
-					//tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
-					//} else {
-					//	glb.Error.Println("For testValidTrack:", fp.Timestamp, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
-					//}
+		if len(tempTestValidTracks) != 0 {
+			c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": tempTestValidTracks, "fpdata": fpData})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Empty test-valid track list"})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or repredict isn't given"})
+	}
+}*/
 
+func GetTestValidTracksDetails(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-ContrgetTestValidTracksDetailsol-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	repredictStr := strings.ToLower(c.DefaultQuery("repredict", "none"))
+	calculateErrStr := strings.ToLower(c.DefaultQuery("calculate_err", "none"))
+
+	if groupName != "none" && repredictStr != "none" {
+		if !dbm.GroupExists(groupName) {
+			glb.Error.Println("Group doesn't exist")
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist"})
+			return
+		}
+
+		fpData := dbm.GM.GetGroup(groupName).Get_RawData().Get_Fingerprints()
+		repredict := false
+		if repredictStr == "true" {
+			repredict = true
+		} else if repredictStr == "false" {
+			repredict = false
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "repredict must be true or false"})
+			return
+		}
+
+		tempTestValidTracks := RecalculateTestvalidTrackFingerprint(groupName, repredict)
+
+		if len(tempTestValidTracks) != 0 {
+
+			if (calculateErrStr != "none" && calculateErrStr == "true") { //Recalculate Error by true locations
+				// testValidTracksRes is a temporary variable, don't save it in db
+				err, errDetails, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, tempTestValidTracks)
+
+				if len(testValidTracksRes) != len(tempTestValidTracks) {
+					glb.Error.Println("testValidTracksRes length and testValidTracks aren't equal")
 				}
-				//}
-			} else {
-				//for _, testValidTrack := range testValidTracks {
-				copier.Copy(&tempTestValidTracks, &testValidTracks)
-				//}
-			}
-			// testValidTracksRes is a temporary variable, don't save it in db
-			err, errDetails, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, tempTestValidTracks)
 
-			if len(testValidTracksRes) != len(tempTestValidTracks) {
-				glb.Error.Println("testValidTracksRes length and testValidTracks length doesn't equal")
+				if err != nil {
+					c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+				} else {
+					/*				rsd.Set_TestValidTracks(testValidTracks)
+									glb.Debug.Println(details)*/
+					c.JSON(http.StatusOK, gin.H{"success": true, "errDetails": errDetails, "testvalidtracks": testValidTracksRes, "fpdata": fpData})
+				}
 			} else {
-				glb.Error.Println("Empty testValidTracksRes(truelocations and testvalids timestamp don't match.)")
-			}
-
-			if err != nil {
-				c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-			} else {
-				/*				rsd.Set_TestValidTracks(testValidTracks)
-								glb.Debug.Println(details)*/
-				c.JSON(http.StatusOK, gin.H{"success": true, "errDetails": errDetails, "testvalidtracks": testValidTracksRes})
+				c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": tempTestValidTracks, "fpdata": fpData})
 			}
 		} else {
 			glb.Error.Println("empty TestValidTracks")
@@ -2525,6 +2517,3 @@ func SetGroupOtherConfig(c *gin.Context) {
 	}
 	c.Redirect(http.StatusFound, "/dashboard/"+groupName)
 }
-
-
-

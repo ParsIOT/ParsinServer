@@ -394,9 +394,12 @@ func main() {
 	r.DELETE("/delresults", routes.DelResults)
 	r.GET("/location", routes.GetUserLocations)
 	r.GET("/getTestValidTracks", routes.GetTestValidTracks) // deprecated
-	r.GET("/getTestValidTracksDetails", routes.GetTestValidTracksDetails)
 	r.DELETE("/delTestValidTracks", routes.DelTestValidTracks)
-	r.GET("/calculateErrorByTrueLocation", routes.CalculateErrorByTrueLocation)
+
+	r.GET("/getTestValidTracksDetails", routes.GetTestValidTracksDetails)
+	//r.GET("/getTestValidTracksDetails", routes.GetTestValidTracksDetails)
+	//r.GET("/CalculateErrorByTrueLocation", routes.CalculateErrorByTrueLocation)
+
 	r.GET("/getTestErrorAlgoAccuracy", routes.GetTestErrorAlgoAccuracy)
 	// Routes for performing fingerprinting (fingerprint.go)
 	r.POST("/learn", algorithms.LearnFingerprintPOST)
