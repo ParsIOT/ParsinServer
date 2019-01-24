@@ -906,13 +906,34 @@ func GetLocationOfFingerprint (location string) (float64,float64){ // komeil: ge
 	return locX,locY
 }
 
-func SortedInsert(s []int64, f int64) []int64 {
+func SortedInsertInt64(s []int64, f int64) []int64 {
 	l := len(s)
 	if l == 0 {
 		return []int64{f}
 	}
 
 	newS := []int64{}
+	for i, vali := range s {
+		if (vali > f) {
+			newS = append(newS, f)
+			newS = append(newS, s[i:]...)
+			return newS
+		} else {
+			newS = append(newS, vali)
+		}
+
+	}
+	newS = append(s, f)
+	return newS
+}
+
+func SortedInsertInt(s []int, f int) []int {
+	l := len(s)
+	if l == 0 {
+		return []int{f}
+	}
+
+	newS := []int{}
 	for i, vali := range s {
 		if (vali > f) {
 			newS = append(newS, f)

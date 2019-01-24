@@ -12,16 +12,16 @@ func SimpleHistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory
 	//glb.Debug.Println(currentUserPos)
 	//glb.Debug.Println(userHistory)
 	if len(userHistory) == 0 {
-		return currentUserPos.KnnGuess, 0
+		return currentUserPos.RawLocation, 0
 	}
 
 	locHistory := []string{}
 	tsHistory := []int64{} // timestamps
 	for _, userPos := range userHistory {
-		locHistory = append(locHistory, userPos.KnnGuess)
+		locHistory = append(locHistory, userPos.RawLocation)
 		tsHistory = append(tsHistory, userPos.Time)
 	}
-	locHistory = append(locHistory, currentUserPos.KnnGuess)
+	locHistory = append(locHistory, currentUserPos.RawLocation)
 	tsHistory = append(tsHistory, currentUserPos.Time)
 
 	resX := float64(0)
@@ -85,13 +85,13 @@ func SimpleHistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory
 func HistoryEffectStaticFactors(currentUserPos parameters.UserPositionJSON, userHistory []parameters.UserPositionJSON) (string, float64) {
 
 	if len(userHistory) == 0 {
-		return currentUserPos.KnnGuess, 0
+		return currentUserPos.RawLocation, 0
 	}
 	locHistory := []string{}
 	for _, userPos := range userHistory {
-		locHistory = append(locHistory, userPos.KnnGuess)
+		locHistory = append(locHistory, userPos.RawLocation)
 	}
-	currentLoc := currentUserPos.KnnGuess
+	currentLoc := currentUserPos.RawLocation
 
 	resX := float64(0)
 	resY := float64(0)

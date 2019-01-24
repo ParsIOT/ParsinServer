@@ -206,36 +206,7 @@ func GetLastFingerprint(c *gin.Context) {
 //Returns n of the last location estimations that were stored in fingerprints-track bucket in db
 func GetHistoricalUserPositions(groupName string, user string, n int) []parameters.UserPositionJSON {
 
-	//var fingerprints []parameters.Fingerprint
-	//var err error
-	//
-	//fingerprints, err = dbm.TrackFingerprints(user, n, groupName)
-	//if (err != nil) {
-	//	return make([]parameters.UserPositionJSON, 0) //empty userJSONs
-	//}
-	//
-	//glb.Debug.Printf("Got history of %d fingerprints\n", len(fingerprints))
-	//userJSONs := make([]parameters.UserPositionJSON, len(fingerprints))
-	//for i, fingerprint := range fingerprints {
-	//	var userJSON parameters.UserPositionJSON
-	//	//UTCfromUnixNano := time.Unix(0, fingerprint.Timestamp)
-	//	//userJSON.Time = UTCfromUnixNano.String()
-	//	userJSON.Time = fingerprint.Timestamp
-	//	//bayesGuess, bayesData := bayes.CalculatePosterior(fingerprint, nil)
-	//	//userJSON.BayesGuess = bayesGuess
-	//	//userJSON.BayesData = bayesData
-	//	//// Process SVM if needed
-	//	//if glb.RuntimeArgs.Svm {
-	//	//	userJSON.SvmGuess, userJSON.SvmData = algorithms.SvmClassify(fingerprint)
-	//	//}
-	//	//// Process RF if needed
-	//	//if glb.RuntimeArgs.Scikit {
-	//	//	userJSON.ScikitData = algorithms.ScikitClassify(groupName, fingerprint)
-	//	//}
-	//	gp := dbm.GM.GetGroup(groupName)
-	//	_, userJSON.KnnGuess, userJSON.KnnData = algorithms.TrackKnn(gp, fingerprint, false)
-	//	userJSONs[i] = userJSON
-	//}
+
 	//return userJSONs
 	gp := dbm.GM.GetGroup(groupName)
 	tempUserPositions := gp.Get_ResultData().Get_UserResults(user)
@@ -250,7 +221,7 @@ func GetHistoricalUserPositions(groupName string, user string, n int) []paramete
 	return userPositions
 }
 
-//Returns svm, rf, baysian estimations of the track fingerprints that belong to a group
+/*//Returns svm, rf, baysian estimations of the track fingerprints that belong to a group
 func GetCurrentPositionOfAllUsers(groupName string) map[string]parameters.UserPositionJSON {
 	//groupName = strings.ToLower(groupName)
 	userPositions := make(map[string]parameters.UserPositionJSON)
@@ -280,7 +251,7 @@ func GetCurrentPositionOfAllUsers(groupName string) map[string]parameters.UserPo
 	}
 
 	return userPositions
-}
+}*/
 
 // Is like getHistoricalUserPositions but only returns the last location estimation
 func GetCurrentPositionOfUser(groupName string, user string) parameters.UserPositionJSON {
@@ -383,7 +354,7 @@ func calculateLearnData(groupName string, justCalcGraphFactors string) {
 		// Find true locations
 		gp := dbm.GM.GetGroup(groupName)
 		rsd := gp.Get_ResultData()
-		_, _, _, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, testValidTracks)
+		_, _, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, testValidTracks)
 		if len(testValidTracksRes) != 0 { // if truelocations doesn't match avoid reseting testvalidtracks(testValidTracksRes is empty!)
 			rsd.Set_TestValidTracks(testValidTracksRes)
 		} else if len(testValidTracksRes) != len(testValidTracks) {
@@ -666,7 +637,7 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 				//}
 			}
 			// testValidTracksRes is a temporary variable, don't save it in db
-			err, errDetails, details, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, tempTestValidTracks)
+			err, errDetails, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, tempTestValidTracks)
 
 			if len(testValidTracksRes) != len(tempTestValidTracks) {
 				glb.Error.Println("testValidTracksRes length and testValidTracks length doesn't equal")
@@ -679,7 +650,7 @@ func CalculateErrorByTrueLocation(c *gin.Context) {
 			} else {
 				/*				rsd.Set_TestValidTracks(testValidTracks)
 								glb.Debug.Println(details)*/
-				c.JSON(http.StatusOK, gin.H{"success": true, "errDetails": errDetails, "details": details, "testvalidtracks": testValidTracksRes})
+				c.JSON(http.StatusOK, gin.H{"success": true, "errDetails": errDetails, "testvalidtracks": testValidTracksRes})
 			}
 		} else {
 			glb.Error.Println("empty TestValidTracks")

@@ -15,6 +15,7 @@ var RssiRange []float32
 var DefaultCutoff,DefaultMixin float64
 var MinApNum int
 
+
 var PreprocessOutlinePercent float64 // percentage of a location fingerprints that its received rss considered as outline
 var NormalRssDev int                 // Normal deviation rss from median
 var RssRegulation bool               // permit to rss outlines deleting
@@ -51,6 +52,18 @@ var NewDistAlgo string
 
 var TesterUsername string
 
+const (
+	KNN                   string = "KNN"
+	BAYES                 string = "BAYES"
+	SVM                   string = "SVM"
+	SCIKIT_REGRESSION     string = "SCIKIT_REGRESSION"
+	SCIKIT_CLASSIFICATION string = "SCIKIT_CLASSIFICATION"
+)
+
+var ALLALGORITHMS = []string{KNN, BAYES, SVM, SCIKIT_CLASSIFICATION, SCIKIT_REGRESSION}
+
+var MainPositioningAlgo string
+
 func init() {
 	DefaultMixin = float64(0.1)
 	DefaultCutoff = float64(0.01)
@@ -59,12 +72,12 @@ func init() {
 	MaxRssi = 5
 	ProgressBarLength = 0
 	ProgressBarCurLevel = 0
-	DefaultKnnKRange = []int{13, 15}                //{10,30}
-	DefaultKnnMinClusterRssRange = []int{-68, -70}  //{-60,-90}
-	DefaultMaxEuclideanRssDistRange = []int{15, 16} // wifi:50, ble:30
+	DefaultKnnKRange = []int{5}                 //{10,30}
+	DefaultKnnMinClusterRssRange = []int{-65}   //{-60,-90}
+	DefaultMaxEuclideanRssDistRange = []int{16} // wifi:50, ble:30
 	DefaultMaxMovementRange = []int{100, 1000}
 	DefaultGraphFactorsRange = [][]float64{{1, 1, 1, 1}, {2, 2, 2, 1}}
-	DefaultBLEFactorRange = []float64{1.0, 1.2, 0.1}
+	DefaultBLEFactorRange = []float64{1} //{1.0, 1.2, 0.1}
 	DefaultGraphStep = 1.0
 
 	//MinClusterRss = -75
@@ -92,4 +105,6 @@ func init() {
 	FastLearn = false
 	TesterUsername = "tester"
 	MinRssClustringEnabled = true
+
+	MainPositioningAlgo = KNN // see runner.go
 }

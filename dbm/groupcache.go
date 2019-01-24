@@ -153,7 +153,7 @@ type ResultDataStruct struct {
 
 	// TestValid FPs field:
 	AlgoTestErrorAccuracy map[string]int              // algorithmName --> error
-	TestValidTracks       []parameters.TestValidTrack // keeps testValid userPosition and the true location
+	TestValidTracks       []parameters.TestValidTrack // keeps testValid userPosition and the true location(there's no need to save timestamp, they're in order in that slice)
 	//Note: Run easyjson.sh after editing
 }
 
@@ -823,6 +823,12 @@ func (gm *GroupManger) InstantFlushDB(groupName string) {
 		}
 		Wg.Done()
 	}(groupName)
+}
+
+func (gm *GroupManger) ChangeStruct(groupName string) {
+	//gm.Lock()
+	//gm.dirtyBit[groupName] = true
+	//gm.Unlock()
 }
 
 //func main(){
@@ -1585,7 +1591,7 @@ func (rd *RawDataStruct) Get_LearnTrueLocationsOrdering() []int64 {
 	rd.RUnlock()
 	if len(item) == 0 {
 		for timeStamp, _ := range LearnTrueLocations {
-			item = glb.SortedInsert(item, timeStamp)
+			item = glb.SortedInsertInt64(item, timeStamp)
 		}
 		rd.Set_LearnTrueLocationsOrdering(item)
 	}
@@ -1620,7 +1626,7 @@ func (rd *RawDataStruct) Get_TestValidTrueLocationsOrdering() []int64 {
 	rd.RUnlock()
 	if len(item) == 0 {
 		for timeStamp, _ := range TestValidTrueLocations {
-			item = glb.SortedInsert(item, timeStamp)
+			item = glb.SortedInsertInt64(item, timeStamp)
 		}
 		rd.Set_TestValidTrueLocationsOrdering(item)
 	}

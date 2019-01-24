@@ -167,7 +167,8 @@ func NewResultsParameters() *ResultsParameters {
 
 type UserPositionJSON struct {
 	Time            int64              `json:"time"`
-	Location        string             `json:"location"`
+	Location        string             `json:"location"`    // it contains historyeffected main algorithm guess
+	RawLocation     string             `json:"rawlocation"` // it contains raw main algorithm guess
 	BayesGuess      string             `json:"bayesguess"`
 	BayesData       map[string]float64 `json:"bayesdata"`
 	SvmGuess        string             `json:"svmguess"`
@@ -183,6 +184,11 @@ type UserPositionJSON struct {
 type TestValidTrack struct {
 	TrueLocation string           `json:"truelocation"`
 	UserPosition UserPositionJSON `json:"userposition"`
+}
+
+type TrueLocation struct {
+	Timestamp int64  `json:"timestamp"`
+	Location  string `json:"location"`
 }
 
 //	filterMacs is used for set filtermacs

@@ -1173,7 +1173,7 @@ func RelocateFPLoc(groupName string) error {
 
 	//allLocationLogsOrdering := []int64{}
 	//for timestamp,_ := range allLocationLogs{
-	//	allLocationLogsOrdering = glb.SortedInsert(allLocationLogsOrdering,timestamp)
+	//	allLocationLogsOrdering = glb.SortedInsertInt64(allLocationLogsOrdering,timestamp)
 	//}
 	glb.Debug.Println("TrueLocationLog :", allLocationLogs)
 	// Get fingerprints from db
@@ -1223,7 +1223,7 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string, 
 
 	//timeStamps := []int64{}
 	//for timestamp, _ := range allLocationLogs {
-	//	timeStamps = glb.SortedInsert(timeStamps, timestamp)
+	//	timeStamps = glb.SortedInsertInt64(timeStamps, timestamp)
 	//}
 	lessUntil := 0
 	//stopit := true
@@ -1336,9 +1336,9 @@ func GetRSSData(groupName string, mac string) [][]int {
 }
 
 // Find true location of test-valid FPs and calculate error according to estimated location
-func CalculateTestErrorAndRelocateTestValid(groupName string, testValidTracks []parameters.TestValidTrack) (error, []int, [][]string, []parameters.TestValidTrack) { //todo: create a page to show test-valid test fingerprint on map
-	details := [][]string{}
-	errDetails := []int{}
+func CalculateTestErrorAndRelocateTestValid(groupName string, testValidTracks []parameters.TestValidTrack) (error, map[string][]int, []parameters.TestValidTrack) { //todo: create a page to show test-valid test fingerprint on map
+	ErrDetails := make(map[string][]int)
+	AlgoError := make(map[string]float64)
 
 	gp := GM.GetGroup(groupName)
 	rsd := gp.Get_ResultData()
@@ -1351,8 +1351,9 @@ func CalculateTestErrorAndRelocateTestValid(groupName string, testValidTracks []
 
 	tempTestValidTracks := []parameters.TestValidTrack{}
 	//glb.Debug.Println(testValidTracks)
-	AlgoError := make(map[string]float64)
+
 	numValidTestFPs := 0
+	AlgoError["main"] = float64(0)
 	AlgoError["knn"] = float64(0)
 	//AlgoError["bayes"] = float64(0)
 	//AlgoError["svm"] = float64(0)
@@ -1380,18 +1381,31 @@ func CalculateTestErrorAndRelocateTestValid(groupName string, testValidTracks []
 		numValidTestFPs++
 		trueX, trueY := glb.GetDotFromString(TrueLoc)
 
+		// Main guess error:
+		// Knn guess error:
+		fpMainX, fpMainY := glb.GetDotFromString(userPos.Location)
+		mainDist := glb.CalcDist(fpMainX, fpMainY, trueX, trueY)
+		AlgoError["main"] += mainDist
+		lstMainErrDetails := ErrDetails["main"]
+		lstMainErrDetails = glb.SortedInsertInt(lstMainErrDetails, int(mainDist))
+		ErrDetails["main"] = lstMainErrDetails
+		//ErrDetails = append(ErrDetails, int(mainDist))
+
 		// Knn guess error:
 		fpKnnX, fpKnnY := glb.GetDotFromString(userPos.KnnGuess)
+		knnDist := glb.CalcDist(fpKnnX, fpKnnY, trueX, trueY)
+		AlgoError["knn"] += knnDist
+		lstKnnErrDetails := ErrDetails["knn"]
+		lstKnnErrDetails = glb.SortedInsertInt(lstKnnErrDetails, int(knnDist))
+		ErrDetails["knn"] = lstKnnErrDetails
+		//ErrDetails = append(ErrDetails, int(knnDist))
 
-		dist := glb.CalcDist(fpKnnX, fpKnnY, trueX, trueY)
-		AlgoError["knn"] += dist
-		errDetails = append(errDetails, int(dist))
+
 		//fpBayesX, fpBayesY := glb.GetDotFromString(userPos.BayesGuess)
 		//AlgoError["bayes"] += glb.CalcDist(fpBayesX, fpBayesY, trueX, trueY)
 
 		//fpSvmX, fpSvmY := glb.GetDotFromString(userPos.SvmGuess)
 		//AlgoError["svm"] += glb.CalcDist(fpSvmX, fpSvmY, trueX, trueY)
-		details = append(details, []string{TrueLoc, userPos.KnnGuess})
 		//details = append(details,[]string{TrueLoc,userPos.KnnGuess,userPos.SvmGuess})
 
 		tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
@@ -1407,9 +1421,9 @@ func CalculateTestErrorAndRelocateTestValid(groupName string, testValidTracks []
 		rsd.Set_AlgoTestErrorAccuracy(algoName, int(algoError/float64(numValidTestFPs)))
 	}
 
-	sort.Ints(errDetails)
+	//sort.Ints(ErrDetails)
 
-	return nil, errDetails, details, tempTestValidTracks
+	return nil, ErrDetails, tempTestValidTracks
 }
 
 func SetTrueLocationFromLog(groupName string, method string) error {
@@ -1468,7 +1482,7 @@ func SetTrueLocationFromLog(groupName string, method string) error {
 		// add to allLocationLogs
 		xyStr := strings.Join(xy, ",")
 		allLocationLogs[timeStamp] = xyStr
-		allLocationLogsOrdering = glb.SortedInsert(allLocationLogsOrdering, timeStamp) // sort when added
+		allLocationLogsOrdering = glb.SortedInsertInt64(allLocationLogsOrdering, timeStamp) // sort when added
 	}
 	if len(allLocationLogs) == 0 {
 		return errors.New("Uploaded file doesn't have true location log format(timestamp,tag_name,x,y,z)")

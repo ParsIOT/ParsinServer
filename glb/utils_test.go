@@ -15,7 +15,7 @@ func TestListMaps(t *testing.T) {
 	sortedList := []int64{1, 3, 4}
 	newItem := int64(2)
 
-	sortedList = SortedInsert(sortedList, newItem)
+	sortedList = SortedInsertInt64(sortedList, newItem)
 
 	assert.Equal(t, sortedList, []int64{1, 2, 3, 4})
 }

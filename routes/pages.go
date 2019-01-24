@@ -214,12 +214,15 @@ func SlashDashboard(c *gin.Context) {
 		}
 		totalError := 0
 		algoAccuracy := rsd.Get_AlgoLocAccuracy()
+		locCount := 0
 		glb.Error.Println(len(algoAccuracy["knn"]))
 		for loc, accuracy := range algoAccuracy["knn"] {
 			dash.LocationAccuracy[loc] = accuracy
-			totalError += accuracy
+			count := md.LocCount[loc]
+			totalError += accuracy * count
+			locCount += count
 		}
-		dash.LocationAccuracy["all"] = totalError / len(algoAccuracy["knn"])
+		dash.LocationAccuracy["all"] = totalError / locCount
 	}
 	algoAccuracies := rsd.Get_AlgoAccuracy()
 	dash.KnnTestValidAccuracy = algoAccuracies["knn_testvalid"]

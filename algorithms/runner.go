@@ -23,12 +23,8 @@ const (
 	LatterPercentile string = "LatterPercentile"
 )
 
-// TrackFingerprint options
+// Trackfingerprint options
 const (
-	KNN                       string = "KNN"
-	BAYES                     string = "BAYES"
-	SVM                       string = "SVM"
-	SCIKIT                    string = "SCIKIT"
 	IgnoreSimpleHistoryEffect string = "IgnoreSimpleHistoryEffect"
 )
 
@@ -321,33 +317,20 @@ func LearnFingerprint(jsonFingerprint parameters.Fingerprint) (string, bool) {
 
 }
 */
-func TrackOnlineFingerprint(curFingerprint parameters.Fingerprint) (parameters.UserPositionJSON, bool, string) {
-	parameters.CleanFingerprint(&curFingerprint)
-
-	pdrLocation := curFingerprint.Location // When raw fingerprint is got from cellphone, pdrLocation is in location field
-	userPosJson, success, message := TrackFingerprint(curFingerprint)
-	userPosJson.PDRLocation = pdrLocation
-
-	if success {
-		gp := dbm.GM.GetGroup(curFingerprint.Group)
-		go dbm.SetUserPositionCache(strings.ToLower(curFingerprint.Group)+strings.ToLower(curFingerprint.Username), userPosJson)
-		go gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
-		go gp.Get_ResultData().Append_UserResults(curFingerprint.Username, userPosJson)
-
-		// Add fingerprint as a test-valid fp to db
-		if curFingerprint.TestValidation && curFingerprint.Username == glb.TesterUsername {
-			glb.Debug.Println("TestValidTrack added ")
-			tempTestValidTrack := parameters.TestValidTrack{UserPosition: userPosJson}
-			go gp.Get_ResultData().Append_TestValidTracks(tempTestValidTrack)
-		}
-	}
-	return userPosJson, success, message
-}
 
 func TrackFingerprint(curFingerprint parameters.Fingerprint, options ...string) (parameters.UserPositionJSON, bool, string) {
 	doAllAlgorithm := true
+	mainAlgo := glb.MainPositioningAlgo
+
 	if len(options) > 0 {
-		doAllAlgorithm = false
+		for _, ALGO := range glb.ALLALGORITHMS { // Set mainAlgo if was set by options
+			// First algorithm is set as mainAlgo
+			if options[0] == ALGO {
+				mainAlgo = ALGO
+				doAllAlgorithm = false
+				break
+			}
+		}
 	}
 
 	// Classify with filter curFingerprint
@@ -375,6 +358,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint, options ...string) 
 	cd := gp.Get_ConfigData()
 	otherGpConfig := cd.Get_OtherGroupConfig()
 
+
 	bayesGuess := ""
 	bayesData := make(map[string]float64)
 	svmGuess := ""
@@ -383,11 +367,12 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint, options ...string) 
 	knnGuess := ""
 	knnData := make(map[string]float64)
 	message := ""
+	rawLocation := ""
 	location := ""
 	accuracyCircleRadius := float64(0)
 
 	// Calculating KNN
-	if doAllAlgorithm || glb.StringInSlice(KNN, options) {
+	if doAllAlgorithm || glb.StringInSlice(glb.KNN, options) {
 		var err error
 		err, knnGuess, knnData = TrackKnn(gp, filteredCurFingerprint, true)
 		if err != nil {
@@ -398,13 +383,13 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint, options ...string) 
 
 	// Calculating Scikit
 
-	if glb.RuntimeArgs.Scikit && (doAllAlgorithm || glb.StringInSlice(SCIKIT, options)) {
+	scikitSelected := glb.StringInSlice(glb.SCIKIT_CLASSIFICATION, options) || glb.StringInSlice(glb.SCIKIT_REGRESSION, options)
+	if glb.RuntimeArgs.Scikit && (doAllAlgorithm || scikitSelected) {
 		scikitData = ScikitClassify(groupName, filteredCurFingerprint)
 		glb.Debug.Println(scikitData)
 		for algorithm, valueXY := range scikitData {
 			message += " " + algorithm + ":" + valueXY
 		}
-
 	}
 
 	// Send out the final responses
@@ -419,11 +404,28 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint, options ...string) 
 	userPosJson.KnnData = knnData
 	userPosJson.Fingerprint = curFingerprint
 
+	// Set location to the main algorithm result
+	switch mainAlgo {
+	case glb.KNN:
+		rawLocation = knnGuess
+	case glb.BAYES:
+		rawLocation = bayesGuess
+	case glb.SVM:
+		rawLocation = svmGuess
+	case glb.SCIKIT_REGRESSION:
+		rawLocation = scikitData[glb.SCIKIT_REGRESSION]
+	case glb.SCIKIT_CLASSIFICATION:
+		rawLocation = scikitData[glb.SCIKIT_CLASSIFICATION]
+	}
+	userPosJson.RawLocation = rawLocation
+
+
 	// User history effect
-	location = knnGuess
+	location = rawLocation
 	if otherGpConfig.SimpleHistoryEnabled && !glb.StringInSlice(IgnoreSimpleHistoryEffect, options) {
 		userHistory := gp.Get_ResultData().Get_UserHistory(curFingerprint.Username)
 		location, accuracyCircleRadius = SimpleHistoryEffect(userPosJson, userHistory)
+		//location, accuracyCircleRadius = HistoryEffectStaticFactors(userPosJson, userHistory)
 	}
 
 	userPosJson.Location = location
@@ -433,13 +435,37 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint, options ...string) 
 	return userPosJson, true, message
 }
 
+// When online track fingerprint was sent to server(from a cellphone) this function calculate the result and returns it instantly
+func TrackOnlineFingerprint(curFingerprint parameters.Fingerprint) (parameters.UserPositionJSON, bool, string) {
+	parameters.CleanFingerprint(&curFingerprint)
+
+	pdrLocation := curFingerprint.Location // When raw fingerprint is got from cellphone, pdrLocation is in location field
+	userPosJson, success, message := TrackFingerprint(curFingerprint)
+	userPosJson.PDRLocation = pdrLocation
+
+	if success {
+		gp := dbm.GM.GetGroup(curFingerprint.Group)
+		go dbm.SetUserPositionCache(strings.ToLower(curFingerprint.Group)+strings.ToLower(curFingerprint.Username), userPosJson)
+		go gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
+		go gp.Get_ResultData().Append_UserResults(curFingerprint.Username, userPosJson)
+
+		// Add fingerprint as a test-valid fp to db
+		if curFingerprint.TestValidation && curFingerprint.Username == glb.TesterUsername {
+			glb.Debug.Println("TestValidTrack added ")
+			tempTestValidTrack := parameters.TestValidTrack{UserPosition: userPosJson}
+			go gp.Get_ResultData().Append_TestValidTracks(tempTestValidTrack)
+		}
+	}
+	return userPosJson, success, message
+}
+
 // call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
 func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) (parameters.UserPositionJSON, error) {
 	userPosJson, success, message := TrackFingerprint(curFingerprint)
 
 	if success {
 		gp := dbm.GM.GetGroup(curFingerprint.Group)
-		userPosJson.KnnGuess = userPosJson.Location //todo: must add location as seprated variable( from knnguess) in parameters.UserPositionJSON
+		//userPosJson.KnnGuess = userPosJson.Location //todo: must add location as seprated variable( from knnguess) in parameters.UserPositionJSON
 		gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
 		return userPosJson, nil
 	} else {
@@ -449,11 +475,11 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) (paramet
 
 func RecalculateTrackFingerprintKnnCrossValidation(curFingerprint parameters.Fingerprint) string {
 	//userPosJson, success, message := TrackFingerprint(curFingerprint, KNN, IgnoreSimpleHistoryEffect)
-	userPosJson, success, _ := TrackFingerprint(curFingerprint, KNN)
+	userPosJson, success, _ := TrackFingerprint(curFingerprint, glb.KNN)
 
 	if success {
 		gp := dbm.GM.GetGroup(curFingerprint.Group)
-		userPosJson.KnnGuess = userPosJson.Location //todo: must add location as seprated variable( from knnguess) in parameters.UserPositionJSON
+		//userPosJson.KnnGuess = userPosJson.Location //todo: must add location as seprated variable( from knnguess) in parameters.UserPositionJSON
 		gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
 	}
 
@@ -1504,7 +1530,10 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	// KNN:
 	// Parameters list creation
 	// 1.K
-	validKs := glb.MakeRange(glb.DefaultKnnKRange[0], glb.DefaultKnnKRange[1])
+	validKs := []int{glb.DefaultKnnKRange[0]}
+	if len(glb.DefaultKnnKRange) > 1 {
+		validKs = glb.MakeRange(glb.DefaultKnnKRange[0], glb.DefaultKnnKRange[1])
+	}
 	knnKRange := knnConfig.KRange
 	if len(knnKRange) == 1 {
 		validKs = glb.MakeRange(knnKRange[0], knnKRange[0])
@@ -1515,7 +1544,10 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 		glb.Error.Println("Can't set valid Knn K values")
 	}
 	//2.MinClusterRSS
-	validMinClusterRSSs := glb.MakeRange(glb.DefaultKnnMinClusterRssRange[0], glb.DefaultKnnMinClusterRssRange[1])
+	validMinClusterRSSs := []int{glb.DefaultKnnMinClusterRssRange[0]}
+	if len(glb.DefaultKnnMinClusterRssRange) > 1 {
+		validMinClusterRSSs = glb.MakeRange(glb.DefaultKnnMinClusterRssRange[0], glb.DefaultKnnMinClusterRssRange[1])
+	}
 
 	minClusterRSSRange := knnConfig.MinClusterRssRange
 	if len(minClusterRSSRange) == 1 {
@@ -1529,7 +1561,10 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	}
 
 	//3.MaxEuclideanRssDist
-	validMaxEuclideanRssDists := glb.MakeRange(glb.DefaultMaxEuclideanRssDistRange[0], glb.DefaultMaxEuclideanRssDistRange[1])
+	validMaxEuclideanRssDists := []int{glb.DefaultMaxEuclideanRssDistRange[0]}
+	if len(glb.DefaultMaxEuclideanRssDistRange) > 1 {
+		validMaxEuclideanRssDists = glb.MakeRange(glb.DefaultMaxEuclideanRssDistRange[0], glb.DefaultMaxEuclideanRssDistRange[1])
+	}
 	maxEuclideanRssDistRange := knnConfig.MaxEuclideanRssDistRange
 	if len(maxEuclideanRssDistRange) == 1 {
 		validMaxEuclideanRssDists = glb.MakeRange(maxEuclideanRssDistRange[0], maxEuclideanRssDistRange[0])
@@ -1541,7 +1576,10 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	}
 
 	//4.BLEFactor
-	validBLEFactors := glb.MakeRangeFloat(glb.DefaultBLEFactorRange[0], glb.DefaultBLEFactorRange[1], glb.DefaultBLEFactorRange[2])
+	validBLEFactors := []float64{glb.DefaultBLEFactorRange[0]}
+	if len(glb.DefaultBLEFactorRange) > 1 {
+		validBLEFactors = glb.MakeRangeFloat(glb.DefaultBLEFactorRange[0], glb.DefaultBLEFactorRange[1])
+	}
 	bleFactorRange := knnConfig.BLEFactorRange
 	if len(bleFactorRange) == 1 {
 		validBLEFactors = glb.MakeRangeFloat(bleFactorRange[0], bleFactorRange[0])
@@ -1741,7 +1779,10 @@ func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreference
 	// KNN:
 	// Parameters list creation
 	// 1.K
-	validKs := glb.MakeRange(glb.DefaultKnnKRange[0], glb.DefaultKnnKRange[1])
+	validKs := []int{glb.DefaultKnnKRange[0]}
+	if len(glb.DefaultKnnKRange) > 1 {
+		validKs = glb.MakeRange(glb.DefaultKnnKRange[0], glb.DefaultKnnKRange[1])
+	}
 	//knnKRange := shprf.KRange
 	knnKRange := knnConfig.KRange
 	if len(knnKRange) == 1 {
@@ -1753,8 +1794,10 @@ func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreference
 		glb.Error.Println("Can't set valid Knn K values")
 	}
 	//2.MinClusterRSS
-	validMinClusterRSSs := glb.MakeRange(glb.DefaultKnnMinClusterRssRange[0], glb.DefaultKnnMinClusterRssRange[1])
-
+	validMinClusterRSSs := []int{glb.DefaultKnnMinClusterRssRange[0]}
+	if len(glb.DefaultKnnMinClusterRssRange) > 1 {
+		validMinClusterRSSs = glb.MakeRange(glb.DefaultKnnMinClusterRssRange[0], glb.DefaultKnnMinClusterRssRange[1])
+	}
 	minClusterRSSRange := knnConfig.MinClusterRssRange
 	if len(minClusterRSSRange) == 1 {
 		validMinClusterRSSs = glb.MakeRange(minClusterRSSRange[0], minClusterRSSRange[0])
@@ -1767,7 +1810,10 @@ func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreference
 	}
 
 	//3.MaxEuclideanRssDist
-	validMaxEuclideanRssDists := glb.MakeRange(glb.DefaultMaxEuclideanRssDistRange[0], glb.DefaultMaxEuclideanRssDistRange[1])
+	validMaxEuclideanRssDists := []int{glb.DefaultMaxEuclideanRssDistRange[0]}
+	if len(glb.DefaultMaxEuclideanRssDistRange) > 1 {
+		validMaxEuclideanRssDists = glb.MakeRange(glb.DefaultMaxEuclideanRssDistRange[0], glb.DefaultMaxEuclideanRssDistRange[1])
+	}
 	maxEuclideanRssDistRange := knnConfig.MaxEuclideanRssDistRange
 	if len(maxEuclideanRssDistRange) == 1 {
 		validMaxEuclideanRssDists = glb.MakeRange(maxEuclideanRssDistRange[0], maxEuclideanRssDistRange[0])
@@ -1779,7 +1825,10 @@ func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreference
 	}
 
 	//4.BLEFactor
-	validBLEFactors := glb.MakeRangeFloat(glb.DefaultBLEFactorRange[0], glb.DefaultBLEFactorRange[1], glb.DefaultBLEFactorRange[2])
+	validBLEFactors := []float64{glb.DefaultBLEFactorRange[0]}
+	if len(glb.DefaultBLEFactorRange) > 1 {
+		validBLEFactors = glb.MakeRangeFloat(glb.DefaultBLEFactorRange[0], glb.DefaultBLEFactorRange[1])
+	}
 	bleFactorRange := knnConfig.BLEFactorRange
 	if len(bleFactorRange) == 1 {
 		validBLEFactors = glb.MakeRangeFloat(bleFactorRange[0], bleFactorRange[0])
@@ -2031,7 +2080,6 @@ func CalculateLearn(groupName string) {
 	numLocCrossed := 0
 	for CVNum, CVParts := range crossValidationPartsList {
 		glb.Debug.Println("CrossValidation Part num :", CVNum)
-
 		// Learn
 		trainSetTemp := CVParts.GetTrainSet(gp)
 		rd.Set_Fingerprints(trainSetTemp.Fingerprints)
@@ -2233,6 +2281,10 @@ func CalculateByTestValidTracks(groupName string) {
 
 	// graphfactor used in online phase so learning must be done one time
 	var bestErrHyperParameters parameters.KnnHyperParameters
+
+	rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
+	rsd.Set_AlgoAccuracy("knn_testvalid_dsa", 0)
+
 	if knnConfig.GraphEnabled {
 		glb.Debug.Println("Selecting best graph factors by test-valid tracks ...")
 		bestErrHyperParameters = SelectBestGraphFactorsByTestValidTracks(gp, testValidTracks, knnConfig, knnHyperParams)
@@ -2365,7 +2417,10 @@ func SelectBestMaxMovementByTestValidTracks(gp *dbm.Group, testValidTracks []par
 	rsd := gp.Get_ResultData()
 
 	// Maxmovement range
-	validMaxMovements := glb.MakeRange(glb.DefaultMaxMovementRange[0], glb.DefaultMaxMovementRange[1])
+	validMaxMovements := []int{glb.DefaultMaxMovementRange[0]}
+	if len(glb.DefaultMaxMovementRange) > 1 {
+		validMaxMovements = glb.MakeRange(glb.DefaultMaxMovementRange[0], glb.DefaultMaxMovementRange[1])
+	}
 	maxMovementRange := knnConfig.MaxMovementRange
 	if len(maxMovementRange) == 1 {
 		validMaxMovements = glb.MakeRange(maxMovementRange[0], maxMovementRange[0])
@@ -2384,7 +2439,7 @@ func SelectBestMaxMovementByTestValidTracks(gp *dbm.Group, testValidTracks []par
 	allHyperParamDetails := make(map[int]parameters.KnnHyperParameters)
 	allErrDetails := make(map[int][]int)
 	paramUniqueKey := 0 // just creating unique key for each possible the parameters permutation
-	for _, maxMovement := range validMaxMovements { // for over the validGraphFactors
+	for _, maxMovement := range validMaxMovements { // for over the validMaxMovements
 		gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear userhistory to check knn error with new graphfactor
 
 		allHyperParamDetails[0] = learnedKnnData.HyperParameters

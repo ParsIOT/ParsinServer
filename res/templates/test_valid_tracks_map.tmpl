@@ -177,7 +177,7 @@
 								<br>
 								<div class="form-group">
 									<label>Select Algorithms</label>
-									<select id="algo-list" class="form-control">
+                                    <select id="algo-list" onchange="clearGuessResults()" class="form-control">
 									</select>
 								</div>
 								<div class="col-md-12">
@@ -242,13 +242,13 @@
 	var guessMarkersLoc = {};
 	var toggleGuessMarkers = true;
     var testValidTracks = {};
-    var errDetails = [];
+    var errDetails = {};
 
 	var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
     var calculateErrorByTrueLocationButton = Ladda.create(document.querySelector('#calc_err_by_true_loc_button'));
 
 
-    var algoList = ["KNN", "Bayes", "SVM"];
+    var algoList = ["main", "knn"]; // it isn't case sensetive!
 	var algoGuessLocations = {};
 	algoList.forEach(function (value) {
 		$('#algo-list').append("<option value=" + value + ">" + value + "</option>");
@@ -298,7 +298,9 @@
 					// console.log(val.truelocation)
 
 					let trueloc = pattern.exec(val.truelocation);
+            let mainloc = pattern.exec(val.userposition.location);
 					let knnloc = pattern.exec(val.userposition.knnguess);
+
 
 					if (trueloc && trueloc[1] && trueloc[2]) {
 						locations.push(trueloc);
@@ -308,7 +310,8 @@
 						createTrueLocMarker(val.truelocation, trueloc);
 
 						// trueLocMarkers[key]=match;
-						algoGuessLocations["KNN"].push([trueloc, knnloc]);
+                        algoGuessLocations["main"].push([trueloc, mainloc]);
+                        algoGuessLocations["knn"].push([trueloc, knnloc]);
 
 					} else {
 						items.push("<tr class='bg-info'><td colspan='2' class='text-center'> NO DATA </td></tr>");
@@ -344,29 +347,35 @@
 	}
 
 	function seeGuessResults() {
-		if (toggleGuessMarkers) {
-			selected = $('#algo-list').val();
+        if (toggleGuessMarkers) {
+            selected = $('#algo-list').val();
 
-			algoGuessLocations[selected].forEach(function (element) {
-				trueloc = element[0];
-				knnloc = element[1];
+            algoGuessLocations[selected].forEach(function (element) {
+                trueloc = element[0];
+                guessloc = element[1];
                 // console.log(element);
-				if (trueloc && trueloc[1] && trueloc[2]) {
-					createGuessLocMarker(trueloc, knnloc);
-					Line([trueloc[1], trueloc[2]], [knnloc[1], knnloc[2]], 'red');
-				}
-			});
-		} else {
-			for (var marker in guessMarkers) {
-				map.removeLayer(guessMarkers[marker]);
-			}
-			map.removeLayer(lineLayer);
-			lineLayer = L.featureGroup();
-			map.addLayer(lineLayer);
-			guessMarkers = {};
-			guessMarkersLoc = {};
-		}
-		toggleGuessMarkers = !toggleGuessMarkers;
+                if (trueloc && trueloc[1] && trueloc[2]) {
+                    createGuessLocMarker(trueloc, guessloc);
+                    Line([trueloc[1], trueloc[2]], [guessloc[1], guessloc[2]], 'red');
+                }
+            });
+
+            toggleGuessMarkers = false;
+        } else {
+            clearGuessResults();
+        }
+    }
+
+    function clearGuessResults() {
+        for (var marker in guessMarkers) {
+            map.removeLayer(guessMarkers[marker]);
+        }
+        map.removeLayer(lineLayer);
+        lineLayer = L.featureGroup();
+        map.addLayer(lineLayer);
+        guessMarkers = {};
+        guessMarkersLoc = {};
+        toggleGuessMarkers = true;
 	}
 
     function clearBoard() {
@@ -460,6 +469,7 @@
 							"class": "tab-content",
 						}).appendTo("#algo-result-table");
 						// console.log(tbody);
+                        var percentile = 0.95
 
 						if (data.algosAccuracy.length == 0) {
 							iziToast.error({
@@ -469,13 +479,16 @@
 						} else {
 							$.each(data.algosAccuracy, function (algorithm, error) {
 								tbody.append("<tr class='bg-info'><td>" + algorithm + "</td><td>" + error + "</td></tr>");
-							});
+                                tbody.append("<tr class='bg-info'><td>" + algorithm + " " + Math.round(percentile * 100) + " percentile</td><td>" + errDetails[algorithm][Math.round(errDetails[algorithm].length * percentile)] + "</td></tr>");
 
-                            errDetails.sort(function (a, b) {
-                                return a - b;
                             });
-                            var percentile = 0.95
-                            tbody.append("<tr class='bg-info'><td>knn " + Math.round(percentile * 100) + " percentile</td><td>" + errDetails[Math.round(errDetails.length * percentile)] + "</td></tr>");
+
+                            /*errDetails.sort(function (a, b) {
+                                return a - b;
+                            });*/
+
+
+                            // tbody.append("<tr class='bg-info'><td>main " + Math.round(percentile * 100) + " percentile</td><td>" + errDetails['main'][Math.round(errDetails['main'].length * percentile)] + "</td></tr>");
 
                             $("#show-error-details-link").find("a").remove();//remove show rss details link
                             $("<a/>", {
