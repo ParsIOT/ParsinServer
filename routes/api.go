@@ -551,47 +551,10 @@ func DelTestValidTracks(c *gin.Context) {
 }
 
 // Get test-valid tracks details or recalculate track (repredict) location of these FPs
-// GET Parameters: group, repredict
-/*func GetTestValidTracksDetails(c *gin.Context) {
-	c.Writer.Header().Set("Content-Type", "application/json")
-	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
-	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-
-	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
-	repredictStr := strings.ToLower(c.DefaultQuery("repredict", "none"))
-
-	if groupName != "none" && repredictStr != "none" {
-		fpData := dbm.GM.GetGroup(groupName).Get_RawData().Get_Fingerprints()
-		if !dbm.GroupExists(groupName) {
-			glb.Error.Println("Group doesn't exist")
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group doesn't exist"})
-			return
-		}
-		repredict := false
-		if repredictStr == "true" {
-			repredict = true
-		} else if repredictStr == "false" {
-			repredict = false
-		} else {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "repredict must be true or false"})
-			return
-		}
-
-		tempTestValidTracks := RecalculateTestvalidTrackFingerprint(groupName, repredict)
-
-		if len(tempTestValidTracks) != 0 {
-			c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": tempTestValidTracks, "fpdata": fpData})
-		} else {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Empty test-valid track list"})
-		}
-	} else {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or repredict isn't given"})
-	}
-}*/
-
+// GET parameters: group, repredict, calculate_err
+// if repredict is true, all of testvalid fingerprints will be repredicted with the proposed algorithm(e.g. knn)
+// If calculate_err is true, predicted locations and true locations will be compared and errDetails will be return
+//	false calculate_err is used in test_valid_tracks_details and true one is used in test_valid_tracks_map
 func GetTestValidTracksDetails(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -629,11 +592,9 @@ func GetTestValidTracksDetails(c *gin.Context) {
 			if (calculateErrStr != "none" && calculateErrStr == "true") { //Recalculate Error by true locations
 				// testValidTracksRes is a temporary variable, don't save it in db
 				err, errDetails, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, tempTestValidTracks)
-
 				if len(testValidTracksRes) != len(tempTestValidTracks) {
 					glb.Error.Println("testValidTracksRes length and testValidTracks aren't equal")
 				}
-
 				if err != nil {
 					c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 				} else {
