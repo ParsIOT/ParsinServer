@@ -459,12 +459,42 @@ func TrackOnlineFingerprint(curFingerprint parameters.Fingerprint) (parameters.U
 	return userPosJson, success, message
 }
 
+func Fusion(curUsrPos parameters.UserPositionJSON, gpUsrHistory, coGpUsrHistory []parameters.UserPositionJSON) string {
+	if len(coGpUsrHistory) == 0 {
+		return curUsrPos.Location
+	}
+	atmostTimeDiff := int64(6000)
+	coGpLastPos := coGpUsrHistory[len(coGpUsrHistory)-1]
+	timestampDiff := curUsrPos.Time - coGpLastPos.Time
+	glb.Error.Println(curUsrPos.Time)
+	glb.Error.Println(coGpLastPos.Time)
+	glb.Error.Println(timestampDiff)
+	if -1*atmostTimeDiff < timestampDiff && timestampDiff < atmostTimeDiff {
+		loc1 := curUsrPos.Location
+		loc2 := coGpLastPos.Location
+		x1, y1 := glb.GetDotFromString(loc1)
+		x2, y2 := glb.GetDotFromString(loc2)
+		xt := (x1 + x2) / 2
+		yt := (y1 + y2) / 2
+		return glb.FloatToString(xt) + "," + glb.FloatToString(yt)
+	} else {
+		return curUsrPos.Location
+	}
+}
+
 // call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
 func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) (parameters.UserPositionJSON, error) {
 	userPosJson, success, message := TrackFingerprint(curFingerprint)
 
 	if success {
 		gp := dbm.GM.GetGroup(curFingerprint.Group)
+		coGp, coGpExistErr := gp.Get_CoGroup()
+		if coGpExistErr == nil {
+
+			gpUsrHistory := coGp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
+			coGpUsrHisotry := coGp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
+			userPosJson.Location = Fusion(userPosJson, gpUsrHistory, coGpUsrHisotry)
+		}
 		//userPosJson.KnnGuess = userPosJson.Location //todo: must add location as seprated variable( from knnguess) in parameters.UserPositionJSON
 		gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
 		return userPosJson, nil

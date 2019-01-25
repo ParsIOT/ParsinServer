@@ -487,29 +487,66 @@ func GetTestValidTracks(c *gin.Context) {
 	}
 }
 
-func RecalculateTestvalidTrackFingerprint(groupName string, repredict bool) []parameters.TestValidTrack {
-	gp := dbm.GM.GetGroup(groupName)
+func RecalculateTestvalidTrackFingerprint(mainGroupName string, repredict bool) []parameters.TestValidTrack {
+	gp := dbm.GM.GetGroup(mainGroupName)
+	coGp, coGpExistErr := gp.Get_CoGroup()
+
 	testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
 	tempTestValidTracks := []parameters.TestValidTrack{}
 	if len(testValidTracks) != 0 {
 		if repredict {
 			glb.Debug.Println("Repredicting test-valid tracks")
+			allTestValidTracks := []parameters.TestValidTrack{}
 
 			gp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
+			if coGpExistErr == nil {
+				coGp.Get_ResultData().Set_UserHistory(glb.TesterUsername, []parameters.UserPositionJSON{}) // clear last history
+				coGpTestValidTracks := coGp.Get_ResultData().Get_TestValidTracks()
+
+				gpC := 0
+				coGpC := 0
+				for gpC < len(testValidTracks) && coGpC < len(coGpTestValidTracks) {
+
+					testValidTrack := testValidTracks[gpC]
+					coGpTestValidTrack := coGpTestValidTracks[coGpC]
+					if (testValidTrack.UserPosition.Time < coGpTestValidTrack.UserPosition.Time) {
+						allTestValidTracks = append(allTestValidTracks, testValidTrack)
+						gpC++
+					} else {
+						allTestValidTracks = append(allTestValidTracks, coGpTestValidTrack)
+						coGpC++
+					}
+				}
+				glb.Debug.Println(gpC)
+				glb.Debug.Println(coGpC)
+				glb.Debug.Println(len(testValidTracks))
+				glb.Debug.Println(len(coGpTestValidTracks))
+				if gpC == len(testValidTracks) {
+					for ; coGpC < len(coGpTestValidTracks); coGpC++ {
+						allTestValidTracks = append(allTestValidTracks, coGpTestValidTracks[coGpC])
+					}
+				} else if coGpC == len(coGpTestValidTracks) {
+					for ; gpC < len(coGpTestValidTracks); gpC++ {
+						allTestValidTracks = append(allTestValidTracks, testValidTracks[gpC])
+					}
+				}
+			} else {
+				copier.Copy(&allTestValidTracks, &testValidTracks)
+			}
 
 			// Repredict test-valid FPs
-			for _, testValidTrack := range testValidTracks {
+			for _, testValidTrack := range allTestValidTracks {
 				fp := testValidTrack.UserPosition.Fingerprint
 				//if (len(fp.WifiFingerprint) >= glb.MinApNum) {
 				newUserPositiong, err := algorithms.RecalculateTrackFingerprint(fp)
-				if err == nil {
+				if err == nil && fp.Group == mainGroupName { // ignore error-full ones and CoGroup testvalidtracks
 					testValidTrack.UserPosition = newUserPositiong
 					tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
 				}
 			}
 
 		} else {
-			//gp := dbm.GM.GetGroup(groupName)
+			//gp := dbm.GM.GetGroup(mainGroupName)
 			//testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
 			//fpData := gp.Get_RawData().Get_Fingerprints()
 			//c.JSON(http.StatusOK, gin.H{"success": true, "testvalidtracks": testValidTracks, "fpdata": fpData})
