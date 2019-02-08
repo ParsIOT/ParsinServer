@@ -177,7 +177,7 @@
 								<br>
 								<div class="form-group">
 									<label>Select Algorithms</label>
-                                    <select id="algo-list" onchange="clearGuessResults()" class="form-control">
+                                    <select id="algo-list" onchange="algorithmChange()" class="form-control">
 									</select>
 								</div>
 								<div class="col-md-12">
@@ -348,24 +348,32 @@
 
 	function seeGuessResults() {
         if (toggleGuessMarkers) {
-            selected = $('#algo-list').val();
-
-            algoGuessLocations[selected].forEach(function (element) {
-                trueloc = element[0];
-                guessloc = element[1];
-                // console.log(element);
-                if (trueloc && trueloc[1] && trueloc[2]) {
-                    createGuessLocMarker(trueloc, guessloc);
-                    Line([trueloc[1], trueloc[2]], [guessloc[1], guessloc[2]], 'red');
-                }
-            });
-
-            toggleGuessMarkers = false;
+            setGuestResults();
         } else {
             clearGuessResults();
         }
     }
 
+    function algorithmChange() {
+        clearGuessResults();
+        setGuestResults();
+    }
+
+    function setGuestResults() {
+        selected = $('#algo-list').val();
+
+        algoGuessLocations[selected].forEach(function (element) {
+            trueloc = element[0];
+            guessloc = element[1];
+            // console.log(element);
+            if (trueloc && trueloc[1] && trueloc[2]) {
+                createGuessLocMarker(trueloc, guessloc);
+                Line([trueloc[1], trueloc[2]], [guessloc[1], guessloc[2]], 'red');
+            }
+        });
+
+        toggleGuessMarkers = false;
+    }
     function clearGuessResults() {
         for (var marker in guessMarkers) {
             map.removeLayer(guessMarkers[marker]);

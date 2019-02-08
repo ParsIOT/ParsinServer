@@ -460,16 +460,18 @@ func TrackOnlineFingerprint(curFingerprint parameters.Fingerprint) (parameters.U
 }
 
 func Fusion(curUsrPos parameters.UserPositionJSON, gpUsrHistory, coGpUsrHistory []parameters.UserPositionJSON) string {
+
 	if len(coGpUsrHistory) == 0 {
 		return curUsrPos.Location
 	}
 	atmostTimeDiff := int64(6000)
 	coGpLastPos := coGpUsrHistory[len(coGpUsrHistory)-1]
 	timestampDiff := curUsrPos.Time - coGpLastPos.Time
-	glb.Error.Println(curUsrPos.Time)
-	glb.Error.Println(coGpLastPos.Time)
-	glb.Error.Println(timestampDiff)
+	//glb.Error.Println(curUsrPos.Time)
+	//glb.Error.Println(coGpLastPos.Time)
+
 	if -1*atmostTimeDiff < timestampDiff && timestampDiff < atmostTimeDiff {
+		glb.Error.Println(timestampDiff)
 		loc1 := curUsrPos.Location
 		loc2 := coGpLastPos.Location
 		x1, y1 := glb.GetDotFromString(loc1)
@@ -477,6 +479,7 @@ func Fusion(curUsrPos parameters.UserPositionJSON, gpUsrHistory, coGpUsrHistory 
 		xt := (x1 + x2) / 2
 		yt := (y1 + y2) / 2
 		return glb.FloatToString(xt) + "," + glb.FloatToString(yt)
+		//return coGpLastPos.Location
 	} else {
 		return curUsrPos.Location
 	}

@@ -444,6 +444,17 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				// todo:use lastUserPos.loction instead of knnguess
 
 				baseLoc = lastUserPos.Location // Current PDRLocation isn't  available, use last location estimated
+				/*	coGp, coGpExistErr := gp.Get_CoGroup()
+					if coGpExistErr == nil {
+						coGpUsrHisotry := coGp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
+						if len(coGpUsrHisotry) >0{
+							glb.Error.Println(baseLoc)
+							baseLoc = Fusion(lastUserPos, userPosHistory, coGpUsrHisotry)
+							glb.Error.Println(baseLoc)
+
+						}
+					}*/
+
 				/*				if strconv.FormatInt(curFingerprint.Timestamp, 10) == "1538071196747"{ //1538071209118
 									glb.Error.Println(len(userPosHistory))
 									glb.Error.Println(baseLoc)
