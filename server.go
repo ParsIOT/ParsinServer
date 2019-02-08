@@ -4,6 +4,7 @@ package main
 
 import (
 	"ParsinServer/algorithms"
+	"ParsinServer/algorithms/particlefilter"
 	"ParsinServer/dbm"
 	"ParsinServer/glb"
 	"ParsinServer/routes"
@@ -76,6 +77,9 @@ func main() {
 	flag.StringVar(&glb.RuntimeArgs.Message, "message", "", "message to display to all users")
 	flag.StringVar(&glb.RuntimeArgs.SourcePath, "data", "", "path to data folder")
 	flag.StringVar(&glb.RuntimeArgs.ScikitPort, "scikit", "", "port for scikit-learn calculations")
+	flag.StringVar(&glb.RuntimeArgs.ParticleFilterServer, "particlefilterServer", glb.RuntimeArgs.ParticleFilterServer, "ip:port of particleFilter grpc server ")
+
+
 	//flag.StringVar(&gvar.RuntimeArgs.FilterMacFile, "filter", "", "JSON file for macs to filter")
 	flag.StringVar(&glb.RuntimeArgs.AdminAdd, "adminadd", "", "Add an admin user or change his password, foramt:<username>:<password>, e.g.:admin:admin")
 	flag.BoolVar(&glb.RuntimeArgs.GaussianDist, "gaussian", false, "Use gaussian distribution instead of historgram")
@@ -119,6 +123,10 @@ func main() {
 	// Check whether random forests are used
 	if len(glb.RuntimeArgs.ScikitPort) > 0 {
 		glb.RuntimeArgs.Scikit = true
+	}
+
+	if glb.ParticleFilterEnabled {
+		particlefilter.Connect2Server()
 	}
 
 	if glb.RuntimeArgs.Debug {

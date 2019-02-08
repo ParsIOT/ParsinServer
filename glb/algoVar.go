@@ -15,6 +15,7 @@ var RssiRange []float32
 var DefaultCutoff,DefaultMixin float64
 var MinApNum int
 
+var ParticleFilterEnabled bool
 
 var PreprocessOutlinePercent float64 // percentage of a location fingerprints that its received rss considered as outline
 var NormalRssDev int                 // Normal deviation rss from median
@@ -107,4 +108,6 @@ func init() {
 	MinRssClustringEnabled = true
 
 	MainPositioningAlgo = KNN // see runner.go
+
+	ParticleFilterEnabled = true
 }

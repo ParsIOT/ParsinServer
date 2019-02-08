@@ -19,32 +19,30 @@ var SessionManager SimpleAuth.Manager
 // arguments available
 // Todo: Just add runtime variable here. Add shared variable in cache.go. Add constant in another fields and in algoVar.go
 var RuntimeArgs struct {
-	ScikitPort        string
-	ExternalIP        string
-	Port              string
-	ServerCRT         string
-	ServerKey         string
-	SourcePath        string
-	MapPath			  string
-	MapDirectory	  string
-	Socket            string
-	Cwd               string
-	MqttServer        string
-	MqttAdmin         string
-	MosquittoPID      string
-	MqttAdminPassword string
-	Dump              string
-	DumpRaw           string
-	DumpCalc          string
-	Debug             bool
-	Message           string
-	Mqtt              bool
-	MqttExisting      bool
+	ScikitPort           string
+	ParticleFilterServer string
+	ExternalIP           string
+	Port                 string
+	ServerCRT            string
+	ServerKey            string
+	SourcePath           string
+	MapPath              string
+	MapDirectory         string
+	Socket               string
+	Cwd                  string
+	MqttServer           string
+	MqttAdmin            string
+	MosquittoPID         string
+	MqttAdminPassword    string
+	Dump                 string
+	DumpRaw              string
+	DumpCalc             string
+	Debug                bool
+	Message              string
+	Mqtt                 bool
+	MqttExisting         bool
 	Svm               bool
 	Scikit            bool
-	//NeedToFilter      map[string]bool //check needing for filtering
-	//NotNullFilterList map[string]bool //check that filterMap is null(used to avoid filter fingerprint with null map)
-	//FilterMacsMap     map[string][]string
 	AdminAdd          string
 	GaussianDist      bool
 	MinRssOpt         int
@@ -80,6 +78,8 @@ func init(){
 	//RuntimeArgs.FilterMacsMap = make(map[string][]string)
 	//RuntimeArgs.NeedToFilter = make(map[string]bool)
 	//RuntimeArgs.NotNullFilterList = make(map[string]bool)
+
+	RuntimeArgs.ParticleFilterServer = "localhost:50051"
 }
 
 
