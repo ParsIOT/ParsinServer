@@ -18,6 +18,11 @@ class ParticleFilterStub(object):
         Args:
           channel: A grpc.Channel.
         """
+        self.ConnectionTest = channel.unary_unary(
+            '/particlefilterclasses.ParticleFilter/ConnectionTest',
+            request_serializer=particlefilterclasses_dot_particlefilter__pb2.Empty.SerializeToString,
+            response_deserializer=particlefilterclasses_dot_particlefilter__pb2.InitReply.FromString,
+        )
         self.Initialize = channel.unary_unary(
             '/particlefilterclasses.ParticleFilter/Initialize',
             request_serializer=particlefilterclasses_dot_particlefilter__pb2.InitRequest.SerializeToString,
@@ -43,6 +48,13 @@ class ParticleFilterServicer(object):
 
     """
 
+    def ConnectionTest(self, request, context):
+        """Initialization
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Initialize(self, request, context):
         """Initialization
         """
@@ -67,6 +79,11 @@ class ParticleFilterServicer(object):
 
 def add_ParticleFilterServicer_to_server(servicer, server):
     rpc_method_handlers = {
+        'ConnectionTest': grpc.unary_unary_rpc_method_handler(
+            servicer.ConnectionTest,
+            request_deserializer=particlefilterclasses_dot_particlefilter__pb2.Empty.FromString,
+            response_serializer=particlefilterclasses_dot_particlefilter__pb2.InitReply.SerializeToString,
+        ),
         'Initialize': grpc.unary_unary_rpc_method_handler(
             servicer.Initialize,
             request_deserializer=particlefilterclasses_dot_particlefilter__pb2.InitRequest.FromString,

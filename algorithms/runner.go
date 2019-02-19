@@ -2,6 +2,7 @@ package algorithms
 
 import (
 	"ParsinServer/algorithms/clustering"
+	"ParsinServer/algorithms/particlefilter"
 	"ParsinServer/dbm"
 	"ParsinServer/dbm/parameters"
 	"ParsinServer/glb"
@@ -485,6 +486,67 @@ func Fusion(curUsrPos parameters.UserPositionJSON, gpUsrHistory, coGpUsrHistory 
 	}
 }
 
+func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, gpUsrHistory []parameters.UserPositionJSON, initialize bool) string {
+	glb.Debug.Println("Using Particle filter ...")
+	//timestamp := time.Now().UTC().UnixNano()/1000000
+	timestamp := curUsrPos.Time
+	loc := curUsrPos.Location
+	x, y := glb.GetDotFromString(loc)
+
+	//Initialize(timestamp, []float32{0.0,0.0})
+	//
+	//timestamp = time.Now().UTC().UnixNano()/1000000
+	//Predict(timestamp)
+	//
+	//timestamp = time.Now().UTC().UnixNano()/1000000
+	//Update(timestamp, []float32{3.0,3.0})
+	if initialize {
+		glb.Debug.Println("Initialization Particle filter")
+		particlefilter.Initialize(timestamp, []float32{float32(y), float32(x)})
+		return curUsrPos.Location
+	} else {
+		lastPredictionTimestamp := gpUsrHistory[len(gpUsrHistory)-1].Time
+		diffTime := curUsrPos.Time - lastPredictionTimestamp
+		MaxTimeDiffForUpdate := int64(2000)
+		PredictionPerdiod := int64(1000)
+		for diffTime > MaxTimeDiffForUpdate {
+			diffTime -= PredictionPerdiod
+			lastPredictionTimestamp += PredictionPerdiod
+			resultXY := particlefilter.Predict(lastPredictionTimestamp)
+			glb.Debug.Println("Only Prediction result:", resultXY)
+		}
+
+		resultXY := particlefilter.Update(timestamp, []float32{float32(y), float32(x)})
+		glb.Error.Println("################")
+		glb.Error.Println(loc)
+		glb.Error.Println(glb.FloatToString(float64(int(resultXY[0]))) + "," + glb.FloatToString(float64(int(resultXY[1]))))
+		return glb.FloatToString(float64(int(resultXY[0]))) + "," + glb.FloatToString(float64(int(resultXY[1])))
+	}
+
+	//if len(coGpUsrHistory) == 0 {
+	//	return curUsrPos.Location
+	//}
+	//atmostTimeDiff := int64(6000)
+	//coGpLastPos := coGpUsrHistory[len(coGpUsrHistory)-1]
+	//timestampDiff := curUsrPos.Time - coGpLastPos.Time
+	////glb.Error.Println(curUsrPos.Time)
+	////glb.Error.Println(coGpLastPos.Time)
+	//
+	//if -1*atmostTimeDiff < timestampDiff && timestampDiff < atmostTimeDiff {
+	//	glb.Error.Println(timestampDiff)
+	//	loc1 := curUsrPos.Location
+	//	loc2 := coGpLastPos.Location
+	//	x1, y1 := glb.GetDotFromString(loc1)
+	//	x2, y2 := glb.GetDotFromString(loc2)
+	//	xt := (x1 + x2) / 2
+	//	yt := (y1 + y2) / 2
+	//	return glb.FloatToString(xt) + "," + glb.FloatToString(yt)
+	//	//return coGpLastPos.Location
+	//} else {
+	//	return curUsrPos.Location
+	//}
+}
+
 // call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
 func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) (parameters.UserPositionJSON, error) {
 	userPosJson, success, message := TrackFingerprint(curFingerprint)
@@ -492,12 +554,24 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) (paramet
 	if success {
 		gp := dbm.GM.GetGroup(curFingerprint.Group)
 		coGp, coGpExistErr := gp.Get_CoGroup()
-		if coGpExistErr == nil {
 
-			gpUsrHistory := coGp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
-			coGpUsrHisotry := coGp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
-			userPosJson.Location = Fusion(userPosJson, gpUsrHistory, coGpUsrHisotry)
+		if glb.ParticleFilterEnabled {
+			gpUsrHistory := gp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
+			if len(gpUsrHistory) == 0 {
+				userPosJson.Location = ParticleFilterFusion(userPosJson, gpUsrHistory, true)
+			} else {
+				userPosJson.Location = ParticleFilterFusion(userPosJson, gpUsrHistory, false)
+			}
+		} else {
+			if coGpExistErr == nil {
+
+				gpUsrHistory := gp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
+				coGpUsrHisotry := coGp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
+				userPosJson.Location = Fusion(userPosJson, gpUsrHistory, coGpUsrHisotry)
+			}
 		}
+
+
 		//userPosJson.KnnGuess = userPosJson.Location //todo: must add location as seprated variable( from knnguess) in parameters.UserPositionJSON
 		gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
 		return userPosJson, nil

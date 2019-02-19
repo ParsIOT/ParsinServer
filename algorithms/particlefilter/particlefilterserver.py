@@ -9,16 +9,27 @@ import particlefilterclasses.particlefilter_pb2 as pf_classes_pb2
 import particlefilterclasses.particlefilter_pb2_grpc as pf_classes_pb2_grpc
 
 import particlefilter  # main particle filter functions
-
+import threading
 
 class ParticleFilterServicer(pf_classes_pb2_grpc.ParticleFilterServicer):
 
-    def Initialize(self, initRequest, context):
-        initReply = pf_classes_pb2.InitReply()
-        print(initRequest.name)
-        initReply.returnValue = particlefilter.Initialize(initRequest)
-        return initReply
+    def ConnectionTest(selfs, empty, context):
+        print("Connection tested.")
+        return pf_classes_pb2.InitReply(ReturnValue=True)
 
+    def Initialize(self, initRequest, context):
+        # threading.Thread(target=particlefilter.Initialize,args =(initRequest,), daemon=True).start()
+        ReturnValue = particlefilter.Initialize(initRequest)
+        # ReturnValue = True
+        return pf_classes_pb2.InitReply(ReturnValue=ReturnValue)
+
+    def Predict(self, predictRequest, context):
+        ResXY, ReturnValue = particlefilter.Predict(predictRequest)
+        return pf_classes_pb2.PredictReply(ResXY=ResXY, ReturnValue=ReturnValue)
+
+    def Update(self, updateRequest, context):
+        ResXY, ReturnValue = particlefilter.Update(updateRequest)
+        return pf_classes_pb2.UpdateReply(ResXY=ResXY, ReturnValue=ReturnValue)
 
 # create a gRPC server
 server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
