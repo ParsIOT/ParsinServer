@@ -16,7 +16,8 @@ func Do_Initialize(initRequest pb.InitRequest) pb.InitReply {
 	defer cancel()
 	initReply, err := particlefilterClient.Initialize(ctx, &initRequest)
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		//log.Fatalf("could not greet: %v", err)
+		glb.Error.Println("Can't Do_Initialize: ", err.Error())
 	}
 	//log.Printf("Greeting: %s", r.ReturnValue)
 	return *initReply
@@ -28,9 +29,13 @@ func Do_Predict(predictRequest pb.PredictRequest) pb.PredictReply {
 	predictReply, err := particlefilterClient.Predict(ctx, &predictRequest)
 	if err != nil {
 		glb.Debug.Println(predictReply)
-		log.Fatalf("could not greet: %v", err)
+		//log.Fatalf("could not greet: %v", err)
+		glb.Error.Println("Can't Do_Predict: ", err.Error())
 	}
 	//log.Printf("Greeting: %s", r.ReturnValue)
+	if (len(predictReply.ResXY) != 2){
+		glb.Error.Println("Invalid Do_Predict result.ResXY")
+	}
 	return *predictReply
 }
 
@@ -39,7 +44,11 @@ func Do_Update(updateRequest pb.UpdateRequest) pb.UpdateReply {
 	defer cancel()
 	updateReply, err := particlefilterClient.Update(ctx, &updateRequest)
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		//log.Fatalf("could not greet: %v", err)
+		glb.Error.Println("Can't Do_Update: ", err.Error())
+	}
+	if (len(updateReply.ResXY) != 2){
+		glb.Error.Println("Invalid Do_Update result.ResXY")
 	}
 	//log.Printf("Greeting: %s", r.ReturnValue)
 	return *updateReply
@@ -72,7 +81,8 @@ func TestConnection() {
 	defer cancel()
 	reply, err := particlefilterClient.ConnectionTest(ctx, &pb.Empty{})
 	if err != nil || reply.ReturnValue == false {
-		log.Fatalf("Connection problem: %v", err)
+		//log.Fatalf("Connection problem: %v", err)
+		glb.Error.Println("Connection problem: ", err.Error())
 	} else {
 		glb.Debug.Println("Connection Established Successfully,", reply)
 	}
@@ -86,7 +96,7 @@ func Connect2Server() {
 	// Set up a connection to the server
 	conn, err := grpc.Dial(glb.RuntimeArgs.ParticleFilterServer, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		log.Fatalf("Didn't connect: %v", err)
 	}
 	//defer conn.Close()
 	particlefilterClient = pb.NewParticleFilterClient(conn)

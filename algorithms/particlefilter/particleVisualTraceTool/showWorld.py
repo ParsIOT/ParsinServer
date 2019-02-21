@@ -224,7 +224,7 @@ if __name__ == '__main__':
     scaleXY = 0.33
     scaleScreen = scaleXY / 0.25
     bgPath = "./ArmanExactMap.png"
-    pklFilePath =  "results.pkl"
+    pklFilePath =  "../results.pkl"
 
     data = ReadData(pklFilePath)
 
