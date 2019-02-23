@@ -3,6 +3,7 @@
 import grpc
 from concurrent import futures
 import time
+import traceback
 
 # import the generated classes
 import particlefilterclasses.particlefilter_pb2 as pf_classes_pb2
@@ -15,20 +16,35 @@ class ParticleFilterServicer(pf_classes_pb2_grpc.ParticleFilterServicer):
 
     def ConnectionTest(selfs, empty, context):
         print("Connection tested.")
-        return pf_classes_pb2.InitReply(ReturnValue=True)
+        try:
+            initReply = pf_classes_pb2.InitReply(ReturnValue=True)
+        except Exception as e:
+            print(traceback.format_exc())
+            raise e
+        return initReply
 
     def Initialize(self, initRequest, context):
-        # threading.Thread(target=particlefilter.Initialize,args =(initRequest,), daemon=True).start()
-        ReturnValue = particlefilter.Initialize(initRequest)
-        # ReturnValue = True
+        try:
+            ReturnValue = particlefilter.Initialize(initRequest)
+        except Exception as e:
+            print(traceback.format_exc())
+            raise e
         return pf_classes_pb2.InitReply(ReturnValue=ReturnValue)
 
     def Predict(self, predictRequest, context):
-        ResXY, ReturnValue = particlefilter.Predict(predictRequest)
+        try:
+            ResXY, ReturnValue = particlefilter.Predict(predictRequest)
+        except Exception as e:
+            print(traceback.format_exc())
+            raise e
         return pf_classes_pb2.PredictReply(ResXY=ResXY, ReturnValue=ReturnValue)
 
     def Update(self, updateRequest, context):
-        ResXY, ReturnValue = particlefilter.Update(updateRequest)
+        try:
+            ResXY, ReturnValue = particlefilter.Update(updateRequest)
+        except Exception as e:
+            print(traceback.format_exc())
+            raise e
         return pf_classes_pb2.UpdateReply(ResXY=ResXY, ReturnValue=ReturnValue)
 
 # create a gRPC server

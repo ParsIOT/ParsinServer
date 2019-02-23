@@ -76,8 +76,7 @@ class Model(interfaces.ParticleFiltering):
         # print(speed)
         # h = u[0] + noise[:,0]
         # speed = u[1] + noise[:,1]
-        h = (particles[:, 2] + noise[:, 0]) % 3600
-        h = particles[:, 2] + noise[:, 0]
+        h = (particles[:, 2] + noise[:, 0]) % 360
         speed = noise[:, 1]
 
         # speed = numpy.random.uniform(-self.human_speed,self.human_speed,((N,))).reshape(1,N)
@@ -156,7 +155,7 @@ def init_particlefilter(timestamp, init_loc):
     num = 1000
     P0 = 100.0
     human_speed = 0.4 * 100.0
-    human_heading_change = 20
+    human_heading_change = 360
     Q = numpy.asarray((human_heading_change, human_speed * 0.1))  # heading, speed variances
     # R = numpy.asarray(((0.5,),))
     # R = numpy.asarray(((10,),))
@@ -169,7 +168,7 @@ def init_particlefilter(timestamp, init_loc):
 
     resamplings = 0
 
-    sim.pt = filter.ParticleTrajectory(sim.model, num)
+    sim.pt = filter.ParticleTrajectory(sim.model, num, resample=0.999999)
     # # result_history = []
     # for i in range(1000):
     #     # Run PF using noise corrupted input signal
@@ -206,7 +205,6 @@ def predict_particlefilter(timestamp):
     parts, ws = sim.get_filtered_estimates()
     particles = parts[-1]
     threading.Thread(target=AppendData, args=([[timestamp, meanXY, particles, ws[-1], []]])).start()
-
 
     return [meanXY[0], meanXY[1]]
 

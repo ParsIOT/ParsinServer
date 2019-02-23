@@ -32,9 +32,11 @@ class Model(interfaces.ParticleFiltering):
         self.Q = numpy.copy(Q)
         self.R = numpy.copy(R)
         self.human_speed = human_speed
+        self.firstStep = True
 
     def create_initial_estimate(self, N):
         # x,y,h
+        self.firstStep = False
         init_x = numpy.random.normal(self.init_loc[0], self.P0, (N,)).reshape((N, 1))
         init_y = numpy.random.normal(self.init_loc[1], self.P0, (N,)).reshape((N, 1))
         init_h = numpy.random.uniform(0.0, 360.0, (N,)).reshape((N, 1))
@@ -63,7 +65,11 @@ class Model(interfaces.ParticleFiltering):
 
         N = len(particles)
         # print(u)
-        timespan = u / 1000.0  # second
+        timespan = u[0] / 1000.0  # second
+        if len(u) > 1:
+            lastMeanXY = numpy.array([u[1], u[2]])
+        else:
+            lastMeanXY = []
         # noisy_u = noise + u
         # print(noisy_u)
 
@@ -76,8 +82,7 @@ class Model(interfaces.ParticleFiltering):
         # print(speed)
         # h = u[0] + noise[:,0]
         # speed = u[1] + noise[:,1]
-        h = (particles[:, 2] + noise[:, 0]) % 3600
-        h = particles[:, 2] + noise[:, 0]
+        h = (particles[:, 2] + noise[:, 0]) % 360
         speed = noise[:, 1]
 
         # speed = numpy.random.uniform(-self.human_speed,self.human_speed,((N,))).reshape(1,N)
@@ -85,10 +90,35 @@ class Model(interfaces.ParticleFiltering):
 
         h_rad = numpy.radians(h)
         dxy = numpy.zeros((N, 2))
-        dxy[:, 0] = numpy.array(numpy.sin(h_rad) * speed * timespan)
-        dxy[:, 1] = numpy.array(numpy.cos(h_rad) * speed * timespan)
+        dxy[:, 0] = numpy.array(numpy.cos(h_rad) * speed * timespan)
+        dxy[:, 1] = numpy.array(numpy.sin(h_rad) * speed * timespan)
 
+        lastParticle = numpy.copy(particles)
         particles[:, :2] += dxy
+
+        if len(lastMeanXY) != 0:
+            maxDist = 8 * 100
+
+            for i in range(len(particles[:, :2])):
+                count = 0
+                altSpeed = speed[i]
+                while (numpy.linalg.norm(particles[:, :2][i] - lastMeanXY) > maxDist):
+                    if count > 3:
+                        partXY = lastParticle[:, :2][i]
+                        distFromMean = numpy.linalg.norm(partXY - lastMeanXY)
+                        particles[:, :2][i] = maxDist / distFromMean * (partXY - lastMeanXY) + lastMeanXY
+                        break
+                    count += 1
+                    altSpeed /= 2.0
+                    dx = numpy.cos(h_rad[i]) * altSpeed * timespan
+                    dy = numpy.sin(h_rad[i]) * altSpeed * timespan
+                    particles[:, :2][i] = lastParticle[:, :2][i] + numpy.array([dx, dy])
+
+                # if numpy.linalg.norm(particles[:, :2][i]-mean) > 5:
+                #     dx = maxDist * numpy.cos(h_rad[i])
+                #     dy = maxDist * numpy.sin(h_rad[i])
+                #     particles[:, :2][i] = numpy.array([dx, dy])
+
         particles[:, 2] = h
 
     def measure(self, particles, y, t):
@@ -156,7 +186,7 @@ def init_particlefilter(timestamp, init_loc):
     num = 1000
     P0 = 100.0
     human_speed = 0.4 * 100.0
-    human_heading_change = 20
+    human_heading_change = 90
     Q = numpy.asarray((human_heading_change, human_speed * 0.1))  # heading, speed variances
     # R = numpy.asarray(((0.5,),))
     # R = numpy.asarray(((10,),))
@@ -169,7 +199,7 @@ def init_particlefilter(timestamp, init_loc):
 
     resamplings = 0
 
-    sim.pt = filter.ParticleTrajectory(sim.model, num)
+    sim.pt = filter.ParticleTrajectory(sim.model, num, resample=0.999999)
     # # result_history = []
     # for i in range(1000):
     #     # Run PF using noise corrupted input signal
@@ -195,7 +225,11 @@ def predict_particlefilter(timestamp):
     global LastTimestamp, sim
 
     # return [1.0,1.0]
-    u = numpy.array(timestamp - LastTimestamp)
+    if not sim.model.firstStep:
+        lastMeanXY = sim.get_filtered_mean()[-1]
+        u = numpy.array([timestamp - LastTimestamp, lastMeanXY[0], lastMeanXY[1]])
+    else:
+        u = numpy.array([timestamp - LastTimestamp])
     LastTimestamp = timestamp
     y = numpy.array([None])  # It's ignore measurement
 
@@ -207,7 +241,6 @@ def predict_particlefilter(timestamp):
     particles = parts[-1]
     threading.Thread(target=AppendData, args=([[timestamp, meanXY, particles, ws[-1], []]])).start()
 
-
     return [meanXY[0], meanXY[1]]
 
 
@@ -215,7 +248,8 @@ def update_particlefilter(timestamp, ble_predict):
     global LastTimestamp, sim
 
     # return [1.0,1.0]
-    u = numpy.array(timestamp - LastTimestamp)
+    lastMeanXY = sim.get_filtered_mean()[-1]
+    u = numpy.array([timestamp - LastTimestamp, lastMeanXY[0], lastMeanXY[1]])
     LastTimestamp = timestamp
 
     # y = ble_predict  # It's ignore measurement

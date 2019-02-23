@@ -207,7 +207,6 @@ def predict_particlefilter(timestamp):
     particles = parts[-1]
     threading.Thread(target=AppendData, args=([[timestamp, meanXY, particles, ws[-1], []]])).start()
 
-
     return [meanXY[0], meanXY[1]]
 
 

@@ -516,11 +516,42 @@ func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, gpUsrHistory []
 			glb.Debug.Println("Only Prediction result:", resultXY)
 		}
 
-		resultXY := particlefilter.Update(timestamp, []float32{float32(y), float32(x)})
+		//////////////////////////////////////////////////
+		// // JUST FOR TEST
+		gp := dbm.GM.GetGroup(curUsrPos.Fingerprint.Group)
+		// 1.FOR UWB Based TRUE LOCATIONS
+		//rd := gp.Get_RawData()
+		//allLocationLogs := rd.Get_TestValidTrueLocations()
+		//glb.Debug.Println(allLocationLogs)
+		//allLocationLogsOrdering := rd.Get_TestValidTrueLocationsOrdering()
+		////glb.Error.Println("TrueLocationLog :", allLocationLogsOrdering)
+		//TrueLoc, _, err := FindTrueFPloc(curUsrPos.Fingerprint, allLocationLogs, allLocationLogsOrdering)
+		//if err != nil {
+		//	glb.Error.Println(err)
+		//}
+		//trueLocX, trueLocY := glb.GetDotFromString(TrueLoc)
+
+		// 2. FOR CELLPHONE Based TRUE LOCATIONS
+		rsd := gp.Get_ResultData()
+		trueLocX, trueLocY := 0.0, 0.0
+		testValidTracks := rsd.Get_TestValidTracks()
+		for _, testvalidTrack := range testValidTracks {
+			if testvalidTrack.UserPosition.Time == curUsrPos.Time {
+				glb.Debug.Println("####################")
+				glb.Debug.Println(curUsrPos.Time)
+				trueLocX, trueLocY = glb.GetDotFromString(testvalidTrack.TrueLocation)
+			}
+		}
+
+		//////////////////////////////////////////////
+
+		//resultXY := particlefilter.Update(timestamp, []float32{float32(y), float32(x)})
+		resultXY := particlefilter.Update(timestamp, []float32{float32(y), float32(x), float32(trueLocY), float32(trueLocX)})
+
 		glb.Error.Println("################")
 		glb.Error.Println(loc)
-		glb.Error.Println(glb.FloatToString(float64(int(resultXY[0]))) + "," + glb.FloatToString(float64(int(resultXY[1]))))
-		return glb.FloatToString(float64(int(resultXY[0]))) + "," + glb.FloatToString(float64(int(resultXY[1])))
+		glb.Error.Println(glb.FloatToString(float64(int(resultXY[1]))) + "," + glb.FloatToString(float64(int(resultXY[0]))))
+		return glb.FloatToString(float64(int(resultXY[1]))) + "," + glb.FloatToString(float64(int(resultXY[0])))
 	}
 
 	//if len(coGpUsrHistory) == 0 {
@@ -546,6 +577,107 @@ func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, gpUsrHistory []
 	//	return curUsrPos.Location
 	//}
 }
+
+//////////////////////////////////////
+// JUSTS FOR TEST : It's in apimethods
+// find best fp location according to
+// then return that location and the index of timestamp in allLocationLogsOrdering list that in that time the correct location is found(it's used for optimized search in allLocationLogs)
+func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string, allLocationLogsOrdering []int64) (string, int, error) {
+	fpTimeStamp := fp.Timestamp
+	//newLoc := ""
+
+	//timeStamps := []int64{}
+	//for timestamp, _ := range allLocationLogs {
+	//	timeStamps = glb.SortedInsertInt64(timeStamps, timestamp)
+	//}
+	lessUntil := 0
+	//stopit := true
+	for i, timeStamp := range allLocationLogsOrdering {
+
+		/*	if timeStamp < int64(1537973812090) && fp.Location=="-22.0,39.0" && stopit{
+				glb.Error.Println("Found it ",allLocationLogs[timeStamp])
+				stopit = false
+			}*/
+		//glb.Debug.Println(timeStamp-fpTimeStamp)
+		if fpTimeStamp > timeStamp {
+			lessUntil = i
+			//glb.Debug.Println(i)
+		} else {
+			//glb.Debug.Println("ok ",i)
+			if lessUntil != 0 {
+				//	xy := allLocationLogs[timeStamp][:2]
+				//newLoc = xy[1] + "," + xy[0]
+				if timeStamp == fpTimeStamp {
+					xy := strings.Split(allLocationLogs[timeStamp], ",")
+					if !(len(xy) == 2) {
+						err := errors.New("Location names aren't in the format of x,y")
+						glb.Error.Println(err)
+					}
+
+					x, err1 := glb.StringToFloat(xy[0])
+					y, err2 := glb.StringToFloat(xy[1])
+					if err1 != nil || err2 != nil {
+						glb.Error.Println(err1)
+						glb.Error.Println(err2)
+						return "", -1, errors.New("Converting string 2 float problem")
+					}
+					return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", lessUntil, nil
+				} else {
+					timeStamp1 := allLocationLogsOrdering[i-1]
+					timeStamp2 := timeStamp
+					if (timeStamp2-fpTimeStamp > int64(1*math.Pow(10, 9))) && (fpTimeStamp-timeStamp1 > int64(1*math.Pow(10, 9))) {
+						break
+					}
+					if timeStamp2-fpTimeStamp > fpTimeStamp-timeStamp1 { // set first timestamp location
+						//xy := allLocationLogs[timeStamp1][:2]
+
+						xy := strings.Split(allLocationLogs[timeStamp1], ",")
+						if !(len(xy) == 2) {
+							err := errors.New("Location names aren't in the format of x,y")
+							glb.Error.Println(err)
+						}
+
+						x, err1 := glb.StringToFloat(xy[0])
+						y, err2 := glb.StringToFloat(xy[1])
+						if err1 != nil || err2 != nil {
+							glb.Error.Println(err1)
+							glb.Error.Println(err2)
+							return "", -1, errors.New("Converting string 2 float problem")
+						}
+						return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", lessUntil, nil
+						//glb.Debug.Println(newLoc)
+					} else { //set second timestamp location
+						//xy := allLocationLogs[timeStamp2][:2]
+						xy := strings.Split(allLocationLogs[timeStamp2], ",")
+						if !(len(xy) == 2) {
+							err := errors.New("Location names aren't in the format of x,y")
+							glb.Error.Println(err)
+						}
+
+						x, err1 := glb.StringToFloat(xy[0])
+						y, err2 := glb.StringToFloat(xy[1])
+						if err1 != nil || err2 != nil {
+							glb.Error.Println(err1)
+							glb.Error.Println(err2)
+							return "", -1, errors.New("Converting string 2 float problem")
+						}
+						return glb.IntToString(int(y)) + ".0," + glb.IntToString(int(x)) + ".0", lessUntil, nil
+					}
+				}
+				break
+			} else {
+				//glb.Error.Println("FP timestamp is before the uwb log timestamps")
+			}
+		}
+	}
+	glb.Error.Println("FindTrueFPloc on ", fp.Location, ":", fp.Timestamp, " ended but timestamp ranges doesn't match to relocate any fp")
+	glb.Error.Println("UWB timestamp range is :", allLocationLogsOrdering[0], " to ", allLocationLogsOrdering[len(allLocationLogsOrdering)-1])
+	return "", -1, errors.New("Timestamp range problem")
+
+}
+
+/////////////////////////////////////
+
 
 // call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
 func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) (parameters.UserPositionJSON, error) {
