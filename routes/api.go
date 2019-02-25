@@ -489,7 +489,7 @@ func GetTestValidTracks(c *gin.Context) {
 
 func RecalculateTestvalidTrackFingerprint(mainGroupName string, repredict bool) []parameters.TestValidTrack {
 	gp := dbm.GM.GetGroup(mainGroupName)
-	coGp, coGpExistErr := gp.Get_CoGroup()
+	coGp, _, coGpExistErr := gp.Get_CoGroup()
 
 	testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
 	tempTestValidTracks := []parameters.TestValidTrack{}
@@ -535,10 +535,15 @@ func RecalculateTestvalidTrackFingerprint(mainGroupName string, repredict bool) 
 			}
 
 			// Repredict test-valid FPs
-			for _, testValidTrack := range allTestValidTracks {
+			for i, testValidTrack := range allTestValidTracks {
 				fp := testValidTrack.UserPosition.Fingerprint
 				//if (len(fp.WifiFingerprint) >= glb.MinApNum) {
-				newUserPositiong, err := algorithms.RecalculateTrackFingerprint(fp)
+				// Set the timestamp difference between testvalid fingerprints
+				timeDiffWithLastFP := int64(0)
+				if i != 0 {
+					timeDiffWithLastFP = fp.Timestamp - allTestValidTracks[i-1].UserPosition.Time
+				}
+				newUserPositiong, err := algorithms.RecalculateTrackFingerprint(fp, timeDiffWithLastFP)
 				if err == nil && fp.Group == mainGroupName { // ignore error-full ones and CoGroup testvalidtracks
 					testValidTrack.UserPosition = newUserPositiong
 					tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
@@ -2493,9 +2498,32 @@ func SetGroupOtherConfig(c *gin.Context) {
 		if coGroupStr != "" {
 			glb.Debug.Println("CoGroup: ", coGroupStr)
 			if (coGroupStr == "No CoGroup") {
-				otherGpConfig.CoGroup = ""
+				if otherGpConfig.CoGroup != "" {
+					coGpCd := dbm.GM.GetGroup(otherGpConfig.CoGroup).Get_ConfigData()
+					coGpOtherGpConfig := coGpCd.Get_OtherGroupConfig()
+					// Change co-group names
+					otherGpConfig.CoGroup = ""
+					coGpOtherGpConfig.CoGroup = ""
+
+					// Change co-group modes
+					otherGpConfig.CoGroupMode = parameters.CoGroupState_None
+					coGpOtherGpConfig.CoGroupMode = parameters.CoGroupState_None
+					coGpCd.Set_OtherGroupConfig(coGpOtherGpConfig)
+				}
 			} else {
+
+				// change cp-group names
+				coGpCd := dbm.GM.GetGroup(coGroupStr).Get_ConfigData()
+				coGpOtherGpConfig := coGpCd.Get_OtherGroupConfig()
+
 				otherGpConfig.CoGroup = coGroupStr
+				coGpOtherGpConfig.CoGroup = groupName
+
+				// Change co-group modes
+				otherGpConfig.CoGroupMode = parameters.CoGroupState_Master    // set current group mode to master
+				coGpOtherGpConfig.CoGroupMode = parameters.CoGroupState_Slave // set other one (co-group of current group) mode to slave
+				glb.Debug.Println(coGpOtherGpConfig)
+				coGpCd.Set_OtherGroupConfig(coGpOtherGpConfig)
 			}
 		}
 

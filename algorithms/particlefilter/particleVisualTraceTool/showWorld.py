@@ -7,9 +7,10 @@ import numpy
 import pickle
 import os
 
-class Example(QWidget):
 
-    def __init__(self, data, scaleXY, scaleScreen, bgPath, ShowTrueAndBLEEst):
+class MainWindow(QWidget):
+
+    def __init__(self, data, scaleXY, scaleScreen, bgPath, ShowTrueAndEst):
         super().__init__()
         self.infLocation = -10000000000
         self.particles = None
@@ -23,13 +24,15 @@ class Example(QWidget):
         self.LastLine = 4
         self.width = 0
         self.height = 0
-        self.ShowTrueAndBLEEst = ShowTrueAndBLEEst
-        self.trueLocAndBLE = [self.infLocation] * 4
+        self.ShowTrueAndEst = ShowTrueAndEst
+        self.trueLocAndEst = numpy.zeros((3, 3))
+        self.trueLocAndEst[:, 1:].fill(self.infLocation)
 
         self.particleColor = Qt.red
         self.meanColor = Qt.blue
         self.trueLocColor = Qt.black
-        self.bleEstColor = Qt.green
+        self.masterEstColor = Qt.green
+        self.slaveEstColor = Qt.darkGreen
 
         self.updateIndicatortate = 0
         self.initUI()
@@ -58,8 +61,8 @@ class Example(QWidget):
         self.drawParticles()
         self.drawMean()
         self.drawUpdateIndicator()
-        if self.ShowTrueAndBLEEst:
-            self.drawTrueAndBLEEst()
+        if self.ShowTrueAndEst:
+            self.drawTrueAndEst()
         qp.end()
 
     def drawBackgroundImage(self):
@@ -154,21 +157,32 @@ class Example(QWidget):
         if len(self.mean) != 0:
             self.drawPie(self.mean, 40, self.meanColor)
 
-    def drawTrueAndBLEEst(self):
-        if len(self.trueLocAndBLE) != 0:
-            trueLocCenter = QPoint(self.trueLocAndBLE[2] * self.scaleXY, self.trueLocAndBLE[3] * self.scaleXY)
+    def drawTrueAndEst(self):
+        # print(self.trueLocAndEst)
+        if len(self.trueLocAndEst) != 0:
+            trueLocCenter = QPoint(self.trueLocAndEst[2][1] * self.scaleXY, self.trueLocAndEst[2][2] * self.scaleXY)
             brush = QBrush(Qt.SolidPattern)
             brush.setColor(self.trueLocColor)
             self.qp.setPen(self.trueLocColor)
             self.qp.setBrush(brush)
             self.qp.drawEllipse(trueLocCenter, 5, 5)
 
-            bleEstCenter = QPoint(self.trueLocAndBLE[0] * self.scaleXY, self.trueLocAndBLE[1] * self.scaleXY)
-            brush = QBrush(Qt.SolidPattern)
-            brush.setColor(self.bleEstColor)
-            self.qp.setPen(self.bleEstColor)
-            self.qp.setBrush(brush)
-            self.qp.drawEllipse(bleEstCenter, 5, 5)
+            if (self.trueLocAndEst[0][0]):
+                masterEstCenter = QPoint(self.trueLocAndEst[0][1] * self.scaleXY,
+                                         self.trueLocAndEst[0][2] * self.scaleXY)
+                brush = QBrush(Qt.SolidPattern)
+                brush.setColor(self.masterEstColor)
+                self.qp.setPen(self.masterEstColor)
+                self.qp.setBrush(brush)
+                self.qp.drawEllipse(masterEstCenter, 5, 5)
+            if (self.trueLocAndEst[1][0]):
+                slaveEstCenter = QPoint(self.trueLocAndEst[1][1] * self.scaleXY,
+                                        self.trueLocAndEst[1][2] * self.scaleXY)
+                brush = QBrush(Qt.SolidPattern)
+                brush.setColor(self.slaveEstColor)
+                self.qp.setPen(self.slaveEstColor)
+                self.qp.setBrush(brush)
+                self.qp.drawEllipse(slaveEstCenter, 5, 5)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Right:
@@ -200,10 +214,10 @@ class Example(QWidget):
         timestamp = data[0]
         mean = data[1]
         particles = data[2]
-        trueLocAndBLE = data[4]
+        trueLocAndEst = data[4]
         print("#################")
         print(mean)
-        print(trueLocAndBLE)
+        print(trueLocAndEst)
         print(particles)
         print(data[3])
         print(numpy.sort(data[3]))
@@ -213,55 +227,52 @@ class Example(QWidget):
         for i in range(len(mean)):
             self.mean[i] = mean[i]
 
-        # set truel location and ble estimation
-        if len(trueLocAndBLE) == 0:
-            for i in range(0, 4):
-                self.trueLocAndBLE[i] = self.infLocation
-        elif len(trueLocAndBLE) == 2:
-            for i in range(2, 4):
-                self.trueLocAndBLE[i] = self.infLocation
-        else:
-            for i in range(0, 4):
-                self.trueLocAndBLE[i] = trueLocAndBLE[i]
 
-        # toggle indicator
         self.updateIndicatortate = 0
-        if len(trueLocAndBLE) == 4:
-            self.updateIndicatortate = 1
+        self.trueLocAndEst[:, 1:].fill(self.infLocation)
+
+        # set truel location and ble estimation
+        if len(trueLocAndEst) > 0:
+            for i in range(len(trueLocAndEst)):
+                for j in range(len(trueLocAndEst[0])):
+                    self.trueLocAndEst[i][j] = trueLocAndEst[i][j]
+
+            if trueLocAndEst[0][0] == 1 or trueLocAndEst[1][0] == 1:
+                self.updateIndicatortate = 1
 
         self.update()
 
-    def previousLine(self):
-
-
-        data = self.data[self.LastLine]
-        timestamp = data[0]
-        mean = data[1]
-        particles = data[2]
-        trueLocAndBLE = data[4]
-
-        for i in range(len(self.particles)):
-            self.particles[i] = particles[i]
-        for i in range(len(mean)):
-            self.mean[i] = mean[i]
-
-        # set truel location and ble estimation
-        if len(trueLocAndBLE) == 0:
-            for i in range(0, 4):
-                self.trueLocAndBLE[i] = self.infLocation
-        elif len(trueLocAndBLE) == 2:
-            for i in range(2, 4):
-                self.trueLocAndBLE[i] = self.infLocation
-        else:
-            for i in range(0, 4):
-                self.trueLocAndBLE[i] = trueLocAndBLE[i]
-
-        # toggle indicator
-        self.updateIndicatortate = 0
-        if len(trueLocAndBLE) == 4:
-            self.updateIndicatortate = 1
-
-        self.update()
+    # def previousLine(self):
+    #
+    #
+    #     data = self.data[self.LastLine]
+    #     timestamp = data[0]
+    #     mean = data[1]
+    #     particles = data[2]
+    #     trueLocAndBLE = data[4]
+    #
+    #     for i in range(len(self.particles)):
+    #         self.particles[i] = particles[i]
+    #     for i in range(len(mean)):
+    #         self.mean[i] = mean[i]
+    #
+    #     # set truel location and ble estimation
+    #     if len(trueLocAndBLE) == 0:
+    #         for i in range(0, 4):
+    #             self.trueLocAndBLE[i] = self.infLocation
+    #     elif len(trueLocAndBLE) == 2:
+    #         for i in range(2, 4):
+    #             self.trueLocAndBLE[i] = self.infLocation
+    #     else:
+    #         for i in range(0, 4):
+    #             self.trueLocAndBLE[i] = trueLocAndBLE[i]
+    #
+    #     # toggle indicator
+    #     self.updateIndicatortate = 0
+    #     if len(trueLocAndBLE) == 4:
+    #         self.updateIndicatortate = 1
+    #
+    #     self.update()
 
 def ReadData(pklFilePath):
     import pickle
@@ -289,7 +300,7 @@ def ReadData(pklFilePath):
 if __name__ == '__main__':
 
     scaleXY = 0.33
-    ShowTrueAndBLEEst = True
+    ShowTrueAndEst = True
     scaleScreen = scaleXY / 0.25
     bgPath = "./ArmanExactMap.png"
     pklFilePath =  "../results.pkl"
@@ -306,5 +317,5 @@ if __name__ == '__main__':
 
 
     app = QApplication(sys.argv)
-    ex = Example(data, scaleXY, scaleScreen, bgPath, ShowTrueAndBLEEst)
+    ex = MainWindow(data, scaleXY, scaleScreen, bgPath, ShowTrueAndEst)
     sys.exit(app.exec_())

@@ -1321,6 +1321,8 @@ func easyjson224c90e0DecodeParsinServerDbmParameters5(in *jlexer.Lexer, out *Oth
 		switch key {
 		case "CoGroup":
 			out.CoGroup = string(in.String())
+		case "CoGroupMode":
+			out.CoGroupMode = int(in.Int())
 		case "SimpleHistoryEnabled":
 			out.SimpleHistoryEnabled = bool(in.Bool())
 		default:
@@ -1346,6 +1348,16 @@ func easyjson224c90e0EncodeParsinServerDbmParameters5(out *jwriter.Writer, in Ot
 			out.RawString(prefix)
 		}
 		out.String(string(in.CoGroup))
+	}
+	{
+		const prefix string = ",\"CoGroupMode\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int(int(in.CoGroupMode))
 	}
 	{
 		const prefix string = ",\"SimpleHistoryEnabled\":"

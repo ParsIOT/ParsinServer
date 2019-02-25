@@ -53,7 +53,9 @@ message PredictReply {
 // Update:
 message UpdateRequest {
     int64 Timestamp = 1;
-    repeated float BlePredict = 2; // Ble location guess
+    repeated float MasterEstimation = 2; // Ble location guess
+    repeated float SlaveEstimation = 3; // wifi location guess
+    repeated float TrueLocation = 4; // real location
 }
 message UpdateReply {
     repeated float ResXY = 1; // Particle filter (prediction and measurement) location guess

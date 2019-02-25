@@ -41,15 +41,23 @@ func NewKnnConfig() KnnConfig {
 	}
 }
 
+const (
+	CoGroupState_None   int = 0
+	CoGroupState_Master int = 1
+	CoGroupState_Slave  int = 2
+)
+
 // Other group configs that aren't in knnconfig and ...
 type OtherGroupConfig struct {
 	CoGroup              string
+	CoGroupMode          int // 0: none, 1:master(main) group , 2: slave group
 	SimpleHistoryEnabled bool
 }
 
 func NewOtherGroupConfig() OtherGroupConfig {
 	return OtherGroupConfig{
 		CoGroup:              "",
+		CoGroupMode:          CoGroupState_None,
 		SimpleHistoryEnabled: glb.DefaultSimpleHistoryEnabled,
 	}
 }

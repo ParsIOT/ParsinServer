@@ -486,29 +486,27 @@ func Fusion(curUsrPos parameters.UserPositionJSON, gpUsrHistory, coGpUsrHistory 
 	}
 }
 
-func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, gpUsrHistory []parameters.UserPositionJSON, initialize bool) string {
+func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, timeDiffWithLastFP int64, CoGroupMode int) string {
+	//Todo: Now you need to swap x and y(solve this problem)
 	glb.Debug.Println("Using Particle filter ...")
-	//timestamp := time.Now().UTC().UnixNano()/1000000
+
 	timestamp := curUsrPos.Time
 	loc := curUsrPos.Location
+
 	x, y := glb.GetDotFromString(loc)
 
-	//Initialize(timestamp, []float32{0.0,0.0})
-	//
-	//timestamp = time.Now().UTC().UnixNano()/1000000
-	//Predict(timestamp)
-	//
-	//timestamp = time.Now().UTC().UnixNano()/1000000
-	//Update(timestamp, []float32{3.0,3.0})
-	if initialize {
+	//CoGroupMode
+
+	if timeDiffWithLastFP == 0 {
 		glb.Debug.Println("Initialization Particle filter")
 		particlefilter.Initialize(timestamp, []float32{float32(y), float32(x)})
 		return curUsrPos.Location
 	} else {
-		lastPredictionTimestamp := gpUsrHistory[len(gpUsrHistory)-1].Time
-		diffTime := curUsrPos.Time - lastPredictionTimestamp
-		MaxTimeDiffForUpdate := int64(2000)
-		PredictionPerdiod := int64(1000)
+		diffTime := timeDiffWithLastFP
+		lastPredictionTimestamp := timestamp - timeDiffWithLastFP
+
+		MaxTimeDiffForUpdate := int64(3000)
+		PredictionPerdiod := int64(500)
 		for diffTime > MaxTimeDiffForUpdate {
 			diffTime -= PredictionPerdiod
 			lastPredictionTimestamp += PredictionPerdiod
@@ -516,6 +514,7 @@ func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, gpUsrHistory []
 			glb.Debug.Println("Only Prediction result:", resultXY)
 		}
 
+		// GET TEST VALID TRUE LOCATION:
 		//////////////////////////////////////////////////
 		// // JUST FOR TEST
 		gp := dbm.GM.GetGroup(curUsrPos.Fingerprint.Group)
@@ -545,8 +544,21 @@ func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, gpUsrHistory []
 
 		//////////////////////////////////////////////
 
-		//resultXY := particlefilter.Update(timestamp, []float32{float32(y), float32(x)})
-		resultXY := particlefilter.Update(timestamp, []float32{float32(y), float32(x), float32(trueLocY), float32(trueLocX)})
+		//resultXY := particlefilter.Update(timestamp, []float32{float32(y), float32(x), float32(trueLocY), float32(trueLocX)})
+		//trueLocY, trueLocX := float32(0),float32(0)
+
+		resultXY := []float32{}
+		if CoGroupMode == parameters.CoGroupState_Master || CoGroupMode == parameters.CoGroupState_None {
+			glb.Debug.Println("Updating by measurement 	... ")
+			resultXY = particlefilter.Update(timestamp, []float32{float32(y), float32(x)}, []float32{}, []float32{float32(trueLocY), float32(trueLocX)})
+		} else if CoGroupMode == parameters.CoGroupState_Slave {
+			glb.Debug.Println("Updating by Co-Group measurement ... ")
+			resultXY = particlefilter.Update(timestamp, []float32{}, []float32{float32(y), float32(x)}, []float32{float32(trueLocY), float32(trueLocX)})
+		}
+
+		if len(resultXY) == 0 {
+			glb.Error.Println("Particle filter update not working well")
+		}
 
 		glb.Error.Println("################")
 		glb.Error.Println(loc)
@@ -680,23 +692,25 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string, 
 
 
 // call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
-func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint) (parameters.UserPositionJSON, error) {
+func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint, timeDiffWithLastFP int64) (parameters.UserPositionJSON, error) {
 	userPosJson, success, message := TrackFingerprint(curFingerprint)
 
 	if success {
 		gp := dbm.GM.GetGroup(curFingerprint.Group)
-		coGp, coGpExistErr := gp.Get_CoGroup()
+		coGp, CoGroupMode, coGpExistErr := gp.Get_CoGroup()
 
 		if glb.ParticleFilterEnabled {
-			gpUsrHistory := gp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
-			if len(gpUsrHistory) == 0 {
-				userPosJson.Location = ParticleFilterFusion(userPosJson, gpUsrHistory, true)
-			} else {
-				userPosJson.Location = ParticleFilterFusion(userPosJson, gpUsrHistory, false)
-			}
+			//gpUsrHistory := gp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
+			//coGpUsrHisotry := coGp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
+			//if len(gpUsrHistory) == 0 {
+			userPosJson.Location = ParticleFilterFusion(userPosJson, timeDiffWithLastFP, CoGroupMode)
+			//if timeDiffWithLastFP == 0 {
+			//	userPosJson.Location = ParticleFilterFusion(userPosJson, gpUsrHistory,coGpUsrHisotry, true)
+			//} else {
+			//	userPosJson.Location = ParticleFilterFusion(userPosJson, gpUsrHistory,coGpUsrHisotry, false)
+			//}
 		} else {
 			if coGpExistErr == nil {
-
 				gpUsrHistory := gp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
 				coGpUsrHisotry := coGp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
 				userPosJson.Location = Fusion(userPosJson, gpUsrHistory, coGpUsrHisotry)

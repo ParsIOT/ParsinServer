@@ -1036,19 +1036,19 @@ func (gp *Group) Set_Permanent(new_item bool) {
 
 // return cogroup groupcache pointer
 // return false if there's no CoGroup(group) with this name or if it wasn't sat.
-func (gp *Group) Get_CoGroup() (*Group, error) {
-	cd := gp.Get_ConfigData()
-	CoGroupName := cd.Get_OtherGroupConfig().CoGroup
-	if CoGroupName != "" {
+func (gp *Group) Get_CoGroup() (*Group, int, error) {
+	otherConfigData := gp.Get_ConfigData().Get_OtherGroupConfig()
+	if otherConfigData.CoGroupMode != parameters.CoGroupState_None { // master or slave
+		CoGroupName := otherConfigData.CoGroup
 		if GroupExists(CoGroupName) {
 			coGp := GM.GetGroup(CoGroupName)
-			return coGp, nil
+			return coGp, otherConfigData.CoGroupMode, nil
 		} else {
 			glb.Error.Println("There isn't any CoGroup(group) with this name")
-			return nil, errors.New("There isn't any CoGroup(group) with this name")
+			return nil, otherConfigData.CoGroupMode, errors.New("There isn't any CoGroup(group) with this name")
 		}
 	} else {
-		return nil, errors.New("CoGroup field is empty")
+		return nil, parameters.CoGroupState_None, errors.New("This group doesn't have cogroup")
 	}
 }
 

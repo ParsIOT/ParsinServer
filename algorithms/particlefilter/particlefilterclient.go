@@ -67,8 +67,13 @@ func Predict(timestamp int64) []float32 {
 	return predictReply.ResXY
 }
 
-func Update(timestamp int64, blePredict []float32) []float32 {
-	updateRequest := pb.UpdateRequest{Timestamp: timestamp, BlePredict: blePredict}
+func Update(timestamp int64, masterEstimation, slaveEstimation, trueLocation []float32) []float32 {
+	updateRequest := pb.UpdateRequest{
+		Timestamp:        timestamp,
+		MasterEstimation: masterEstimation,
+		SlaveEstimation:  slaveEstimation,
+		TrueLocation:     trueLocation,
+	}
 	updateReply := Do_Update(updateRequest)
 	//glb.Debug.Println("Update: ", updateReply.ResXY)
 	return updateReply.ResXY

@@ -810,6 +810,30 @@ func GetDotFromString(dotStr string) (float64, float64) {
 	locY, _ := strconv.ParseFloat(locYstr, 64)
 	return locX, locY
 }
+
+func CheckDotFormatString(dotStr string) bool {
+	x_y := strings.Split(dotStr, ",")
+	//Debug.Println(x_y)
+	if len(x_y) != 2 {
+		Error.Println("Invalid x,y format:", x_y)
+		return false
+	}
+	locXstr := x_y[0]
+	locYstr := x_y[1]
+	_, err1 := strconv.ParseFloat(locXstr, 64)
+	_, err2 := strconv.ParseFloat(locYstr, 64)
+
+	if (err1 != nil) {
+		Error.Println("Invalid x,y format,can't parse:", err1)
+		return false
+	} else if (err2 != nil) {
+		Error.Println("Invalid x,y format,can't parse:", err2)
+		return false
+	}
+
+	return true
+}
+
 func CalcDist(x1, y1, x2, y2 float64) float64 {
 	return math.Pow(math.Pow(float64(x1-x2), 2)+math.Pow(float64(y1-y2), 2), 0.5)
 }

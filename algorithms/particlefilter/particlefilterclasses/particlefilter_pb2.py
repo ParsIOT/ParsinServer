@@ -17,9 +17,12 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='particlefilterclasses',
   syntax='proto3',
   serialized_options=_b('\n\037io.grpc.examples.particlefilterB\023ParticleFilterProtoP\001'),
-  serialized_pb=_b(
-    '\n*particlefilterclasses/particlefilter.proto\x12\x15particlefilterclasses\"\x07\n\x05\x45mpty\",\n\x0bInitRequest\x12\x11\n\tTimestamp\x18\x01 \x01(\x03\x12\n\n\x02XY\x18\x02 \x03(\x02\" \n\tInitReply\x12\x13\n\x0bReturnValue\x18\x01 \x01(\x08\"#\n\x0ePredictRequest\x12\x11\n\tTimestamp\x18\x01 \x01(\x03\"2\n\x0cPredictReply\x12\r\n\x05ResXY\x18\x01 \x03(\x02\x12\x13\n\x0bReturnValue\x18\x02 \x01(\x08\"6\n\rUpdateRequest\x12\x11\n\tTimestamp\x18\x01 \x01(\x03\x12\x12\n\nBlePredict\x18\x02 \x03(\x02\"1\n\x0bUpdateReply\x12\r\n\x05ResXY\x18\x01 \x03(\x02\x12\x13\n\x0bReturnValue\x18\x02 \x01(\x08\x32\xe9\x02\n\x0eParticleFilter\x12R\n\x0e\x43onnectionTest\x12\x1c.particlefilterclasses.Empty\x1a .particlefilterclasses.InitReply\"\x00\x12T\n\nInitialize\x12\".particlefilterclasses.InitRequest\x1a .particlefilterclasses.InitReply\"\x00\x12W\n\x07Predict\x12%.particlefilterclasses.PredictRequest\x1a#.particlefilterclasses.PredictReply\"\x00\x12T\n\x06Update\x12$.particlefilterclasses.UpdateRequest\x1a\".particlefilterclasses.UpdateReply\"\x00\x42\x38\n\x1fio.grpc.examples.particlefilterB\x13ParticleFilterProtoP\x01\x62\x06proto3')
+    serialized_pb=_b(
+        '\n*particlefilterclasses/particlefilter.proto\x12\x15particlefilterclasses\"\x07\n\x05\x45mpty\",\n\x0bInitRequest\x12\x11\n\tTimestamp\x18\x01 \x01(\x03\x12\n\n\x02XY\x18\x02 \x03(\x02\" \n\tInitReply\x12\x13\n\x0bReturnValue\x18\x01 \x01(\x08\"#\n\x0ePredictRequest\x12\x11\n\tTimestamp\x18\x01 \x01(\x03\"2\n\x0cPredictReply\x12\r\n\x05ResXY\x18\x01 \x03(\x02\x12\x13\n\x0bReturnValue\x18\x02 \x01(\x08\"k\n\rUpdateRequest\x12\x11\n\tTimestamp\x18\x01 \x01(\x03\x12\x18\n\x10MasterEstimation\x18\x02 \x03(\x02\x12\x17\n\x0fSlaveEstimation\x18\x03 \x03(\x02\x12\x14\n\x0cTrueLocation\x18\x04 \x03(\x02\"1\n\x0bUpdateReply\x12\r\n\x05ResXY\x18\x01 \x03(\x02\x12\x13\n\x0bReturnValue\x18\x02 \x01(\x08\x32\xe9\x02\n\x0eParticleFilter\x12R\n\x0e\x43onnectionTest\x12\x1c.particlefilterclasses.Empty\x1a .particlefilterclasses.InitReply\"\x00\x12T\n\nInitialize\x12\".particlefilterclasses.InitRequest\x1a .particlefilterclasses.InitReply\"\x00\x12W\n\x07Predict\x12%.particlefilterclasses.PredictRequest\x1a#.particlefilterclasses.PredictReply\"\x00\x12T\n\x06Update\x12$.particlefilterclasses.UpdateRequest\x1a\".particlefilterclasses.UpdateReply\"\x00\x42\x38\n\x1fio.grpc.examples.particlefilterB\x13ParticleFilterProtoP\x01\x62\x06proto3')
 )
+
+
+
 
 _EMPTY = _descriptor.Descriptor(
   name='Empty',
@@ -198,12 +201,26 @@ _UPDATEREQUEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='BlePredict', full_name='particlefilterclasses.UpdateRequest.BlePredict', index=1,
+        name='MasterEstimation', full_name='particlefilterclasses.UpdateRequest.MasterEstimation', index=1,
       number=2, type=2, cpp_type=6, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+      _descriptor.FieldDescriptor(
+          name='SlaveEstimation', full_name='particlefilterclasses.UpdateRequest.SlaveEstimation', index=2,
+          number=3, type=2, cpp_type=6, label=3,
+          has_default_value=False, default_value=[],
+          message_type=None, enum_type=None, containing_type=None,
+          is_extension=False, extension_scope=None,
+          serialized_options=None, file=DESCRIPTOR),
+      _descriptor.FieldDescriptor(
+          name='TrueLocation', full_name='particlefilterclasses.UpdateRequest.TrueLocation', index=3,
+          number=4, type=2, cpp_type=6, label=3,
+          has_default_value=False, default_value=[],
+          message_type=None, enum_type=None, containing_type=None,
+          is_extension=False, extension_scope=None,
+          serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -217,7 +234,7 @@ _UPDATEREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=247,
-  serialized_end=301,
+    serialized_end=354,
 )
 
 
@@ -254,8 +271,8 @@ _UPDATEREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=303,
-  serialized_end=352,
+    serialized_start=356,
+    serialized_end=405,
 )
 
 DESCRIPTOR.message_types_by_name['Empty'] = _EMPTY
@@ -268,50 +285,50 @@ DESCRIPTOR.message_types_by_name['UpdateReply'] = _UPDATEREPLY
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Empty = _reflection.GeneratedProtocolMessageType('Empty', (_message.Message,), dict(
-  DESCRIPTOR=_EMPTY,
-  __module__='particlefilterclasses.particlefilter_pb2'
+    DESCRIPTOR=_EMPTY,
+    __module__='particlefilterclasses.particlefilter_pb2'
   # @@protoc_insertion_point(class_scope:particlefilterclasses.Empty)
 ))
 _sym_db.RegisterMessage(Empty)
 
 InitRequest = _reflection.GeneratedProtocolMessageType('InitRequest', (_message.Message,), dict(
-  DESCRIPTOR=_INITREQUEST,
-  __module__='particlefilterclasses.particlefilter_pb2'
+    DESCRIPTOR=_INITREQUEST,
+    __module__='particlefilterclasses.particlefilter_pb2'
   # @@protoc_insertion_point(class_scope:particlefilterclasses.InitRequest)
 ))
 _sym_db.RegisterMessage(InitRequest)
 
 InitReply = _reflection.GeneratedProtocolMessageType('InitReply', (_message.Message,), dict(
-  DESCRIPTOR=_INITREPLY,
-  __module__='particlefilterclasses.particlefilter_pb2'
+    DESCRIPTOR=_INITREPLY,
+    __module__='particlefilterclasses.particlefilter_pb2'
   # @@protoc_insertion_point(class_scope:particlefilterclasses.InitReply)
 ))
 _sym_db.RegisterMessage(InitReply)
 
 PredictRequest = _reflection.GeneratedProtocolMessageType('PredictRequest', (_message.Message,), dict(
-  DESCRIPTOR=_PREDICTREQUEST,
-  __module__='particlefilterclasses.particlefilter_pb2'
+    DESCRIPTOR=_PREDICTREQUEST,
+    __module__='particlefilterclasses.particlefilter_pb2'
   # @@protoc_insertion_point(class_scope:particlefilterclasses.PredictRequest)
 ))
 _sym_db.RegisterMessage(PredictRequest)
 
 PredictReply = _reflection.GeneratedProtocolMessageType('PredictReply', (_message.Message,), dict(
-  DESCRIPTOR=_PREDICTREPLY,
-  __module__='particlefilterclasses.particlefilter_pb2'
+    DESCRIPTOR=_PREDICTREPLY,
+    __module__='particlefilterclasses.particlefilter_pb2'
   # @@protoc_insertion_point(class_scope:particlefilterclasses.PredictReply)
 ))
 _sym_db.RegisterMessage(PredictReply)
 
 UpdateRequest = _reflection.GeneratedProtocolMessageType('UpdateRequest', (_message.Message,), dict(
-  DESCRIPTOR=_UPDATEREQUEST,
-  __module__='particlefilterclasses.particlefilter_pb2'
+    DESCRIPTOR=_UPDATEREQUEST,
+    __module__='particlefilterclasses.particlefilter_pb2'
   # @@protoc_insertion_point(class_scope:particlefilterclasses.UpdateRequest)
 ))
 _sym_db.RegisterMessage(UpdateRequest)
 
 UpdateReply = _reflection.GeneratedProtocolMessageType('UpdateReply', (_message.Message,), dict(
-  DESCRIPTOR=_UPDATEREPLY,
-  __module__='particlefilterclasses.particlefilter_pb2'
+    DESCRIPTOR=_UPDATEREPLY,
+    __module__='particlefilterclasses.particlefilter_pb2'
   # @@protoc_insertion_point(class_scope:particlefilterclasses.UpdateReply)
 ))
 _sym_db.RegisterMessage(UpdateReply)
@@ -325,45 +342,45 @@ _PARTICLEFILTER = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=355,
-  serialized_end=716,
+    serialized_start=408,
+    serialized_end=769,
   methods=[
-    _descriptor.MethodDescriptor(
-      name='ConnectionTest',
-      full_name='particlefilterclasses.ParticleFilter.ConnectionTest',
-      index=0,
-      containing_service=None,
-      input_type=_EMPTY,
-      output_type=_INITREPLY,
-      serialized_options=None,
-    ),
-    _descriptor.MethodDescriptor(
-      name='Initialize',
-      full_name='particlefilterclasses.ParticleFilter.Initialize',
-      index=1,
-      containing_service=None,
-      input_type=_INITREQUEST,
-      output_type=_INITREPLY,
-      serialized_options=None,
-    ),
-    _descriptor.MethodDescriptor(
-      name='Predict',
-      full_name='particlefilterclasses.ParticleFilter.Predict',
-      index=2,
-      containing_service=None,
-      input_type=_PREDICTREQUEST,
-      output_type=_PREDICTREPLY,
-      serialized_options=None,
-    ),
-    _descriptor.MethodDescriptor(
-      name='Update',
-      full_name='particlefilterclasses.ParticleFilter.Update',
-      index=3,
-      containing_service=None,
-      input_type=_UPDATEREQUEST,
-      output_type=_UPDATEREPLY,
-      serialized_options=None,
-    ),
+      _descriptor.MethodDescriptor(
+          name='ConnectionTest',
+          full_name='particlefilterclasses.ParticleFilter.ConnectionTest',
+          index=0,
+          containing_service=None,
+          input_type=_EMPTY,
+          output_type=_INITREPLY,
+          serialized_options=None,
+      ),
+      _descriptor.MethodDescriptor(
+          name='Initialize',
+          full_name='particlefilterclasses.ParticleFilter.Initialize',
+          index=1,
+          containing_service=None,
+          input_type=_INITREQUEST,
+          output_type=_INITREPLY,
+          serialized_options=None,
+      ),
+      _descriptor.MethodDescriptor(
+          name='Predict',
+          full_name='particlefilterclasses.ParticleFilter.Predict',
+          index=2,
+          containing_service=None,
+          input_type=_PREDICTREQUEST,
+          output_type=_PREDICTREPLY,
+          serialized_options=None,
+      ),
+      _descriptor.MethodDescriptor(
+          name='Update',
+          full_name='particlefilterclasses.ParticleFilter.Update',
+          index=3,
+          containing_service=None,
+          input_type=_UPDATEREQUEST,
+          output_type=_UPDATEREPLY,
+          serialized_options=None,
+      ),
   ])
 _sym_db.RegisterServiceDescriptor(_PARTICLEFILTER)
 

@@ -24,17 +24,29 @@
             <form action='/setGroupOtherConfig?group={{ $.Group }}' id="groupOtherConfigForm" method='POST'>
                 <div class="modal-body">
                     <div class="input-group form-group">
-                        <span class="input-group-addon">Co-Group: </span>
+                        <span class="input-group-addon">Co-Group Mode: </span>
                         <span class="input-group-addon">{{$.GroupOtherConfigDataPlus.GroupOtherConfig.CoGroup}} </span>
+                        {{ $CoGroupMode := $.GroupOtherConfigDataPlus.GroupOtherConfig.CoGroupMode }}
+                        {{ if (eq $CoGroupMode 0) }}
+                            <span class="input-group-addon" style="background-color: lightgrey;">None</span>
+                        {{ else if (eq $CoGroupMode 1) }}
+                            <span class="input-group-addon" style="background-color: #2aabd2;">Master</span>
+                        {{ else if (eq $CoGroupMode 2) }}
+                            <span class="input-group-addon" style="background-color: #ce8483">Slave</span>
+                        {{ end }}
+                    </div>
+                    <div class="input-group form-group">
+                        <span class="input-group-addon">Select Slave Co-Group: </span>
                         <select class="selectpicker form-control" id="coGroup" name="coGroup" data-container="body"
                                 data-live-search="true" title="Select a group" data-hide-disabled="true">
-                        {{ range $Index, $gpName := $.GroupOtherConfigDataPlus.AllGroupName }}
-                        {{ if (ne $gpName $.Group) }}
-                            <option value="{{$gpName}}">{{$gpName}}</option>
-                        {{ end }}
-                        {{ end }}
+                            {{ range $Index, $gpName := $.GroupOtherConfigDataPlus.AllGroupName }}
+                                {{ if (ne $gpName $.Group) }}
+                                    <option value="{{$gpName}}">{{$gpName}}</option>
+                                {{ end }}
+                            {{ end }}
                         </select>
                     </div>
+
                     <div class="input-group form-group">
                         <span class="input-group-addon">SimpleHistoryEffect enabled:</span>
                         <span class="input-group-addon">{{$.GroupOtherConfigDataPlus.GroupOtherConfig.SimpleHistoryEnabled}}</span>
