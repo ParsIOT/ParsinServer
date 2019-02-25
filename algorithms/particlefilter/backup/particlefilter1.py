@@ -12,7 +12,7 @@ import os
 import pickle
 
 LastTimestamp = int(time.time() * 1000)
-sim = None
+pfRunner = None
 resultData = {}
 resultDataFileName = "results.pkl"
 try:
@@ -144,7 +144,7 @@ def AppendData(obj):
 
 
 def init_particlefilter(timestamp, init_loc):
-    global LastTimestamp, sim, resultData
+    global LastTimestamp, pfRunner, resultData
 
     numpy.random.seed(1)
     random.seed(1)
@@ -192,7 +192,7 @@ def init_particlefilter(timestamp, init_loc):
 
 
 def predict_particlefilter(timestamp):
-    global LastTimestamp, sim
+    global LastTimestamp, pfRunner
 
     # return [1.0,1.0]
     u = numpy.array(timestamp - LastTimestamp)
@@ -211,7 +211,7 @@ def predict_particlefilter(timestamp):
 
 
 def update_particlefilter(timestamp, ble_predict):
-    global LastTimestamp, sim
+    global LastTimestamp, pfRunner
 
     # return [1.0,1.0]
     u = numpy.array(timestamp - LastTimestamp)

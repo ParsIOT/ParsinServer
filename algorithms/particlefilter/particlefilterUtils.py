@@ -1,3 +1,4 @@
+# AreIntersect and two inner functions(onSegment & orientation) are provided to checking intersection of two 2D lines
 def onSegment(p, q, r):
     if (q[0] <= max(p[0], r[0]) and q[0] >= min(p[0], r[0]) and q[1] <= max(p[1], r[1]) and q[1] >= min(p[1], r[1])):
         return True
@@ -11,6 +12,7 @@ def orientation(p, q, r):
     return 1 if val > 0 else 2
 
 
+# Inspired by :https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
 def AreIntersect(line1, line2):
     p1 = line1[0]
     q1 = line1[1]
