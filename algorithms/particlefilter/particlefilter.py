@@ -7,9 +7,9 @@ import pyparticleest.filter as filter
 import math
 import random
 import time, threading
-from draw import Figure
 import os
 import pickle
+from particlefilterUtils import *
 
 LastTimestamp = int(time.time() * 1000)
 sim = None
@@ -26,12 +26,13 @@ class Model(interfaces.ParticleFiltering):
         y_k = x_k + e_k, e_k ~ N(0,R),
         x(0) ~ N(0,P0) """
 
-    def __init__(self, Q, R, P0, init_loc, human_speed):
+    def __init__(self, Q, R, P0, init_loc, human_speed, mapGraph):
         self.P0 = P0
         self.init_loc = init_loc
         self.Q = numpy.copy(Q)
         self.R = numpy.copy(R)
         self.human_speed = human_speed
+        self.mapGraph = mapGraph
         self.LastObserveDist = 0
 
     def create_initial_estimate(self, N):
@@ -59,24 +60,20 @@ class Model(interfaces.ParticleFiltering):
         noise = numpy.concatenate((heading_noise, speed_noise), axis=1)
         return noise
 
+    def cross_wall(self, begin, end):
+        pathLine = [(begin[0], begin[1]), (end[0], end[1])]
+        for wall in self.mapGraph:  # wall or line
+            if AreIntersect(pathLine, wall):
+                return True
+        return False
+
     def update(self, particles, u, t, noise):
         """ Update estimate using 'data' as input """
 
         N = len(particles)
         # print(u)
         timespan = u / 1000.0  # second
-        # noisy_u = noise + u
-        # print(noisy_u)
 
-        # h = noisy_u[:,0]
-        # speed = noisy_u[:,1]
-
-        # print(h)
-        # print(speed)
-        # print(h)
-        # print(speed)
-        # h = u[0] + noise[:,0]
-        # speed = u[1] + noise[:,1]
         h = (particles[:, 2] + noise[:, 0]) % 3600
         # h = particles[:, 2] + noise[:, 0]
         speed = noise[:, 1]
@@ -89,8 +86,35 @@ class Model(interfaces.ParticleFiltering):
         dxy[:, 0] = numpy.array(numpy.sin(h_rad) * speed * timespan)
         dxy[:, 1] = numpy.array(numpy.cos(h_rad) * speed * timespan)
 
+        oldParticles = numpy.copy(particles)
         particles[:, :2] += dxy
-        particles[:, 2] = h
+
+        for i in range(len(particles[:, :2])):
+            count = 0
+            altSpeed = speed[i]
+            orgn = oldParticles[:, :2][i]
+            # while (numpy.linalg.norm(particles[:, :2][i] - lastMeanXY) > maxDist):
+            while (self.cross_wall(orgn, particles[:, :2][i])):
+                # print(orgn)
+                if count > 3:
+                    particles[:, :2][i] = oldParticles[:, :2][i]
+                    break
+                count += 1
+                altSpeed /= 2.0
+                dx = numpy.cos(h_rad[i]) * altSpeed * timespan
+                dy = numpy.sin(h_rad[i]) * altSpeed * timespan
+                particles[:, :2][i] = oldParticles[:, :2][i] + numpy.array([dx, dy])
+        # oldParticles = numpy.copy(particles)
+        # particles[:, :2] += dxy
+        # particles[:, 2] = h
+        #
+        #
+        # for i in range(len(particles[:, :2])):
+        #     orgn = oldParticles[:, :2][i]
+        #     dst = particles[:, :2][i]
+        #     if self.cross_wall(orgn,dst):
+        #         print("Cross_Wall: ", orgn," --> ",dst)
+
 
     def measure(self, particles, y, t):
         """ Return the log-pdf value of the measurement """
@@ -128,10 +152,11 @@ class Model(interfaces.ParticleFiltering):
             # weight = 1/(dist +1)
             # print(weight)
             # print(kalman.lognormpdf(dist, self.R))
-            # if self.LastObserveDist > 2.0:
-            #     logyprob[k] = kalman.lognormpdf(dist/5, self.R * 0.01)
-            # else:
-            logyprob[k] = kalman.lognormpdf(dist, self.R * coefficient)
+            if self.LastObserveDist > 2.0:
+                print("self.LastObserveDist:", self.LastObserveDist)
+                logyprob[k] = kalman.lognormpdf(dist, self.R * 0.1)
+            else:
+                logyprob[k] = kalman.lognormpdf(dist, self.R * coefficient)
             # logyprob[k] = numpy.log(numpy.array([[weight]]))
 
             #
@@ -163,7 +188,7 @@ def AppendData(obj):
         pickle.dump(obj, f)
 
 
-def init_particlefilter(timestamp, init_loc):
+def init_particlefilter(timestamp, init_loc, mapGraph):
     global LastTimestamp, sim, resultData
     # init_loc = numpy.array([-298.0, -772.0])
 
@@ -185,7 +210,7 @@ def init_particlefilter(timestamp, init_loc):
     # R = numpy.asarray(((0 ** 2,),))
 
     # init_loc = numpy.array([0.0,0.0])
-    model = Model(Q, R, P0, init_loc, human_speed)
+    model = Model(Q, R, P0, init_loc, human_speed, mapGraph)
     sim = simulator.Simulator(model, u=None, y=init_loc)
 
     resamplings = 0
@@ -231,13 +256,11 @@ def predict_particlefilter(timestamp):
 
     return [meanXY[0], meanXY[1]]
 
-
 def setLastObserveDist(meanXY, y):
     if y[0][0] == 1:
         return numpy.linalg.norm(y[0][1:] - meanXY[:2]) / 100
     elif y[1][0] == 1:
         return numpy.linalg.norm(y[1][1:] - meanXY[:2]) / 100
-
 
 def update_particlefilter(timestamp, updateRequest):
     global LastTimestamp, sim
@@ -267,8 +290,8 @@ def update_particlefilter(timestamp, updateRequest):
 
     meanXY = sim.get_filtered_mean()[-1]
 
-    # sim.model.LastObserveDist = setLastObserveDist(meanXY, y)
-    # print(sim.model.LastObserveDist)
+    sim.model.LastObserveDist = setLastObserveDist(meanXY, y)
+    print(sim.model.LastObserveDist)
     # threading.Thread(target=AppendData,args =(timestamp,meanXY)).start()
     EstimationAndTrueLocation = numpy.copy(y)
     EstimationAndTrueLocation = numpy.vstack([EstimationAndTrueLocation, [1, trueLocation[0], trueLocation[1]]])
@@ -291,14 +314,26 @@ def update_particlefilter(timestamp, updateRequest):
     return [meanXY[0], meanXY[1]]
 
 
+def ConvetMapGraph2FloatList(mapGraph):
+    newFloatGraph = []
+    for line in mapGraph.Lines:
+        newFloatLine = []
+        for dot in line.Dots:
+            newFloatDot = [dot.XY[0], dot.XY[1]]
+            newFloatLine.append(newFloatDot)
+        newFloatGraph.append(newFloatLine)
+    return newFloatGraph
+
 # server functions
 def Initialize(initRequest):
     timestamp = initRequest.Timestamp
     init_loc = numpy.array(initRequest.XY)
+    mapGraph = ConvetMapGraph2FloatList(initRequest.MapGraph)
 
     print("Initialization: ", timestamp)
     print("Initial Location:", init_loc)
-    init_particlefilter(initRequest.Timestamp, init_loc)
+    print("Map Graph :", mapGraph)
+    init_particlefilter(initRequest.Timestamp, init_loc, mapGraph)
 
     return True
 

@@ -32,10 +32,22 @@ service ParticleFilter {
 message Empty {
 }
 
+
+message Dot {
+    repeated float XY = 1;
+}
+message Line {
+    repeated Dot Dots = 1;
+}
+message Graph {
+    repeated Line Lines = 1;
+}
+
 // Initialization:
 message InitRequest {
     int64 Timestamp = 1; // [ms]
     repeated float XY = 2; // initial location
+    Graph MapGraph = 3;
 }
 message InitReply {
     bool ReturnValue = 1;

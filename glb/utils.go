@@ -1099,3 +1099,18 @@ func testEq(a, b []float64) bool { //tests whether two slices are the same
 //
 //	return resSlice,nil
 //}
+
+func Convert2DimStringSliceTo3DFloat32(slice [][]string) [][][]float32 {
+	result := [][][]float32{}
+	for _, sl := range slice {
+		newSl := [][]float32{}
+		for _, item := range sl {
+			newXY := []float32{}
+			x, y := GetDotFromString(item)
+			newXY = append(newXY, float32(x), float32(y))
+			newSl = append(newSl, newXY)
+		}
+		result = append(result, newSl)
+	}
+	return result
+}

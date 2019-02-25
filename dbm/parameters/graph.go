@@ -120,6 +120,11 @@ func (g *Graph) AddEdgeByLabel(n1, n2 string) {
 	if g.Edges == nil {
 		g.Edges = make(map[Node][]*Node)
 	}
+
+	if n1 == n2 {
+		glb.Error.Println("Can't add edge between same nodes:", n1)
+		return
+	}
 	n1Node,_ := g.GetNodeByLabel(n1)
 	n2Node,_ := g.GetNodeByLabel(n2)
 	flag := true
@@ -196,6 +201,37 @@ func (g *Graph) GetGraphMap() map[string][]string {
 	//glb.Debug.Println(graphMap)
 	//g.lock.RUnlock()
 	return graphMap
+}
+
+func (g *Graph) GetUndirectionalGraphMap() map[string][]string {
+	graphMap := g.GetGraphMap()
+
+	undirectedGraphMap := make(map[string][]string)
+	for dot1, connectedDots := range graphMap {
+		saveDots := []string{}
+		for _, d := range connectedDots {
+			if _, exists := undirectedGraphMap[d]; !exists {
+				saveDots = append(saveDots, d)
+			}
+		}
+		if len(saveDots) > 0 {
+			undirectedGraphMap[dot1] = saveDots
+		}
+	}
+	return undirectedGraphMap
+}
+
+func (g *Graph) AllLines() [][]string {
+
+	allLines := [][]string{}
+	undirectedGraphMap := g.GetUndirectionalGraphMap()
+	for dot1, connectedDots := range undirectedGraphMap {
+		for _, dot2 := range connectedDots {
+			newLine := []string{dot1, dot2}
+			allLines = append(allLines, newLine)
+		}
+	}
+	return allLines
 }
 
 func (g *Graph) DeleteGraph() {

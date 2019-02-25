@@ -102,3 +102,10 @@ func TestGetFloatPrecision(t *testing.T) {
 	assert.Equal(t, 1, r2)
 	assert.Equal(t, 2, r3)
 }
+
+func TestConvert2DimStringSliceTo3DFloat32(t *testing.T) {
+	slice := [][]string{{"1,2", "3,4"}, {"5,6", "7,8", "9,10"}}
+	r := Convert2DimStringSliceTo3DFloat32(slice)
+	Debug.Println(r)
+	assert.Equal(t, 0, r)
+}

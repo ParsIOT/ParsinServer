@@ -18,7 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=_b('\n\037io.grpc.examples.particlefilterB\023ParticleFilterProtoP\001'),
     serialized_pb=_b(
-        '\n*particlefilterclasses/particlefilter.proto\x12\x15particlefilterclasses\"\x07\n\x05\x45mpty\",\n\x0bInitRequest\x12\x11\n\tTimestamp\x18\x01 \x01(\x03\x12\n\n\x02XY\x18\x02 \x03(\x02\" \n\tInitReply\x12\x13\n\x0bReturnValue\x18\x01 \x01(\x08\"#\n\x0ePredictRequest\x12\x11\n\tTimestamp\x18\x01 \x01(\x03\"2\n\x0cPredictReply\x12\r\n\x05ResXY\x18\x01 \x03(\x02\x12\x13\n\x0bReturnValue\x18\x02 \x01(\x08\"k\n\rUpdateRequest\x12\x11\n\tTimestamp\x18\x01 \x01(\x03\x12\x18\n\x10MasterEstimation\x18\x02 \x03(\x02\x12\x17\n\x0fSlaveEstimation\x18\x03 \x03(\x02\x12\x14\n\x0cTrueLocation\x18\x04 \x03(\x02\"1\n\x0bUpdateReply\x12\r\n\x05ResXY\x18\x01 \x03(\x02\x12\x13\n\x0bReturnValue\x18\x02 \x01(\x08\x32\xe9\x02\n\x0eParticleFilter\x12R\n\x0e\x43onnectionTest\x12\x1c.particlefilterclasses.Empty\x1a .particlefilterclasses.InitReply\"\x00\x12T\n\nInitialize\x12\".particlefilterclasses.InitRequest\x1a .particlefilterclasses.InitReply\"\x00\x12W\n\x07Predict\x12%.particlefilterclasses.PredictRequest\x1a#.particlefilterclasses.PredictReply\"\x00\x12T\n\x06Update\x12$.particlefilterclasses.UpdateRequest\x1a\".particlefilterclasses.UpdateReply\"\x00\x42\x38\n\x1fio.grpc.examples.particlefilterB\x13ParticleFilterProtoP\x01\x62\x06proto3')
+        '\n*particlefilterclasses/particlefilter.proto\x12\x15particlefilterclasses\"\x07\n\x05\x45mpty\"\x11\n\x03\x44ot\x12\n\n\x02XY\x18\x01 \x03(\x02\"0\n\x04Line\x12(\n\x04\x44ots\x18\x01 \x03(\x0b\x32\x1a.particlefilterclasses.Dot\"3\n\x05Graph\x12*\n\x05Lines\x18\x01 \x03(\x0b\x32\x1b.particlefilterclasses.Line\"\\\n\x0bInitRequest\x12\x11\n\tTimestamp\x18\x01 \x01(\x03\x12\n\n\x02XY\x18\x02 \x03(\x02\x12.\n\x08MapGraph\x18\x03 \x01(\x0b\x32\x1c.particlefilterclasses.Graph\" \n\tInitReply\x12\x13\n\x0bReturnValue\x18\x01 \x01(\x08\"#\n\x0ePredictRequest\x12\x11\n\tTimestamp\x18\x01 \x01(\x03\"2\n\x0cPredictReply\x12\r\n\x05ResXY\x18\x01 \x03(\x02\x12\x13\n\x0bReturnValue\x18\x02 \x01(\x08\"k\n\rUpdateRequest\x12\x11\n\tTimestamp\x18\x01 \x01(\x03\x12\x18\n\x10MasterEstimation\x18\x02 \x03(\x02\x12\x17\n\x0fSlaveEstimation\x18\x03 \x03(\x02\x12\x14\n\x0cTrueLocation\x18\x04 \x03(\x02\"1\n\x0bUpdateReply\x12\r\n\x05ResXY\x18\x01 \x03(\x02\x12\x13\n\x0bReturnValue\x18\x02 \x01(\x08\x32\xe9\x02\n\x0eParticleFilter\x12R\n\x0e\x43onnectionTest\x12\x1c.particlefilterclasses.Empty\x1a .particlefilterclasses.InitReply\"\x00\x12T\n\nInitialize\x12\".particlefilterclasses.InitRequest\x1a .particlefilterclasses.InitReply\"\x00\x12W\n\x07Predict\x12%.particlefilterclasses.PredictRequest\x1a#.particlefilterclasses.PredictReply\"\x00\x12T\n\x06Update\x12$.particlefilterclasses.UpdateRequest\x1a\".particlefilterclasses.UpdateReply\"\x00\x42\x38\n\x1fio.grpc.examples.particlefilterB\x13ParticleFilterProtoP\x01\x62\x06proto3')
 )
 
 
@@ -47,6 +47,96 @@ _EMPTY = _descriptor.Descriptor(
   serialized_end=76,
 )
 
+_DOT = _descriptor.Descriptor(
+    name='Dot',
+    full_name='particlefilterclasses.Dot',
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name='XY', full_name='particlefilterclasses.Dot.XY', index=0,
+            number=1, type=2, cpp_type=6, label=3,
+            has_default_value=False, default_value=[],
+            message_type=None, enum_type=None, containing_type=None,
+            is_extension=False, extension_scope=None,
+            serialized_options=None, file=DESCRIPTOR),
+    ],
+    extensions=[
+    ],
+    nested_types=[],
+    enum_types=[
+    ],
+    serialized_options=None,
+    is_extendable=False,
+    syntax='proto3',
+    extension_ranges=[],
+    oneofs=[
+    ],
+    serialized_start=78,
+    serialized_end=95,
+)
+
+_LINE = _descriptor.Descriptor(
+    name='Line',
+    full_name='particlefilterclasses.Line',
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name='Dots', full_name='particlefilterclasses.Line.Dots', index=0,
+            number=1, type=11, cpp_type=10, label=3,
+            has_default_value=False, default_value=[],
+            message_type=None, enum_type=None, containing_type=None,
+            is_extension=False, extension_scope=None,
+            serialized_options=None, file=DESCRIPTOR),
+    ],
+    extensions=[
+    ],
+    nested_types=[],
+    enum_types=[
+    ],
+    serialized_options=None,
+    is_extendable=False,
+    syntax='proto3',
+    extension_ranges=[],
+    oneofs=[
+    ],
+    serialized_start=97,
+    serialized_end=145,
+)
+
+_GRAPH = _descriptor.Descriptor(
+    name='Graph',
+    full_name='particlefilterclasses.Graph',
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name='Lines', full_name='particlefilterclasses.Graph.Lines', index=0,
+            number=1, type=11, cpp_type=10, label=3,
+            has_default_value=False, default_value=[],
+            message_type=None, enum_type=None, containing_type=None,
+            is_extension=False, extension_scope=None,
+            serialized_options=None, file=DESCRIPTOR),
+    ],
+    extensions=[
+    ],
+    nested_types=[],
+    enum_types=[
+    ],
+    serialized_options=None,
+    is_extendable=False,
+    syntax='proto3',
+    extension_ranges=[],
+    oneofs=[
+    ],
+    serialized_start=147,
+    serialized_end=198,
+)
+
 
 _INITREQUEST = _descriptor.Descriptor(
   name='InitRequest',
@@ -69,6 +159,13 @@ _INITREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+      _descriptor.FieldDescriptor(
+          name='MapGraph', full_name='particlefilterclasses.InitRequest.MapGraph', index=2,
+          number=3, type=11, cpp_type=10, label=1,
+          has_default_value=False, default_value=None,
+          message_type=None, enum_type=None, containing_type=None,
+          is_extension=False, extension_scope=None,
+          serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -81,8 +178,8 @@ _INITREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=78,
-  serialized_end=122,
+    serialized_start=200,
+    serialized_end=292,
 )
 
 
@@ -112,8 +209,8 @@ _INITREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=124,
-  serialized_end=156,
+    serialized_start=294,
+    serialized_end=326,
 )
 
 
@@ -143,8 +240,8 @@ _PREDICTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=158,
-  serialized_end=193,
+    serialized_start=328,
+    serialized_end=363,
 )
 
 
@@ -181,8 +278,8 @@ _PREDICTREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=195,
-  serialized_end=245,
+    serialized_start=365,
+    serialized_end=415,
 )
 
 
@@ -233,8 +330,8 @@ _UPDATEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=247,
-    serialized_end=354,
+    serialized_start=417,
+    serialized_end=524,
 )
 
 
@@ -271,11 +368,17 @@ _UPDATEREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-    serialized_start=356,
-    serialized_end=405,
+    serialized_start=526,
+    serialized_end=575,
 )
 
+_LINE.fields_by_name['Dots'].message_type = _DOT
+_GRAPH.fields_by_name['Lines'].message_type = _LINE
+_INITREQUEST.fields_by_name['MapGraph'].message_type = _GRAPH
 DESCRIPTOR.message_types_by_name['Empty'] = _EMPTY
+DESCRIPTOR.message_types_by_name['Dot'] = _DOT
+DESCRIPTOR.message_types_by_name['Line'] = _LINE
+DESCRIPTOR.message_types_by_name['Graph'] = _GRAPH
 DESCRIPTOR.message_types_by_name['InitRequest'] = _INITREQUEST
 DESCRIPTOR.message_types_by_name['InitReply'] = _INITREPLY
 DESCRIPTOR.message_types_by_name['PredictRequest'] = _PREDICTREQUEST
@@ -290,6 +393,27 @@ Empty = _reflection.GeneratedProtocolMessageType('Empty', (_message.Message,), d
   # @@protoc_insertion_point(class_scope:particlefilterclasses.Empty)
 ))
 _sym_db.RegisterMessage(Empty)
+
+Dot = _reflection.GeneratedProtocolMessageType('Dot', (_message.Message,), dict(
+    DESCRIPTOR=_DOT,
+    __module__='particlefilterclasses.particlefilter_pb2'
+    # @@protoc_insertion_point(class_scope:particlefilterclasses.Dot)
+))
+_sym_db.RegisterMessage(Dot)
+
+Line = _reflection.GeneratedProtocolMessageType('Line', (_message.Message,), dict(
+    DESCRIPTOR=_LINE,
+    __module__='particlefilterclasses.particlefilter_pb2'
+    # @@protoc_insertion_point(class_scope:particlefilterclasses.Line)
+))
+_sym_db.RegisterMessage(Line)
+
+Graph = _reflection.GeneratedProtocolMessageType('Graph', (_message.Message,), dict(
+    DESCRIPTOR=_GRAPH,
+    __module__='particlefilterclasses.particlefilter_pb2'
+    # @@protoc_insertion_point(class_scope:particlefilterclasses.Graph)
+))
+_sym_db.RegisterMessage(Graph)
 
 InitRequest = _reflection.GeneratedProtocolMessageType('InitRequest', (_message.Message,), dict(
     DESCRIPTOR=_INITREQUEST,
@@ -342,8 +466,8 @@ _PARTICLEFILTER = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-    serialized_start=408,
-    serialized_end=769,
+    serialized_start=578,
+    serialized_end=939,
   methods=[
       _descriptor.MethodDescriptor(
           name='ConnectionTest',

@@ -489,6 +489,7 @@ func Fusion(curUsrPos parameters.UserPositionJSON, gpUsrHistory, coGpUsrHistory 
 func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, timeDiffWithLastFP int64, CoGroupMode int) string {
 	//Todo: Now you need to swap x and y(solve this problem)
 	glb.Debug.Println("Using Particle filter ...")
+	groupName := curUsrPos.Fingerprint.Group
 
 	timestamp := curUsrPos.Time
 	loc := curUsrPos.Location
@@ -499,14 +500,33 @@ func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, timeDiffWithLas
 
 	if timeDiffWithLastFP == 0 {
 		glb.Debug.Println("Initialization Particle filter")
-		particlefilter.Initialize(timestamp, []float32{float32(y), float32(x)})
+
+		// Providing map graph
+		masterGroupName := groupName
+		if CoGroupMode == parameters.CoGroupState_Slave { // if group is slave get its master group name
+			coGpName := dbm.GM.GetGroup(groupName).Get_ConfigData().Get_OtherGroupConfig().CoGroup
+			masterGroupName = coGpName
+		}
+
+		// Get graph
+		mapGraph := dbm.GM.GetGroup(masterGroupName).Get_ConfigData().Get_GroupGraph()
+
+		// Get all lines(walls)
+		floatAllLines := glb.Convert2DimStringSliceTo3DFloat32(mapGraph.AllLines())
+
+		// Convet map(3DFloat slice) to protobuf format
+		mapGraphProtobufStyle := particlefilter.GetMapGraph(floatAllLines)
+
+		// Initialize Particle filter
+		particlefilter.Initialize(timestamp, []float32{float32(y), float32(x)}, mapGraphProtobufStyle)
+
 		return curUsrPos.Location
 	} else {
 		diffTime := timeDiffWithLastFP
 		lastPredictionTimestamp := timestamp - timeDiffWithLastFP
 
 		MaxTimeDiffForUpdate := int64(3000)
-		PredictionPerdiod := int64(500)
+		PredictionPerdiod := int64(2000)
 		for diffTime > MaxTimeDiffForUpdate {
 			diffTime -= PredictionPerdiod
 			lastPredictionTimestamp += PredictionPerdiod

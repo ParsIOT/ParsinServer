@@ -24,7 +24,7 @@ func Do_Initialize(initRequest pb.InitRequest) pb.InitReply {
 }
 
 func Do_Predict(predictRequest pb.PredictRequest) pb.PredictReply {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*100)
 	defer cancel()
 	predictReply, err := particlefilterClient.Predict(ctx, &predictRequest)
 	if err != nil {
@@ -40,7 +40,7 @@ func Do_Predict(predictRequest pb.PredictRequest) pb.PredictReply {
 }
 
 func Do_Update(updateRequest pb.UpdateRequest) pb.UpdateReply {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*100)
 	defer cancel()
 	updateReply, err := particlefilterClient.Update(ctx, &updateRequest)
 	if err != nil {
@@ -54,8 +54,8 @@ func Do_Update(updateRequest pb.UpdateRequest) pb.UpdateReply {
 	return *updateReply
 }
 
-func Initialize(timestamp int64, initLocation []float32) {
-	initRequest := pb.InitRequest{Timestamp: timestamp, XY: initLocation}
+func Initialize(timestamp int64, initLocation []float32, mapGraph pb.Graph) {
+	initRequest := pb.InitRequest{Timestamp: timestamp, XY: initLocation, MapGraph: &mapGraph}
 	initReply := Do_Initialize(initRequest)
 	glb.Debug.Println("Initialization: ", initReply.ReturnValue)
 }
