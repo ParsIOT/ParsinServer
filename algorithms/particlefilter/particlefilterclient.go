@@ -16,10 +16,8 @@ func Do_Initialize(initRequest pb.InitRequest) pb.InitReply {
 	defer cancel()
 	initReply, err := particlefilterClient.Initialize(ctx, &initRequest)
 	if err != nil {
-		//log.Fatalf("could not greet: %v", err)
 		glb.Error.Println("Can't Do_Initialize: ", err.Error())
 	}
-	//log.Printf("Greeting: %s", r.ReturnValue)
 	return *initReply
 }
 
@@ -32,7 +30,6 @@ func Do_Predict(predictRequest pb.PredictRequest) pb.PredictReply {
 		//log.Fatalf("could not greet: %v", err)
 		glb.Error.Println("Can't Do_Predict: ", err.Error())
 	}
-	//log.Printf("Greeting: %s", r.ReturnValue)
 	if (len(predictReply.ResXY) != 2){
 		glb.Error.Println("Invalid Do_Predict result.ResXY")
 	}
@@ -50,7 +47,6 @@ func Do_Update(updateRequest pb.UpdateRequest) pb.UpdateReply {
 	if (len(updateReply.ResXY) != 2){
 		glb.Error.Println("Invalid Do_Update result.ResXY")
 	}
-	//log.Printf("Greeting: %s", r.ReturnValue)
 	return *updateReply
 }
 
@@ -63,7 +59,6 @@ func Initialize(timestamp int64, initLocation []float32, mapGraph pb.Graph) {
 func Predict(timestamp int64) []float32 {
 	predictRequest := pb.PredictRequest{Timestamp: timestamp}
 	predictReply := Do_Predict(predictRequest)
-	//glb.Debug.Println("Prediction: ", predictReply.ResXY)
 	return predictReply.ResXY
 }
 
@@ -75,7 +70,6 @@ func Update(timestamp int64, masterEstimation, slaveEstimation, trueLocation []f
 		TrueLocation:     trueLocation,
 	}
 	updateReply := Do_Update(updateRequest)
-	//glb.Debug.Println("Update: ", updateReply.ResXY)
 	return updateReply.ResXY
 }
 
@@ -91,7 +85,6 @@ func TestConnection() {
 	} else {
 		glb.Debug.Println("Connection Established Successfully,", reply)
 	}
-	//log.Printf("Greeting: %s", r.ReturnValue)
 }
 
 func Connect2Server() {
@@ -107,15 +100,6 @@ func Connect2Server() {
 	particlefilterClient = pb.NewParticleFilterClient(conn)
 
 	// Main Code
-
 	TestConnection()
 
-	//timestamp := time.Now().UTC().UnixNano()/1000000
-	//Initialize(timestamp, []float32{0.0,0.0})
-	//
-	//timestamp = time.Now().UTC().UnixNano()/1000000
-	//Predict(timestamp)
-	//
-	//timestamp = time.Now().UTC().UnixNano()/1000000
-	//Update(timestamp, []float32{3.0,3.0})
 }
