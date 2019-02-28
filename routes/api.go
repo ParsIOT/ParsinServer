@@ -536,6 +536,9 @@ func RecalculateTestvalidTrackFingerprint(mainGroupName string, repredict bool) 
 
 			// Repredict test-valid FPs
 			for i, testValidTrack := range allTestValidTracks {
+				//if i>10 {
+				//	break
+				//}
 				fp := testValidTrack.UserPosition.Fingerprint
 				//if (len(fp.WifiFingerprint) >= glb.MinApNum) {
 				// Set the timestamp difference between testvalid fingerprints

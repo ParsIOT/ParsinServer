@@ -453,7 +453,7 @@ func TrackOnlineFingerprint(curFingerprint parameters.Fingerprint) (parameters.U
 		// Add fingerprint as a test-valid fp to db
 		if curFingerprint.TestValidation && curFingerprint.Username == glb.TesterUsername {
 			glb.Debug.Println("TestValidTrack added ")
-			tempTestValidTrack := parameters.TestValidTrack{UserPosition: userPosJson}
+			tempTestValidTrack := parameters.TestValidTrack{TrueLocation: userPosJson.Fingerprint.Location, UserPosition: userPosJson}
 			go gp.Get_ResultData().Append_TestValidTracks(tempTestValidTrack)
 		}
 	}
@@ -537,31 +537,43 @@ func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, timeDiffWithLas
 		// GET TEST VALID TRUE LOCATION:
 		//////////////////////////////////////////////////
 		// // JUST FOR TEST
+		trueLocX, trueLocY := float64(0), float64(0)
 		gp := dbm.GM.GetGroup(curUsrPos.Fingerprint.Group)
 		// 1.FOR UWB Based TRUE LOCATIONS
-		//rd := gp.Get_RawData()
-		//allLocationLogs := rd.Get_TestValidTrueLocations()
-		//glb.Debug.Println(allLocationLogs)
-		//allLocationLogsOrdering := rd.Get_TestValidTrueLocationsOrdering()
-		////glb.Error.Println("TrueLocationLog :", allLocationLogsOrdering)
-		//TrueLoc, _, err := FindTrueFPloc(curUsrPos.Fingerprint, allLocationLogs, allLocationLogsOrdering)
-		//if err != nil {
-		//	glb.Error.Println(err)
-		//}
-		//trueLocX, trueLocY := glb.GetDotFromString(TrueLoc)
+		rd := gp.Get_RawData()
+		allLocationLogs := rd.Get_TestValidTrueLocations()
+		if len(allLocationLogs) != 0 {
 
+			glb.Debug.Println(allLocationLogs)
+			allLocationLogsOrdering := rd.Get_TestValidTrueLocationsOrdering()
+			//glb.Error.Println("TrueLocationLog :", allLocationLogsOrdering)
+			TrueLoc, _, err := FindTrueFPloc(curUsrPos.Fingerprint, allLocationLogs, allLocationLogsOrdering)
+			if err != nil {
+				glb.Error.Println(err)
+			}
+			trueLocX, trueLocY = glb.GetDotFromString(TrueLoc)
+		} else {
 		// 2. FOR CELLPHONE Based TRUE LOCATIONS
-		rsd := gp.Get_ResultData()
-		trueLocX, trueLocY := 0.0, 0.0
-		testValidTracks := rsd.Get_TestValidTracks()
-		for _, testvalidTrack := range testValidTracks {
-			if testvalidTrack.UserPosition.Time == curUsrPos.Time {
-				glb.Debug.Println("####################")
-				glb.Debug.Println(curUsrPos.Time)
-				trueLocX, trueLocY = glb.GetDotFromString(testvalidTrack.TrueLocation)
+			rsd := gp.Get_ResultData()
+			//trueLocX, trueLocY := 0.0, 0.0
+			testValidTracks := rsd.Get_TestValidTracks()
+			for _, testvalidTrack := range testValidTracks {
+				if testvalidTrack.UserPosition.Time == curUsrPos.Time {
+					glb.Debug.Println("####################")
+					glb.Debug.Println(curUsrPos.Time)
+					if testvalidTrack.TrueLocation == "" {
+						glb.Error.Println(testvalidTrack.UserPosition.Fingerprint.Group)
+						glb.Error.Println(testvalidTrack.UserPosition.Fingerprint.Location)
+						trueLocX, trueLocY = glb.GetDotFromString(testvalidTrack.UserPosition.Fingerprint.Location)
+					} else {
+						glb.Error.Println(testvalidTrack.TrueLocation)
+						trueLocX, trueLocY = glb.GetDotFromString(testvalidTrack.TrueLocation)
+					}
+					//glb.Error.Println(testvalidTrack.UserPosition.Fingerprint.Location)
+					//trueLocX, trueLocY = glb.GetDotFromString(testvalidTrack.TrueLocation)
+				}
 			}
 		}
-
 		//////////////////////////////////////////////
 
 		//resultXY := particlefilter.Update(timestamp, []float32{float32(y), float32(x), float32(trueLocY), float32(trueLocX)})
@@ -723,7 +735,9 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint, timeDiff
 			//gpUsrHistory := gp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
 			//coGpUsrHisotry := coGp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
 			//if len(gpUsrHistory) == 0 {
-			userPosJson.Location = ParticleFilterFusion(userPosJson, timeDiffWithLastFP, CoGroupMode)
+			resultXY := ParticleFilterFusion(userPosJson, timeDiffWithLastFP, CoGroupMode)
+			glb.Error.Println("Particle filter result: ", resultXY)
+			userPosJson.Location = resultXY
 			//if timeDiffWithLastFP == 0 {
 			//	userPosJson.Location = ParticleFilterFusion(userPosJson, gpUsrHistory,coGpUsrHisotry, true)
 			//} else {

@@ -97,7 +97,7 @@ class MainWindow(QWidget):
     def drawPie(self, xyh, size, color=Qt.cyan):
         x = int(xyh[0] * self.scaleXY)
         y = int(xyh[1] * self.scaleXY)
-        h = int(xyh[2])
+        h = int(xyh[2]) % 360
         rectangle = QRect(x - size / 2, y - size / 2, size, size)
         # print(xyh[0])
         # rectangle = QRect(x, 100 , size, size)

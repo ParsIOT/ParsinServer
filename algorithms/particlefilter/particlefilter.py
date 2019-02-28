@@ -63,7 +63,7 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
         """ Return process noise for input u and t """
         N = len(particles)
         heading_noise = numpy.random.normal(0, self.Q[0], (N,)).reshape((N, 1))
-        speed_noise = numpy.random.normal(0, self.human_speed + self.Q[1], (N,)).reshape((N, 1))
+        speed_noise = numpy.random.normal(self.human_speed / 2, self.human_speed / 2 + self.Q[1], (N,)).reshape((N, 1))
         noise = numpy.concatenate((heading_noise, speed_noise), axis=1)
         return noise
 
@@ -81,7 +81,8 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
         particleNum = len(particles)
         timespan = u * timeScale  # Convert to second
 
-        h = (particles[:, 2] + noise[:, 0]) % 3600
+        h = (particles[:, 2] + noise[:, 0]) % 360
+        # print(noise[:, 0])
         # h = particles[:, 2] + noise[:, 0]
         speed = noise[:, 1]
 
@@ -90,34 +91,41 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
 
         h_rad = numpy.radians(h)
         dxy = numpy.zeros((particleNum, 2))
-        dxy[:, 0] = numpy.array(numpy.sin(h_rad) * speed * timespan)
-        dxy[:, 1] = numpy.array(numpy.cos(h_rad) * speed * timespan)
+        dxy[:, 0] = numpy.array(numpy.cos(h_rad) * speed * timespan)
+        dxy[:, 1] = numpy.array(numpy.sin(h_rad) * speed * timespan)
 
         ################################################################
         ### Normal:
-        particles[:, :2] += dxy
+        # particles[:, :2] += dxy
         ################################################################
 
         ################################################################
-        ### Map constraint in prediction :
-        # oldParticles = numpy.copy(particles)
-        # particles[:, :2] += dxy
-        #
-        # for i in range(len(particles[:, :2])):
-        #     count = 0
-        #     altSpeed = speed[i]
-        #     orgn = oldParticles[:, :2][i]
-        #     # while (numpy.linalg.norm(particles[:, :2][i] - lastMeanXY) > maxDist):
-        #     while (self.cross_wall(orgn, particles[:, :2][i])):
-        #         # print(orgn)
-        #         if count > 3:
-        #             particles[:, :2][i] = oldParticles[:, :2][i]
-        #             break
-        #         count += 1
-        #         altSpeed /= 2.0
-        #         dx = numpy.cos(h_rad[i]) * altSpeed * timespan
-        #         dy = numpy.sin(h_rad[i]) * altSpeed * timespan
-        #         particles[:, :2][i] = oldParticles[:, :2][i] + numpy.array([dx, dy])
+        ## Map constraint in prediction :
+        oldParticles = numpy.copy(particles)
+
+        particles[:, 2] = h
+        particles[:, :2] += dxy
+
+        for i in range(len(particles[:, :2])):
+            count = 0
+            altSpeed = speed[i]
+            orgn = oldParticles[:, :2][i]
+            dst = particles[:, :2][i]
+            # while (numpy.linalg.norm(particles[:, :2][i] - lastMeanXY) > maxDist):
+            while (self.cross_wall(orgn, dst)):
+                # print(orgn)
+                if count > 10:
+                    particles[:, :2][i] = oldParticles[:, :2][i]
+                    break
+                count += 1
+                # altSpeed /= 2.0
+                # print(numpy.random.normal(0, self.Q[0], 1)[0])
+                h[i] += numpy.random.normal(0, 3 * self.Q[0], 1)[0]
+                h_rad[i] = numpy.radians(h[i])
+                dx = numpy.cos(h_rad[i]) * altSpeed * timespan
+                dy = numpy.sin(h_rad[i]) * altSpeed * timespan
+                particles[:, 2][i] = h[i]
+                particles[:, :2][i] = oldParticles[:, :2][i] + numpy.array([dx, dy])
         ################################################################
 
         ################################################################
@@ -163,6 +171,7 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
     def measure(self, particles, y, t):
         """ Return the log-pdf value of the measurement """
 
+        N = len(particles)
         # If there isn't any observation, return zero(particles weight don't change)
         if len(y) <= 1:
             return numpy.zeros(len(particles), dtype=float)
@@ -177,7 +186,7 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
             print("############# Master")
             print(guess)
         elif slaveEstimation[0] == 1:
-            coefficient = 1.2
+            coefficient = 4
             guess = numpy.array(slaveEstimation[1:])
             print("############# Slave")
             print(guess)
@@ -198,12 +207,23 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
         ################################################################
         ### Normal
         logyprob = numpy.empty(len(particles), dtype=float)
+        wights = numpy.empty(len(particles), dtype=float)
 
         for k in range(len(particles)):
             particle = particles[k]
-            dist = numpy.linalg.norm(particle[:2] - guess) / 100
+            if self.cross_wall(particle[:2], guess):
+                dist = numpy.linalg.norm(particle[:2] - guess) / 1000 * 100 * coefficient
+            else:
+                dist = numpy.linalg.norm(particle[:2] - guess) / 1000 * 2 * coefficient
 
+            # dist = dist ** 3
+            # weight = 1 / (dist + 0.0000001) * 1/N
+            # wights[k] = weight
             logyprob[k] = kalman.lognormpdf(dist, self.R * coefficient)
+            # logyprob[k] = math.log(weight)
+        # sumWeight = numpy.sum(wights)
+        # logyprob = numpy.log(wights / sumWeight)
+        # logyprob = kalman.lognormpdf(logyprob, self.R )
         ################################################################
 
         ################################################################
@@ -283,12 +303,12 @@ def init_particle_filter(timestamp, initLoc, mapGraph):
     ############### Algorithm Configs ################
     NUM_OF_PARTICLES = 1000
     P0 = 20.0
-    HUMAN_SPEED = 1.0 * 100.0
-    HUMAN_MAX_HEADING_CHANGE = 180
+    HUMAN_SPEED = 0.4 * 100.0
+    HUMAN_MAX_HEADING_CHANGE = 30
     Q = numpy.asarray((HUMAN_MAX_HEADING_CHANGE, HUMAN_SPEED * 0.1))  # heading, speed variances
     # R = numpy.asarray(((0.5,),))
     # R = numpy.asarray(((10,),))
-    R = numpy.asarray(((8,),))
+    R = numpy.asarray(((0.1,),))
     # R = numpy.asarray(((0 ** 2,),))
     RESAMPLING_THRESHOLD = 2.0 / 3.0
     ########################################################################
