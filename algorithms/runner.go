@@ -525,8 +525,8 @@ func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, timeDiffWithLas
 		diffTime := timeDiffWithLastFP
 		lastPredictionTimestamp := timestamp - timeDiffWithLastFP
 
-		MaxTimeDiffForUpdate := int64(3000)
-		PredictionPerdiod := int64(2000)
+		MaxTimeDiffForUpdate := int64(2000)
+		PredictionPerdiod := int64(1000)
 		for diffTime > MaxTimeDiffForUpdate {
 			diffTime -= PredictionPerdiod
 			lastPredictionTimestamp += PredictionPerdiod
@@ -550,8 +550,10 @@ func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, timeDiffWithLas
 			TrueLoc, _, err := FindTrueFPloc(curUsrPos.Fingerprint, allLocationLogs, allLocationLogsOrdering)
 			if err != nil {
 				glb.Error.Println(err)
+				trueLocX, trueLocY = -100000000, -100000000
+			} else {
+				trueLocX, trueLocY = glb.GetDotFromString(TrueLoc)
 			}
-			trueLocX, trueLocY = glb.GetDotFromString(TrueLoc)
 		} else {
 		// 2. FOR CELLPHONE Based TRUE LOCATIONS
 			rsd := gp.Get_ResultData()

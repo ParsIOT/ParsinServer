@@ -103,14 +103,10 @@
                                             track locations</label>
                                     </div>
                                     <div class="form-group">
-                                    {{/*	<button onclick="calculateErrorByTrueLocation()"
-										        class="btn btn-success btn-sm btn-block">
-											Calculate Error
-										</button>*/}}
                                         <button onclick="calculateErrorByTrueLocation()"
-                                                id="calc_err_by_true_loc_button"
-                                                class="ladda-button btn btn-info btn-sm btn-block " data-color="blue"
-                                                data-size="xs" data-style="zoom-out">
+												id="calc_err_by_true_loc_button"
+												class="ladda-button btn btn-info btn-sm btn-block " data-color="blue"
+												data-style="zoom-out">
                                             Calculate Error
                                         </button>
 									</div>
@@ -125,7 +121,19 @@
 								</div>
 								<div id="algo-results" class="col-md-12">
 								</div>
-                                <h4 id="show-error-details-link" class="text-center"/>
+
+
+								<h4 id="show-error-details-link" class="text-center"/>
+								<div class="col-md-12">
+									<div class="form-group">
+										<button id="showErrorDetailsPlotBtn" onclick="showErrorDetailsPlot()"
+												class="btn btn-danger btn-sm btn-block" data-toggle="modal"
+												data-target="#plotModal" style="display: none;">
+											Show Error details plot
+										</button>
+										{{ template "plot_modal" . }}
+									</div>
+								</div>
 
 							</div>
 						</div>
@@ -524,6 +532,7 @@
 				});
 			}
             calculateErrorByTrueLocationButton.toggle();
+			$('#showErrorDetailsPlotBtn').show()
         });
 	}
 
@@ -594,6 +603,34 @@
 			console.log(data);
 		});
 
+	}
+
+
+	// function getCDF(dataList){ // get array of numbers and return map that contains {percent:val} =>(cdf)
+	// 	dataList.sort();
+	// 	cdfDataList = {0:0};
+	// 	eachValPercent = 100.0/ dataList.length;
+	//
+	// 	for(i=0; i<dataList.length; i++){
+	// 		console.log(eachValPercent*(i+1));
+	// 		cdfDataList[dataList[i]] = eachValPercent*(i+1) ;
+	// 	}
+	// 	return cdfDataList;
+	// }
+
+	function drawPlotForEach(algorithmName, data) {
+		dataPoints = [];
+		eachValPercent = 100.0 / data.length;
+		for (i = 0; i < data.length; i++) {
+			dataPoints.push({x: data[i], y: eachValPercent * (i + 1)});
+		}
+		loadPlot(algo, dataPoints);
+	}
+
+	function showErrorDetailsPlot() {
+		for (algo in errDetails) {
+			drawPlotForEach(algo, errDetails[algo]);
+		}
 	}
 
 </script>

@@ -526,7 +526,9 @@ func RecalculateTestvalidTrackFingerprint(mainGroupName string, repredict bool) 
 						allTestValidTracks = append(allTestValidTracks, coGpTestValidTracks[coGpC])
 					}
 				} else if coGpC == len(coGpTestValidTracks) {
-					for ; gpC < len(coGpTestValidTracks); gpC++ {
+					for ; gpC < len(testValidTracks); gpC++ {
+						glb.Debug.Println(gpC)
+						glb.Debug.Println(len(testValidTracks))
 						allTestValidTracks = append(allTestValidTracks, testValidTracks[gpC])
 					}
 				}

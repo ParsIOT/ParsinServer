@@ -55,7 +55,7 @@
 	toolTipContent: "<a href ='/explore/{{ $.Group }}/{{ $.Network }}/{{ .Name }}'> {name}</a>",
   lineThickness: 2,
   dataPoints: [
-{{ range $index, $element := .Points }} { x: {{ index $.Rssi $index }}, y: {{ $element }} },
+      {{ range $index, $element := .yData }} {x: {{ index $.xData $index }}, y: {{ $element }} },
 {{ end }}
   ]
 },
