@@ -155,7 +155,6 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
         #         particles[:, :2][i] = oldParticles[:, :2][i] + numpy.array([dx, dy])
         ################################################################
 
-
         # oldParticles = numpy.copy(particles)
         # particles[:, :2] += dxy
         # particles[:, 2] = h
@@ -166,7 +165,6 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
         #     dst = particles[:, :2][i]
         #     if self.cross_wall(orgn,dst):
         #         print("Cross_Wall: ", orgn," --> ",dst)
-
 
     def measure(self, particles, y, t):
         """ Return the log-pdf value of the measurement """
@@ -186,7 +184,7 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
             print("############# Master")
             print(guess)
         elif slaveEstimation[0] == 1:
-            coefficient = 4.0
+            coefficient = 4
             guess = numpy.array(slaveEstimation[1:])
             print("############# Slave")
             print(guess)
@@ -211,20 +209,15 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
 
         for k in range(len(particles)):
             particle = particles[k]
-            # if self.cross_wall(particle[:2], guess):
-            #     dist = numpy.linalg.norm(particle[:2] - guess)
-            # else:
-            #     dist = numpy.linalg.norm(particle[:2] - guess)
-            dist = numpy.linalg.norm(particle[:2] - guess)
+            if self.cross_wall(particle[:2], guess):
+                dist = numpy.linalg.norm(particle[:2] - guess) * 10
+            else:
+                dist = numpy.linalg.norm(particle[:2] - guess)
 
             # dist = dist ** 3
             # weight = 1 / (dist + 0.0000001) * 1/N
             # wights[k] = weight
-            # print(self.LastObserveDist)
-            if self.LastObserveDist > 2.0:
-                logyprob[k] = kalman.lognormpdf(dist, self.R * coefficient / 10)
-            else:
-                logyprob[k] = kalman.lognormpdf(dist, self.R * coefficient)
+            logyprob[k] = kalman.lognormpdf(dist, self.R * coefficient)
             # logyprob[k] = math.log(weight)
         # sumWeight = numpy.sum(wights)
         # logyprob = numpy.log(wights / sumWeight)
@@ -280,8 +273,6 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
         #     #     logyprob[k] = numpy.array([-100])
         ################################################################
 
-
-
         return logyprob
 
 
@@ -301,14 +292,14 @@ def init_particle_filter(timestamp, initLoc, mapGraph):
     numpy.random.seed(1)
     random.seed(1)
 
-    #Initialize LastTimestamp
+    # Initialize LastTimestamp
     LastTimestamp = timestamp
 
     ########################################################################
     ############### Algorithm Configs ################
     NUM_OF_PARTICLES = 1000
     P0 = 20.0
-    HUMAN_SPEED = 1.0 * 100.0
+    HUMAN_SPEED = 0.8 * 100.0
     HUMAN_MAX_HEADING_CHANGE = 30
     Q = numpy.asarray((HUMAN_MAX_HEADING_CHANGE, HUMAN_SPEED * 0.1))  # heading, speed variances
     # R = numpy.asarray(((0.5,),))
@@ -394,10 +385,8 @@ def predict_and_update_particle_filter(timestamp, updateRequest):
     # Compute distance between the observation and resultXY
     if len(masterEstimation) != 0:  # Master Observation
         pfRunner.model.LastObserveDist = numpy.linalg.norm(y[0][1:] - resultXY[:2]) * distScale
-        print(pfRunner.model.LastObserveDist)
     if len(slaveEstimation) != 0:  # Slave Observation
         pfRunner.model.LastObserveDist = numpy.linalg.norm(y[1][1:] - resultXY[:2]) * distScale
-        print(pfRunner.model.LastObserveDist)
 
     # Prepare data to append to the result log file
     EstimationAndTrueLocation = numpy.copy(y)
@@ -443,11 +432,13 @@ def Initialize(initRequest):
 
     return True
 
+
 def Predict(predictRequest):
     """Get predictRequest and run predict_particlefilter"""
     timestamp = predictRequest.Timestamp
     print("Prediction: ", timestamp)
     return predict_particle_filter(timestamp), True
+
 
 def Update(updateRequest):
     """Get updateRequest and run predict_and_update_particlefilter"""

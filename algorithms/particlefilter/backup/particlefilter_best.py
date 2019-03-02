@@ -155,7 +155,6 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
         #         particles[:, :2][i] = oldParticles[:, :2][i] + numpy.array([dx, dy])
         ################################################################
 
-
         # oldParticles = numpy.copy(particles)
         # particles[:, :2] += dxy
         # particles[:, 2] = h
@@ -166,7 +165,6 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
         #     dst = particles[:, :2][i]
         #     if self.cross_wall(orgn,dst):
         #         print("Cross_Wall: ", orgn," --> ",dst)
-
 
     def measure(self, particles, y, t):
         """ Return the log-pdf value of the measurement """
@@ -186,7 +184,7 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
             print("############# Master")
             print(guess)
         elif slaveEstimation[0] == 1:
-            coefficient = 4.0
+            coefficient = 3.5
             guess = numpy.array(slaveEstimation[1:])
             print("############# Slave")
             print(guess)
@@ -222,7 +220,7 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
             # wights[k] = weight
             # print(self.LastObserveDist)
             if self.LastObserveDist > 2.0:
-                logyprob[k] = kalman.lognormpdf(dist, self.R * coefficient / 10)
+                logyprob[k] = kalman.lognormpdf(dist, self.R * coefficient / 100)
             else:
                 logyprob[k] = kalman.lognormpdf(dist, self.R * coefficient)
             # logyprob[k] = math.log(weight)
@@ -280,8 +278,6 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
         #     #     logyprob[k] = numpy.array([-100])
         ################################################################
 
-
-
         return logyprob
 
 
@@ -301,7 +297,7 @@ def init_particle_filter(timestamp, initLoc, mapGraph):
     numpy.random.seed(1)
     random.seed(1)
 
-    #Initialize LastTimestamp
+    # Initialize LastTimestamp
     LastTimestamp = timestamp
 
     ########################################################################
@@ -443,11 +439,13 @@ def Initialize(initRequest):
 
     return True
 
+
 def Predict(predictRequest):
     """Get predictRequest and run predict_particlefilter"""
     timestamp = predictRequest.Timestamp
     print("Prediction: ", timestamp)
     return predict_particle_filter(timestamp), True
+
 
 def Update(updateRequest):
     """Get updateRequest and run predict_and_update_particlefilter"""
