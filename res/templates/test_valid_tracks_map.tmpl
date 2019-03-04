@@ -493,10 +493,19 @@
 								message: data.message,
 							});
 						} else {
-							$.each(data.algosAccuracy, function (algorithm, error) {
-								tbody.append("<tr class='bg-info'><td>" + algorithm + "</td><td>" + error + "</td></tr>");
-                                tbody.append("<tr class='bg-info'><td>" + algorithm + " " + Math.round(percentile * 100) + " percentile</td><td>" + errDetails[algorithm][Math.round(errDetails[algorithm].length * percentile)] + "</td></tr>");
+							tbody.append("<tr class='bg-primary'><td> Num of testvalid </td><td>" + testValidTracks.length + "</td></tr>");
 
+							var i = 0;
+							$.each(data.algosAccuracy, function (algorithm, error) {
+								i++;
+								if (i % 2 == 0) {
+									bgColor = 'bg-success';
+								} else {
+									bgColor = 'bg-info';
+								}
+								tbody.append("<tr class='" + bgColor + "'><td>" + algorithm + "</td><td>" + error + "</td></tr>");
+								tbody.append("<tr class='" + bgColor + "'><td>" + algorithm + " STDEV </td><td>" + STDEV(errDetails[algorithm]) + "</td></tr>");
+								tbody.append("<tr class='" + bgColor + "'><td>" + algorithm + " " + Math.round(percentile * 100) + " percentile</td><td>" + errDetails[algorithm][Math.round(errDetails[algorithm].length * percentile)] + "</td></tr>");
                             });
 
                             /*errDetails.sort(function (a, b) {
@@ -507,9 +516,12 @@
                             // tbody.append("<tr class='bg-info'><td>main " + Math.round(percentile * 100) + " percentile</td><td>" + errDetails['main'][Math.round(errDetails['main'].length * percentile)] + "</td></tr>");
 
                             $("#show-error-details-link").find("a").remove();//remove show rss details link
-                            $("<a/>", {
+
+
+							$("<a/>", {
                                 "target": "_blank",
-                                "onclick": "window.open('" + "/getTestValidTracksDetails?group={{ .Group }}&calculate_err=true&repredict=false" + "','pagename','resizable,height=420,width=1000'); return false;",
+								{{/*"onclick": "window.open('" + "/getTestValidTracksDetails?group={{ .Group }}&calculate_err=true&repredict=false" + "','pagename','resizable,height=420,width=1000'); return false;",*/}}
+								"onclick": "showErrorNewWindow();",
                                 html: "See Error details"
                             }).appendTo("#show-error-details-link");
 
@@ -536,6 +548,25 @@
         });
 	}
 
+	function STDEV(list) {
+		var floatPrecision = 0;
+		var mean = list.reduce(function (a, b) {
+			return a + b;
+		}, 0) / list.length;
+		var sqDiff = 0;
+		list.forEach(item = > sqDiff += Math.pow(item - mean, 2)
+	)
+		;
+		var stdev = Math.sqrt(sqDiff / list.length);
+		return Math.round(stdev, floatPrecision);
+	}
+
+	function showErrorNewWindow() {
+		window.open("data:application/json," + JSON.stringify(errDetails), '_blank', "resizable,height=420,width=1000")
+		// errDetailsWindow = window.open("data:text/json," +"','pagename','resizable,height=420,width=1000'); return false;" + encodeURIComponent(errDetails),
+		// 		"_blank");
+		// errDetailsWindow.focus();
+	}
 
 	function delTestValidTracks() {
 		user = $('#user').val();
