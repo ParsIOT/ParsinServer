@@ -471,6 +471,21 @@ func ErrorHeatMap(c *gin.Context) {
 	})
 }
 
+func AlgorithmsCDF(c *gin.Context) {
+	groupName := c.Param("group")
+	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+		})
+		return
+	}
+	dbList := dbm.AllGroupNames()
+	c.HTML(http.StatusOK, "algorithm_cdf.tmpl", gin.H{
+		"Group":  groupName,
+		"DBList": dbList,
+	})
+}
+
 
 
 func UWBUserMap(c *gin.Context) {

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8/>
+    <title>PARSIN</title>
+    <link rel="shortcut icon" sizes="16x16 24x24 32x32 48x48 64x64" href="/static/img/favicon.ico"/>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
+
+    <!-- Bootstrap and JQuery JS -->
+    <script src="/static/js/jquery-2.0.0.min.js"></script>
+    <script src='/static/js/bootstrap.js'></script>
+
+    <link href="/static/css/izitoast/iziToast.css" rel="stylesheet">
+    <script src="/static/js/izitoast/iziToast.js"></script>
+
+    <link href="/static/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="/static/js/bootstrap-toggle.min.js"></script>
+    <!-- Bootstrap Core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
+
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+
+    <link href="/static/css/plugins/loading-indicator/ladda.css" rel="stylesheet">
+    <script src="/static/js/plugins/loading-indicator/spin.js"></script>
+    <script src="/static/js/plugins/loading-indicator/ladda.js"></script>
+
+    <script src="/static/js/selectize.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/css/selectize.css">
+
+
+    <style>
+        .location-listing > .row > .col-md-6:nth-child(2n+1) {
+            clear: both;
+        }
+
+        iframe:focus {
+            outline: none;
+        }
+
+        iframe[seamless] {
+            display: block;
+        }
+
+        dl {
+            width: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        dt, dd {
+            float: left;
+            width: 50%;
+            margin: 0;
+            padding: 0;
+            /* adjust the width; make sure the total of both is 100% */
+        }
+
+        .chartLabel {
+            font: 16px sans-serif;
+            fill: #666;
+        }
+
+        .arcLabel {
+            font: 10px sans-serif;
+            fill: #fff;
+        }
+    </style>
+
+
+    <script src="/static/js/d3.min.js"></script>
+    <script src="/static/js/d3.tip.v0.6.3.js"></script>
+
+    <script src="/static/js/sweetalert.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
+
+    <link href="/static/css/sweetalert2.css" rel="stylesheet"/>
+    <script src="/static/js/sweetalert2.js"></script>
+
+    <link rel="stylesheet" href="/static/css/jquery-ui.css">
+    <script src="/static/js/jquery-ui.js"></script>
+
+    <script>
+        $(function () {
+            $(document).tooltip({
+                position: {
+                    my: "center bottom-20",
+                    at: "center top",
+                    using: function (position, feedback) {
+                        $(this).css(position);
+                        $("<div>")
+                            .addClass("arrow")
+                            .addClass(feedback.vertical)
+                            .addClass(feedback.horizontal)
+                            .appendTo(this);
+                    }
+                }
+            });
+        });
+    </script>
+
+    <style>
+        .ui-tooltip, .arrow:after {
+            background: black;
+            border: 2px solid white;
+        }
+
+        .ui-tooltip {
+            padding: 10px 20px;
+            color: white;
+            border-radius: 20px;
+            font: bold 14px "Helvetica Neue", Sans-Serif;
+            box-shadow: 0 0 7px black;
+        }
+
+        .arrow {
+            width: 70px;
+            height: 16px;
+            overflow: hidden;
+            position: absolute;
+            left: 50%;
+            margin-left: -35px;
+            bottom: -16px;
+        }
+
+        .arrow.top {
+            top: -16px;
+            bottom: auto;
+        }
+
+        .arrow.left {
+            left: 20%;
+        }
+
+        .arrow:after {
+            content: "";
+            position: absolute;
+            left: 20px;
+            top: -20px;
+            width: 35px;
+            height: 25px;
+            box-shadow: 6px 5px 9px -9px black;
+            -webkit-transform: rotate(45deg);
+            -ms-transform: rotate(45deg);
+            transform: rotate(45deg);
+        }
+
+        .arrow.top:after {
+            bottom: -20px;
+            top: auto;
+        }
+
+        .entry:not(:first-of-type) {
+            margin-top: 10px;
+        }
+
+        .glyphicon {
+            font-size: 12px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+{{ template "navbar" . }}
+<!-- Page Content -->
+<div class="container">
+
+    {{ if .Message }}
+        <div class="row">
+            <div class="col-lg-12">
+                <center>
+                    <div class="alert alert-info" role="alert">{{ .Message }}</div>
+                </center>
+            </div>
+        </div>
+    {{ end }}
+
+
+    <div class="row">
+        <div class="col-lg-12">
+            <h2 class="page-header">Algorithms CDF drawer
+                <small>Select DBs and get mean, stdev, cdf and other parameters from testvalid errors</small>
+            </h2>
+        </div>
+    </div>
+
+    <div class="well" id="volume-stats-well">
+        <div class="panel panel-primary " id="volume-fees-panel">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    Group List
+                </h3>
+            </div>
+            <div class="panel-body ">
+                <div class="row">
+                    <div class="col-sm-12 col-xs-6">
+                        <div class="control-group" id="fields">
+                            <div class="groupTable">
+                                <form role="form" autocomplete="off">
+                                    <div class="entry input-group col-xs-12" number="1">
+                                        <div class="input-group-addon">
+                                            <input name="gps1" type="text" placeholder="gps 1"/>
+                                        </div>
+                                        <div id="input-tags1"></div>
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-success btn-group-add" type="button">
+                                                <span class="glyphicon glyphicon-plus"></span>
+                                            </button>
+                                        </span>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col-sm-12 col-sm-offset-5 col-xs-6 col-xs-offset-2">
+                <span class="input-group-btn">
+                    <button onclick="calculateDetails()"
+                            id="calculateDetailsBtn"
+                            class="ladda-button btn btn-info col-sm-2 col-xs-1" data-color="blue"
+                            data-style="zoom-out">
+                                            {{/*<button class="btn btn-success col-sm-2 col-xs-1" onclick="calculateDetails()" type="button">*/}}
+                                                Calculate
+                                            </button>
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="well" id="volume-stats-well">
+        <div class="row clearfix">
+            <div class="col-md-12 column" id="gpsResultDetails">
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row clearfix" id="content-row">
+        <div class="col-xs-12 column">
+            <h3>CDF</h3>
+        </div>
+    </div>
+
+
+    <div class="well" id="volume-stats-well">
+
+        <div class="panel panel-primary" id="volume-fees-panel">
+            <div class="panel-body">
+
+                <div class="col-md-12">
+                    <div class="form-group">
+                        {{/*<button class="btn btn-warning btn-block" id="showCDFs"*/}}
+                        {{/*title=".">*/}}
+
+                        {{/*</button>*/}}
+                        <button id="showErrorDetailsPlotBtn" onclick="showErrorDetailsPlot()"
+                                class="btn btn-warning btn-sm btn-block" data-toggle="modal" title="."
+                                data-target="#plotModal">
+                            Show CDFs
+                        </button>
+                        {{ template "plot_modal" . }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row clearfix" id="location-listing">
+        </div>
+    </div>
+</div>
+
+<script>
+    var dbList = [
+        {{range $.DBList}}
+        {name: "{{.}}"},
+        {{end}}
+    ];
+    var calculateDetailsBtn = Ladda.create(document.querySelector('#calculateDetailsBtn'));
+    var gpsListIndex = 1;
+    var gpsSelectorMap = {};
+    var gpsListResults = {}; // error data
+
+    function newGroupListHtml(groupListIndex) {
+        var newEntryHtml = "<div class=\"entry input-group col-xs-12\" number=" + groupListIndex + " >\n" +
+            "                                       <div class=\"input-group-addon\" >\n" +
+            "                                        <input name=\"gps" + groupListIndex + "\" type=\"text\" placeholder=\"gps " + groupListIndex + "\" /></div>\n" +
+            "                                        <div id=\"input-tags" + groupListIndex + "\"></div>\n" +
+            "                                        <span class=\"input-group-btn\">\n" +
+            "                                            <button class=\"btn btn-success btn-group-add\" type=\"button\">\n" +
+            "                                                <span class=\"glyphicon glyphicon-plus\"></span>\n" +
+            "                                            </button>\n" +
+            "                                        </span>\n" +
+            "                                    </div>";
+
+        return newEntryHtml;
+    }
+
+    function initSelectizer(groupListIndex) {
+        gpsSelectorMap[groupListIndex] = $('#input-tags' + groupListIndex).selectize({
+            plugins: ['remove_button', 'optgroup_columns'],
+            options: dbList,
+            labelField: 'name',
+            valueField: 'name',
+            searchField: ['name'],
+            delimiter: ',',
+            persist: false,
+            create: function (input) {
+                return {
+                    value: input,
+                    text: input
+                }
+            }
+        });
+    }
+
+    initSelectizer(gpsListIndex);
+
+    $(function () {
+        $(document).on('click', '.btn-group-add', function (e) {
+            e.preventDefault();
+
+            var controlForm = $('.groupTable form:first');
+            var currentEntry = $(this).parents('.entry:first');
+
+            gpsListIndex++;
+
+            var newEntryHtml = newGroupListHtml(gpsListIndex);
+            var newEntry = $(newEntryHtml).appendTo(controlForm);
+
+
+            // newEntry.find('input').val('');
+            controlForm.find('.entry:not(:last) .btn-group-add')
+                .removeClass('btn-group-add').addClass('btn-group-remove')
+                .removeClass('btn-success').addClass('btn-danger')
+                .html('<span class="glyphicon glyphicon-minus"></span>');
+
+            initSelectizer(gpsListIndex);
+
+        }).on('click', '.btn-group-remove', function (e) {
+            var theEntry = $(this).parents('.entry:first');
+            delete gpsSelectorMap[theEntry.attr('number')];
+            theEntry.remove();
+            e.preventDefault();
+            return false;
+        });
+    });
+
+    function calculateDetails() {
+        calculateDetailsBtn.toggle();
+
+        var gpsMap = {};
+        gpsListResults = {};
+        for (gpsIndex in gpsSelectorMap) {
+            var gpsSelectizer = gpsSelectorMap[gpsIndex];
+            var gpsName = gpsSelectizer.prev().find('input').val();
+            if (gpsName.trim() === "") gpsName = gpsSelectizer.prev().find('input').attr('name');
+            var gpListGroups = gpsSelectizer[0].selectize.getValue().split(",");
+
+            gpsMap[gpsName] = gpListGroups;
+            console.log(gpsName + " : " + gpListGroups);
+        }
+
+        for (gpsName in gpsMap) {
+            gpsGroups = gpsMap[gpsName];
+            gpListTempResult = [];
+            for (index in gpsGroups) {
+                gp = gpsGroups[index];
+
+                $.ajaxSetup({ //avoid async problems
+                    async: false
+                });
+                $.getJSON("/getTestValidTracksDetails?group=" + gp + "&calculate_err=true&repredict=true", function (data) {
+                    // var mainGpsName = gpsName;
+                    if (data.success == true) {
+                        var errDetails = data.errDetails;
+                        if (gpsName in gpsListResults) {
+                            gpsListResults[gpsName] = AddAlgoErrDetails(gpsListResults[gpsName], errDetails);
+                        } else {
+                            gpsListResults[gpsName] = errDetails;
+                        }
+                    }
+                });
+
+            }
+        }
+
+        console.log(gpsListResults); // Now we have errors of all groups in all gps
+
+        showGpsResultDetails();
+        // drawCDFs();
+        calculateDetailsBtn.toggle();
+    }
+
+    function AddAlgoErrDetails(lastErrDetails, newErrDetails) {
+        for (algo in newErrDetails) {
+            var newAlgoErrList = newErrDetails[algo];
+            if (algo in lastErrDetails) {
+                var oldAlgoErrList = lastErrDetails[algo];
+                newAlgoErrList = newAlgoErrList.concat(oldAlgoErrList);
+            }
+            newAlgoErrList.sort(function (a, b) {
+                return a - b;
+            });
+            lastErrDetails[algo] = newAlgoErrList;
+        }
+        return lastErrDetails;
+    }
+
+    function showGpsResultDetails() {
+        $("#gpsResultDetails").empty();
+
+        for (gpsName in gpsListResults) {
+            var errDetails = gpsListResults[gpsName]
+
+            var newTableDiv = $("<div class=\"col-md-4 column\" id=\"gpsResultDetails\" >\n" +
+                "                <div class=\"panel panel-primary\">\n" +
+                "                    <div class=\"panel-heading\">\n" +
+                "                        <h3 class=\"panel-title\">\n" +
+                "                            " + gpsName + "\n" +
+                "                        </h3>\n" +
+                "                    </div>\n" +
+                "                    <div class=\"panel-body\">\n" +
+                "                        <div id=\"\" class=\"col-md-12\">\n" +
+                "                           <table id=\"algo-result-table\"\n" +
+                "                                   class=\"table table-responsive table-hover table-condensed table-bordered\">\n" +
+                "                               <thead>\n" +
+                "                                   <tr>\n" +
+                "                                       <td>Algorithm</td>\n" +
+                "                                       <td>Error</td>\n" +
+                "                                   </tr>\n" +
+                "                               </thead>\n" +
+                "                           </table>\n" +
+                "                        </div>\n" +
+                "                    </div>\n" +
+                "                </div>\n" +
+                "            </div>"
+            );
+
+
+            tbody = $("<tbody/>", {
+                "class": "tab-content",
+            }).appendTo(newTableDiv.find("#algo-result-table"));
+            // console.log(tbody);
+            var percentile = 0.95;
+
+
+            tbody.append("<tr class='bg-primary'><td> Num of testvalid </td><td>" + errDetails.main.length + "</td></tr>");
+
+            var i = 0;
+            $.each(errDetails, function (algorithm, errList) {
+                i++;
+                if (i % 2 == 0) {
+                    bgColor = 'bg-success';
+                } else {
+                    bgColor = 'bg-info';
+                }
+                console.log(errList);
+                var meanErr = errList.reduce(function (a, b) {
+                    return a + b;
+                }, 0) / errList.length;
+
+                tbody.append("<tr class='" + bgColor + "'><td>" + algorithm + "</td><td>" + Math.round(meanErr, 0) + "</td></tr>");
+                tbody.append("<tr class='" + bgColor + "'><td>" + algorithm + " STDEV </td><td>" + STDEV(errList) + "</td></tr>");
+                tbody.append("<tr class='" + bgColor + "'><td>" + algorithm + " " + Math.round(percentile * 100) + " percentile</td><td>" + errList[Math.round(errList.length * percentile)] + "</td></tr>");
+            });
+
+            $("#gpsResultDetails").append(newTableDiv);
+
+        }
+
+
+    }
+
+    function STDEV(list) {
+        var floatPrecision = 0;
+        var mean = list.reduce(function (a, b) {
+            return a + b;
+        }, 0) / list.length;
+        var sqDiff = 0;
+        list.forEach(function (item) {
+            sqDiff += Math.pow(item - mean, 2);
+        });
+        var stdev = Math.sqrt(sqDiff / list.length);
+        return Math.round(stdev, floatPrecision);
+    }
+
+
+    function drawPlotForEach(algorithmName, data) {
+        dataPoints = [];
+        eachValPercent = 100.0 / data.length;
+        for (i = 0; i < data.length; i++) {
+            dataPoints.push({x: data[i], y: eachValPercent * (i + 1)});
+        }
+        loadPlot(algorithmName, dataPoints);
+    }
+
+    function showErrorDetailsPlot() {
+        for (gpsName in gpsListResults) {
+            var errDetails = gpsListResults[gpsName];
+            for (algo in errDetails) {
+                var algoCompleteName = gpsName + "_" + algo;
+                drawPlotForEach(algoCompleteName, errDetails[algo]);
+            }
+        }
+
+    }
+
+</script>
+
+</body>
+
+</html>

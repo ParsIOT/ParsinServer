@@ -315,9 +315,12 @@ func main() {
 				routes.UWBUserMap(context)
 			})
 
-			needToLoadSettings.GET("/Graphform/:group", func(context *gin.Context) { //komeil: graph map
+			needToLoadSettings.GET("/Graphform/:group", routes.Graphform)
+
+			//needToLoadSettings.GET("/AlgorithmsCDF/:group", routes.AlgorithmsCDF)
+			needToLoadSettings.GET("/AlgorithmsCDF/:group", func(context *gin.Context) { //komeil: graph map
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
-				routes.Graphform(context)
+				routes.AlgorithmsCDF(context)
 			})
 
 			needToLoadSettings.GET("/testValidTracksDetails/:group", func(context *gin.Context) { //komeil: graph map
@@ -396,6 +399,7 @@ func main() {
 	r.DELETE("/clearTestValidTrueLocation", routes.ClearTestValidTrueLocation)
 	r.GET("/getRSSData", routes.GetRSSDataAPI)
 	r.GET("/getMapDetails", routes.GetMapDetails)
+
 	//r.POST("/addArbitLocations", routes.AddArbitLocations)
 	//r.POST("/delArbitLocations", routes.DelArbitLocations)
 	r.GET("/getArbitLocations", routes.GetArbitLocations)

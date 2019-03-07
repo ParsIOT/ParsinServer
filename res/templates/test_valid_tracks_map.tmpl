@@ -554,9 +554,9 @@
 			return a + b;
 		}, 0) / list.length;
 		var sqDiff = 0;
-		list.forEach(item = > sqDiff += Math.pow(item - mean, 2)
-	)
-		;
+		list.forEach(function (item) {
+			sqDiff += Math.pow(item - mean, 2);
+		});
 		var stdev = Math.sqrt(sqDiff / list.length);
 		return Math.round(stdev, floatPrecision);
 	}
@@ -655,7 +655,7 @@
 		for (i = 0; i < data.length; i++) {
 			dataPoints.push({x: data[i], y: eachValPercent * (i + 1)});
 		}
-		loadPlot(algo, dataPoints);
+		loadPlot(algorithmName, dataPoints);
 	}
 
 	function showErrorDetailsPlot() {
