@@ -490,7 +490,9 @@
             var percentile = 0.95;
 
 
-            tbody.append("<tr class='bg-primary'><td> Num of testvalid </td><td>" + errDetails.main.length + "</td></tr>");
+            if (errDetails.hasOwnProperty("main")) {
+                tbody.append("<tr class='bg-primary'><td> Num of testvalid </td><td>" + errDetails.main.length + "</td></tr>");
+            }
 
             var i = 0;
             $.each(errDetails, function (algorithm, errList) {

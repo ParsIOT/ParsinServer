@@ -43,6 +43,7 @@
         function clearPlot() {
             chart = undefined;
         }
+
         function loadPlot(algo, dataPoints) {
             var yData = [];
             var xData = [];
@@ -72,18 +73,24 @@
                         animationEnabled: true,
                         width: 700,
                         autosize: true,
+                        zoomEnabled: true,
                         toolTip: {
                             shared: false,
                             enabled: true
                         },
-                        theme: "theme2",
                         axisY: {
+                            title: "CDF(%)",
+                            titleFontSize: 15,
+                            labelFontSize: 15,
                             gridColor: "Silver",
                             tickColor: "silver",
                             minimum: minYData,
                             maximum: maxYData
                         },
                         axisX: {
+                            title: "Error(cm)",
+                            titleFontSize: 15,
+                            labelFontSize: 15,
                             gridColor: "Silver",
                             tickColor: "silver",
                             minimum: minXData,
