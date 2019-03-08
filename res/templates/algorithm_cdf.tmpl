@@ -29,6 +29,9 @@
     <script src="/static/js/plugins/loading-indicator/spin.js"></script>
     <script src="/static/js/plugins/loading-indicator/ladda.js"></script>
 
+    <link href="/static/css/izitoast/iziToast.css" rel="stylesheet">
+    <script src="/static/js/izitoast/iziToast.js"></script>
+
     <script src="/static/js/selectize.min.js"></script>
     <link rel="stylesheet" type="text/css" href="/static/css/selectize.css">
 
@@ -84,6 +87,8 @@
 
     <link rel="stylesheet" href="/static/css/jquery-ui.css">
     <script src="/static/js/jquery-ui.js"></script>
+
+    <script src="/static/js/FileSaver.js"></script>
 
     <script>
         $(function () {
@@ -225,15 +230,31 @@
 
         </div>
         <div class="row">
-            <div class="col-sm-12 col-sm-offset-5 col-xs-6 col-xs-offset-2">
-                <span class="input-group-btn">
+            <div class="col-sm-12 col-sm-offset-3 col-xs-6 col-xs-offset-2">
+                <span class="input-group-btn ">
+                    <div class="col-sm-2 col-xs-8">
                     <button onclick="calculateDetails()"
                             id="calculateDetailsBtn"
-                            class="ladda-button btn btn-info col-sm-2 col-xs-1" data-color="blue"
+                            class="btn btn-info btn-block ladda-button" data-color="blue"
                             data-style="zoom-out">
-                                            {{/*<button class="btn btn-success col-sm-2 col-xs-1" onclick="calculateDetails()" type="button">*/}}
-                                                Calculate
-                                            </button>
+                            Calculate
+                    </button>
+                    </div>
+                     <div class="col-sm-2 col-xs-8"> <button onclick="$('#fileInput').click();"
+                                                             id="loadGpsListResultsBtn"
+                                                             class="btn btn-danger btn-block">
+                        Load Data
+                    </button>
+                    <input type='file' id="fileInput" style="display:none;" onchange="loadGpsListResults()">
+                    </div>
+                          <div class="col-sm-2 col-xs-8">
+                    <button onclick="saveGpsListResults()"
+                            id="saveGpsListResultsBtn"
+                            class="btn btn-success btn-block " disabled="true">
+                        Save Data
+                    </button>
+                          </div>
+
                 </span>
             </div>
         </div>
@@ -357,6 +378,7 @@
 
     function calculateDetails() {
         calculateDetailsBtn.toggle();
+        saveGpsListResultsBtn.disabled = true;
 
         var gpsMap = {};
         gpsListResults = {};
@@ -367,7 +389,7 @@
             var gpListGroups = gpsSelectizer[0].selectize.getValue().split(",");
 
             gpsMap[gpsName] = gpListGroups;
-            console.log(gpsName + " : " + gpListGroups);
+            // console.log(gpsName + " : " + gpListGroups);
         }
 
         for (gpsName in gpsMap) {
@@ -394,10 +416,11 @@
             }
         }
 
-        console.log(gpsListResults); // Now we have errors of all groups in all gps
+        // console.log(gpsListResults); // Now we have errors of all groups in all gps
 
         showGpsResultDetails();
         // drawCDFs();
+        saveGpsListResultsBtn.disabled = false;
         calculateDetailsBtn.toggle();
     }
 
@@ -416,11 +439,24 @@
         return lastErrDetails;
     }
 
+    function STDEV(list) {
+        var floatPrecision = 0;
+        var mean = list.reduce(function (a, b) {
+            return a + b;
+        }, 0) / list.length;
+        var sqDiff = 0;
+        list.forEach(function (item) {
+            sqDiff += Math.pow(item - mean, 2);
+        });
+        var stdev = Math.sqrt(sqDiff / list.length);
+        return Math.round(stdev, floatPrecision);
+    }
+
     function showGpsResultDetails() {
         $("#gpsResultDetails").empty();
 
         for (gpsName in gpsListResults) {
-            var errDetails = gpsListResults[gpsName]
+            var errDetails = gpsListResults[gpsName];
 
             var newTableDiv = $("<div class=\"col-md-4 column\" id=\"gpsResultDetails\" >\n" +
                 "                <div class=\"panel panel-primary\">\n" +
@@ -464,7 +500,7 @@
                 } else {
                     bgColor = 'bg-info';
                 }
-                console.log(errList);
+                // console.log(errList);
                 var meanErr = errList.reduce(function (a, b) {
                     return a + b;
                 }, 0) / errList.length;
@@ -481,19 +517,6 @@
 
     }
 
-    function STDEV(list) {
-        var floatPrecision = 0;
-        var mean = list.reduce(function (a, b) {
-            return a + b;
-        }, 0) / list.length;
-        var sqDiff = 0;
-        list.forEach(function (item) {
-            sqDiff += Math.pow(item - mean, 2);
-        });
-        var stdev = Math.sqrt(sqDiff / list.length);
-        return Math.round(stdev, floatPrecision);
-    }
-
 
     function drawPlotForEach(algorithmName, data) {
         dataPoints = [];
@@ -505,6 +528,7 @@
     }
 
     function showErrorDetailsPlot() {
+        clearPlot();
         for (gpsName in gpsListResults) {
             var errDetails = gpsListResults[gpsName];
             for (algo in errDetails) {
@@ -513,6 +537,67 @@
             }
         }
 
+    }
+
+    function saveGpsListResults() {
+        var filename = "results.json";
+        var blob = new Blob([JSON.stringify(gpsListResults)], {type: "data:application/json"});
+        saveAs(blob, filename);
+    }
+
+    function readFileContent(file) {
+        const reader = new FileReader();
+        return new Promise((resolve, reject) => {
+            reader.onload = event => resolve(event.target.result);
+            reader.onerror = error => reject(error);
+            reader.readAsText(file);
+        });
+    }
+
+    function loadGpsListResults() {
+        fileName = $('#fileInput')[0].files[0];
+        console.log(fileName);
+        readFileContent(fileName).then(content => {
+            // console.log(JSON.parse(content));
+            var gpsListResultsTemp = {};
+            var gpsListResultsBackup = JSON.parse(JSON.stringify(gpsListResults));
+
+            try {
+                gpsListResultsTemp = JSON.parse(content);
+                console.log(gpsListResultsTemp);
+                try {
+                    gpsListResults = gpsListResultsTemp;
+
+                    showGpsResultDetails();
+                    iziToast.success({
+                        title: "Done",
+                        message: "Results is loaded successful ",
+                    });
+                } catch (error) {
+                    gpsListResults = gpsListResultsBackup;
+                    console.log("OH", gpsListResults);
+                    showGpsResultDetails();
+                    iziToast.error({
+                        title: "Error",
+                        message: "Loading problem:" + error,
+                    });
+                }
+            } catch (error) {
+                gpsListResultsTemp = gpsListResultsBackup;
+                console.log("OH", gpsListResults);
+                showGpsResultDetails();
+                iziToast.error({
+                    title: "Error",
+                    message: "Loading problem:" + error,
+                });
+            }
+
+        }).catch(error => {
+            iziToast.error({
+                title: "Error",
+                message: "Loading problem:" + error,
+            });
+        });
     }
 
 </script>

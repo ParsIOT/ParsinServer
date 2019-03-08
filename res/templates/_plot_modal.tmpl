@@ -40,6 +40,9 @@
     <script type="text/javascript">
         var chart;
 
+        function clearPlot() {
+            chart = undefined;
+        }
         function loadPlot(algo, dataPoints) {
             var yData = [];
             var xData = [];
@@ -49,16 +52,16 @@
             }
 
             minYData = Math.min(...yData
-        )
+            )
             ;
             maxYData = Math.max(...yData
-        )
+            )
             ;
             minXData = Math.min(...xData
-        )
+            )
             ;
             maxXData = Math.max(...xData
-        )
+            )
             ;
 
             if (chart === undefined) {
