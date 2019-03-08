@@ -1325,6 +1325,8 @@ func easyjson224c90e0DecodeParsinServerDbmParameters5(in *jlexer.Lexer, out *Oth
 			out.CoGroupMode = int(in.Int())
 		case "SimpleHistoryEnabled":
 			out.SimpleHistoryEnabled = bool(in.Bool())
+		case "ParticleFilterEnabled":
+			out.ParticleFilterEnabled = bool(in.Bool())
 		default:
 			in.SkipRecursive()
 		}
@@ -1368,6 +1370,16 @@ func easyjson224c90e0EncodeParsinServerDbmParameters5(out *jwriter.Writer, in Ot
 			out.RawString(prefix)
 		}
 		out.Bool(bool(in.SimpleHistoryEnabled))
+	}
+	{
+		const prefix string = ",\"ParticleFilterEnabled\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(in.ParticleFilterEnabled))
 	}
 	out.RawByte('}')
 }

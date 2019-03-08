@@ -733,7 +733,7 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint, timeDiff
 		gp := dbm.GM.GetGroup(curFingerprint.Group)
 		coGp, CoGroupMode, coGpExistErr := gp.Get_CoGroup()
 
-		if glb.ParticleFilterEnabled {
+		if gp.Get_ConfigData().Get_OtherGroupConfig().ParticleFilterEnabled && glb.ParticleFilterEnabled {
 			//gpUsrHistory := gp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
 			//coGpUsrHisotry := coGp.Get_ResultData().Get_UserHistory(glb.TesterUsername)
 			//if len(gpUsrHistory) == 0 {

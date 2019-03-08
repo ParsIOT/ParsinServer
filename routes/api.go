@@ -2496,6 +2496,7 @@ func SetGroupOtherConfig(c *gin.Context) {
 
 	coGroupStr := strings.TrimSpace(c.PostForm("coGroup"))
 	simpleHistoryEnabledStr := strings.TrimSpace(c.PostForm("simpleHistoryEnabled"))
+	particleFilterEnabledStr := strings.TrimSpace(c.PostForm("particleFilterEnabled"))
 
 	if groupName != "none" {
 
@@ -2545,6 +2546,23 @@ func SetGroupOtherConfig(c *gin.Context) {
 			} else {
 				glb.Debug.Println("simpleHistoryEnabled: ", simpleHistoryEnabled)
 				otherGpConfig.SimpleHistoryEnabled = simpleHistoryEnabled
+			}
+		}
+
+		if particleFilterEnabledStr != "" {
+			particleFilterEnabled, err := strconv.ParseBool(particleFilterEnabledStr)
+			if err != nil {
+				glb.Error.Println(err)
+				glb.Error.Println("Can't parse particleFilterEnabled")
+			} else {
+				glb.Debug.Println("particleFilterEnabled: ", particleFilterEnabled)
+				otherGpConfig.ParticleFilterEnabled = particleFilterEnabled
+				if otherGpConfig.CoGroup != "" { // Change co-group particleenabled
+					coGpCd := dbm.GM.GetGroup(otherGpConfig.CoGroup).Get_ConfigData()
+					coGpOtherGpConfig := coGpCd.Get_OtherGroupConfig()
+					coGpOtherGpConfig.ParticleFilterEnabled = particleFilterEnabled
+					coGpCd.Set_OtherGroupConfig(coGpOtherGpConfig)
+				}
 			}
 		}
 

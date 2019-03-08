@@ -49,16 +49,18 @@ const (
 
 // Other group configs that aren't in knnconfig and ...
 type OtherGroupConfig struct {
-	CoGroup              string
-	CoGroupMode          int // 0: none, 1:master(main) group , 2: slave group
-	SimpleHistoryEnabled bool
+	CoGroup               string
+	CoGroupMode           int // 0: none, 1:master(main) group , 2: slave group
+	SimpleHistoryEnabled  bool
+	ParticleFilterEnabled bool
 }
 
 func NewOtherGroupConfig() OtherGroupConfig {
 	return OtherGroupConfig{
-		CoGroup:              "",
-		CoGroupMode:          CoGroupState_None,
-		SimpleHistoryEnabled: glb.DefaultSimpleHistoryEnabled,
+		CoGroup:               "",
+		CoGroupMode:           CoGroupState_None,
+		SimpleHistoryEnabled:  glb.DefaultSimpleHistoryEnabled,
+		ParticleFilterEnabled: false,
 	}
 }
 
