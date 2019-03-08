@@ -1,93 +1,113 @@
 {{ define "other_group_config" }}
-<script src="/static/js/bootstrap-select.min.js"></script>
-<script src="/static/js/i18n/defaults-en_US.js"></script>
-<link rel="stylesheet" type="text/css" href="/static/css/bootstrap-select.min.css">
-<style>
-    .modal-dialog {
-        overflow-y: initial !important
-    }
+    <script src="/static/js/bootstrap-select.min.js"></script>
+    <script src="/static/js/i18n/defaults-en_US.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap-select.min.css">
+    <style>
+        .modal-dialog {
+            overflow-y: initial !important
+        }
 
-    .modal-body {
-        height: 450px;
-        overflow-y: auto;
-    }
-</style>
-<div class="modal fade" id="groupOtherConfigModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title">Change group other configs</h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form action='/setGroupOtherConfig?group={{ $.Group }}' id="groupOtherConfigForm" method='POST'>
-                <div class="modal-body">
-                    <div class="input-group form-group">
-                        <span class="input-group-addon">Co-Group Mode: </span>
-                        <span class="input-group-addon">{{$.GroupOtherConfigDataPlus.GroupOtherConfig.CoGroup}} </span>
-                        {{ $CoGroupMode := $.GroupOtherConfigDataPlus.GroupOtherConfig.CoGroupMode }}
-                        {{ if (eq $CoGroupMode 0) }}
-                            <span class="input-group-addon" style="background-color: lightgrey;">None</span>
-                        {{ else if (eq $CoGroupMode 1) }}
-                            <span class="input-group-addon" style="background-color: #2aabd2;">Master</span>
-                        {{ else if (eq $CoGroupMode 2) }}
-                            <span class="input-group-addon" style="background-color: #ce8483">Slave</span>
-                        {{ end }}
-                    </div>
-                    <div class="input-group form-group">
-                        <span class="input-group-addon">Select Slave Co-Group: </span>
-                        <select class="selectpicker form-control" id="coGroup" name="coGroup" data-container="body"
-                                data-live-search="true" title="Select a group" data-hide-disabled="true">
-                            {{ range $Index, $gpName := $.GroupOtherConfigDataPlus.AllGroupName }}
-                                {{ if (ne $gpName $.Group) }}
-                                    <option value="{{$gpName}}">{{$gpName}}</option>
-                                {{ end }}
+        .modal-body {
+            height: 450px;
+            overflow-y: auto;
+        }
+    </style>
+    <div class="modal fade" id="groupOtherConfigModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Change group other configs</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action='/setGroupOtherConfig?group={{ $.Group }}' id="groupOtherConfigForm" method='POST'>
+                    <div class="modal-body">
+                        <div class="input-group form-group">
+                            <span class="input-group-addon">Co-Group Mode: </span>
+                            <span class="input-group-addon">{{$.GroupOtherConfigDataPlus.GroupOtherConfig.CoGroup}} </span>
+                            {{ $CoGroupMode := $.GroupOtherConfigDataPlus.GroupOtherConfig.CoGroupMode }}
+                            {{ if (eq $CoGroupMode 0) }}
+                                <span class="input-group-addon" style="background-color: lightgrey;">None</span>
+                            {{ else if (eq $CoGroupMode 1) }}
+                                <span class="input-group-addon" style="background-color: #2aabd2;">Master</span>
+                            {{ else if (eq $CoGroupMode 2) }}
+                                <span class="input-group-addon" style="background-color: #ce8483">Slave</span>
                             {{ end }}
-                        </select>
-                    </div>
+                        </div>
+                        <div class="input-group form-group">
+                            <span class="input-group-addon">Select Slave Co-Group: </span>
+                            <select class="selectpicker form-control" id="coGroup" name="coGroup" data-container="body"
+                                    data-live-search="true" title="Select a group" data-hide-disabled="true">
+                                {{ range $Index, $gpName := $.GroupOtherConfigDataPlus.AllGroupName }}
+                                    {{ if (ne $gpName $.Group) }}
+                                        <option value="{{$gpName}}">{{$gpName}}</option>
+                                    {{ end }}
+                                {{ end }}
+                            </select>
+                        </div>
 
-                    <div class="input-group form-group">
-                        <span class="input-group-addon">SimpleHistoryEffect enabled:</span>
-                        <span class="input-group-addon">{{$.GroupOtherConfigDataPlus.GroupOtherConfig.SimpleHistoryEnabled}}</span>
-                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                        {{if $.GroupOtherConfigDataPlus.GroupOtherConfig.SimpleHistoryEnabled}}
-                            <label class="btn btn-info btn-secondary active">
-                                <input type="radio" name="simpleHistoryEnabled" id="simpleHistoryEnabledOn" value="true"
-                                       checked> On
-                            </label>
-                            <label class="btn btn-secondary btn-danger">
-                                <input type="radio" name="simpleHistoryEnabled" id="simpleHistoryEnabledOff"
-                                       value="false"> Off
-                            </label>
-                        {{else}}
-                            <label class="btn btn-info btn-secondary active">
-                                <input type="radio" name="simpleHistoryEnabled" id="simpleHistoryEnabledOn"
-                                       value="true"> On
-                            </label>
-                            <label class="btn btn-secondary btn-danger">
-                                <input type="radio" name="simpleHistoryEnabled" id="simpleHistoryEnabledOff"
-                                       value="false" checked>
-                                Off
-                            </label>
-                        {{end}}
+                        <div class="input-group form-group">
+                            {{$SimpleHistoryEnabled := $.GroupOtherConfigDataPlus.GroupOtherConfig.SimpleHistoryEnabled}}
+                            <span class="input-group-addon">SimpleHistoryEffect enabled:</span>
+                            <span class="input-group-addon">{{$SimpleHistoryEnabled}}</span>
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-info btn-secondary active">
+                                    <input type="radio" name="simpleHistoryEnabled" id="simpleHistoryEnabledOn"
+                                           value="true"
+                                            {{if $SimpleHistoryEnabled}}
+                                                checked
+                                            {{end}}
+                                    > On
+                                </label>
+                                <label class="btn btn-secondary btn-danger">
+                                    <input type="radio" name="simpleHistoryEnabled" id="simpleHistoryEnabledOff"
+                                           value="false"
+                                            {{if not $SimpleHistoryEnabled}}
+                                                checked
+                                            {{end}}
+                                    > Off
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="input-group form-group">
+                            {{$ParticleFilterEnabled := $.GroupOtherConfigDataPlus.GroupOtherConfig.ParticleFilterEnabled}}
+                            <span class="input-group-addon">ParticleFilter enabled:</span>
+                            <span class="input-group-addon">{{$ParticleFilterEnabled}}</span>
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                <label class="btn btn-info btn-secondary active">
+                                    <input type="radio" name="particleFilterEnabled" id="particleFilterEnabledOn"
+                                           value="true"
+                                            {{if $ParticleFilterEnabled}}
+                                                checked
+                                            {{end}}
+                                    > On
+                                </label>
+                                <label class="btn btn-secondary btn-danger">
+                                    <input type="radio" name="particleFilterEnabled" id="particleFilterEnabledOff"
+                                           value="false"
+                                            {{if not $ParticleFilterEnabled}}
+                                                checked
+                                            {{end}}
+                                    > Off
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <div class="form-group">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <input type='submit' class="btn btn-primary" value="Save"/>
+                            {{/*<button type="button" id="SaveKnnConfig" class="btn btn-primary" >Save</button>*/}}
                         </div>
                     </div>
-
-
-                </div>
-                <div class="modal-footer">
-                    <div class="form-group">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <input type='submit' class="btn btn-primary" value="Save"/>
-                    {{/*<button type="button" id="SaveKnnConfig" class="btn btn-primary" >Save</button>*/}}
-                    </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
-</div>
-{{/*<script>
+    {{/*<script>
     var options = [], _options;
 
     for (var i = 0; i < 100; i++) {
