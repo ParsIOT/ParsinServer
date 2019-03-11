@@ -452,7 +452,10 @@ func TrackOnlineFingerprint(curFingerprint parameters.Fingerprint) (parameters.U
 		// Add fingerprint as a test-valid fp to db
 		if curFingerprint.TestValidation && curFingerprint.Username == glb.TesterUsername {
 			glb.Debug.Println("TestValidTrack added ")
-			tempTestValidTrack := parameters.TestValidTrack{TrueLocation: userPosJson.Fingerprint.Location, UserPosition: userPosJson}
+			userPosJsonTest := parameters.UserPositionJSON{}
+			copier.Copy(&userPosJsonTest, &userPosJson)
+			userPosJsonTest.Fingerprint = curFingerprint // avoid filtering and edition of the main fingerprint
+			tempTestValidTrack := parameters.TestValidTrack{TrueLocation: userPosJson.Fingerprint.Location, UserPosition: userPosJsonTest}
 			go gp.Get_ResultData().Append_TestValidTracks(tempTestValidTrack)
 		}
 	}
