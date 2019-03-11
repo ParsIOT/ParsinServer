@@ -378,6 +378,25 @@ func SortIntKeyDictByIntVal(W map[int]int) []int {
 	return keySorted
 }
 
+// Get a map and return
+// bestKeys: lower value keys
+// sortedKeys: sorted keys according to their values in W map
+func GetLowestValueKeys(W map[int]int) ([]int, []int) {
+	sortedKeys := SortIntKeyDictByIntVal(W)
+
+	bestKeys := []int{sortedKeys[0]}
+	firstBestValue := W[sortedKeys[0]]
+	for _, key := range sortedKeys[1:] {
+		if W[key] == firstBestValue {
+			bestKeys = append(bestKeys, key)
+		} else {
+			break
+		}
+	}
+
+	return bestKeys, sortedKeys
+}
+
 // Like SortReverseDictByVal but when there are some fingerprints(specific mac) with same rss,
 //		sort them according to their timestamp(actually there is no difference between them) to avoid side effects
 // 			(because random ordering of these FP may cause some wrong priorities).

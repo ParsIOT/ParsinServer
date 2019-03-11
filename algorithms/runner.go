@@ -24,6 +24,7 @@ const (
 	LatterPercentile string = "LatterPercentile"
 )
 
+
 // Trackfingerprint options
 const (
 	IgnoreSimpleHistoryEffect string = "IgnoreSimpleHistoryEffect"
@@ -359,7 +360,6 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint, options ...string) 
 	cd := gp.Get_ConfigData()
 	otherGpConfig := cd.Get_OtherGroupConfig()
 
-
 	bayesGuess := ""
 	bayesData := make(map[string]float64)
 	svmGuess := ""
@@ -420,7 +420,6 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint, options ...string) 
 	}
 	userPosJson.RawLocation = rawLocation
 
-
 	// User history effect
 	location = rawLocation
 	if otherGpConfig.SimpleHistoryEnabled && !glb.StringInSlice(IgnoreSimpleHistoryEffect, options) {
@@ -432,7 +431,7 @@ func TrackFingerprint(curFingerprint parameters.Fingerprint, options ...string) 
 	userPosJson.Location = location
 	userPosJson.Confidentiality = accuracyCircleRadius
 
-	glb.Debug.Println(userPosJson)
+	//glb.Debug.Println(userPosJson)
 	return userPosJson, true, message
 }
 
@@ -555,7 +554,7 @@ func ParticleFilterFusion(curUsrPos parameters.UserPositionJSON, timeDiffWithLas
 				trueLocX, trueLocY = glb.GetDotFromString(TrueLoc)
 			}
 		} else {
-		// 2. FOR CELLPHONE Based TRUE LOCATIONS
+			// 2. FOR CELLPHONE Based TRUE LOCATIONS
 			rsd := gp.Get_ResultData()
 			//trueLocX, trueLocY := 0.0, 0.0
 			testValidTracks := rsd.Get_TestValidTracks()
@@ -724,7 +723,6 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string, 
 
 /////////////////////////////////////
 
-
 // call leanFingerprint(),calculateSVM() and rfLearn() functions after that call prediction functions and return the estimation location
 func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint, timeDiffWithLastFP int64) (parameters.UserPositionJSON, error) {
 	userPosJson, success, message := TrackFingerprint(curFingerprint)
@@ -752,7 +750,6 @@ func RecalculateTrackFingerprint(curFingerprint parameters.Fingerprint, timeDiff
 				userPosJson.Location = Fusion(userPosJson, gpUsrHistory, coGpUsrHisotry)
 			}
 		}
-
 
 		//userPosJson.KnnGuess = userPosJson.Location //todo: must add location as seprated variable( from knnguess) in parameters.UserPositionJSON
 		gp.Get_ResultData().Append_UserHistory(curFingerprint.Username, userPosJson)
@@ -2019,7 +2016,7 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 	//glb.Debug.Println(totalErrorList)
 
 	//bestKey, sortedErrDetails, newErrorMap, err := SelectLowestError(allErrDetails,"FalseRate")
-	bestKey, sortedErrDetails, newErrorMap := SelectBestFromErrMap(allErrDetails)
+	bestKey, sortedErrDetails, newErrorMap := SelectBestFromErrMapByParameterPriority(allErrDetails, allHyperParamDetails)
 	bestErrHyperParameters := allHyperParamDetails[bestKey]
 
 	for _, i := range sortedErrDetails {
@@ -2270,20 +2267,19 @@ func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreference
 // bestkey is key of minimum error
 // sortedErrDetails is sorted keys according to error(first one is bestkey)
 // newErrorMap is map of int to int that originate from allErrDetails map according to error method(auc,mean, ...)
-func SelectBestFromErrMap(allErrDetails map[int][]int) (int, []int, map[int]int) {
+func SelectBestFromErrMap(allErrDetails map[int][]int) ([]int, []int, map[int]int) {
 	MainErrAlgorithm := Mean
 
-	bestKey, sortedErrDetails, newErrorMap, err := SelectLowestError(allErrDetails, MainErrAlgorithm)
+	bestKeys, sortedErrDetails, newErrorMap, err := SelectLowestError(allErrDetails, MainErrAlgorithm)
 	if err != nil { // Use Mean algorithm
 		glb.Error.Println(err)
 
 		// find best mean error
-		bestKey, sortedErrDetails, newErrorMap, err := SelectLowestError(allErrDetails, Mean)
+		bestKeys, sortedErrDetails, newErrorMap, err = SelectLowestError(allErrDetails, Mean)
 		if err != nil {
 			glb.Error.Println(err)
 		}
 		//bestResult := sortedErrDetails[0]
-		return bestKey, sortedErrDetails, newErrorMap
 		/*bestErrHyperParameters := knnErrHyperParameters[bestResult]
 
 		glb.Debug.Println("CrossValidation resuts:")
@@ -2297,8 +2293,9 @@ func SelectBestFromErrMap(allErrDetails map[int][]int) (int, []int, map[int]int)
 
 		return bestErrHyperParameters*/
 	}
-	glb.Debug.Println(newErrorMap)
-	return bestKey, sortedErrDetails, newErrorMap
+	//glb.Debug.Println(newErrorMap)
+
+	return bestKeys, sortedErrDetails, newErrorMap
 	/*	for _, i := range sortedErrDetails {
 			glb.Debug.Println("-----------------------------")
 			glb.Debug.Println("Hyper Params:", allHyperParamDetails[i])
@@ -2308,6 +2305,150 @@ func SelectBestFromErrMap(allErrDetails map[int][]int) (int, []int, map[int]int)
 		for _, i := range sortedErrDetails {
 			glb.Debug.Println(allHyperParamDetails[i], " ", newErrorMap[i])
 		}*/
+}
+
+// return sorted list and indexes(according to main list) of  KnnHyperParameters list according to KnnHyperParameters priority
+func SortKnnHyperParametersList(rawKnnHyperParamList []parameters.KnnHyperParameters) ([]int, []parameters.KnnHyperParameters) {
+
+	//K_Priority              int = 0
+	//MinCluster_Priority     int = 1
+	//MaxEculidDist_Priority  int = 2
+	//BLEFactor_Priority      int = 3
+	//GraphFactor_Priority    int = 4
+	//DSAMaxMovement_Priority int = 5
+
+	const (
+		ascnd      int = 0 //lowest value is better
+		dscnd      int = 1 //most value is better
+		mddleAscnd int = 2 // near middle is better
+		mddleDscnd int = 3 // far from middle is better
+		sumAscnd   int = 4 // near middle is better
+		sumDscnd   int = 5 // far from middle is better
+	)
+	type ParamOrder struct {
+		K                   int
+		MinClusterRss       int
+		MaxEuclideanRssDist int
+		BLEFactor           int
+		GraphFactor         int
+		MaxMovement         int
+	}
+	paramOrder := ParamOrder{
+		K:                   ascnd,
+		MinClusterRss:       dscnd,
+		MaxEuclideanRssDist: ascnd,
+		BLEFactor:           mddleAscnd,
+		GraphFactor:         sumAscnd,
+		MaxMovement:         ascnd,
+	}
+
+	type IndexedKnnHyperParam struct {
+		Index              int
+		KnnHyperParameters parameters.KnnHyperParameters
+	}
+
+	indexedKnnHyperParamList := []IndexedKnnHyperParam{}
+	for i, knnHyperParam := range rawKnnHyperParamList {
+		indexedKnnHyperParam := IndexedKnnHyperParam{
+			Index:              i,
+			KnnHyperParameters: knnHyperParam,
+		}
+		indexedKnnHyperParamList = append(indexedKnnHyperParamList, indexedKnnHyperParam)
+	}
+
+	sort.Slice(indexedKnnHyperParamList, func(i, j int) bool {
+		rawKnnHyperParamListi := indexedKnnHyperParamList[i].KnnHyperParameters
+		rawKnnHyperParamListj := indexedKnnHyperParamList[j].KnnHyperParameters
+
+		Ki, Kj := rawKnnHyperParamListi.K, rawKnnHyperParamListj.K
+		MinClusterRssi, MinClusterRssj := rawKnnHyperParamListi.MinClusterRss, rawKnnHyperParamListj.MinClusterRss
+		MaxEuclideanRssDisti, MaxEuclideanRssDistj := rawKnnHyperParamListi.MaxEuclideanRssDist, rawKnnHyperParamListj.MaxEuclideanRssDist
+		BLEFactori, BLEFactorj := rawKnnHyperParamListi.BLEFactor, rawKnnHyperParamListj.BLEFactor
+		GraphFactorsi, GraphFactorsj := rawKnnHyperParamListi.GraphFactors, rawKnnHyperParamListj.GraphFactors
+		MaxMovementi, MaxMovementj := rawKnnHyperParamListi.MaxMovement, rawKnnHyperParamListj.MaxMovement
+
+		if Ki < Kj {
+			return (paramOrder.K == ascnd)
+		}
+		if Ki > Kj {
+			return (paramOrder.K == dscnd)
+		}
+
+		// MinCluster
+		if MinClusterRssi < MinClusterRssj {
+			return (paramOrder.MinClusterRss == ascnd)
+		}
+		if MinClusterRssi > MinClusterRssj {
+			return (paramOrder.MinClusterRss == dscnd)
+		}
+
+		// MaxEuclideanRssDist
+		if MaxEuclideanRssDisti < MaxEuclideanRssDistj {
+			return (paramOrder.MaxEuclideanRssDist == ascnd)
+		}
+		if MaxEuclideanRssDisti > MaxEuclideanRssDistj {
+			return (paramOrder.MaxEuclideanRssDist == dscnd)
+		}
+
+		// BLEFactor
+		BLEFactorDisti, BLEFactorDistj := math.Abs(BLEFactori-1.0), math.Abs(BLEFactorj-1.0)
+		if BLEFactorDisti < BLEFactorDistj {
+			return (paramOrder.BLEFactor == mddleAscnd)
+		}
+		if BLEFactorDisti > BLEFactorDistj {
+			return (paramOrder.BLEFactor == mddleDscnd)
+		}
+
+		// GraphFactors
+		GraphFactorsSumi, GraphFactorsSumj := float64(0.0), float64(0.0)
+		for _, val := range GraphFactorsi {
+			GraphFactorsSumi += val
+		}
+		for _, val := range GraphFactorsj {
+			GraphFactorsSumj += val
+		}
+
+		if GraphFactorsSumi < GraphFactorsSumj {
+			return (paramOrder.GraphFactor == sumAscnd)
+		}
+		if GraphFactorsSumi > GraphFactorsSumj {
+			return (paramOrder.GraphFactor == sumDscnd)
+		}
+
+		// MaxEuclideanRssDist
+		if MaxMovementi < MaxMovementj {
+			return (paramOrder.MaxMovement == ascnd)
+		}
+		if MaxMovementi > MaxMovementj {
+			return (paramOrder.MaxMovement == dscnd)
+		}
+		return true // Completely equal!
+	})
+
+	sortedIndexes := []int{}
+	sortedKnnHyperParamList := []parameters.KnnHyperParameters{}
+	for _, indexedKnnHyperParam := range indexedKnnHyperParamList {
+		sortedIndexes = append(sortedIndexes, indexedKnnHyperParam.Index)
+		sortedKnnHyperParamList = append(sortedKnnHyperParamList, indexedKnnHyperParam.KnnHyperParameters)
+	}
+	return sortedIndexes, sortedKnnHyperParamList
+}
+
+// this function get SelectBestFromErrMap output if there are more than one key in bestkeys list then
+// it'll find best key according to KnnHyperParameters priority
+func SelectBestFromErrMapByParameterPriority(allErrDetails map[int][]int, allHyperParamDetails map[int]parameters.KnnHyperParameters) (int, []int, map[int]int) {
+	bestKeys, sortedErrDetails, newErrorMap := SelectBestFromErrMap(allErrDetails)
+	//glb.Error.Println(bestKeys)
+
+	bestHyperParams := []parameters.KnnHyperParameters{}
+	for _, key := range bestKeys {
+		hyperParam := allHyperParamDetails[key]
+		bestHyperParams = append(bestHyperParams, hyperParam)
+	}
+	//sortedIndexes, sortedKnnHyperParamList := SortKnnHyperParametersList(bestHyperParams)
+	sortedIndexes, _ := SortKnnHyperParametersList(bestHyperParams)
+	bestKey := bestKeys[sortedIndexes[0]]
+	return bestKey, sortedErrDetails, newErrorMap
 }
 
 func DisableHistoryConsideredMethodTemprorary(cd *dbm.ConfigDataStruct) parameters.KnnConfig {
@@ -2679,7 +2820,7 @@ func SelectBestGraphFactorsByTestValidTracks(gp *dbm.Group, testValidTracks []pa
 		bestResult = totalErrorList[0]
 		bestErrHyperParameters := knnErrHyperParameters[bestResult]*/
 
-	bestKey, sortedErrDetails, newErrorMap := SelectBestFromErrMap(allErrDetails)
+	bestKey, sortedErrDetails, newErrorMap := SelectBestFromErrMapByParameterPriority(allErrDetails, allHyperParamDetails)
 	bestErrHyperParameters := allHyperParamDetails[bestKey]
 	bestResult := newErrorMap[bestKey]
 	glb.Debug.Println("%%%%%%% best result %%%%%%", bestResult)
@@ -2783,7 +2924,7 @@ func SelectBestMaxMovementByTestValidTracks(gp *dbm.Group, testValidTracks []par
 		bestResult = totalErrorList[0]
 		bestErrHyperParameters := knnErrHyperParameters[bestResult]*/
 
-	bestKey, sortedErrDetails, newErrorMap := SelectBestFromErrMap(allErrDetails)
+	bestKey, sortedErrDetails, newErrorMap := SelectBestFromErrMapByParameterPriority(allErrDetails, allHyperParamDetails)
 	bestErrHyperParameters := allHyperParamDetails[bestKey]
 	bestResult := newErrorMap[bestKey]
 	glb.Debug.Println("%%%%%%% best result %%%%%%", bestResult)
@@ -2942,9 +3083,9 @@ func CalculateByTestValidTracksLegacy(groupName string) {
 
 }
 
-// Find best key that has lowest error list:
+// Find best key(list of best key when some same error values exist)that has lowest error list:
 // method : "FalseRate", "AUC" ,"LatterPercentile","Mean"
-func SelectLowestError(errMap map[int][]int, method string) (int, []int, map[int]int, error) {
+func SelectLowestError(errMap map[int][]int, method string) ([]int, []int, map[int]int, error) {
 	if method == FalseRate {
 		trueMaxErr := 100 // 100 cm
 		falseCountMap := make(map[int]int)
@@ -2959,8 +3100,8 @@ func SelectLowestError(errMap map[int][]int, method string) (int, []int, map[int
 			}
 			falseCountMap[key] = falseCount
 		}
-		sortedKey := glb.SortIntKeyDictByIntVal(falseCountMap)
-		return sortedKey[0], sortedKey, falseCountMap, nil
+		bestKeys, sortedKey := glb.GetLowestValueKeys(falseCountMap)
+		return bestKeys, sortedKey, falseCountMap, nil
 	} else if method == AUC {
 		falseCountMap := make(map[int]int)
 
@@ -2986,8 +3127,8 @@ func SelectLowestError(errMap map[int][]int, method string) (int, []int, map[int
 			}
 			falseCountMap[key] = allStepFalseCount
 		}
-		sortedKey := glb.SortIntKeyDictByIntVal(falseCountMap)
-		return sortedKey[0], sortedKey, falseCountMap, nil
+		bestKeys, sortedKey := glb.GetLowestValueKeys(falseCountMap)
+		return bestKeys, sortedKey, falseCountMap, nil
 	} else if method == LatterPercentile {
 		latterPercentile := 0.75
 
@@ -3008,8 +3149,8 @@ func SelectLowestError(errMap map[int][]int, method string) (int, []int, map[int
 			latterPercentileVal := errList[latterPercentileIndex]
 			percentileMap[key] = latterPercentileVal
 		}
-		sortedKey := glb.SortIntKeyDictByIntVal(percentileMap)
-		return sortedKey[0], sortedKey, percentileMap, nil
+		bestKeys, sortedKey := glb.GetLowestValueKeys(percentileMap)
+		return bestKeys, sortedKey, percentileMap, nil
 	} else if method == Mean {
 		meanErrMap := make(map[int]int)
 		for key, errList := range errMap {
@@ -3020,8 +3161,8 @@ func SelectLowestError(errMap map[int][]int, method string) (int, []int, map[int
 			mean /= len(errList)
 			meanErrMap[key] = mean
 		}
-		sortedKey := glb.SortIntKeyDictByIntVal(meanErrMap)
-		return sortedKey[0], sortedKey, meanErrMap, nil
+		bestKeys, sortedKey := glb.GetLowestValueKeys(meanErrMap)
+		return bestKeys, sortedKey, meanErrMap, nil
 	}
-	return -1, []int{}, make(map[int]int), errors.New("Invalid method parameters")
+	return []int{}, []int{}, make(map[int]int), errors.New("Invalid method parameters")
 }
