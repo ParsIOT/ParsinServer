@@ -73,6 +73,19 @@
             font: 10px sans-serif;
             fill: #fff;
         }
+
+        .state-icon {
+            left: -5px;
+        }
+
+        .list-group-item-primary {
+            color: rgb(255, 255, 255);
+            background-color: rgb(66, 139, 202);
+        }
+
+        .well .list-group {
+            margin-bottom: 0px;
+        }
     </style>
 
 
@@ -281,26 +294,38 @@
 
                 <div class="col-md-12">
                     <div class="form-group">
-                        {{/*<button class="btn btn-warning btn-block" id="showCDFs"*/}}
-                        {{/*title=".">*/}}
-
-                        {{/*</button>*/}}
-                        <button id="showErrorDetailsPlotBtn" onclick="showErrorDetailsPlot()"
-                                class="btn btn-warning btn-sm btn-block" data-toggle="modal" title="."
-                                data-target="#plotModal">
-                            Show CDFs
-                        </button>
+                        <div class="col-xs-12">
+                            <h4>Select Algorithms:</h4>
+                            <div class="well" style="max-height: 300px;overflow: auto;">
+                                <ul id="algo-result-list" class="list-group checked-list-box">
+                                </ul>
+                                <br/>
+                            </div>
+                        </div>
+                        <div class="col-xs-6 col-xs-offset-3">
+                            <button id="showErrorDetailsPlotBtn" onclick="showErrorDetailsPlot()"
+                                    class="btn btn-warning btn-sm btn-block " data-toggle="modal"
+                                    data-target="#plotModal">
+                                Show CDFs
+                            </button>
+                        </div>
                         {{ template "plot_modal" . }}
                     </div>
                 </div>
             </div>
         </div>
-        <div class="row clearfix" id="location-listing">
+        <div class="row clearfix">
+            <div class="col-md-12 column" id="gpsResultDetailsUnit">
+            </div>
         </div>
     </div>
+
+
 </div>
 
 <script>
+
+
     var dbList = [
         {{range $.DBList}}
         {name: "{{.}}"},
@@ -310,6 +335,99 @@
     var gpsListIndex = 1;
     var gpsSelectorMap = {};
     var gpsListResults = {}; // error data
+    var allAlgoErrDetails = {};
+    var selectedAlgo = {};
+    var percentile = 0.95;
+
+
+    function LoadAlgoResultSelectionList() {
+        $('.list-group.checked-list-box .list-group-item').each(function () {
+
+            // Settings
+            var $widget = $(this),
+                $checkbox = $('<input type="checkbox" class="hidden" checked/>'),
+                color = ($widget.data('color') ? $widget.data('color') : "primary"),
+                style = ($widget.data('style') == "button" ? "btn-" : "list-group-item-"),
+                settings = {
+                    on: {
+                        icon: 'glyphicon glyphicon-check'
+                    },
+                    off: {
+                        icon: 'glyphicon glyphicon-unchecked'
+                    }
+                };
+
+            $widget.css('cursor', 'pointer');
+            $widget.append($checkbox);
+
+            // Event Handlers
+            $widget.on('click', function () {
+                $checkbox.prop('checked', !$checkbox.is(':checked'));
+                $checkbox.triggerHandler('change');
+                updateDisplay();
+            });
+            $checkbox.on('change', function () {
+                updateDisplay();
+                selectionListChange();
+            });
+
+
+            // Actions
+            function updateDisplay() {
+                var isChecked = $checkbox.is(':checked');
+
+                // Set the button's state
+                $widget.data('state', (isChecked) ? "on" : "off");
+
+                // Set the button's icon
+                $widget.find('.state-icon')
+                    .removeClass()
+                    .addClass('state-icon ' + settings[$widget.data('state')].icon);
+
+                // Update the button's color
+                if (isChecked) {
+                    $widget.addClass(style + color + ' active');
+                } else {
+                    $widget.removeClass(style + color + ' active');
+                }
+            }
+
+            // Initialization
+            function init() {
+
+                if ($widget.data('checked') == true) {
+                    $checkbox.prop('checked', !$checkbox.is(':checked'));
+                }
+
+                updateDisplay();
+
+                // Inject the icon if applicable
+                if ($widget.find('.state-icon').length == 0) {
+                    $widget.prepend('<span class="state-icon ' + settings[$widget.data('state')].icon + '"></span>');
+                }
+            }
+
+            init();
+        });
+    }
+
+    function selectionListChange() {
+        selectedAlgo = [];
+        $("#algo-result-list li.active").each(function (idx, li) {
+            selectedAlgo.push($(li).text());
+        });
+        showGpsResultDetailsUnit();
+    }
+
+    //
+    // $('#select-algo-btn').on('click', function (event) {
+    //     selectedAlgo = [];
+    //     event.preventDefault();
+    //     $("#algo-result-list li.active").each(function (idx, li) {
+    //         selectedAlgo.push($(li).text());
+    //     });
+    //     showGpsResultDetailsUnit();
+    // });
 
     function newGroupListHtml(groupListIndex) {
         var newEntryHtml = "<div class=\"entry input-group col-xs-12\" number=" + groupListIndex + " >\n" +
@@ -374,6 +492,8 @@
             e.preventDefault();
             return false;
         });
+
+        LoadAlgoResultSelectionList();
     });
 
     function calculateDetails() {
@@ -418,7 +538,7 @@
 
         // console.log(gpsListResults); // Now we have errors of all groups in all gps
 
-        showGpsResultDetails();
+        showGpsResults();
         // drawCDFs();
         saveGpsListResultsBtn.disabled = false;
         calculateDetailsBtn.toggle();
@@ -451,6 +571,38 @@
         var stdev = Math.sqrt(sqDiff / list.length);
         return Math.round(stdev, floatPrecision);
     }
+
+    function showGpsResults() {
+        showAlgoResultSelectionList();
+        showGpsResultDetails();
+        showGpsResultDetailsUnit();
+    }
+
+    function showAlgoResultSelectionList() {
+        // <li class="list-group-item">Cras justo odio</li>
+        $("#algo-result-list").empty();
+        selectedAlgo = [];
+        allAlgoErrDetails = {};
+
+        for (gpsName in gpsListResults) {
+            var errDetails = gpsListResults[gpsName];
+            $.each(errDetails, function (algorithm, errList) {
+                var algoName;
+                if (algorithm.trim() != "") {
+                    algoName = gpsName + "_" + algorithm;
+                } else {
+                    algoName = gpsName;
+                }
+
+                selectedAlgo.push(algoName);
+                allAlgoErrDetails[algoName] = errList;
+
+                $("#algo-result-list").append("<li class='list-group-item'>" + algoName + "</li>");
+            });
+        }
+        LoadAlgoResultSelectionList();
+    }
+
 
     function showGpsResultDetails() {
         $("#gpsResultDetails").empty();
@@ -487,7 +639,6 @@
                 "class": "tab-content",
             }).appendTo(newTableDiv.find("#algo-result-table"));
             // console.log(tbody);
-            var percentile = 0.95;
 
 
             if (errDetails.hasOwnProperty("main")) {
@@ -519,6 +670,69 @@
 
     }
 
+    function showGpsResultDetailsUnit() {
+        $("#gpsResultDetailsUnit").empty();
+
+
+        var newTableDiv = $("<div class=\"col-md-6 col-md-offset-3 column\" id=\"gpsResultDetailsUnit\" >\n" +
+            "                <div class=\"panel panel-primary\">\n" +
+            "                    <div class=\"panel-heading\">\n" +
+            "                        <h3 class=\"panel-title\">\n" +
+            "                            All Details\n" +
+            "                        </h3>\n" +
+            "                    </div>\n" +
+            "                    <div class=\"panel-body\">\n" +
+            "                        <div  class=\"col-md-12\">\n" +
+            "                           <table id=\"algo-result-table-unit\"\n" +
+            "                                   class=\"table table-responsive table-hover table-condensed table-bordered\">\n" +
+            "                               <thead>\n" +
+            "                                   <tr>\n" +
+            "                                       <td>Algorithm</td>\n" +
+            "                                       <td>Mean</td>\n" +
+            "                                       <td>STDEV</td>\n" +
+            "                                       <td> " + Math.round(percentile * 100) + " percentile</td>\n" +
+            "                                   </tr>\n" +
+            "                               </thead>\n" +
+            "                           </table>\n" +
+            "                        </div>\n" +
+            "                    </div>\n" +
+            "                </div>\n" +
+            "            </div>"
+        );
+
+        var i = 0;
+        selectedAlgo.forEach(function (algoName) {
+            var errList = allAlgoErrDetails[algoName];
+
+            tbody = $("<tbody/>", {
+                "class": "tab-content",
+            }).appendTo(newTableDiv.find("#algo-result-table-unit"));
+            // console.log(tbody);
+
+            i++;
+            if (i % 2 == 0) {
+                bgColor = 'bg-success';
+            } else {
+                bgColor = 'bg-info';
+            }
+            // console.log(errList);
+            var meanErr = errList.reduce(function (a, b) {
+                return a + b;
+            }, 0) / errList.length;
+
+            tbody.append("<tr class='" + bgColor + "'><td>" + algoName + "</td>\n" +
+                "<td>" + Math.round(meanErr, 0) + "</td>\n" +
+                "<td>" + STDEV(errList) + "</td>\n" +
+                "<td>" + errList[Math.round(errList.length * percentile)] + "</td>\n" +
+                "</tr>");
+
+
+            $("#gpsResultDetailsUnit").append(newTableDiv);
+
+        });
+
+
+    }
 
     function drawPlotForEach(algorithmName, data) {
         dataPoints = [];
@@ -531,14 +745,9 @@
 
     function showErrorDetailsPlot() {
         clearPlot();
-        for (gpsName in gpsListResults) {
-            var errDetails = gpsListResults[gpsName];
-            for (algo in errDetails) {
-                var algoCompleteName = gpsName + "_" + algo;
-                drawPlotForEach(algoCompleteName, errDetails[algo]);
-            }
-        }
-
+        selectedAlgo.forEach(function (algoName) {
+            drawPlotForEach(algoName, allAlgoErrDetails[algoName]);
+        });
     }
 
     function saveGpsListResults() {
@@ -570,7 +779,7 @@
                 try {
                     gpsListResults = gpsListResultsTemp;
 
-                    showGpsResultDetails();
+                    showGpsResults();
                     iziToast.success({
                         title: "Done",
                         message: "Results is loaded successful ",
@@ -578,7 +787,7 @@
                 } catch (error) {
                     gpsListResults = gpsListResultsBackup;
                     console.log("OH", gpsListResults);
-                    showGpsResultDetails();
+                    showGpsResults();
                     iziToast.error({
                         title: "Error",
                         message: "Loading problem:" + error,
@@ -587,7 +796,7 @@
             } catch (error) {
                 gpsListResultsTemp = gpsListResultsBackup;
                 console.log("OH", gpsListResults);
-                showGpsResultDetails();
+                showGpsResults();
                 iziToast.error({
                     title: "Error",
                     message: "Loading problem:" + error,
