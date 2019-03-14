@@ -304,16 +304,15 @@
                                                         <div id="group-list-build-all">
                                                             <div class="list-group-item">
                                                                 <div class="fa loader-circle"></div>
-                                                                Windows
+                                                                test1
                                                             </div>
                                                             <div class="list-group-item">
                                                                 <div class="fa fa-circle-o"></div>
-                                                                OS X
+                                                                test2
                                                             </div>
                                                             <div class="list-group-item">
-                                                                <div class="fa fa-warning" style="color:red"
-                                                                     aria-hidden="true"></div>
-                                                                Linux
+                                                                <div class="fa fa-warning" style="color:red"></div>
+                                                                test3
                                                             </div>
                                                         </div>
                                                         <div class="list-group-item">
@@ -906,17 +905,6 @@
             }
         }
     }
-
-
-    function sleep(milliseconds) {
-        var start = new Date().getTime();
-        for (var i = 0; i < 1e7; i++) {
-            if ((new Date().getTime() - start) > milliseconds) {
-                break;
-            }
-        }
-    }
-
 
     function buildAll() {
         var groups = $("#group-list-build-all").children();
