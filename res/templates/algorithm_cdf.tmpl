@@ -35,6 +35,7 @@
     <script src="/static/js/selectize.min.js"></script>
     <link rel="stylesheet" type="text/css" href="/static/css/selectize.css">
 
+    <link href="/static/css/custom.css" rel="stylesheet">
 
     <style>
         .location-listing > .row > .col-md-6:nth-child(2n+1) {
@@ -243,7 +244,7 @@
 
         </div>
         <div class="row">
-            <div class="col-sm-12 col-sm-offset-3 col-xs-6 col-xs-offset-2">
+            <div class="col-sm-12 col-sm-offset-2 col-xs-6 col-xs-offset-1">
                 <span class="input-group-btn ">
                     <div class="col-sm-2 col-xs-8">
                     <button onclick="calculateDetails()"
@@ -266,9 +267,78 @@
                             class="btn btn-success btn-block " disabled="true">
                         Save Data
                     </button>
+
                           </div>
+                    <div class="col-sm-2 col-xs-8">
+                    <button onclick="loadOtherToolsModal()"
+                            data-toggle="modal"
+                            data-target="#otherToolsModal"
+                            class="btn btn-warning btn-block ">
+                        Other tools
+                    </button>
+                    </div>
 
                 </span>
+                <div class="modal fade" id="otherToolsModal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Other Groups tools</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+
+                                <div class="panel panel-primary" id="volume-fees-panel">
+                                    <div class="panel-body">
+                                        <div class="col-md-12">
+
+                                            <div class="form-group">
+                                                <div class="col-xs-12">
+
+                                                    <div class="list-group">
+                                                        <div class="list-group-item active">
+                                                            Groups
+                                                        </div>
+                                                        <div id="group-list-build-all">
+                                                            <div class="list-group-item">
+                                                                <div class="fa loader-circle"></div>
+                                                                Windows
+                                                            </div>
+                                                            <div class="list-group-item">
+                                                                <div class="fa fa-circle-o"></div>
+                                                                OS X
+                                                            </div>
+                                                            <div class="list-group-item">
+                                                                <div class="fa fa-warning" style="color:red"
+                                                                     aria-hidden="true"></div>
+                                                                Linux
+                                                            </div>
+                                                        </div>
+                                                        <div class="list-group-item">
+                                                            <button onclick="buildAll()"
+                                                                    class="btn btn-info btn-sm btn-block"
+                                                                    type="button">
+                                                                Build All
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -496,12 +566,8 @@
         LoadAlgoResultSelectionList();
     });
 
-    function calculateDetails() {
-        calculateDetailsBtn.toggle();
-        saveGpsListResultsBtn.disabled = true;
-
+    function getGpsMap() {
         var gpsMap = {};
-        gpsListResults = {};
         for (gpsIndex in gpsSelectorMap) {
             var gpsSelectizer = gpsSelectorMap[gpsIndex];
             var gpsName = gpsSelectizer.prev().find('input').val();
@@ -511,6 +577,16 @@
             gpsMap[gpsName] = gpListGroups;
             // console.log(gpsName + " : " + gpListGroups);
         }
+        return gpsMap;
+    }
+
+    function calculateDetails() {
+        calculateDetailsBtn.toggle();
+        saveGpsListResultsBtn.disabled = true;
+
+        gpsListResults = {};
+        var gpsMap = {};
+        gpsMap = getGpsMap();
 
         for (gpsName in gpsMap) {
             gpsGroups = gpsMap[gpsName];
@@ -811,6 +887,64 @@
         });
     }
 
+
+    function loadOtherToolsModal() {
+        var gpsMap = {};
+        gpsMap = getGpsMap();
+        $("#group-list-build-all").empty();
+        for (gpsName in gpsMap) {
+            gpsGroups = gpsMap[gpsName];
+            gpListTempResult = [];
+            for (index in gpsGroups) {
+                gp = gpsGroups[index];
+                if (gp != "") {
+                    $("#group-list-build-all").append(" <div class=\"list-group-item\">\n" +
+                        "                                   <div class=\"fa fa-circle-o\" ></div>\n" +
+                        "                                   " + gp + "\n" +
+                        "                               </div>");
+                }
+            }
+        }
+    }
+
+
+    function sleep(milliseconds) {
+        var start = new Date().getTime();
+        for (var i = 0; i < 1e7; i++) {
+            if ((new Date().getTime() - start) > milliseconds) {
+                break;
+            }
+        }
+    }
+
+
+    function buildAll() {
+        var groups = $("#group-list-build-all").children();
+        groups.each(function (index, listItem) {
+            var gpName = listItem.textContent.trim();
+            $(listItem).find("div").attr('class', "fa loader-circle");
+
+
+            $.ajaxSetup({ //avoid async problems
+                async: false
+            });
+            $.getJSON("/buildgroup", {
+                    "group": gpName,
+                },
+                function (data) {
+                    if (data['success']) {
+                        $(listItem).find("div").attr('class', "fa fa-check-circle");
+                    } else {
+                        $(listItem).find("div").attr('class', "fa fa-warning").attr("style", "color:red");
+                    }
+                }
+            ).error(function () {
+                $(listItem).find("div").attr('class', "fa fa-warning").attr("style", "color:red");
+            });
+
+
+        });
+    }
 </script>
 
 </body>
