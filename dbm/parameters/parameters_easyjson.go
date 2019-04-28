@@ -1716,6 +1716,26 @@ func easyjson224c90e0DecodeParsinServerDbmParameters7(in *jlexer.Lexer, out *Knn
 				}
 				in.Delim('}')
 			}
+		case "RPFs":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				in.Delim('{')
+				if !in.IsDelim('}') {
+					out.RPFs = make(map[string]float64)
+				} else {
+					out.RPFs = nil
+				}
+				for !in.IsDelim('}') {
+					key := string(in.String())
+					in.WantColon()
+					var v52 float64
+					v52 = float64(in.Float64())
+					(out.RPFs)[key] = v52
+					in.WantComma()
+				}
+				in.Delim('}')
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -1742,16 +1762,16 @@ func easyjson224c90e0EncodeParsinServerDbmParameters7(out *jwriter.Writer, in Kn
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v52First := true
-			for v52Name, v52Value := range in.FingerprintsInMemory {
-				if v52First {
-					v52First = false
+			v53First := true
+			for v53Name, v53Value := range in.FingerprintsInMemory {
+				if v53First {
+					v53First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v52Name))
+				out.String(string(v53Name))
 				out.RawByte(':')
-				(v52Value).MarshalEasyJSON(out)
+				(v53Value).MarshalEasyJSON(out)
 			}
 			out.RawByte('}')
 		}
@@ -1768,11 +1788,11 @@ func easyjson224c90e0EncodeParsinServerDbmParameters7(out *jwriter.Writer, in Kn
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v53, v54 := range in.FingerprintsOrdering {
-				if v53 > 0 {
+			for v54, v55 := range in.FingerprintsOrdering {
+				if v54 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v54))
+				out.String(string(v55))
 			}
 			out.RawByte(']')
 		}
@@ -1789,24 +1809,24 @@ func easyjson224c90e0EncodeParsinServerDbmParameters7(out *jwriter.Writer, in Kn
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v55First := true
-			for v55Name, v55Value := range in.Clusters {
-				if v55First {
-					v55First = false
+			v56First := true
+			for v56Name, v56Value := range in.Clusters {
+				if v56First {
+					v56First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v55Name))
+				out.String(string(v56Name))
 				out.RawByte(':')
-				if v55Value == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+				if v56Value == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 					out.RawString("null")
 				} else {
 					out.RawByte('[')
-					for v56, v57 := range v55Value {
-						if v56 > 0 {
+					for v57, v58 := range v56Value {
+						if v57 > 0 {
 							out.RawByte(',')
 						}
-						out.String(string(v57))
+						out.String(string(v58))
 					}
 					out.RawByte(']')
 				}
@@ -1836,27 +1856,53 @@ func easyjson224c90e0EncodeParsinServerDbmParameters7(out *jwriter.Writer, in Kn
 			out.RawString(`null`)
 		} else {
 			out.RawByte('{')
-			v58First := true
-			for v58Name, v58Value := range in.Node2FPs {
-				if v58First {
-					v58First = false
+			v59First := true
+			for v59Name, v59Value := range in.Node2FPs {
+				if v59First {
+					v59First = false
 				} else {
 					out.RawByte(',')
 				}
-				out.String(string(v58Name))
+				out.String(string(v59Name))
 				out.RawByte(':')
-				if v58Value == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+				if v59Value == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 					out.RawString("null")
 				} else {
 					out.RawByte('[')
-					for v59, v60 := range v58Value {
-						if v59 > 0 {
+					for v60, v61 := range v59Value {
+						if v60 > 0 {
 							out.RawByte(',')
 						}
-						out.String(string(v60))
+						out.String(string(v61))
 					}
 					out.RawByte(']')
 				}
+			}
+			out.RawByte('}')
+		}
+	}
+	{
+		const prefix string = ",\"RPFs\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		if in.RPFs == nil && (out.Flags&jwriter.NilMapAsEmpty) == 0 {
+			out.RawString(`null`)
+		} else {
+			out.RawByte('{')
+			v62First := true
+			for v62Name, v62Value := range in.RPFs {
+				if v62First {
+					v62First = false
+				} else {
+					out.RawByte(',')
+				}
+				out.String(string(v62Name))
+				out.RawByte(':')
+				out.Float64(float64(v62Value))
 			}
 			out.RawByte('}')
 		}
@@ -1922,9 +1968,9 @@ func easyjson224c90e0DecodeParsinServerDbmParameters8(in *jlexer.Lexer, out *Knn
 					out.KRange = (out.KRange)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v61 int
-					v61 = int(in.Int())
-					out.KRange = append(out.KRange, v61)
+					var v63 int
+					v63 = int(in.Int())
+					out.KRange = append(out.KRange, v63)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -1945,9 +1991,9 @@ func easyjson224c90e0DecodeParsinServerDbmParameters8(in *jlexer.Lexer, out *Knn
 					out.MinClusterRssRange = (out.MinClusterRssRange)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v62 int
-					v62 = int(in.Int())
-					out.MinClusterRssRange = append(out.MinClusterRssRange, v62)
+					var v64 int
+					v64 = int(in.Int())
+					out.MinClusterRssRange = append(out.MinClusterRssRange, v64)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -1968,9 +2014,9 @@ func easyjson224c90e0DecodeParsinServerDbmParameters8(in *jlexer.Lexer, out *Knn
 					out.MaxEuclideanRssDistRange = (out.MaxEuclideanRssDistRange)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v63 int
-					v63 = int(in.Int())
-					out.MaxEuclideanRssDistRange = append(out.MaxEuclideanRssDistRange, v63)
+					var v65 int
+					v65 = int(in.Int())
+					out.MaxEuclideanRssDistRange = append(out.MaxEuclideanRssDistRange, v65)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -1993,36 +2039,38 @@ func easyjson224c90e0DecodeParsinServerDbmParameters8(in *jlexer.Lexer, out *Knn
 					out.GraphFactorRange = (out.GraphFactorRange)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v64 []float64
+					var v66 []float64
 					if in.IsNull() {
 						in.Skip()
-						v64 = nil
+						v66 = nil
 					} else {
 						in.Delim('[')
-						if v64 == nil {
+						if v66 == nil {
 							if !in.IsDelim(']') {
-								v64 = make([]float64, 0, 8)
+								v66 = make([]float64, 0, 8)
 							} else {
-								v64 = []float64{}
+								v66 = []float64{}
 							}
 						} else {
-							v64 = (v64)[:0]
+							v66 = (v66)[:0]
 						}
 						for !in.IsDelim(']') {
-							var v65 float64
-							v65 = float64(in.Float64())
-							v64 = append(v64, v65)
+							var v67 float64
+							v67 = float64(in.Float64())
+							v66 = append(v66, v67)
 							in.WantComma()
 						}
 						in.Delim(']')
 					}
-					out.GraphFactorRange = append(out.GraphFactorRange, v64)
+					out.GraphFactorRange = append(out.GraphFactorRange, v66)
 					in.WantComma()
 				}
 				in.Delim(']')
 			}
 		case "DSAEnabled":
 			out.DSAEnabled = bool(in.Bool())
+		case "RPFEnabled":
+			out.RPFEnabled = bool(in.Bool())
 		case "MaxMovementRange":
 			if in.IsNull() {
 				in.Skip()
@@ -2039,9 +2087,9 @@ func easyjson224c90e0DecodeParsinServerDbmParameters8(in *jlexer.Lexer, out *Knn
 					out.MaxMovementRange = (out.MaxMovementRange)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v66 int
-					v66 = int(in.Int())
-					out.MaxMovementRange = append(out.MaxMovementRange, v66)
+					var v68 int
+					v68 = int(in.Int())
+					out.MaxMovementRange = append(out.MaxMovementRange, v68)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -2062,9 +2110,9 @@ func easyjson224c90e0DecodeParsinServerDbmParameters8(in *jlexer.Lexer, out *Knn
 					out.BLEFactorRange = (out.BLEFactorRange)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v67 float64
-					v67 = float64(in.Float64())
-					out.BLEFactorRange = append(out.BLEFactorRange, v67)
+					var v69 float64
+					v69 = float64(in.Float64())
+					out.BLEFactorRange = append(out.BLEFactorRange, v69)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -2095,11 +2143,11 @@ func easyjson224c90e0EncodeParsinServerDbmParameters8(out *jwriter.Writer, in Kn
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v68, v69 := range in.KRange {
-				if v68 > 0 {
+			for v70, v71 := range in.KRange {
+				if v70 > 0 {
 					out.RawByte(',')
 				}
-				out.Int(int(v69))
+				out.Int(int(v71))
 			}
 			out.RawByte(']')
 		}
@@ -2116,11 +2164,11 @@ func easyjson224c90e0EncodeParsinServerDbmParameters8(out *jwriter.Writer, in Kn
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v70, v71 := range in.MinClusterRssRange {
-				if v70 > 0 {
+			for v72, v73 := range in.MinClusterRssRange {
+				if v72 > 0 {
 					out.RawByte(',')
 				}
-				out.Int(int(v71))
+				out.Int(int(v73))
 			}
 			out.RawByte(']')
 		}
@@ -2137,11 +2185,11 @@ func easyjson224c90e0EncodeParsinServerDbmParameters8(out *jwriter.Writer, in Kn
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v72, v73 := range in.MaxEuclideanRssDistRange {
-				if v72 > 0 {
+			for v74, v75 := range in.MaxEuclideanRssDistRange {
+				if v74 > 0 {
 					out.RawByte(',')
 				}
-				out.Int(int(v73))
+				out.Int(int(v75))
 			}
 			out.RawByte(']')
 		}
@@ -2168,19 +2216,19 @@ func easyjson224c90e0EncodeParsinServerDbmParameters8(out *jwriter.Writer, in Kn
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v74, v75 := range in.GraphFactorRange {
-				if v74 > 0 {
+			for v76, v77 := range in.GraphFactorRange {
+				if v76 > 0 {
 					out.RawByte(',')
 				}
-				if v75 == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+				if v77 == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 					out.RawString("null")
 				} else {
 					out.RawByte('[')
-					for v76, v77 := range v75 {
-						if v76 > 0 {
+					for v78, v79 := range v77 {
+						if v78 > 0 {
 							out.RawByte(',')
 						}
-						out.Float64(float64(v77))
+						out.Float64(float64(v79))
 					}
 					out.RawByte(']')
 				}
@@ -2199,6 +2247,16 @@ func easyjson224c90e0EncodeParsinServerDbmParameters8(out *jwriter.Writer, in Kn
 		out.Bool(bool(in.DSAEnabled))
 	}
 	{
+		const prefix string = ",\"RPFEnabled\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(in.RPFEnabled))
+	}
+	{
 		const prefix string = ",\"MaxMovementRange\":"
 		if first {
 			first = false
@@ -2210,11 +2268,11 @@ func easyjson224c90e0EncodeParsinServerDbmParameters8(out *jwriter.Writer, in Kn
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v78, v79 := range in.MaxMovementRange {
-				if v78 > 0 {
+			for v80, v81 := range in.MaxMovementRange {
+				if v80 > 0 {
 					out.RawByte(',')
 				}
-				out.Int(int(v79))
+				out.Int(int(v81))
 			}
 			out.RawByte(']')
 		}
@@ -2231,11 +2289,11 @@ func easyjson224c90e0EncodeParsinServerDbmParameters8(out *jwriter.Writer, in Kn
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v80, v81 := range in.BLEFactorRange {
-				if v80 > 0 {
+			for v82, v83 := range in.BLEFactorRange {
+				if v82 > 0 {
 					out.RawByte(',')
 				}
-				out.Float64(float64(v81))
+				out.Float64(float64(v83))
 			}
 			out.RawByte(']')
 		}
@@ -2303,9 +2361,9 @@ func easyjson224c90e0DecodeParsinServerDbmParameters9(in *jlexer.Lexer, out *Fil
 					out.Macs = (out.Macs)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v82 string
-					v82 = string(in.String())
-					out.Macs = append(out.Macs, v82)
+					var v84 string
+					v84 = string(in.String())
+					out.Macs = append(out.Macs, v84)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -2346,11 +2404,11 @@ func easyjson224c90e0EncodeParsinServerDbmParameters9(out *jwriter.Writer, in Fi
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v83, v84 := range in.Macs {
-				if v83 > 0 {
+			for v85, v86 := range in.Macs {
+				if v85 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v84))
+				out.String(string(v86))
 			}
 			out.RawByte(']')
 		}

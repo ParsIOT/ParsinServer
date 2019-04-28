@@ -127,6 +127,32 @@
                                    placeholder="[begin,end,step] or [specific dist]; example:[100,1000] or [0,1000,50]">
                         </div>
                     </div>
+                    <hr>
+                    <div class="volume-fees-panel">
+                        <h4>Route probability factor method Settings: </h4>
+                        <div class="input-group form-group">
+                            <span class="input-group-addon">RPF enabled: </span>
+                            <span class="input-group-addon">{{$.KnnConfigData.RPFEnabled}}</span>
+                            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                {{if $.KnnConfigData.RPFEnabled}}
+                                    <label class="btn btn-info btn-secondary active">
+                                        <input type="radio" name="rpfEnabled" id="rpfEnabledOn" value="true" checked> On
+                                    </label>
+                                    <label class="btn btn-secondary btn-danger">
+                                        <input type="radio" name="rpfEnabled" id="rpfEnabledOff" value="false"> Off
+                                    </label>
+                                {{else}}
+                                    <label class="btn btn-info btn-secondary active">
+                                        <input type="radio" name="rpfEnabled" id="rpfEnabledOn" value="true"> On
+                                    </label>
+                                    <label class="btn btn-secondary btn-danger">
+                                        <input type="radio" name="rpfEnabled" id="rpfEnabledOff" value="false" checked>
+                                        Off
+                                    </label>
+                                {{end}}
+                            </div>
+                        </div>
+                    </div>
 
                 </div>
                 <div class="modal-footer">

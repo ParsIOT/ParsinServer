@@ -43,7 +43,7 @@ var DefaultMapHeight int
 
 var PDREnabledForDynamicSubareaMethod bool
 
-var DefaultGraphEnabled, DefaultDSAEnabled bool
+var DefaultGraphEnabled, DefaultDSAEnabled, DefaultRPFEnabled bool
 var DefaultSimpleHistoryEnabled bool //Enable SimpleHistoryEffect after running ML algo (for details See SimpleHistoryEffect function)
 var DefaultGraphStep float64
 
@@ -100,6 +100,7 @@ func init() {
 	DefaultMapWidth = 3600
 	DefaultGraphEnabled = false
 	DefaultDSAEnabled = false
+	DefaultRPFEnabled = false
 	PDREnabledForDynamicSubareaMethod = false
 
 	DefaultSimpleHistoryEnabled = false

@@ -1133,3 +1133,39 @@ func Convert2DimStringSliceTo3DFloat32(slice [][]string) [][][]float32 {
 	}
 	return result
 }
+
+// https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+func DistLineSegmentAndPoint(line [][]float64, point []float64) float64 {
+	var px, py, norm, u, x, y, dx, dy float64
+
+	px = line[1][0] - line[0][0]
+	py = line[1][1] - line[0][1]
+	norm = px*px + py*py
+	u = ((point[0]-line[0][0])*px + (point[1]-line[0][1])*py) / norm
+	if u > 1 {
+		u = 1
+	} else if u < 0 {
+		u = 0
+	}
+
+	x = line[0][0] + u*px
+	y = line[0][1] + u*py
+
+	dx = x - point[0]
+	dy = y - point[1]
+	return math.Pow(dx*dx+dy*dy, float64(0.5))
+}
+
+func MinFloat64Slice(v []float64) float64 {
+	sort.Float64s(v)
+	return v[0]
+}
+
+func MaxFloat64Slice(v []float64) float64 {
+	sort.Float64s(v)
+	return v[len(v)-1]
+}
+
+func gaussianProbability(dist float64, routeVariance float64) float64 {
+	return float64(1.0) / (routeVariance * math.Sqrt(2.0*math.Pi)) * math.Exp(-1.0/2.0*math.Pow(dist/routeVariance, 2.0))
+}

@@ -132,6 +132,15 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 	//	fmt.Println("---------------------------------")
 	//}
 
+	// RBF calculation
+	// check graph is not empty
+	RPFs := make(map[string]float64)
+	if !graphMapPointer.IsEmpty() {
+		for fpTime, fp := range fingerprints {
+			RPFs[fpTime] = CalculateDotRPF(fp.Location, graphMapPointer)
+		}
+	}
+
 	// Add to knnData in db
 
 	var tempKnnFingerprints parameters.KnnFingerprints
@@ -139,6 +148,7 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 	tempKnnFingerprints.FingerprintsOrdering = fingerprintsOrdering
 	tempKnnFingerprints.Clusters = clusters
 	tempKnnFingerprints.Node2FPs = node2FPs
+	tempKnnFingerprints.RPFs = RPFs
 	tempKnnFingerprints.HyperParameters = hyperParameters
 	//dbm.GM.GetGroup(groupName).Get_AlgoData().Set_KnnFPs(tempKnnFingerprints)
 
@@ -220,7 +230,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	var fingerprintsOrdering []string
 	clusters := make(map[string][]string)
 	node2FPs := make(map[string][]string)
-
+	RPFs := make(map[string]float64)
 	/*
 		// Proximity solution:
 		apsLocation := map[string][]float64{
@@ -331,6 +341,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	hyperParams := tempKnnFingerprints.HyperParameters
 	//node2FPs = tempKnnFingerprints.Node2FPs
 	node2FPs = tempKnnFingerprints.Node2FPs
+	RPFs = tempKnnFingerprints.RPFs
+
 	uniqueMacs = gp.Get_MiddleData().Get_UniqueMacs()
 
 	MaxEuclideanRssDist = float64(hyperParams.MaxEuclideanRssDist)
@@ -536,6 +548,8 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				} else {
 					glb.Error.Println("There is long distance between base location(last location or PDR current location) and current location")
 				}
+			} else if knnConfig.RPFEnabled {
+				FP2AFactor = RPFs
 			}
 
 		}
@@ -600,6 +614,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	}
 
 	NumofMinAPNum := 0
+	//glb.Debug.Println(fingerprintsInMemory)
 	for _, fpTime := range fingerprintsOrdering {
 		fp := fingerprintsInMemory[fpTime]
 
@@ -621,7 +636,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 	close(chanJobs)
 
-	if knnConfig.GraphEnabled && len(FP2AFactor) != 0 { //FP2AFactor length is zero when user history is empty
+	if (knnConfig.GraphEnabled || knnConfig.RPFEnabled) && len(FP2AFactor) != 0 { //FP2AFactor length is zero when user history is empty
 		for i := 1; i <= numJobs; i++ {
 			res := <-chanResults
 			/*			if (res.weight*FP2AFactor[res.fpTime]*float64(repeatFP[res.fpTime]) == 0) {

@@ -24,6 +24,7 @@ type KnnConfig struct {
 	GraphEnabled             bool
 	GraphFactorRange         [][]float64
 	DSAEnabled               bool
+	RPFEnabled               bool
 	MaxMovementRange         []int
 	BLEFactorRange           []float64
 }
@@ -36,6 +37,7 @@ func NewKnnConfig() KnnConfig {
 		GraphEnabled:             glb.DefaultGraphEnabled,
 		GraphFactorRange:         glb.DefaultGraphFactorsRange,
 		DSAEnabled:               glb.DefaultDSAEnabled,
+		RPFEnabled:               glb.DefaultRPFEnabled,
 		MaxMovementRange:         glb.DefaultMaxMovementRange,
 		BLEFactorRange:           glb.DefaultBLEFactorRange,
 	}
@@ -90,6 +92,7 @@ type KnnFingerprints struct {
 	Clusters             map[string][]string    `json:"Clusters"`
 	HyperParameters      KnnHyperParameters     `json:"HyperParameters"`
 	Node2FPs             map[string][]string    `json:"Node2FPs"`
+	RPFs                 map[string]float64     `json:"RPFs"`
 }
 func NewKnnFingerprints() KnnFingerprints {
 	return KnnFingerprints{
@@ -98,6 +101,7 @@ func NewKnnFingerprints() KnnFingerprints {
 		Clusters:             make(map[string][]string),
 		HyperParameters:      NewKnnHyperParameters(),
 		Node2FPs:             make(map[string][]string),
+		RPFs:                 make(map[string]float64),
 	}
 }
 

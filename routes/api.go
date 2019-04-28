@@ -368,6 +368,8 @@ func calculateLearnData(groupName string, justCalcGraphFactors string) {
 		rsd.Set_AlgoAccuracy("knn_testvalid_graph", 0)
 	} else if !knnConfig.DSAEnabled {
 		rsd.Set_AlgoAccuracy("knn_testvalid_dsa", 0)
+	} else if !knnConfig.RPFEnabled {
+		rsd.Set_AlgoAccuracy("knn_testvalid_rpf", 0)
 	}
 }
 
@@ -537,6 +539,8 @@ func RecalculateTestvalidTrackFingerprint(mainGroupName string, repredict bool) 
 			}
 
 			// Repredict test-valid FPs
+			timeDiffWithLastFPList := []int64{}
+			timeDiffWithLastFPLog := ""
 			for i, testValidTrack := range allTestValidTracks {
 				//if i>10 {
 				//	break
@@ -545,16 +549,25 @@ func RecalculateTestvalidTrackFingerprint(mainGroupName string, repredict bool) 
 				//if (len(fp.WifiFingerprint) >= glb.MinApNum) {
 				// Set the timestamp difference between testvalid fingerprints
 				timeDiffWithLastFP := int64(0)
+				lastFPGroup := "begin"
 				if i != 0 {
 					timeDiffWithLastFP = fp.Timestamp - allTestValidTracks[i-1].UserPosition.Time
+					lastFPGroup = allTestValidTracks[i-1].UserPosition.Fingerprint.Group
 				}
+
+				timeDiffWithLastFPList = append(timeDiffWithLastFPList, timeDiffWithLastFP)
+
+				timeDiffWithLastFPLog += lastFPGroup + " > " + fp.Group + " : " + strconv.Itoa(int(timeDiffWithLastFP)) + "\n"
+
 				newUserPositiong, err := algorithms.RecalculateTrackFingerprint(fp, timeDiffWithLastFP)
 				if err == nil && fp.Group == mainGroupName { // ignore error-full ones and CoGroup testvalidtracks
 					testValidTrack.UserPosition = newUserPositiong
 					tempTestValidTracks = append(tempTestValidTracks, testValidTrack)
 				}
-			}
 
+			}
+			glb.Debug.Println("Localization latenc	ies: ", timeDiffWithLastFPList)
+			glb.Debug.Print(timeDiffWithLastFPLog)
 		} else {
 			//gp := dbm.GM.GetGroup(mainGroupName)
 			//testValidTracks := gp.Get_ResultData().Get_TestValidTracks()
@@ -1637,10 +1650,12 @@ func Getgraph(c *gin.Context) {
 		graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
 		graphMap = graphMapPointer.GetGraphMap()
 		glb.Debug.Println("graphmap", graphMap)
-		//glb.Debug.Println(graphMapPointer.GetUndirectionalGraphMap())
+		glb.Debug.Println(graphMapPointer.GetUndirectionalGraphMap())
 		allLines := graphMapPointer.AllLines()
 		glb.Debug.Println(allLines)
 		glb.Debug.Println(len(allLines))
+		glb.Debug.Println(graphMapPointer.GetConnectedTreeComponents())
+		glb.Debug.Println(algorithms.CalculateDotRPF("0,0", graphMapPointer))
 		//glb.Debug.Println(graphMap)
 		//root,_ := graphMapPointer.GetNodeByLabel("-1152,1334")
 		//glb.Debug.Println("returned value from BFSTraverse",graphMapPointer.BFSTraverse(root))
@@ -2050,6 +2065,31 @@ func GetFingerprint(c *gin.Context) {
 	}
 }
 
+func GetRPFDetails(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		gp := dbm.GM.GetGroup(groupName)
+		fpData := gp.Get_RawData().Get_Fingerprints()
+		RPFDetails := gp.Get_AlgoData().Get_KnnFPs().RPFs
+		RPFDetailsByLoc := make(map[string]float64)
+		for fpTime, rpfVal := range RPFDetails {
+			RPFDetailsByLoc[fpData[fpTime].Location] = rpfVal
+		}
+		c.JSON(http.StatusOK, gin.H{"success": true, "RPFDetails": RPFDetails, "RPFDetailsByLoc": RPFDetailsByLoc})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group or id not mentioned"})
+	}
+}
+
+
 func GetMostSeenMacsAPI(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -2380,6 +2420,7 @@ func SetKnnConfig(c *gin.Context) {
 	graphEnabledStr := strings.TrimSpace(c.PostForm("graphEnabled"))
 	graphFactorRangeStr := strings.TrimSpace(c.PostForm("graphFactorRange"))
 	dsaEnabledStr := strings.TrimSpace(c.PostForm("dsaEnabled"))
+	rpfEnabledStr := strings.TrimSpace(c.PostForm("rpfEnabled"))
 	maxMovementRangeStr := strings.TrimSpace(c.PostForm("maxMovementRange"))
 
 	if groupName != "none" {
@@ -2477,6 +2518,19 @@ func SetKnnConfig(c *gin.Context) {
 				knnConfig.MaxMovementRange = maxMovementRange
 			}
 		}
+
+		// Parsing rpfState
+		if rpfEnabledStr != "" {
+			rpfEnabled, err := strconv.ParseBool(rpfEnabledStr)
+			if err != nil {
+				glb.Error.Println(err)
+				glb.Error.Println("Can't parse rpfEnabled")
+			} else {
+				glb.Debug.Println("rpfEnabled: ", rpfEnabled)
+				knnConfig.RPFEnabled = rpfEnabled
+			}
+		}
+
 
 		cd.Set_KnnConfig(knnConfig)
 

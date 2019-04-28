@@ -109,3 +109,25 @@ func TestConvert2DimStringSliceTo3DFloat32(t *testing.T) {
 	Debug.Println(r)
 	assert.Equal(t, 0, r)
 }
+
+func TestDistLineSegmentAndPoint(t *testing.T) {
+	line1 := [][]float64{{0, 0}, {3, 0}}
+	point1 := []float64{-2, 1}
+	dist1 := DistLineSegmentAndPoint(line1, point1)
+	Debug.Println(dist1)
+
+	line2 := [][]float64{{0, 0}, {0, -1}}
+	point2 := []float64{-2, -1}
+	dist2 := DistLineSegmentAndPoint(line2, point2)
+	Debug.Println(dist2)
+	assert.Equal(t, float64(2.23606797749979), dist1)
+	assert.Equal(t, float64(2.0), dist2)
+}
+func TestMinMaxFloat64Slice(t *testing.T) {
+	nums := []float64{3, 10, 1}
+	min := MinFloat64Slice(nums)
+	max := MaxFloat64Slice(nums)
+	Debug.Println(gaussianProbability(1, 1))
+	assert.Equal(t, float64(1), min)
+	assert.Equal(t, float64(101), max)
+}

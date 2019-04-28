@@ -388,6 +388,7 @@ func main() {
 		}
 	}
 	r.GET("/getfingerprint/", routes.GetFingerprint)
+	r.GET("/getRPFDetails/", routes.GetRPFDetails)
 
 	r.GET("/editMac", routes.EditMac)
 	r.GET("/reloadDB", routes.ReloadDB)

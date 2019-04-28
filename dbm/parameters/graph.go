@@ -186,6 +186,19 @@ func (g *Graph) String() {
 	g.lock.RUnlock()
 }
 
+func (g *Graph) IsEmpty() bool {
+	if len(g.Nodes) == 0 {
+		if len(g.Edges) == 0 {
+			return true
+		} else {
+			glb.Error.Println("Graph has edges but doesn't have any node!")
+			return true
+		}
+	} else {
+		return false
+	}
+
+}
 
 func (g *Graph) GetGraphMap() map[string][]string {
 	//g.lock.RLock()
@@ -326,16 +339,45 @@ func (g *Graph) BFSTraverse(startNode *Node) [][]*Node {
 	return result
 }
 
-func (g *Graph) IsEmpty() bool {
-	if len(g.Nodes) == 0 {
-		if len(g.Edges) == 0 {
-			return true
-		} else {
-			glb.Error.Println("Graph has edges but doesn't have any node!")
-			return true
+// Get each connected component nodes as a string slice
+func (g *Graph) GetConnectedTreeComponents() [][][]string {
+
+	visitedNodes := make(map[string]bool)
+	for i := 0; i < len(g.Nodes); i++ {
+		visitedNodes[g.Nodes[i].Label] = false
+	}
+	connectedComponents := [][][]string{}
+
+	for i := 0; i < len(g.Nodes); i++ {
+		connectedComponent := [][]string{}
+		currentNode := g.Nodes[i]
+		if (visitedNodes[currentNode.Label] == false) {
+			connectedComponent, visitedNodes = g.DFSUtil(visitedNodes, currentNode, "") // traverse over all connected nodes that connected to currentNode
 		}
-	} else {
-		return false
+		if len(connectedComponent) > 0 { // if new connected component are found, adds it to connectedComponent slice
+			connectedComponents = append(connectedComponents, connectedComponent)
+		}
 	}
 
+	//glb.Debug.Println(graphMap)
+	//g.lock.RUnlock()
+	return connectedComponents
+}
+
+// Idea: https://www.geeksforgeeks.org/connected-components-in-an-undirected-graph/
+func (g *Graph) DFSUtil(visitedNodes map[string]bool, currentNode *Node, LastNodeLabel string) ([][]string, map[string]bool) {
+	connectedComponent, tempConnectedComponent := [][]string{}, [][]string{}
+	if (LastNodeLabel != "") {
+		connectedComponent = append(connectedComponent, []string{LastNodeLabel, currentNode.Label})
+	}
+	visitedNodes[currentNode.Label] = true
+
+	adjNodes := g.Edges[*currentNode]
+	for j := 0; j < len(adjNodes); j++ {
+		if (visitedNodes[adjNodes[j].Label] == false) {
+			tempConnectedComponent, visitedNodes = g.DFSUtil(visitedNodes, adjNodes[j], currentNode.Label)
+			connectedComponent = append(connectedComponent, tempConnectedComponent...)
+		}
+	}
+	return connectedComponent, visitedNodes
 }
