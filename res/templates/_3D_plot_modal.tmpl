@@ -1,0 +1,76 @@
+{{ define "_3D_plot_modal" }}
+    <style>
+
+    </style>
+    <!-- Bootstrap Core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
+
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+    <script type="text/javascript" src="/static/js/plotly.min.js"></script>
+
+    <div class="modal fade" id="plotModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="plotDiv"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="text/javascript">
+
+        function loadPlot(dataPoints,
+                          xaxisRange = [0, 2],
+                          colorscale = [
+                              ['0.0', 'rgb(220,220,220)'],
+                              ['0.5', 'rgb(0,0,255)'],
+                              ['1.0', 'rgb(255,0,0)']]) {
+            var z_data = dataPoints;
+
+            var data = [{
+                z: z_data,
+                type: 'surface',
+                colorscale: colorscale,
+            }];
+
+            var layout = {
+                scene: {
+                    zaxis: {
+                        zerolinecolor: "rgb(255, 255, 255)",
+                        range: xaxisRange,
+                        showticklabels: false
+                    },
+                    xaxis: {
+                        showticklabels: false
+                    },
+                    yaxis: {
+                        showticklabels: false
+                    }
+                },
+                autosize: true,
+                // width: 500,
+                height: 500,
+                margin: {
+                    l: 65,
+                    r: 50,
+                    b: 65,
+                    t: 90,
+                }
+            };
+            Plotly.newPlot('plotDiv', data, layout, {showSendToCloud: true});
+        }
+
+    </script>
+
+{{ end }}

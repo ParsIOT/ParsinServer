@@ -1655,7 +1655,7 @@ func Getgraph(c *gin.Context) {
 		glb.Debug.Println(allLines)
 		glb.Debug.Println(len(allLines))
 		glb.Debug.Println(graphMapPointer.GetConnectedTreeComponents())
-		glb.Debug.Println(algorithms.CalculateDotRPF("0,0", graphMapPointer))
+		glb.Debug.Println(algorithms.CalculateDotRPF("365,0", graphMapPointer, float64(100.0)))
 		//glb.Debug.Println(graphMap)
 		//root,_ := graphMapPointer.GetNodeByLabel("-1152,1334")
 		//glb.Debug.Println("returned value from BFSTraverse",graphMapPointer.BFSTraverse(root))
@@ -2065,6 +2065,61 @@ func GetFingerprint(c *gin.Context) {
 	}
 }
 
+func GetRPFDetailsMapDots(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	resolutionStr := c.DefaultQuery("resolution", "none") // must be learn,learnAppend,test,testAppend
+
+	if groupName != "none" {
+
+		RPFDetailsData := [][]float64{}
+		RPFDetailsByLoc := make(map[string]float64)
+
+		resolution := 50
+		if resolutionStr != "none" {
+			resolutionTemp, err := strconv.ParseInt(resolutionStr, 10, 0)
+			if err == nil {
+				resolution = int(resolutionTemp)
+			} else {
+				glb.Error.Println("Resolution must be int type")
+			}
+		}
+
+		MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
+		glb.Debug.Println("Calculating RPF with", resolution, "resolution over the map with ", MapDimensions, "dimensions ...")
+
+		gp := dbm.GM.GetGroup(groupName)
+		graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
+		RPFRadius := gp.Get_ConfigData().Get_KnnConfig().RPFRadius
+
+		maxX := MapDimensions[1] / 2 * 6 / 5
+		maxY := MapDimensions[0] / 2 * 6 / 5
+
+		iCount, jCount := 0, 0
+		for i := maxX; i >= maxX*-1; i -= resolution {
+			RPFDetailsData = append(RPFDetailsData, []float64{})
+			for j := maxY; j >= maxY*-1; j -= resolution {
+				locStr := glb.IntToString(i) + ".0," + glb.IntToString(j) + ".0"
+				rpf := algorithms.CalculateDotRPF(locStr, graphMapPointer, RPFRadius)
+				RPFDetailsData[iCount] = append(RPFDetailsData[iCount], rpf)
+				RPFDetailsByLoc[locStr] = rpf
+				jCount++
+			}
+			iCount++
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": true, "RPFDetailsByLoc": RPFDetailsByLoc, "RPFDetailsData": RPFDetailsData})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group is not mentioned"})
+	}
+}
+
 func GetRPFDetails(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -2420,8 +2475,9 @@ func SetKnnConfig(c *gin.Context) {
 	graphEnabledStr := strings.TrimSpace(c.PostForm("graphEnabled"))
 	graphFactorRangeStr := strings.TrimSpace(c.PostForm("graphFactorRange"))
 	dsaEnabledStr := strings.TrimSpace(c.PostForm("dsaEnabled"))
-	rpfEnabledStr := strings.TrimSpace(c.PostForm("rpfEnabled"))
 	maxMovementRangeStr := strings.TrimSpace(c.PostForm("maxMovementRange"))
+	rpfEnabledStr := strings.TrimSpace(c.PostForm("rpfEnabled"))
+	RPFRadiusStr := strings.TrimSpace(c.PostForm("rpfRadius"))
 
 	if groupName != "none" {
 
@@ -2528,6 +2584,18 @@ func SetKnnConfig(c *gin.Context) {
 			} else {
 				glb.Debug.Println("rpfEnabled: ", rpfEnabled)
 				knnConfig.RPFEnabled = rpfEnabled
+			}
+		}
+
+		// Parsing RPFRadius
+		if RPFRadiusStr != "" {
+			rpfRadius, err := strconv.ParseFloat(RPFRadiusStr, 64)
+			if err != nil {
+				glb.Error.Println(err)
+				glb.Error.Println("Can't parse rpfRadius")
+			} else {
+				glb.Debug.Println("rpfRadius: ", rpfRadius)
+				knnConfig.RPFRadius = rpfRadius
 			}
 		}
 

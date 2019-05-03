@@ -35,6 +35,7 @@ var UserHistoryTimeDelayFactor float64
 var DefaultKnnMinClusterRssRange, DefaultKnnKRange, DefaultMaxEuclideanRssDistRange, DefaultMaxMovementRange []int
 var DefaultBLEFactorRange []float64
 var DefaultGraphFactorsRange [][]float64
+var DefaultRPFRadius float64
 
 var DefaultMapName string
 var DefaultMapDimensions []int
@@ -80,6 +81,7 @@ func init() {
 	DefaultGraphFactorsRange = [][]float64{{1, 1, 1, 1}, {2, 2, 2, 1}}
 	DefaultBLEFactorRange = []float64{1} //{1.0, 1.2, 0.1}
 	DefaultGraphStep = 1.0
+	DefaultRPFRadius = 100
 
 	//MinClusterRss = -75
 	MaxUserHistoryLen = 6 //Note: I don't know why i change it to 3, location not changed very well in live location map!

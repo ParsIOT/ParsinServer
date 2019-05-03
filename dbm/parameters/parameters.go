@@ -16,6 +16,41 @@ import (
 //	NetworkRenamed map[string][]string // key:networkName, value:mac list; e.g.: {"1":["mac1","mac2"]}
 //}
 
+type Dot struct {
+	X    float64
+	Y    float64
+	XStr string
+	YStr string
+}
+
+func NewDot(xStr string, yStr string) Dot {
+	x, _ := glb.StringToFloat(xStr)
+	y, _ := glb.StringToFloat(yStr)
+	return Dot{
+		X:    x,
+		Y:    y,
+		XStr: xStr,
+		YStr: yStr,
+	}
+}
+func NewDotFromString(xyStr string) Dot {
+	xyStrSplited := strings.Split(xyStr, ",")
+	if !(len(xyStrSplited) == 2) {
+		glb.Error.Println("Location names aren't in the format of x,y")
+	}
+	xStr := xyStrSplited[0]
+	yStr := xyStrSplited[1]
+	x, _ := glb.StringToFloat(xStr)
+	y, _ := glb.StringToFloat(yStr)
+	return Dot{
+		X:    x,
+		Y:    y,
+		XStr: xStr,
+		YStr: yStr,
+	}
+}
+
+
 // Constant parameters that set manually by user are in KnnConfig
 type KnnConfig struct {
 	KRange                   []int
@@ -24,8 +59,9 @@ type KnnConfig struct {
 	GraphEnabled             bool
 	GraphFactorRange         [][]float64
 	DSAEnabled               bool
-	RPFEnabled               bool
 	MaxMovementRange         []int
+	RPFEnabled               bool
+	RPFRadius                float64
 	BLEFactorRange           []float64
 }
 
@@ -37,8 +73,9 @@ func NewKnnConfig() KnnConfig {
 		GraphEnabled:             glb.DefaultGraphEnabled,
 		GraphFactorRange:         glb.DefaultGraphFactorsRange,
 		DSAEnabled:               glb.DefaultDSAEnabled,
-		RPFEnabled:               glb.DefaultRPFEnabled,
 		MaxMovementRange:         glb.DefaultMaxMovementRange,
+		RPFEnabled:               glb.DefaultRPFEnabled,
+		RPFRadius:                glb.DefaultRPFRadius,
 		BLEFactorRange:           glb.DefaultBLEFactorRange,
 	}
 }

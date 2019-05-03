@@ -2069,8 +2069,6 @@ func easyjson224c90e0DecodeParsinServerDbmParameters8(in *jlexer.Lexer, out *Knn
 			}
 		case "DSAEnabled":
 			out.DSAEnabled = bool(in.Bool())
-		case "RPFEnabled":
-			out.RPFEnabled = bool(in.Bool())
 		case "MaxMovementRange":
 			if in.IsNull() {
 				in.Skip()
@@ -2094,6 +2092,10 @@ func easyjson224c90e0DecodeParsinServerDbmParameters8(in *jlexer.Lexer, out *Knn
 				}
 				in.Delim(']')
 			}
+		case "RPFEnabled":
+			out.RPFEnabled = bool(in.Bool())
+		case "RPFRadius":
+			out.RPFRadius = float64(in.Float64())
 		case "BLEFactorRange":
 			if in.IsNull() {
 				in.Skip()
@@ -2247,16 +2249,6 @@ func easyjson224c90e0EncodeParsinServerDbmParameters8(out *jwriter.Writer, in Kn
 		out.Bool(bool(in.DSAEnabled))
 	}
 	{
-		const prefix string = ",\"RPFEnabled\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.Bool(bool(in.RPFEnabled))
-	}
-	{
 		const prefix string = ",\"MaxMovementRange\":"
 		if first {
 			first = false
@@ -2276,6 +2268,26 @@ func easyjson224c90e0EncodeParsinServerDbmParameters8(out *jwriter.Writer, in Kn
 			}
 			out.RawByte(']')
 		}
+	}
+	{
+		const prefix string = ",\"RPFEnabled\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Bool(bool(in.RPFEnabled))
+	}
+	{
+		const prefix string = ",\"RPFRadius\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Float64(float64(in.RPFRadius))
 	}
 	{
 		const prefix string = ",\"BLEFactorRange\":"
@@ -2438,4 +2450,111 @@ func (v *FilterMacs) UnmarshalJSON(data []byte) error {
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *FilterMacs) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson224c90e0DecodeParsinServerDbmParameters9(l, v)
+}
+func easyjson224c90e0DecodeParsinServerDbmParameters10(in *jlexer.Lexer, out *Dot) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeString()
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "X":
+			out.X = float64(in.Float64())
+		case "Y":
+			out.Y = float64(in.Float64())
+		case "XStr":
+			out.XStr = string(in.String())
+		case "YStr":
+			out.YStr = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson224c90e0EncodeParsinServerDbmParameters10(out *jwriter.Writer, in Dot) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"X\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Float64(float64(in.X))
+	}
+	{
+		const prefix string = ",\"Y\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Float64(float64(in.Y))
+	}
+	{
+		const prefix string = ",\"XStr\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.XStr))
+	}
+	{
+		const prefix string = ",\"YStr\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.YStr))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v Dot) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson224c90e0EncodeParsinServerDbmParameters10(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v Dot) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson224c90e0EncodeParsinServerDbmParameters10(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *Dot) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson224c90e0DecodeParsinServerDbmParameters10(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *Dot) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson224c90e0DecodeParsinServerDbmParameters10(l, v)
 }

@@ -315,13 +315,17 @@ func main() {
 				routes.UWBUserMap(context)
 			})
 
-			needToLoadSettings.GET("/Graphform/:group", routes.Graphform)
-
-			//needToLoadSettings.GET("/AlgorithmsCDF/:group", routes.AlgorithmsCDF)
-			needToLoadSettings.GET("/AlgorithmsCDF/:group", func(context *gin.Context) { //komeil: graph map
+			//needToLoadSettings.GET("/Graphform/:group", routes.Graphform)
+			needToLoadSettings.GET("/Graphform/:group", func(context *gin.Context) {
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
-				routes.AlgorithmsCDF(context)
+				routes.Graphform(context)
 			})
+
+			needToLoadSettings.GET("/AlgorithmsCDF/:group", routes.AlgorithmsCDF)
+			//needToLoadSettings.GET("/AlgorithmsCDF/:group", func(context *gin.Context) {
+			//	r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
+			//	routes.AlgorithmsCDF(context)
+			//})
 
 			needToLoadSettings.GET("/testValidTracksDetails/:group", func(context *gin.Context) { //komeil: graph map
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
@@ -389,6 +393,7 @@ func main() {
 	}
 	r.GET("/getfingerprint/", routes.GetFingerprint)
 	r.GET("/getRPFDetails/", routes.GetRPFDetails)
+	r.GET("/getRPFDetailsMapDots/", routes.GetRPFDetailsMapDots)
 
 	r.GET("/editMac", routes.EditMac)
 	r.GET("/reloadDB", routes.ReloadDB)

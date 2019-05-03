@@ -18,6 +18,10 @@
     <link href="/static/css/sweetalert2.css" rel="stylesheet"/>
     <link href="/static/css/izitoast/iziToast.css" rel="stylesheet">
     <!-- Font Awesome CSS -->
+    <link href="/static/css/plugins/loading-indicator/ladda.css" rel="stylesheet">
+    <script src="/static/js/plugins/loading-indicator/spin.js"></script>
+    <script src="/static/js/plugins/loading-indicator/ladda.js"></script>
+
     <link rel="stylesheet" href="/static/css/font-awesome.min.css">
     <style>
         #mac-filter-table-container {
@@ -45,7 +49,7 @@
     <div class="row">
 
 
-        <div class="col-md-8 col-sm-12">
+        <div class="col-md-9 col-sm-12">
             <div class="panel panel-primary" id="map-panel">
                 <div class="panel-heading">
                     Map
@@ -56,65 +60,94 @@
             </div>
         </div>
 
-        <div class="col-md-4 col-sm-12">
-            <div class="panel panel-info">
+
+        <div class="col-md-3 col-sm-12">
+            <div class="panel panel-success" id="settings-list-panel">
                 <div class="panel-heading">
-                    graph List
+                    Graph
                 </div>
-                <div class="panel-body">
-                    <div id="controller">
+                <div class="panel-body" id="true-location-table-container">
+                    <div class="bs-callout bs-callout-info" style="margin: 0 0 15px;padding-bottom: 5px;">
+                        <h4>Click coordinations</h4>
                         <div class="row">
-                            <div class="col-md-12">
-                                <div class="bs-callout bs-callout-info" style="margin: 0 0 15px;padding-bottom: 5px;">
-                                    <h4>click coordinatios</h4>
-                                    <div class="row">
-                                        <div class="col-md-3">
-                                            <div class="form-group">
-                                                <input id="map_point_x" type="text" disabled value="X"
-                                                       class="form-control"/>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="form-group">
-                                                <input id="map_point_y" type="text" disabled value="Y"
-                                                       class="form-control"/>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <button type="submit" class="btn btn-info" id="deletewholegraph"
-                                                    title="Delete whole graph">Delete whole graph
-                                            </button>
-                                        </div>
-
-
-                                    </div>
-                                    <div class="row">
-                                        <div class="panel-body" id="mac-filter-table-container">
-                                            <div>
-                                                <table id="vertices_table"
-                                                       class="table table-responsive table-hover table-condensed table-bordered">
-                                                    <thead>
-                                                    <tr>
-                                                        <td>Select</td>
-                                                        <td>#</td>
-                                                        <td>X</td>
-                                                        <td>Y</td>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    {{/*</div>*/}}
-                                    </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <input id="map_point_x" type="text" disabled value="X"
+                                           class="form-control"/>
                                 </div>
                             </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <input id="map_point_y" type="text" disabled value="Y"
+                                           class="form-control"/>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="row">
+                            <div class="panel-body" id="mac-filter-table-container">
+                                <div>
+                                    <table id="vertices_table"
+                                           class="table table-responsive table-hover table-condensed table-bordered">
+                                        <thead>
+                                        <tr>
+                                            <td>Select</td>
+                                            <td>#</td>
+                                            <td>X</td>
+                                            <td>Y</td>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-info" id="deletewholegraph"
+                                            title="Delete whole graph">Delete whole graph
+                                    </button>
+                                </div>
+                            </div>
+                            {{/*</div>*/}}
+
+                        </div>
+
+                    </div>
+
+                    <div class="bs-callout bs-callout-info row" style="margin: 0 0 15px;">
+                        <div class="col-md-12">
+                            <a href="#show-rpf-plot" data-toggle="collapse"><h4
+                                        style="text-decoration: underline;">
+                                    RPF plot</h4></a>
+
+                            <div id="show-rpf-plot" class="collapse">
+                                <div class="form-group">
+                                    <label for="rpf-resolution">RPF resolution</label>
+                                    <input id="rpf-resolution" class="form-control" placeholder="e.g. 50"/>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <button onclick="showRPF3DPlot()"
+                                                id="showRPF3DPlotBtn"
+                                                class="ladda-button btn btn-info btn-sm btn-block "
+                                                data-color="blue"
+                                                data-style="zoom-out">
+                                            Show RPF Plot
+                                        </button>
+                                    </div>
+                                </div>
+                                {{ template "_3D_plot_modal" . }}
+
+                            </div>
+
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
+
+
     </div>
     <!--</div>-->
 </div>
@@ -165,6 +198,9 @@
 
 
 <script>
+    var RPFDetailsData = [];
+    var ShowRPF3DPlotBtn = Ladda.create(document.querySelector('#showRPF3DPlotBtn'));
+
     var vertices = []; // list of vertices entered by map
     // var test = { // its pattern is like:
     //     '10,10': ["20,20", "20,20"],
@@ -175,17 +211,17 @@
     // };
     var test;
     $.get("/getgraph", {
-                "group": {{ .Group }},
-            },
-            function (result) {
-                if (result['success']) {
-                    test = result["message"];
-                    //console.log("message:",test);
-                    get_and_draw_graph(test)
-                } else {
-                    swal("Something went wrong.", data['message'], "error");
-                }
+            "group": {{ .Group }},
+        },
+        function (result) {
+            if (result['success']) {
+                test = result["message"];
+                //console.log("message:",test);
+                get_and_draw_graph(test)
+            } else {
+                swal("Something went wrong.", data['message'], "error");
             }
+        }
     );
     var selected_dot = '';
     var start_vertex = '';
@@ -286,16 +322,16 @@
                 btn.state('edge_draw_enable');
                 edge_draw_enable = false;
                 $.get("/saveedgestodb", {
-                            "group": {{ .Group }},
-                        },
-                        function (result) {
-                            if (result['success']) {
-                                resultFromServer = result["message"];
-                                console.log("message:", resultFromServer);
-                            } else {
-                                swal("Something went wrong.", data['message'], "error");
-                            }
+                        "group": {{ .Group }},
+                    },
+                    function (result) {
+                        if (result['success']) {
+                            resultFromServer = result["message"];
+                            console.log("message:", resultFromServer);
+                        } else {
+                            swal("Something went wrong.", data['message'], "error");
                         }
+                    }
                 );
                 return test;
             }
@@ -387,17 +423,17 @@
             success: function (data, textStatus, jqXHR) {
                 if (data['success']) {
                     swal2(
-                            'Removed!',
-                            'The selected layers have been removed.',
-                            'success'
+                        'Removed!',
+                        'The selected layers have been removed.',
+                        'success'
                     );
                 }
             },
             error: function (data, textStatus, jqXHR) {
                 swal2(
-                        'Error!',
-                        'The selected layers have not been removed.',
-                        'error'
+                    'Error!',
+                    'The selected layers have not been removed.',
+                    'error'
                 );
                 console.log(data)
             }
@@ -505,17 +541,17 @@
         // });
         console.log("### it is about to send a api ###")
         $.get("/deletewholegraph", {
-                    "group": {{ .Group }},
-                },
-                function (result) {
-                    if (result['success']) {
-                        resultOfremoving = result["message"];
-                        console.log("message:", resultOfremoving);
-                        swal2('Delete Graph', 'Whole graph is now deleted', 'success');
-                    } else {
-                        swal("Something went wrong.", data['message'], "error");
-                    }
+                "group": {{ .Group }},
+            },
+            function (result) {
+                if (result['success']) {
+                    resultOfremoving = result["message"];
+                    console.log("message:", resultOfremoving);
+                    swal2('Delete Graph', 'Whole graph is now deleted', 'success');
+                } else {
+                    swal("Something went wrong.", data['message'], "error");
                 }
+            }
         );
         //console.log(graph_layer)
         //map.removeLayer(L.userMarker( [$('#map_point_x').val(), $('#map_point_y').val()]));
@@ -627,6 +663,26 @@
                 smallIcon: true
             }).addTo(map);
         }
+    }
+
+    function showRPF3DPlot() {
+        ShowRPF3DPlotBtn.toggle();
+
+        rpfResolution = $('#rpf-resolution').val();
+
+        $.getJSON("/getRPFDetailsMapDots?group={{ .Group }}&resolution=" + rpfResolution, function (data) {
+            if (data.success == true) {
+                RPFDetailsData = data.RPFDetailsData;
+            } else {
+                RPFDetailsData = [];
+            }
+            ShowRPF3DPlotBtn.toggle();
+
+            //Show 3D plot
+            _3DData = RPFDetailsData;
+            loadPlot(_3DData);
+            $('#plotModal').modal('show');
+        });
     }
 
 </script>

@@ -821,7 +821,7 @@ func GetDotFromString(dotStr string) (float64, float64) {
 	x_y := strings.Split(dotStr, ",")
 	//Debug.Println(x_y)
 	if len(x_y) != 2 {
-		Error.Println("Invalid x,y format:", x_y)
+		Error.Println("Invalid x,y format:", dotStr)
 	}
 	locXstr := x_y[0]
 	locYstr := x_y[1]

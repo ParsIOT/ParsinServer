@@ -22,6 +22,18 @@ func (n *Node) String() string {
 	return n.Label
 }
 
+type EdgeDot struct {
+	Begin Dot
+	End   Dot
+}
+
+func NewEdgeDot(begin, end Dot) EdgeDot {
+	return EdgeDot{
+		Begin: begin,
+		End:   end,
+	}
+}
+
 // ItemGraph the Items graph
 type Graph struct {
 	Nodes []*Node			`json:"Nodes"`
@@ -343,16 +355,25 @@ func (g *Graph) BFSTraverse(startNode *Node) [][]*Node {
 func (g *Graph) GetConnectedTreeComponents() [][][]string {
 
 	visitedNodes := make(map[string]bool)
+	visitedEdges := make(map[EdgeDot]bool)
+
 	for i := 0; i < len(g.Nodes); i++ {
-		visitedNodes[g.Nodes[i].Label] = false
+		curNode := g.Nodes[i].Label
+		visitedNodes[curNode] = false
+		adjNodes := g.Edges[*g.Nodes[i]]
+		for j := 0; j < len(adjNodes); j++ {
+			visitedEdges[NewEdgeDot(NewDotFromString(adjNodes[j].Label), NewDotFromString(curNode))] = false
+			visitedEdges[NewEdgeDot(NewDotFromString(curNode), NewDotFromString(adjNodes[j].Label))] = false
+		}
 	}
+
 	connectedComponents := [][][]string{}
 
 	for i := 0; i < len(g.Nodes); i++ {
 		connectedComponent := [][]string{}
 		currentNode := g.Nodes[i]
 		if (visitedNodes[currentNode.Label] == false) {
-			connectedComponent, visitedNodes = g.DFSUtil(visitedNodes, currentNode, "") // traverse over all connected nodes that connected to currentNode
+			connectedComponent, visitedNodes, visitedEdges = g.DFSUtil(visitedNodes, visitedEdges, currentNode, "") // traverse over all connected nodes that connected to currentNode
 		}
 		if len(connectedComponent) > 0 { // if new connected component are found, adds it to connectedComponent slice
 			connectedComponents = append(connectedComponents, connectedComponent)
@@ -365,19 +386,26 @@ func (g *Graph) GetConnectedTreeComponents() [][][]string {
 }
 
 // Idea: https://www.geeksforgeeks.org/connected-components-in-an-undirected-graph/
-func (g *Graph) DFSUtil(visitedNodes map[string]bool, currentNode *Node, LastNodeLabel string) ([][]string, map[string]bool) {
+func (g *Graph) DFSUtil(visitedNodes map[string]bool, visitedEdges map[EdgeDot]bool, currentNode *Node, LastNodeLabel string) ([][]string, map[string]bool, map[EdgeDot]bool) {
+	//glb.Debug.Println(visitedEdges)
 	connectedComponent, tempConnectedComponent := [][]string{}, [][]string{}
 	if (LastNodeLabel != "") {
-		connectedComponent = append(connectedComponent, []string{LastNodeLabel, currentNode.Label})
+		if (currentNode.Label != LastNodeLabel) { // Avoid extra edge that accidentally connected a node to itself
+			connectedComponent = append(connectedComponent, []string{LastNodeLabel, currentNode.Label})
+		}
 	}
 	visitedNodes[currentNode.Label] = true
 
 	adjNodes := g.Edges[*currentNode]
 	for j := 0; j < len(adjNodes); j++ {
-		if (visitedNodes[adjNodes[j].Label] == false) {
-			tempConnectedComponent, visitedNodes = g.DFSUtil(visitedNodes, adjNodes[j], currentNode.Label)
+		edgeCheck := visitedEdges[NewEdgeDot(NewDotFromString(currentNode.Label), NewDotFromString(adjNodes[j].Label))]
+		if (edgeCheck == false) {
+			visitedEdges[NewEdgeDot(NewDotFromString(currentNode.Label), NewDotFromString(adjNodes[j].Label))] = true
+			visitedEdges[NewEdgeDot(NewDotFromString(adjNodes[j].Label), NewDotFromString(currentNode.Label))] = true
+
+			tempConnectedComponent, visitedNodes, visitedEdges = g.DFSUtil(visitedNodes, visitedEdges, adjNodes[j], currentNode.Label)
 			connectedComponent = append(connectedComponent, tempConnectedComponent...)
 		}
 	}
-	return connectedComponent, visitedNodes
+	return connectedComponent, visitedNodes, visitedEdges
 }

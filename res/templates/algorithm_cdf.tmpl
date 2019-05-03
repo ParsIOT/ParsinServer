@@ -293,10 +293,8 @@
                                 <div class="panel panel-primary" id="volume-fees-panel">
                                     <div class="panel-body">
                                         <div class="col-md-12">
-
                                             <div class="form-group">
                                                 <div class="col-xs-12">
-
                                                     <div class="list-group">
                                                         <div class="list-group-item active">
                                                             Groups
@@ -320,6 +318,32 @@
                                                                     class="btn btn-info btn-sm btn-block"
                                                                     type="button">
                                                                 Build All
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="panel panel-primary" id="volume-fees-panel">
+                                    <div class="panel-body">
+                                        <div class="col-md-12">
+                                            <div class="form-group">
+                                                <div class="col-xs-12">
+                                                    <div class="list-group">
+                                                        <div class="list-group-item active">
+                                                            Detected mac numbers (Red color groups don't have mac filter
+                                                            list)
+                                                        </div>
+                                                        <div class="list-group-item">
+                                                            <div id="detected-mac-numbers-unit">
+                                                            </div>
+                                                            <button onclick="getNumberOfDetectedMac()"
+                                                                    class="btn btn-success btn-sm btn-block"
+                                                                    type="button">
+                                                                Get number of detected mac
                                                             </button>
                                                         </div>
                                                     </div>
@@ -933,6 +957,140 @@
 
         });
     }
+
+
+    var allDetectedMac = {};
+
+    function getNumberOfDetectedMac() {
+        allDetectedMac = {};
+        var gpsMap = {};
+        gpsMap = getGpsMap();
+
+        var gpsLengthList = [];
+        for (gpsName in gpsMap) {
+            gpsGroups = gpsMap[gpsName];
+            gpsLengthList.push(gpsGroups.length);
+        }
+        var gpsMaxLength = Math.max(...gpsLengthList);
+
+
+        $("#detected-mac-numbers-unit").empty();
+        var tdListStr = "<td>GPS Name</td>\n";
+        for (var i = 0; i < gpsMaxLength; i++) {
+            tdListStr += "<td>" + i + "</td>\n";
+        }
+        tdListStr += "<td>Avg</td>\n";
+
+        $("#detected-mac-numbers-unit").append("<table id=\"detected-mac-numbers-table\"\n" +
+            "                                   class=\"table table-responsive table-hover table-condensed table-bordered\">\n" +
+            "                               <thead class='bg-success'>\n" +
+            "                                   <tr>\n" +
+            tdListStr +
+            "                                   </tr>\n" +
+            "                               </thead>\n" +
+            "                           </table>\n"
+        );
+        tbody = $("<tbody/>", {
+            "class": "tab-content",
+        }).appendTo("#detected-mac-numbers-table");
+
+
+        for (gpsName in gpsMap) {
+            gpsGroups = gpsMap[gpsName];
+
+            var detectedGPsMacNumSum = 0;
+            var gpsTotalFPNumbers = 0;
+            var all_tdStr = "<td>" + gpsName + "</td>\n";
+
+            for (gpIndex in gpsGroups) {
+                gpName = gpsGroups[gpIndex];
+                if (gpName.trim == "") {
+                    console.error("Invalid group name:", gpName);
+                    all_tdStr += "<td></td>\n";
+                    continue;
+                }
+
+                // Get mac filter list
+                var macfilterList = [];
+                $.ajaxSetup({ //avoid async problems
+                    async: false
+                });
+                $.getJSON("/getfiltermacs?group=" + gpName, function (data) {
+                    if (data.success) {
+                        macfilterList = data.message;
+                    } else {
+                        console.error("Error in getting mac filter list(gpName:" + gpName + ")");
+                    }
+                });
+
+                // Get testvalid tracks(fingerprints)
+                $.ajaxSetup({ //avoid async problems
+                    async: false
+                });
+                $.getJSON("/getTestValidTracksDetails?group=" + gpName + "&calculate_err=true&repredict=false", function (data) {
+                    if (data.success == true) {
+                        testValidTracks = data.testvalidtracks;
+                        var fpMacList = []; //2 dim array that contains list of macs in each fingerprint
+                        testValidTracks.forEach(function (testvalidTrack) {
+                            var macList = [];
+                            fingerprintVector = testvalidTrack.userposition.fingerprint['wifi-fingerprint'];
+                            fingerprintVector.forEach(function (macRssPair) {
+                                macList.push(macRssPair.mac);
+                            });
+                            fpMacList.push(macList);
+                        });
+
+                        // Calculate detectedMacNum
+                        var tdClass = "";
+                        var detectedMacNumList = [];
+                        if (macfilterList == 0) {
+                            tdClass = "bg-danger";
+                            fpMacList.forEach(function (macList) {
+                                detectedMacNumList.push(macList.length);
+                            });
+                        } else {
+                            tdClass = "bg-info";
+                            fpMacList.forEach(function (macList) {
+                                var detectedMacNum = 0;
+                                macfilterList.forEach(function (mac) {
+                                    if (macList.indexOf(mac) != -1) {
+                                        detectedMacNum++;
+                                    }
+                                });
+                                detectedMacNumList.push(detectedMacNum);
+                            });
+                        }
+
+                        allDetectedMac[gpName] = detectedMacNumList;
+                        var detectedGpMacNumSum = detectedMacNumList.reduce((partial_sum, a) => partial_sum + a);
+                        detectedGPsMacNumSum += detectedGpMacNumSum;
+                        gpsTotalFPNumbers += detectedMacNumList.length;
+                        detectedGpMacNum = detectedGpMacNumSum / detectedMacNumList.length;
+                        all_tdStr += "<td class= \"" + tdClass + "\">" + detectedGpMacNum.toFixed(2) + "</td>\n"
+
+                    } else {
+                        console.error("Error in getTestValidTracksDetails(gpName:" + gpName + ")");
+                    }
+                });
+            }
+
+
+            //Show in table
+            for (var i = 0; i < gpsMaxLength - gpsGroups.length; i++) { // add null td
+                all_tdStr += "<td></td>\n";
+            }
+            // add average detection num to all_tdStr
+            var detectedAvgGPsMacNum = detectedGPsMacNumSum / gpsTotalFPNumbers;
+            all_tdStr += "<td>" + detectedAvgGPsMacNum.toFixed(2) + "</td>\n";
+
+            tbody.append("<tr class='bg-info'>\n" +
+                all_tdStr +
+                "</tr>");
+
+            console.log(tbody);
+        }
+    }
+
 </script>
 
 </body>

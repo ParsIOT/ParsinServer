@@ -294,3 +294,86 @@ func (v *Graph) UnmarshalJSON(data []byte) error {
 func (v *Graph) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson2419208eDecodeParsinServerDbmParameters1(l, v)
 }
+func easyjson2419208eDecodeParsinServerDbmParameters2(in *jlexer.Lexer, out *EdgeDot) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeString()
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "Begin":
+			(out.Begin).UnmarshalEasyJSON(in)
+		case "End":
+			(out.End).UnmarshalEasyJSON(in)
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson2419208eEncodeParsinServerDbmParameters2(out *jwriter.Writer, in EdgeDot) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"Begin\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		(in.Begin).MarshalEasyJSON(out)
+	}
+	{
+		const prefix string = ",\"End\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		(in.End).MarshalEasyJSON(out)
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v EdgeDot) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson2419208eEncodeParsinServerDbmParameters2(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v EdgeDot) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson2419208eEncodeParsinServerDbmParameters2(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *EdgeDot) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson2419208eDecodeParsinServerDbmParameters2(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *EdgeDot) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson2419208eDecodeParsinServerDbmParameters2(l, v)
+}

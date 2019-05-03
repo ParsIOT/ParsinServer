@@ -6,11 +6,9 @@ import (
 	"math"
 )
 
-func CalculateDotRPF(dot string, graphMapPointer parameters.Graph) float64 {
+func CalculateDotRPF(dot string, graphMapPointer parameters.Graph, RPFRadius float64) float64 {
 
-	radiusThreshold := float64(200)
-	routeVariance := radiusThreshold / 3
-
+	routeVariance := RPFRadius / 3
 	rpfVal := float64(0)
 
 	if graphMapPointer.IsEmpty() {
@@ -37,11 +35,14 @@ func CalculateDotRPF(dot string, graphMapPointer parameters.Graph) float64 {
 
 		// find min distance to the route
 		minDist := glb.MinFloat64Slice(connectedComponentDotDists)
+		//glb.Debug.Println("###################")
+		//glb.Debug.Println(minDist," : ",connectedComponentDotDists)
+		//glb.Debug.Println(gaussianProbability(minDist, routeVariance),",",minDist,",",routeVariance)
 		rpfVal += gaussianProbability(minDist, routeVariance)
 		//glb.Debug.Println(rpfVal)
 
 	}
-	return rpfVal
+	return rpfVal * RPFRadius / 3
 }
 
 func gaussianProbability(dist float64, routeVariance float64) float64 {
