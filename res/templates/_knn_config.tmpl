@@ -154,11 +154,11 @@
                         </div>
                         <b> Note: Set it according to the map scale(build the group again after changing) </b>
                         <div class="input-group form-group">
-                            <span class="input-group-addon">RPF Radius: </span>
-                            <span class="input-group-addon">{{$.KnnConfigData.RPFRadius}}</span>
-                            <input id="rpfRadius" name="rpfRadius" class="form-control input-lg"
+                            <span class="input-group-addon">RPF Radius Range: </span>
+                            <span class="input-group-addon">{{$.KnnConfigData.RPFRadiusRange}}</span>
+                            <input id="rpfRadiusRange" name="rpfRadiusRange" class="form-control input-lg"
                                    type="text"
-                                   placeholder="float num (e.g. 50 or 50.0)">
+                                   placeholder="[begin,end,step] or [specific float64 number]; example:[0.2,1.8,0.1]">
                         </div>
                     </div>
 

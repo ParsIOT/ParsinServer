@@ -1798,6 +1798,8 @@ func easyjson3b8810b5DecodeParsinServerDbm5(in *jlexer.Lexer, out *ConfigDataStr
 			(out.KnnConfig).UnmarshalEasyJSON(in)
 		case "GroupGraph":
 			(out.GroupGraph).UnmarshalEasyJSON(in)
+		case "Infrastructure":
+			easyjson3b8810b5DecodeParsinServerDbmParameters(in, &out.Infrastructure)
 		case "OtherGroupConfig":
 			(out.OtherGroupConfig).UnmarshalEasyJSON(in)
 		default:
@@ -1835,6 +1837,16 @@ func easyjson3b8810b5EncodeParsinServerDbm5(out *jwriter.Writer, in ConfigDataSt
 		(in.GroupGraph).MarshalEasyJSON(out)
 	}
 	{
+		const prefix string = ",\"Infrastructure\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		easyjson3b8810b5EncodeParsinServerDbmParameters(out, in.Infrastructure)
+	}
+	{
 		const prefix string = ",\"OtherGroupConfig\":"
 		if first {
 			first = false
@@ -1869,6 +1881,144 @@ func (v *ConfigDataStruct) UnmarshalJSON(data []byte) error {
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *ConfigDataStruct) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson3b8810b5DecodeParsinServerDbm5(l, v)
+}
+func easyjson3b8810b5DecodeParsinServerDbmParameters(in *jlexer.Lexer, out *parameters.Infrastructure) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeString()
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "Transmitters":
+			if in.IsNull() {
+				in.Skip()
+				out.Transmitters = nil
+			} else {
+				in.Delim('[')
+				if out.Transmitters == nil {
+					if !in.IsDelim(']') {
+						out.Transmitters = make([]parameters.Transmitter, 0, 2)
+					} else {
+						out.Transmitters = []parameters.Transmitter{}
+					}
+				} else {
+					out.Transmitters = (out.Transmitters)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v66 parameters.Transmitter
+					easyjson3b8810b5DecodeParsinServerDbmParameters1(in, &v66)
+					out.Transmitters = append(out.Transmitters, v66)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson3b8810b5EncodeParsinServerDbmParameters(out *jwriter.Writer, in parameters.Infrastructure) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"Transmitters\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		if in.Transmitters == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v67, v68 := range in.Transmitters {
+				if v67 > 0 {
+					out.RawByte(',')
+				}
+				easyjson3b8810b5EncodeParsinServerDbmParameters1(out, v68)
+			}
+			out.RawByte(']')
+		}
+	}
+	out.RawByte('}')
+}
+func easyjson3b8810b5DecodeParsinServerDbmParameters1(in *jlexer.Lexer, out *parameters.Transmitter) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeString()
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "Mac":
+			out.Mac = string(in.String())
+		case "Location":
+			out.Location = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson3b8810b5EncodeParsinServerDbmParameters1(out *jwriter.Writer, in parameters.Transmitter) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"Mac\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Mac))
+	}
+	{
+		const prefix string = ",\"Location\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.Location))
+	}
+	out.RawByte('}')
 }
 func easyjson3b8810b5DecodeParsinServerDbm6(in *jlexer.Lexer, out *AlgoDataStruct) {
 	isTopLevel := in.IsStart()

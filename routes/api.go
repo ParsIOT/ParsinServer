@@ -1932,6 +1932,79 @@ func DelArbitLocations(c *gin.Context) {
 	}
 }
 
+func AddChangeTransmitter(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	type st struct {
+		Transmitters []parameters.Transmitter `json:"Transmitters"`
+	}
+
+	var tempSt st
+	if groupName != "none" {
+		//glb.Warning.Println(c.Request.GetBody())
+		if err := c.ShouldBindJSON(&tempSt); err == nil {
+			transmitters := tempSt.Transmitters
+			glb.Debug.Println("AddChangeTransmitter: ", transmitters)
+
+			cd := dbm.GM.GetGroup(groupName).Get_ConfigData()
+			infrastructure := cd.Get_Infrastructure()
+			newInfrastructure := parameters.AddChangeTransmitters(infrastructure, transmitters)
+			cd.Set_Infrastructure(newInfrastructure)
+			c.JSON(http.StatusOK, gin.H{"success": true, "infrastructureDetails": newInfrastructure})
+		} else {
+			glb.Warning.Println("Can't bind json")
+			glb.Error.Println(err)
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:" + err.Error()})
+			//c.JSON(http.StatusOK, gin.H{"message": "Nums of the FilterMacs are zero", "success": false})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group isn't mentioned"})
+	}
+}
+
+func DelTransmitter(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+	type st struct {
+		Transmitters []parameters.Transmitter `json:"Transmitters"`
+	}
+
+	var tempSt st
+	if groupName != "none" {
+		//glb.Warning.Println(c.Request.GetBody())
+		if err := c.ShouldBindJSON(&tempSt); err == nil {
+			transmitters := tempSt.Transmitters
+			glb.Debug.Println("DelTransmitter: ", transmitters)
+
+			cd := dbm.GM.GetGroup(groupName).Get_ConfigData()
+			infrastructure := cd.Get_Infrastructure()
+			newInfrastructure := parameters.DelTransmitters(infrastructure, transmitters)
+			cd.Set_Infrastructure(newInfrastructure)
+			c.JSON(http.StatusOK, gin.H{"success": true, "infrastructureDetails": newInfrastructure})
+		} else {
+			glb.Warning.Println("Can't bind json")
+			glb.Error.Println(err)
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Can't bind json, Error:" + err.Error()})
+			//c.JSON(http.StatusOK, gin.H{"message": "Nums of the FilterMacs are zero", "success": false})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group isn't mentioned"})
+	}
+}
+
+
 func GetArbitLocations(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -1945,6 +2018,25 @@ func GetArbitLocations(c *gin.Context) {
 	if groupName != "none" {
 		locations := dbm.GetArbitLocations(groupName)
 		c.JSON(http.StatusOK, gin.H{"success": true, "locations": locations})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
+	}
+}
+
+func GetInfrastructureDetails(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
+
+	if groupName != "none" {
+		gp := dbm.GM.GetGroup(groupName)
+		InfDetails := gp.Get_ConfigData().Get_Infrastructure()
+		c.JSON(http.StatusOK, gin.H{"success": true, "infrastructureDetails": InfDetails})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group not mentioned"})
 	}
@@ -2096,7 +2188,7 @@ func GetRPFDetailsMapDots(c *gin.Context) {
 
 		gp := dbm.GM.GetGroup(groupName)
 		graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
-		RPFRadius := gp.Get_ConfigData().Get_KnnConfig().RPFRadius
+		RPFRadius := gp.Get_AlgoData().Get_KnnFPs().HyperParameters.RPFRadius
 
 		maxX := MapDimensions[1] / 2 * 6 / 5
 		maxY := MapDimensions[0] / 2 * 6 / 5
@@ -2472,12 +2564,12 @@ func SetKnnConfig(c *gin.Context) {
 	minClusterRssRangeStr := strings.TrimSpace(c.PostForm("minClusterRssRange"))
 	maxEuclideanRssDistRangeStr := strings.TrimSpace(c.PostForm("maxEuclideanRssDistRange"))
 	bleFactorRangeStr := strings.TrimSpace(c.PostForm("bleFactorRange"))
+	rpfRadiusRangeStr := strings.TrimSpace(c.PostForm("rpfRadiusRange"))
 	graphEnabledStr := strings.TrimSpace(c.PostForm("graphEnabled"))
 	graphFactorRangeStr := strings.TrimSpace(c.PostForm("graphFactorRange"))
 	dsaEnabledStr := strings.TrimSpace(c.PostForm("dsaEnabled"))
 	maxMovementRangeStr := strings.TrimSpace(c.PostForm("maxMovementRange"))
 	rpfEnabledStr := strings.TrimSpace(c.PostForm("rpfEnabled"))
-	RPFRadiusStr := strings.TrimSpace(c.PostForm("rpfRadius"))
 
 	if groupName != "none" {
 
@@ -2526,6 +2618,17 @@ func SetKnnConfig(c *gin.Context) {
 			} else {
 				glb.Debug.Println("bleFactorRange: ", bleFactorRange)
 				knnConfig.BLEFactorRange = bleFactorRange
+			}
+		}
+
+		// Parsing rpfRadiusRange
+		if rpfRadiusRangeStr != "" {
+			var rpfRadiusRange []float64
+			if err := json.Unmarshal([]byte(rpfRadiusRangeStr), &rpfRadiusRange); err != nil {
+				glb.Error.Println(err)
+			} else {
+				glb.Debug.Println("rpfRadiusRange: ", rpfRadiusRange)
+				knnConfig.RPFRadiusRange = rpfRadiusRange
 			}
 		}
 
@@ -2584,18 +2687,6 @@ func SetKnnConfig(c *gin.Context) {
 			} else {
 				glb.Debug.Println("rpfEnabled: ", rpfEnabled)
 				knnConfig.RPFEnabled = rpfEnabled
-			}
-		}
-
-		// Parsing RPFRadius
-		if RPFRadiusStr != "" {
-			rpfRadius, err := strconv.ParseFloat(RPFRadiusStr, 64)
-			if err != nil {
-				glb.Error.Println(err)
-				glb.Error.Println("Can't parse rpfRadius")
-			} else {
-				glb.Debug.Println("rpfRadius: ", rpfRadius)
-				knnConfig.RPFRadius = rpfRadius
 			}
 		}
 

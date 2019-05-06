@@ -196,6 +196,7 @@ func SlashDashboard(c *gin.Context) {
 	bestMaxEuclideanRssDist := knnHyperParams.MaxEuclideanRssDist
 	bestMaxMovement := knnHyperParams.MaxMovement
 	bestBLEFactor := knnHyperParams.BLEFactor
+	bestRPFRadius := knnHyperParams.RPFRadius
 
 	for n := range md.NetworkLocs {
 		//dash.Mixin[n] = gp.Get_Priors()[n].Special["MixIn"]
@@ -256,6 +257,7 @@ func SlashDashboard(c *gin.Context) {
 		"bestMaxMovement":          bestMaxMovement,
 		"bestMaxEuclideanRssDist":  bestMaxEuclideanRssDist,
 		"bestBLEFactor":            bestBLEFactor,
+		"bestRPFRadius":            bestRPFRadius,
 		"mapNamesList":             mapNamesList,
 		"KnnConfigData":            KnnConfigData,
 		"GroupOtherConfigDataPlus": gpOtherCDP,
@@ -323,6 +325,24 @@ func ArbitraryLocations(c *gin.Context) {
 		"MapPath": MapPath,
 		"MapWidth":MapDimensions[0],
 		"MapHeight":MapDimensions[1],
+	})
+}
+func InfrastructureDetails(c *gin.Context) {
+	groupName := c.Param("group")
+	if _, err := os.Stat(path.Join(glb.RuntimeArgs.SourcePath, groupName+".db")); os.IsNotExist(err) {
+		c.HTML(http.StatusOK, "changedb.tmpl", gin.H{
+			"ErrorMessage": "First download the app or CLI program to insert some fingerprints.",
+		})
+		return
+	}
+	MapName := dbm.GetSharedPrf(groupName).MapName
+	MapPath := path.Join(glb.RuntimeArgs.MapPath, MapName)
+	MapDimensions := dbm.GetSharedPrf(groupName).MapDimensions
+	c.HTML(http.StatusOK, "infrastructure_details.tmpl", gin.H{
+		"Group":     groupName,
+		"MapPath":   MapPath,
+		"MapWidth":  MapDimensions[0],
+		"MapHeight": MapDimensions[1],
 	})
 }
 

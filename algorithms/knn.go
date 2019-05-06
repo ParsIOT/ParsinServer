@@ -66,10 +66,11 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 	//jsonFingerprint = calcMacRate(jsonFingerprint,false)
 	//K := hyperParameters[0].(int)
 	rd := gp.Get_RawData()
-	knnConfig := gp.Get_ConfigData().Get_KnnConfig()
+	//knnConfig := gp.Get_ConfigData().Get_KnnConfig()
 
 
 	MinClusterRSS := hyperParameters.MinClusterRss //komeil: min threshold for determining whether ...
+	RPFRadius := hyperParameters.RPFRadius
 	// a fingerprint is in the cluster of a beacon or not
 	//glb.Debug.Printf("Knn is running (K:%d, MinClusterRss:%d)\n",K,MinClusterRSS)
 	//jsonFingerprint = calcMacJustRate(jsonFingerprint,false)
@@ -139,7 +140,7 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 	RPFs := make(map[string]float64)
 	if !graphMapPointer.IsEmpty() {
 		for fpTime, fp := range fingerprints {
-			RPFs[fpTime] = CalculateDotRPF(fp.Location, graphMapPointer, knnConfig.RPFRadius)
+			RPFs[fpTime] = CalculateDotRPF(fp.Location, graphMapPointer, RPFRadius)
 		}
 	}
 

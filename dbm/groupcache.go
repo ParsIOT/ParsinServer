@@ -57,6 +57,7 @@ type ConfigDataStruct struct {
 	//Learned data:
 	KnnConfig        parameters.KnnConfig
 	GroupGraph       parameters.Graph
+	Infrastructure   parameters.Infrastructure
 	OtherGroupConfig parameters.OtherGroupConfig
 	//Note: Run easyjson.sh after editing
 }
@@ -897,6 +898,7 @@ func (gp *Group) NewConfigDataStruct() *ConfigDataStruct {
 		group:            gp,
 		KnnConfig:        parameters.NewKnnConfig(),
 		GroupGraph:       parameters.NewGraph(),
+		Infrastructure:   parameters.NewInfrastructure(),
 		OtherGroupConfig: parameters.NewOtherGroupConfig(),
 	}
 }
@@ -1804,10 +1806,22 @@ func (confdata *ConfigDataStruct) Get_GroupGraph() parameters.Graph {
 func (confdata *ConfigDataStruct) Set_GroupGraph(new_item parameters.Graph) {
 	defer confdata.SetDirtyBit()
 
-	glb.Debug.Println("Set_GroupGraph")
-
 	confdata.Lock()
 	confdata.GroupGraph = new_item
+	confdata.Unlock()
+}
+
+func (confdata *ConfigDataStruct) Get_Infrastructure() parameters.Infrastructure {
+	confdata.RLock()
+	item := confdata.Infrastructure
+	confdata.RUnlock()
+	return item
+}
+func (confdata *ConfigDataStruct) Set_Infrastructure(new_item parameters.Infrastructure) {
+	defer confdata.SetDirtyBit()
+
+	confdata.Lock()
+	confdata.Infrastructure = new_item
 	confdata.Unlock()
 }
 

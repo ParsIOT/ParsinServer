@@ -56,13 +56,16 @@ type KnnConfig struct {
 	KRange                   []int
 	MinClusterRssRange       []int
 	MaxEuclideanRssDistRange []int
+
 	GraphEnabled             bool
 	GraphFactorRange         [][]float64
+
 	DSAEnabled               bool
 	MaxMovementRange         []int
-	RPFEnabled               bool
-	RPFRadius                float64
 	BLEFactorRange           []float64
+
+	RPFEnabled     bool
+	RPFRadiusRange []float64
 }
 
 func NewKnnConfig() KnnConfig {
@@ -70,13 +73,17 @@ func NewKnnConfig() KnnConfig {
 		KRange:                   glb.DefaultKnnKRange,
 		MinClusterRssRange:       glb.DefaultKnnMinClusterRssRange,
 		MaxEuclideanRssDistRange: glb.DefaultMaxEuclideanRssDistRange,
+
 		GraphEnabled:             glb.DefaultGraphEnabled,
 		GraphFactorRange:         glb.DefaultGraphFactorsRange,
+
 		DSAEnabled:               glb.DefaultDSAEnabled,
 		MaxMovementRange:         glb.DefaultMaxMovementRange,
-		RPFEnabled:               glb.DefaultRPFEnabled,
-		RPFRadius:                glb.DefaultRPFRadius,
 		BLEFactorRange:           glb.DefaultBLEFactorRange,
+
+		RPFEnabled:     glb.DefaultRPFEnabled,
+		RPFRadiusRange: glb.DefaultRPFRadiusRange,
+
 	}
 }
 
@@ -110,6 +117,7 @@ type KnnHyperParameters struct {
 	MaxEuclideanRssDist int       `json:"MaxEuclideanRssDist"`
 	MaxMovement         int       `json:"MaxMovement"`
 	GraphFactors        []float64 `json:"GraphFactors"`
+	RPFRadius           float64   `json:"RPFRadius"`
 	BLEFactor           float64   `json:"BLEFactor"`
 }
 func NewKnnHyperParameters() KnnHyperParameters {
@@ -119,6 +127,7 @@ func NewKnnHyperParameters() KnnHyperParameters {
 		MaxEuclideanRssDist: glb.DefaultMaxEuclideanRssDistRange[0],
 		MaxMovement:         glb.DefaultMaxMovementRange[0],
 		GraphFactors:        glb.DefaultGraphFactorsRange[0],
+		RPFRadius:           glb.DefaultRPFRadiusRange[0],
 		BLEFactor:           glb.DefaultBLEFactorRange[0],
 	}
 }

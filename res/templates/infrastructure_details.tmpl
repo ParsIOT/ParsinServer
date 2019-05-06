@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=utf-8/>
+    <title>PARSIN</title>
+    <link rel="shortcut icon" sizes="16x16 24x24 32x32 48x48 64x64" href="/static/img/favicon.ico"/>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
+
+    <!-- Bootstrap and JQuery JS -->
+    <script src="/static/js/jquery-2.0.0.min.js"></script>
+    <script src='/static/js/bootstrap.js'></script>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="/static/css/2-col-portfolio.css" rel="stylesheet">
+    <link href="/static/css/custom.css" rel="stylesheet">
+
+
+    <link href="/static/css/custom.css" rel="stylesheet">
+    <link href="/static/css/leaflet.css" rel="stylesheet">
+    <link href="/static/css/leaflet.usermarker.css" rel="stylesheet">
+    <link href="/static/css/plugins/leaflet/leaflet.draw.css" rel="stylesheet">
+    <link href="/static/css/plugins/leaflet/easy-button.css" rel="stylesheet">
+
+
+    <link rel="stylesheet" type="text/css" href="/static/css/sweetalert.css">
+    <script src="/static/js/sweetalert.min.js"></script>
+    <link href="/static/css/sweetalert2.css" rel="stylesheet"/>
+    <script src="/static/js/sweetalert2.js"></script>
+    <script src="/static/js/izitoast/iziToast.js"></script>
+
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+
+    <style>
+        #map {
+            height: 500px;
+        }
+
+        #users-table-container {
+            overflow: scroll;
+        }
+    </style>
+
+    <script src='/static/js/leaflet.js'></script>
+    <script src='/static/js/leaflet.usermarker.js'></script>
+    <script src='/static/js/Leaflet.Marker.SlideTo.js'></script>
+
+
+    {{/*leaflet draw*/}}
+    <script src="/static/js/plugins/leaflet/leaflet.draw/Leaflet.draw.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/Leaflet.Draw.Event.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/Edit.Poly.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/Edit.SimpleShape.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/Edit.Rectangle.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/Edit.Marker.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/Edit.CircleMarker.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/Edit.Circle.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.Feature.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.Polyline.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.Polygon.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.SimpleShape.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.Rectangle.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.Circle.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.Marker.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/draw/handler/Draw.CircleMarker.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/ext/TouchEvents.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/ext/LatLngUtil.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/ext/GeometryUtil.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/ext/LineUtil.Intersect.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/ext/Polyline.Intersect.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/ext/Polygon.Intersect.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/Control.Draw.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/Tooltip.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/Toolbar.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/draw/DrawToolbar.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/edit/EditToolbar.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/EditToolbar.Edit.js"></script>
+    <script src="/static/js/plugins/leaflet/leaflet.draw/edit/handler/EditToolbar.Delete.js"></script>
+    <script src="/static/js/plugins/leaflet/easy-button.js"></script>
+</head>
+
+<body>
+
+{{ template "navbar" . }}
+
+<!-- Page Content -->
+<div class="container-fluid">
+
+    <div class="row">
+        <div class="col-lg-12">
+            <h2 class="page-header">Location On Map
+                <small>view all locations on map</small>
+            </h2>
+        </div>
+    </div>
+
+    <!--<div class="well">-->
+    <div class="row">
+        <div class="col-md-9 col-sm-12">
+            <div class="panel panel-primary" id="map-panel">
+                <div class="panel-heading">
+                    Map
+                </div>
+                <div class="panel-body">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-12">
+            <div class="panel panel-success" id="users-list-panel">
+                <div class="panel-heading">
+                    Locations
+                </div>
+                <div class="panel-body" id="users-table-container">
+                    <div class="bs-callout bs-callout-info" style="margin: 0 0 15px;padding-bottom: 5px;">
+                        <h4>Settings</h4>
+                        <div class="form-group">
+                            <input id="click-x" type="text" disabled value="X" class="form-control"/>
+                        </div>
+                        <div class="form-group">
+                            <input id="click-y" type="text" disabled value="Y" class="form-control"/>
+                        </div>
+                    </div>
+                    <table id="users-table" class="table table-responsive table-hover table-condensed table-bordered">
+                        <thead>
+                        <tr>
+                            <td>Mac</td>
+                            <td>Location</td>
+                        </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--</div>-->
+
+
+</div>
+
+<script type="application/javascript">
+    var pattern = /([\d.-]*)[\s]*,[\s]*([\d.-]*)/;
+
+    $('#map').css('height', $(window.top).height() - 275);
+    $('#users-table').parent().css('height', $(window.top).height() - 245);
+    var map = L.map('map', {
+        crs: L.CRS.Simple,
+        minZoom: -100,
+    });
+    var bounds = [[-1 * ('{{.MapHeight}}' / 2), -1 * ('{{.MapWidth}}' / 2)], [('{{.MapHeight}}' / 2), ('{{.MapWidth}}' / 2)]];
+    var image = L.imageOverlay('{{.MapPath}}', bounds).addTo(map);
+    map.setView([50, 100], -2);
+    var marker_layer = L.featureGroup().addTo(map);
+
+    markers = L.featureGroup();
+
+    map.on('click', function (e) {
+//        console.log(e.latlng.lat + "," + e.latlng.lng);
+        $('#click-x').val(Math.round(e.latlng.lat) + ".0");
+        $('#click-y').val(Math.round(e.latlng.lng) + ".0");
+    });
+
+    var drawControl = new L.Control.Draw({
+        position: 'topright',
+        edit: {
+            featureGroup: marker_layer,
+            edit: true
+        },
+        draw: {
+            polygon: false,
+            polyline: false,
+            marker: true,
+            circle: false,
+            circlemarker: false,
+            rectangle: false,
+        }
+    });
+    map.addControl(drawControl);
+
+
+    {{/*$.get("/getInfrastructureDetails", {*/}}
+    {{/*"group": {{ .Group }},*/}}
+    {{/*},*/}}
+    {{/*function (result) {*/}}
+    {{/*if (result['success']) {*/}}
+    {{/*infDetails = result["infrastructureDetails"];*/}}
+    {{/*var transmitters = infDetails["Transmitters"];*/}}
+    {{/*transmitters.forEach((transmitter, index) => {*/}}
+    {{/*marker_pos = transmitter.Location.split(',');*/}}
+    {{/*[x, y] = [parseInt(marker_pos[0]), parseInt(marker_pos[1])];*/}}
+    {{/*// L.marker([x, y]).addTo(arbitrary_area_markers);*/}}
+    {{/*});*/}}
+    {{/*} else {*/}}
+    {{/*swal("Something went wrong.", data['message'], "error");*/}}
+    {{/*}*/}}
+    {{/*}*/}}
+    {{/*);*/}}
+    $.getJSON("/getInfrastructureDetails?group={{ .Group }}", function (result) {
+        var items = [];
+        if (result['success']) {
+            infDetails = result["infrastructureDetails"];
+            var transmitters = infDetails["Transmitters"];
+            transmitters.forEach((transmitter, index) => {
+                let match = pattern.exec(transmitter.Location);
+                if (match) {
+                    items.push("<tr><td>" + transmitter.Mac + "</td><td>" + transmitter.Location + "</td></tr>");
+
+                    var new_marker = L.userMarker([match[1], match[2]], {
+//                    pulsing: true,
+//                    accuracy: 200,
+                        title: transmitter.Mac,
+                        draggable: true,
+                        smallIcon: true
+                    }).bindPopup("<b>" + transmitter.Mac + " : " + match[1] + "," + match[2] + "</b>");
+                    marker_layer.addLayer(new_marker);
+                } else {
+                    items.push("<tr><td colspan='2' class='text-center'>" + transmitter.Mac + "</td><td>" + transmitter.Location + "</td></tr>");
+                }
+            });
+
+            // markers.addTo(marker_layer);
+
+            marker_layer.eachLayer(function (marker) {
+                let dragStartPoint, dragEndPoint, startLatLng;
+                let markerName = "";
+                marker.on('dragstart', function (e) {
+                    markerName = e.target.options.title;
+                    startLatLng = e.target.getLatLng();
+                    dragStartPoint = (e.target.getLatLng().lat).toString() + ".0" + "," + (e.target.getLatLng().lng).toString() + ".0";
+                    console.log("START:");
+                    console.log(dragStartPoint);
+                });
+                marker.on('dragend', function (e) {
+                    dragEndPoint = (Math.round(e.target.getLatLng().lat)).toString() + ".0" + "," + (Math.round(e.target.getLatLng().lng)).toString() + ".0";
+                    console.log("END:");
+                    console.log(dragEndPoint);
+                    console.log(e.target);
+
+                    swal2({
+                        title: "Moving the transmitter",
+                        text: "Are you sure you want to move '" + dragStartPoint + "' to '" + dragEndPoint + "'",
+                        showCancelButton: true,
+                        confirmButtonColor: "#6cdd87",
+                        confirmButtonText: "Yes, move it!",
+                        cancelButtonText: "No, cancel pls!",
+                        closeOnConfirm: false,
+                        closeOnCancel: false
+                    }).then(function () {
+                        $.ajax({
+                            method: "POST",
+                            url: "/addChangeTransmitter?group={{ .Group }}",
+                            dataType: "json",
+                            data: JSON.stringify({
+                                "Transmitters": [
+                                    {
+                                        "Mac": markerName,
+                                        "Location": dragEndPoint
+                                    }
+                                ]
+                            }),
+                            success: function (data) {
+                                console.log(data);
+                                if (data['success']) {
+                                    swal("Edited!", data['message'], "success");
+                                    location.reload()
+                                } else {
+                                    swal("Something went wrong.", data['message'], "error");
+                                }
+                            },
+                            error: function (data) {
+                                console.error(data)
+                            }
+                        });
+                    }, function (stat) {
+                        e.target.setLatLng(startLatLng);
+                        swal2("Cancelled", "Your data is unchanged :)", "error");
+                    });
+
+
+                });
+
+            });
+
+
+            //table
+            $("<tbody/>", {
+                "class": "tab-content",
+                html: items.join("")
+            }).appendTo("#users-table");
+        } else {
+            swal("Something went wrong.", data['message'], "error");
+        }
+    });
+
+    map.on('draw:created', function (e) {
+        var layer = e.layer;
+        var layerType = e.layerType;
+        if (layerType === 'marker') {
+            var new_vertex_key = Math.round(layer.getLatLng().lat).toString() + ',' + Math.round(layer.getLatLng().lng).toString();
+            // test[new_vertex_key] = [];
+            // var new_marker = L.userMarker(layer.getLatLng(), {
+            //     smallIcon: true
+            // });
+            var new_marker = L.userMarker([Math.round(layer.getLatLng().lat), Math.round(layer.getLatLng().lng)], {
+                smallIcon: true
+            });
+            marker_layer.addLayer(new_marker);
+            //console.log("newVertexKey: ***** ", new_vertex_key)
+            //post to server
+
+            swal2({
+                title: 'Add new Transmitter',
+                text: 'Please Enter Mac ',
+                type: 'info',
+                showCancelButton: true,
+                html:
+                    '<div class="form-horizontal">' +
+                    '   <div class="form-group">' +
+                    '      <label class="col-lg-6 control-label">Mac:</label>' +
+                    '      <div class="col-lg-4">' +
+                    '          <input type="text" placeholder="Mac address" class="form-control" id="mac_addr">' +
+                    '      </div>' +
+                    '   </div>' +
+                    '</div>',
+                confirmButtonText: 'Add transmitter!'
+            }).then(function (result) {
+                if (result) {
+                    var mac_addr = $('#mac_addr').val();
+
+                    console.log(JSON.stringify({
+                        "Transmitters": [
+                            {
+                                "Mac": mac_addr,
+                                "Location": new_vertex_key
+                            }
+                        ]
+                    }));
+                    // L.marker([parseInt(x), parseInt(y)]).addTo(arbitrary_area_markers);
+                    // data.push(parseInt(x).toString() + '.0' + ',' + parseInt(y).toString() + '.0');
+
+                    //send markers to server
+                    $.ajax({
+                        method: "POST",
+                        url: "/addChangeTransmitter?group={{ .Group }}",
+                        dataType: "json",
+                        data: JSON.stringify({
+                            "Transmitters": [
+                                {
+                                    "Mac": mac_addr,
+                                    "Location": new_vertex_key
+                                }
+                            ]
+                        }),
+                        success: function (data) {
+                            console.log(data);
+                            if (data['success']) {
+                                swal("Created!", data['message'], "success");
+                                location.reload()
+                            } else {
+                                swal("Something went wrong.", data['message'], "error");
+                            }
+                        },
+                        error: function (data) {
+                            console.log(data)
+                        }
+                    });
+                    // arbitrary_area_markers.addLayer(layer);
+
+                }
+            })
+
+
+        }
+    });
+
+
+    map.on('draw:deleted', function (e) {
+        var removed_layers = e.layers;
+        //https://stackoverflow.com/questions/18014907/leaflet-draw-retrieve-layer-type-on-drawedited-event
+        removed_vertices = {};
+        removed_layers.eachLayer(function (layer) {
+            if (layer instanceof L.Marker) {
+                marker_name = layer.options.title;
+                vertex_position = (layer.getLatLng().lat).toString() + ',' + (layer.getLatLng().lng); //+ ".0"
+                removed_vertices[marker_name] = vertex_position;
+            }
+        });
+
+        transmitters = [];
+        for (const mac of Object.keys(removed_vertices)) {
+            transmitters.push({
+                "Mac": mac,
+                "Location": removed_vertices[mac]
+            })
+        }
+        console.log(transmitters);
+        //send removed layers to server
+        $.ajax({
+            method: "POST",
+            url: "/delTrasmitter?group={{ .Group }}",
+            dataType: "json",
+            data: JSON.stringify({
+                "Transmitters": transmitters
+            }),
+            success: function (data) {
+                console.log(data);
+                if (data['success']) {
+                    swal("Created!", data['message'], "success");
+                    location.reload()
+                } else {
+                    swal("Something went wrong.", data['message'], "error");
+                }
+            },
+            error: function (data) {
+                console.error(data);
+            }
+        });
+    });
+
+    map.on('draw:edited', function (e) {
+        var removed_layers = e.layers;
+        //https://stackoverflow.com/questions/18014907/leaflet-draw-retrieve-layer-type-on-drawedited-event
+        removed_vertices = {};
+        removed_layers.eachLayer(function (layer) {
+            if (layer instanceof L.Marker) {
+                marker_name = layer.options.title;
+                vertex_position = (layer.getLatLng().lat).toString() + ',' + (layer.getLatLng().lng); //+ ".0"
+                removed_vertices[marker_name] = vertex_position;
+            }
+        });
+
+        transmitters = [];
+        for (const mac of Object.keys(removed_vertices)) {
+            transmitters.push({
+                "Mac": mac,
+                "Location": removed_vertices[mac]
+            })
+        }
+        console.log(transmitters);
+        //send removed layers to server
+        $.ajax({
+            method: "POST",
+            url: "/delTrasmitter?group={{ .Group }}",
+            dataType: "json",
+            data: JSON.stringify({
+                "Transmitters": transmitters
+            }),
+            success: function (data) {
+                console.log(data);
+                if (data['success']) {
+                    swal("Created!", data['message'], "success");
+                    location.reload()
+                } else {
+                    swal("Something went wrong.", data['message'], "error");
+                }
+            },
+            error: function (data) {
+                console.error(data);
+            }
+        });
+    });
+
+
+</script>
+</body>
+
+</html>

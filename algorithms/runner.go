@@ -1881,9 +1881,29 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 		glb.Error.Println("Can't set valid bleFactor Range values")
 	}
 
+	//4.RPFRadius
+	validRPFRadius := []float64{glb.DefaultRPFRadiusRange[0]}
+	if len(glb.DefaultRPFRadiusRange) > 1 {
+		validRPFRadius = glb.MakeRangeFloat(glb.DefaultRPFRadiusRange[0], glb.DefaultRPFRadiusRange[1], glb.DefaultRPFRadiusRange[2])
+	}
+	rpfRadiusRange := knnConfig.RPFRadiusRange
+	if len(rpfRadiusRange) == 1 {
+		validRPFRadius = glb.MakeRangeFloat(rpfRadiusRange[0], rpfRadiusRange[0])
+	} else if len(rpfRadiusRange) == 2 {
+		validRPFRadius = glb.MakeRangeFloat(rpfRadiusRange[0], rpfRadiusRange[1], float64(1))
+	} else if len(rpfRadiusRange) == 3 {
+		validRPFRadius = glb.MakeRangeFloat(rpfRadiusRange[0], rpfRadiusRange[1], rpfRadiusRange[2])
+	} else {
+		glb.Error.Println("validRPFRadius:", validRPFRadius)
+		glb.Error.Println("Can't set valid RPFRadiusRange values")
+	}
+
+
+
 	// Set length of calculation progress bar
 	// This is shared between all threads, so it's invalid when two calculateLearn thread run
-	calculationLen := len(validMinClusterRSSs) * len(validKs) * len(validMaxEuclideanRssDists) * len(validMaxEuclideanRssDists) * len(validBLEFactors)
+	calculationLen := len(validMinClusterRSSs) * len(validKs) * len(validMaxEuclideanRssDists) *
+		len(validMaxEuclideanRssDists) * len(validBLEFactors) * len(validRPFRadius)
 	glb.ProgressBarLength = calculationLen
 
 	adTemp := tempGp.NewAlgoDataStruct()
@@ -1896,116 +1916,120 @@ func GetBestKnnHyperParams(groupName string, shprf dbm.RawSharedPreferences, cd 
 		for i2, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
 			for i3, K := range validKs { // for over KnnK
 				for i4, bleFactor := range validBLEFactors {
+					for i5, rpfRadius := range validRPFRadius {
 
-					glb.ProgressBarCurLevel = i1*len(validMinClusterRSSs) + i2*len(validKs) + i3*len(validBLEFactors) + i4
-					totalDistError := 0
+						glb.ProgressBarCurLevel = i1*len(validMinClusterRSSs) + i2*len(validKs) +
+							i3*len(validBLEFactors) + i4*len(validRPFRadius) + i5
+						totalDistError := 0
 
-					tempHyperParameters := parameters.NewKnnHyperParameters()
-					//glb.Error.Println(tempHyperParameters)
-					tempHyperParameters.K = K
-					tempHyperParameters.MinClusterRss = minClusterRss
-					tempHyperParameters.MaxEuclideanRssDist = maxEuclideanRssDist
-					tempHyperParameters.BLEFactor = bleFactor
+						tempHyperParameters := parameters.NewKnnHyperParameters()
+						//glb.Error.Println(tempHyperParameters)
+						tempHyperParameters.K = K
+						tempHyperParameters.MinClusterRss = minClusterRss
+						tempHyperParameters.MaxEuclideanRssDist = maxEuclideanRssDist
+						tempHyperParameters.BLEFactor = bleFactor
+						tempHyperParameters.RPFRadius = rpfRadius
 
-					paramUniqueKey++
-					allHyperParamDetails[paramUniqueKey] = tempHyperParameters
-					tempAllErrDetailList := []int{}
-					//tempAllErrDetailList := make([]int,len(crossValidationPartsList))
+						paramUniqueKey++
+						allHyperParamDetails[paramUniqueKey] = tempHyperParameters
+						tempAllErrDetailList := []int{}
+						//tempAllErrDetailList := make([]int,len(crossValidationPartsList))
 
-					// 1-foldCrossValidation (each round one location select as test set)
-					for CVNum, CVParts := range crossValidationPartsList {
-						glb.Debug.Println("CrossValidation Part num :", CVNum)
+						// 1-foldCrossValidation (each round one location select as test set)
+						for CVNum, CVParts := range crossValidationPartsList {
+							glb.Debug.Println("CrossValidation Part num :", CVNum)
 
-						// Learn:
-						trainSetTemp := CVParts.GetTrainSet(tempGp)
-						rdTemp.Set_Fingerprints(trainSetTemp.Fingerprints)
-						rdTemp.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
-						rdTemp.Set_FingerprintsBackup(trainSetTemp.Fingerprints)
-						rdTemp.Set_FingerprintsOrderingBackup(trainSetTemp.FingerprintsOrdering)
+							// Learn:
+							trainSetTemp := CVParts.GetTrainSet(tempGp)
+							rdTemp.Set_Fingerprints(trainSetTemp.Fingerprints)
+							rdTemp.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
+							rdTemp.Set_FingerprintsBackup(trainSetTemp.Fingerprints)
+							rdTemp.Set_FingerprintsOrderingBackup(trainSetTemp.FingerprintsOrdering)
 
-						testFPs := CVParts.testSet.Fingerprints
-						testFPsOrdering := CVParts.testSet.FingerprintsOrdering
+							testFPs := CVParts.testSet.Fingerprints
+							testFPsOrdering := CVParts.testSet.FingerprintsOrdering
 
-						PreProcess(rdTemp, shprf.NeedToRelocateFP)
-						GetParametersWithGP(tempGp)
+							PreProcess(rdTemp, shprf.NeedToRelocateFP)
+							GetParametersWithGP(tempGp)
 
-						learnedKnnData, _ := LearnKnn(tempGp, tempHyperParameters)
+							learnedKnnData, _ := LearnKnn(tempGp, tempHyperParameters)
 
-						/*			// Set hyper parameters
+							/*			// Set hyper parameters
 						learnedKnnData.HyperParameters = parameters.NewKnnHyperParameters()
 						learnedKnnData.HyperParameters.K = K
 						learnedKnnData.HyperParameters.MinClusterRss = minClusterRss*/
 
-						//learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K: K, MinClusterRss: minClusterRss}
+							//learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K: K, MinClusterRss: minClusterRss}
 
-						adTemp.Set_KnnFPs(learnedKnnData)
+							adTemp.Set_KnnFPs(learnedKnnData)
 
-						// Set to main group
-						tempGp.GMutex.Lock() //For each group there's a lock to avoid race between concurrent calculateLearn s
-						tempGp.Set_AlgoData(adTemp)
+							// Set to main group
+							tempGp.GMutex.Lock() //For each group there's a lock to avoid race between concurrent calculateLearn s
+							tempGp.Set_AlgoData(adTemp)
 
-						// Error calculation for this round
-						distError := 0
-						trackedPointsNum := 0
-						testLocation := testFPs[testFPsOrdering[0]].Location
-						for _, index := range testFPsOrdering {
-							fp := testFPs[index]
+							// Error calculation for this round
+							distError := 0
+							trackedPointsNum := 0
+							testLocation := testFPs[testFPsOrdering[0]].Location
+							for _, index := range testFPsOrdering {
+								fp := testFPs[index]
 
-							resultDot := ""
-							var err error
-							err, resultDot, _ = TrackKnn(tempGp, fp, false)
-							if err != nil {
-								if err.Error() == "NumofAP_lowerThan_MinApNum" {
-									glb.Error.Println("NumofAP_lowerThan_MinApNum")
-									continue
-								} else if err.Error() == "NoValidFingerprints" {
-									glb.Error.Println("NoValidFingerprints")
-									continue
+								resultDot := ""
+								var err error
+								err, resultDot, _ = TrackKnn(tempGp, fp, false)
+								if err != nil {
+									if err.Error() == "NumofAP_lowerThan_MinApNum" {
+										glb.Error.Println("NumofAP_lowerThan_MinApNum")
+										continue
+									} else if err.Error() == "NoValidFingerprints" {
+										glb.Error.Println("NoValidFingerprints")
+										continue
+									}
+								} else {
+									trackedPointsNum++
 								}
-							} else {
-								trackedPointsNum++
-							}
 
-							//glb.Debug.Println(fp.Timestamp)
-							resx, resy := glb.GetDotFromString(resultDot)
-							x, y := glb.GetDotFromString(testLocation)
-							//if fp.Timestamp==int64(1516794991872647445){
-							//	glb.Error.Println("ResultDot = ",resultDot)
-							//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
-							//}
-							tempDistError := int(glb.CalcDist(x, y, resx, resy))
-							if tempDistError < 0 { //print if distError is lower than zero(it's for error detection)
-								glb.Error.Println(fp)
-								glb.Error.Println(resultDot)
-								_, resultDot, _ = TrackKnn(tempGp, fp, false)
-								glb.Error.Println(x, y)
-								glb.Error.Println(resx, resy)
-							} else {
-								distError += tempDistError
-								tempAllErrDetailList = append(tempAllErrDetailList, tempDistError)
-								//tempAllErrDetailList[CVNum] = tempDistError
-								//allErrDetails[paramUniqueKey] = append(allErrDetails[paramUniqueKey],tempDistError)
+								//glb.Debug.Println(fp.Timestamp)
+								resx, resy := glb.GetDotFromString(resultDot)
+								x, y := glb.GetDotFromString(testLocation)
+								//if fp.Timestamp==int64(1516794991872647445){
+								//	glb.Error.Println("ResultDot = ",resultDot)
+								//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
+								//}
+								tempDistError := int(glb.CalcDist(x, y, resx, resy))
+								if tempDistError < 0 { //print if distError is lower than zero(it's for error detection)
+									glb.Error.Println(fp)
+									glb.Error.Println(resultDot)
+									_, resultDot, _ = TrackKnn(tempGp, fp, false)
+									glb.Error.Println(x, y)
+									glb.Error.Println(resx, resy)
+								} else {
+									distError += tempDistError
+									tempAllErrDetailList = append(tempAllErrDetailList, tempDistError)
+									//tempAllErrDetailList[CVNum] = tempDistError
+									//allErrDetails[paramUniqueKey] = append(allErrDetails[paramUniqueKey],tempDistError)
+								}
 							}
+							if trackedPointsNum == 0 {
+								glb.Error.Println("For loc:", testLocation, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
+							} else {
+								//distError = distError / trackedPointsNum
+								//totalDistError += distError
+							}
+							tempGp.GMutex.Unlock()
 						}
-						if trackedPointsNum == 0 {
-							glb.Error.Println("For loc:", testLocation, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
-						} else {
-							//distError = distError / trackedPointsNum
-							//totalDistError += distError
-						}
-						tempGp.GMutex.Unlock()
+
+						allErrDetails[paramUniqueKey] = tempAllErrDetailList
+						//allErrDetailsList[paramUniqueKey] = tempAllErrDetailList
+						glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d,maxEuclideanRssDist=%d) = %d \n", minClusterRss, K, maxEuclideanRssDist, totalDistError)
+
+						//if(bestResult==-1 || totalDistError<bestResult){
+						//	bestResult = totalDistError
+						//	bestK = K
+						//}
+						//totalErrorList = append(totalErrorList, totalDistError)
+						//knnErrHyperParameters[totalDistError] = tempHyperParameters
 					}
-
-					allErrDetails[paramUniqueKey] = tempAllErrDetailList
-					//allErrDetailsList[paramUniqueKey] = tempAllErrDetailList
-					glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d,maxEuclideanRssDist=%d) = %d \n", minClusterRss, K, maxEuclideanRssDist, totalDistError)
-
-					//if(bestResult==-1 || totalDistError<bestResult){
-					//	bestResult = totalDistError
-					//	bestK = K
-					//}
-					//totalErrorList = append(totalErrorList, totalDistError)
-					//knnErrHyperParameters[totalDistError] = tempHyperParameters
 				}
 			}
 		}
@@ -2130,9 +2154,28 @@ func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreference
 		glb.Error.Println("Can't set valid bleFactor Range values")
 	}
 
+	//4.RPFRadius
+	validRPFRadius := []float64{glb.DefaultRPFRadiusRange[0]}
+	if len(glb.DefaultRPFRadiusRange) > 1 {
+		validRPFRadius = glb.MakeRangeFloat(glb.DefaultRPFRadiusRange[0], glb.DefaultRPFRadiusRange[1], glb.DefaultRPFRadiusRange[2])
+	}
+	rpfRadiusRange := knnConfig.RPFRadiusRange
+	if len(rpfRadiusRange) == 1 {
+		validRPFRadius = glb.MakeRangeFloat(rpfRadiusRange[0], rpfRadiusRange[0])
+	} else if len(rpfRadiusRange) == 2 {
+		validRPFRadius = glb.MakeRangeFloat(rpfRadiusRange[0], rpfRadiusRange[1], float64(1))
+	} else if len(rpfRadiusRange) == 3 {
+		validRPFRadius = glb.MakeRangeFloat(rpfRadiusRange[0], rpfRadiusRange[1], rpfRadiusRange[2])
+	} else {
+		glb.Error.Println("validRPFRadius:", validRPFRadius)
+		glb.Error.Println("Can't set valid RPFRadiusRange values")
+	}
+
+
 	// Set length of calculation progress bar
 	// This is shared between all threads, so it's invalid when two calculateLearn thread run
-	glb.ProgressBarLength = len(validMinClusterRSSs) * len(validKs) * len(validMaxEuclideanRssDists) * len(validMaxEuclideanRssDists) * len(validBLEFactors)
+	glb.ProgressBarLength = len(validMinClusterRSSs) * len(validKs) * len(validMaxEuclideanRssDists) *
+		len(validMaxEuclideanRssDists) * len(validBLEFactors) * len(validRPFRadius)
 
 	adTemp := tempGp.NewAlgoDataStruct()
 	rdTemp := tempGp.Get_RawData()
@@ -2140,105 +2183,109 @@ func GetBestKnnHyperParamsLegacy(groupName string, shprf dbm.RawSharedPreference
 		for i2, minClusterRss := range validMinClusterRSSs { // for over minClusterRss
 			for i3, K := range validKs { // for over KnnK
 				for i4, bleFactor := range validBLEFactors {
-					glb.ProgressBarCurLevel = i1*len(validMinClusterRSSs) + i2*len(validKs) + i3*len(validBLEFactors) + i4
+					for i5, rpfRadius := range validRPFRadius {
+						glb.ProgressBarCurLevel = i1*len(validMinClusterRSSs) + i2*len(validKs) +
+							i3*len(validBLEFactors) + i4*len(validRPFRadius) + i5
 
-					totalDistError := 0
+						totalDistError := 0
 
-					tempHyperParameters := parameters.NewKnnHyperParameters()
-					//glb.Error.Println(tempHyperParameters)
-					tempHyperParameters.K = K
-					tempHyperParameters.MinClusterRss = minClusterRss
-					tempHyperParameters.MaxEuclideanRssDist = maxEuclideanRssDist
-					tempHyperParameters.BLEFactor = bleFactor
+						tempHyperParameters := parameters.NewKnnHyperParameters()
+						//glb.Error.Println(tempHyperParameters)
+						tempHyperParameters.K = K
+						tempHyperParameters.MinClusterRss = minClusterRss
+						tempHyperParameters.MaxEuclideanRssDist = maxEuclideanRssDist
+						tempHyperParameters.BLEFactor = bleFactor
+						tempHyperParameters.RPFRadius = rpfRadius
 
-					// 1-foldCrossValidation (each round one location select as test set)
-					for CVNum, CVParts := range crossValidationPartsList {
-						glb.Debug.Println("CrossValidation Part num :", CVNum)
+						// 1-foldCrossValidation (each round one location select as test set)
+						for CVNum, CVParts := range crossValidationPartsList {
+							glb.Debug.Println("CrossValidation Part num :", CVNum)
 
-						// Learn:
-						trainSetTemp := CVParts.GetTrainSet(tempGp)
-						rdTemp.Set_Fingerprints(trainSetTemp.Fingerprints)
-						rdTemp.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
-						rdTemp.Set_FingerprintsBackup(trainSetTemp.Fingerprints)
-						rdTemp.Set_FingerprintsOrderingBackup(trainSetTemp.FingerprintsOrdering)
+							// Learn:
+							trainSetTemp := CVParts.GetTrainSet(tempGp)
+							rdTemp.Set_Fingerprints(trainSetTemp.Fingerprints)
+							rdTemp.Set_FingerprintsOrdering(trainSetTemp.FingerprintsOrdering)
+							rdTemp.Set_FingerprintsBackup(trainSetTemp.Fingerprints)
+							rdTemp.Set_FingerprintsOrderingBackup(trainSetTemp.FingerprintsOrdering)
 
-						testFPs := CVParts.testSet.Fingerprints
-						testFPsOrdering := CVParts.testSet.FingerprintsOrdering
+							testFPs := CVParts.testSet.Fingerprints
+							testFPsOrdering := CVParts.testSet.FingerprintsOrdering
 
-						PreProcess(rdTemp, shprf.NeedToRelocateFP)
-						GetParametersWithGP(tempGp)
+							PreProcess(rdTemp, shprf.NeedToRelocateFP)
+							GetParametersWithGP(tempGp)
 
-						learnedKnnData, _ := LearnKnn(tempGp, tempHyperParameters)
+							learnedKnnData, _ := LearnKnn(tempGp, tempHyperParameters)
 
-						/*			// Set hyper parameters
+							/*			// Set hyper parameters
 							learnedKnnData.HyperParameters = parameters.NewKnnHyperParameters()
 							learnedKnnData.HyperParameters.K = K
 							learnedKnnData.HyperParameters.MinClusterRss = minClusterRss*/
 
-						//learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K: K, MinClusterRss: minClusterRss}
+							//learnedKnnData.HyperParameters = parameters.KnnHyperParameters{K: K, MinClusterRss: minClusterRss}
 
-						adTemp.Set_KnnFPs(learnedKnnData)
+							adTemp.Set_KnnFPs(learnedKnnData)
 
-						// Set to main group
-						tempGp.GMutex.Lock() //For each group there's a lock to avoid race between concurrent calculateLearn s
-						tempGp.Set_AlgoData(adTemp)
+							// Set to main group
+							tempGp.GMutex.Lock() //For each group there's a lock to avoid race between concurrent calculateLearn s
+							tempGp.Set_AlgoData(adTemp)
 
-						// Error calculation for this round
-						distError := 0
-						trackedPointsNum := 0
-						testLocation := testFPs[testFPsOrdering[0]].Location
-						for _, index := range testFPsOrdering {
-							fp := testFPs[index]
+							// Error calculation for this round
+							distError := 0
+							trackedPointsNum := 0
+							testLocation := testFPs[testFPsOrdering[0]].Location
+							for _, index := range testFPsOrdering {
+								fp := testFPs[index]
 
-							resultDot := ""
-							var err error
-							err, resultDot, _ = TrackKnn(tempGp, fp, false)
-							if err != nil {
-								if err.Error() == "NumofAP_lowerThan_MinApNum" {
-									glb.Error.Println("NumofAP_lowerThan_MinApNum")
-									continue
-								} else if err.Error() == "NoValidFingerprints" {
-									glb.Error.Println("NoValidFingerprints")
-									continue
+								resultDot := ""
+								var err error
+								err, resultDot, _ = TrackKnn(tempGp, fp, false)
+								if err != nil {
+									if err.Error() == "NumofAP_lowerThan_MinApNum" {
+										glb.Error.Println("NumofAP_lowerThan_MinApNum")
+										continue
+									} else if err.Error() == "NoValidFingerprints" {
+										glb.Error.Println("NoValidFingerprints")
+										continue
+									}
+								} else {
+									trackedPointsNum++
 								}
+
+								//glb.Debug.Println(fp.Timestamp)
+								resx, resy := glb.GetDotFromString(resultDot)
+								x, y := glb.GetDotFromString(testLocation)
+								//if fp.Timestamp==int64(1516794991872647445){
+								//	glb.Error.Println("ResultDot = ",resultDot)
+								//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
+								//}
+								distError += int(glb.CalcDist(x, y, resx, resy))
+								if distError < 0 { //print if distError is lower than zero(it's for error detection)
+									glb.Error.Println(fp)
+									glb.Error.Println(resultDot)
+									_, resultDot, _ = TrackKnn(tempGp, fp, false)
+									glb.Error.Println(x, y)
+									glb.Error.Println(resx, resy)
+								}
+							}
+							if trackedPointsNum == 0 {
+								glb.Error.Println("For loc:", testLocation, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
 							} else {
-								trackedPointsNum++
+								distError = distError / trackedPointsNum
+								totalDistError += distError
 							}
 
-							//glb.Debug.Println(fp.Timestamp)
-							resx, resy := glb.GetDotFromString(resultDot)
-							x, y := glb.GetDotFromString(testLocation)
-							//if fp.Timestamp==int64(1516794991872647445){
-							//	glb.Error.Println("ResultDot = ",resultDot)
-							//	glb.Error.Println("DistError = ",int(calcDist(x,y,resx,resy)))
-							//}
-							distError += int(glb.CalcDist(x, y, resx, resy))
-							if distError < 0 { //print if distError is lower than zero(it's for error detection)
-								glb.Error.Println(fp)
-								glb.Error.Println(resultDot)
-								_, resultDot, _ = TrackKnn(tempGp, fp, false)
-								glb.Error.Println(x, y)
-								glb.Error.Println(resx, resy)
-							}
-						}
-						if trackedPointsNum == 0 {
-							glb.Error.Println("For loc:", testLocation, " there is no fingerprint that its number of APs be more than", glb.MinApNum)
-						} else {
-							distError = distError / trackedPointsNum
-							totalDistError += distError
+							tempGp.GMutex.Unlock()
 						}
 
-						tempGp.GMutex.Unlock()
+						glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d,maxEuclideanRssDist=%d,rpfRadius=%d) = %d \n", minClusterRss, K, maxEuclideanRssDist, rpfRadius, totalDistError)
+
+						//if(bestResult==-1 || totalDistError<bestResult){
+						//	bestResult = totalDistError
+						//	bestK = K
+						//}
+						totalErrorList = append(totalErrorList, totalDistError)
+						knnErrHyperParameters[totalDistError] = tempHyperParameters
 					}
-
-					glb.Debug.Printf("Knn error (minClusterRss=%d,K=%d,maxEuclideanRssDist=%d) = %d \n", minClusterRss, K, maxEuclideanRssDist, totalDistError)
-
-					//if(bestResult==-1 || totalDistError<bestResult){
-					//	bestResult = totalDistError
-					//	bestK = K
-					//}
-					totalErrorList = append(totalErrorList, totalDistError)
-					knnErrHyperParameters[totalDistError] = tempHyperParameters
 				}
 			}
 		}
@@ -2425,6 +2472,8 @@ func SortKnnHyperParametersList(rawKnnHyperParamList []parameters.KnnHyperParame
 		if MaxMovementi > MaxMovementj {
 			return (paramOrder.MaxMovement == dscnd)
 		}
+
+		// ELSE
 		return true // Completely equal!
 	})
 

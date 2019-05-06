@@ -331,6 +331,13 @@ func main() {
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
 				routes.TestValidTracksDetails(context)
 			})
+
+			needToLoadSettings.GET("/arbitraryLocations/:group", routes.ArbitraryLocations)
+			//needToLoadSettings.GET("/InfrastructureDetails/:group", routes.InfrastructureDetails)
+			needToLoadSettings.GET("/infrastructureDetails/:group", func(context *gin.Context) { //komeil: graph map
+				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
+				routes.InfrastructureDetails(context)
+			})
 			// APIs:
 
 			//needToLoadSettings.GET("/getfingerprint/", routes.GetFingerprint)
@@ -339,7 +346,7 @@ func main() {
 			needToLoadSettings.GET("/editloc", routes.EditLoc)
 			needToLoadSettings.GET("/editlocBaseDB", routes.EditLocBaseDB)
 			needToLoadSettings.GET("/editusername", routes.EditUserName)
-			needToLoadSettings.GET("/arbitraryLocations/:group", routes.ArbitraryLocations)
+
 			needToLoadSettings.DELETE("/location", routes.DeleteLocation)
 			needToLoadSettings.DELETE("/locationBaseDB", routes.DeleteLocationBaseDB)
 			needToLoadSettings.DELETE("/locations", routes.DeleteLocations)
@@ -385,6 +392,11 @@ func main() {
 			//Arbitrary locations
 			needToLoadSettings.POST("/addArbitLocations", routes.AddArbitLocations)
 			needToLoadSettings.POST("/delArbitLocations", routes.DelArbitLocations)
+
+			//Infrastructure :
+			needToLoadSettings.POST("/addChangeTransmitter", routes.AddChangeTransmitter)
+			needToLoadSettings.POST("/delTrasmitter", routes.DelTransmitter)
+
 			//needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
 			needToLoadSettings.DELETE("/clearConfigData", routes.ClearConfigData)
 			needToLoadSettings.POST("/setKnnConfig", routes.SetKnnConfig)
@@ -409,6 +421,11 @@ func main() {
 	//r.POST("/addArbitLocations", routes.AddArbitLocations)
 	//r.POST("/delArbitLocations", routes.DelArbitLocations)
 	r.GET("/getArbitLocations", routes.GetArbitLocations)
+	r.GET("/getInfrastructureDetails", routes.GetInfrastructureDetails)
+	//r.POST("/addChangeTrasmitter", routes.AddChangeTransmitter)
+	//r.POST("/delTrasmitter", routes.DelTransmitter)
+
+
 	r.DELETE("/delresults", routes.DelResults)
 	r.GET("/location", routes.GetUserLocations)
 	r.GET("/getTestValidTracks", routes.GetTestValidTracks) // deprecated
