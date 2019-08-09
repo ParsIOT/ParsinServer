@@ -103,7 +103,7 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <button type="submit" class="btn btn-info" id="deletewholegraph"
+                                    <button type="submit" class="btn btn-info" id="deleteWholeGraph"
                                             title="Delete whole graph">Delete whole graph
                                     </button>
                                 </div>
@@ -210,7 +210,7 @@
     //     '50,50': ["20,30"],
     // };
     var test;
-    $.get("/getgraph", {
+    $.get("/getGraph", {
             "group": {{ .Group }},
         },
         function (result) {
@@ -321,7 +321,7 @@
                 swal2('Save Graph', 'Save Graph to db?', 'success');
                 btn.state('edge_draw_enable');
                 edge_draw_enable = false;
-                $.get("/saveedgestodb", {
+                $.get("/saveEdgesToDB", {
                         "group": {{ .Group }},
                     },
                     function (result) {
@@ -414,7 +414,7 @@
         //send removed layers to server
         $.ajax({
             method: "POST",
-            url: "/RemoveEdgesOrVertices?group={{ .Group }}",
+            url: "/removeEdgesOrVertices?group={{ .Group }}",
             dataType: "json",
             data: JSON.stringify({
                 "removed_vertices": removed_vertices,
@@ -533,14 +533,14 @@
 
 
     // Find and remove selected table rows
-    $("#deletewholegraph").click(function () {
+    $("#deleteWholeGraph").click(function () {
         // $("table tbody").find('input[name="record"]').each(function () {
         //     if ($(this).is(":checked")) {
         //         $(this).parents("tr").remove();
         //     }
         // });
         console.log("### it is about to send a api ###")
-        $.get("/deletewholegraph", {
+        $.get("/deleteWholeGraph", {
                 "group": {{ .Group }},
             },
             function (result) {

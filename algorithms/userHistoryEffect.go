@@ -1,10 +1,10 @@
 package algorithms
 
 import (
-	"ParsinServer/glb"
-	"strings"
-	"strconv"
 	"ParsinServer/dbm/parameters"
+	"ParsinServer/glb"
+	"strconv"
+	"strings"
 )
 
 func SimpleHistoryEffect(currentUserPos parameters.UserPositionJSON, userHistory []parameters.UserPositionJSON) (string, float64) {

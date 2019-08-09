@@ -50,19 +50,18 @@ func NewDotFromString(xyStr string) Dot {
 	}
 }
 
-
 // Constant parameters that set manually by user are in KnnConfig
 type KnnConfig struct {
 	KRange                   []int
 	MinClusterRssRange       []int
 	MaxEuclideanRssDistRange []int
 
-	GraphEnabled             bool
-	GraphFactorRange         [][]float64
+	GraphEnabled     bool
+	GraphFactorRange [][]float64
 
-	DSAEnabled               bool
-	MaxMovementRange         []int
-	BLEFactorRange           []float64
+	DSAEnabled       bool
+	MaxMovementRange []int
+	BLEFactorRange   []float64
 
 	RPFEnabled     bool
 	RPFRadiusRange []float64
@@ -74,16 +73,15 @@ func NewKnnConfig() KnnConfig {
 		MinClusterRssRange:       glb.DefaultKnnMinClusterRssRange,
 		MaxEuclideanRssDistRange: glb.DefaultMaxEuclideanRssDistRange,
 
-		GraphEnabled:             glb.DefaultGraphEnabled,
-		GraphFactorRange:         glb.DefaultGraphFactorsRange,
+		GraphEnabled:     glb.DefaultGraphEnabled,
+		GraphFactorRange: glb.DefaultGraphFactorsRange,
 
-		DSAEnabled:               glb.DefaultDSAEnabled,
-		MaxMovementRange:         glb.DefaultMaxMovementRange,
-		BLEFactorRange:           glb.DefaultBLEFactorRange,
+		DSAEnabled:       glb.DefaultDSAEnabled,
+		MaxMovementRange: glb.DefaultMaxMovementRange,
+		BLEFactorRange:   glb.DefaultBLEFactorRange,
 
 		RPFEnabled:     glb.DefaultRPFEnabled,
 		RPFRadiusRange: glb.DefaultRPFRadiusRange,
-
 	}
 }
 
@@ -120,6 +118,7 @@ type KnnHyperParameters struct {
 	RPFRadius           float64   `json:"RPFRadius"`
 	BLEFactor           float64   `json:"BLEFactor"`
 }
+
 func NewKnnHyperParameters() KnnHyperParameters {
 	return KnnHyperParameters{
 		K:                   glb.DefaultKnnKRange[0],
@@ -140,6 +139,7 @@ type KnnFingerprints struct {
 	Node2FPs             map[string][]string    `json:"Node2FPs"`
 	RPFs                 map[string]float64     `json:"RPFs"`
 }
+
 func NewKnnFingerprints() KnnFingerprints {
 	return KnnFingerprints{
 		FingerprintsInMemory: make(map[string]Fingerprint),
@@ -150,7 +150,6 @@ func NewKnnFingerprints() KnnFingerprints {
 		RPFs:                 make(map[string]float64),
 	}
 }
-
 
 // PriorParameters contains the network-specific bayesian priors and Mac frequency, as well as special variables
 type PriorParameters struct {
@@ -171,6 +170,7 @@ type ResultsParameters struct {
 	CorrectLocations map[string]int            // number of times guessed correctly
 	Guess            map[string]map[string]int // correct(real location) -> guess -> times
 }
+
 //
 //// FullParameters is the full parameter set for a given group
 //type FullParameters struct {
@@ -215,6 +215,7 @@ func NewPriorParameters() *PriorParameters {
 		Special:  make(map[string]float64),
 	}
 }
+
 // NewResultsParameters generates a blank ResultsParameters
 func NewResultsParameters() *ResultsParameters {
 	return &ResultsParameters{
@@ -285,4 +286,3 @@ func ConvertSharpToUnderlineInFP(routers []Router) []Router {
 	}
 	return newRouters
 }
-

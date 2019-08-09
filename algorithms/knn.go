@@ -15,11 +15,13 @@ import (
 var knn_regression bool
 var minkowskyQ float64
 var maxrssInNormal, minrssInNormal float64
+
 //var topRssList []int
 var distAlgo string
 var MaxEuclideanRssDist float64 // used in thread so must be declared as global variable(just reading so there's not any race condition)
 var BLEFactor float64
 var uniqueMacs []string
+
 //var ValidKs []int = defaultValidKs()
 //var ValidMinClusterRSSs []int = defaultValidMinClusterRSSs()
 //
@@ -68,7 +70,6 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 	rd := gp.Get_RawData()
 	//knnConfig := gp.Get_ConfigData().Get_KnnConfig()
 
-
 	MinClusterRSS := hyperParameters.MinClusterRss //komeil: min threshold for determining whether ...
 	RPFRadius := hyperParameters.RPFRadius
 	// a fingerprint is in the cluster of a beacon or not
@@ -98,7 +99,7 @@ func LearnKnn(gp *dbm.Group, hyperParameters parameters.KnnHyperParameters) (par
 
 	for fpTime, fp := range fingerprints {
 		for _, rt := range fp.WifiFingerprint { //rt ==> Router = mac + RSS of an Access Point
-			if (rt.Rssi >= MinClusterRSS) {
+			if rt.Rssi >= MinClusterRSS {
 				clusters[rt.Mac] = append(clusters[rt.Mac], fpTime)
 			}
 		}
@@ -400,7 +401,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	if glb.MinRssClustringEnabled || hyperParams.MinClusterRss == 0 {
 		AtleastInOneCluster := false // komeil: a variable to decide if it is needed to search all fingerprints instead of one or some clusters
 		for _, rt := range curFingerprint.WifiFingerprint {
-			if (rt.Rssi >= hyperParams.MinClusterRss) {
+			if rt.Rssi >= hyperParams.MinClusterRss {
 				if cluster, ok := clusters[rt.Mac]; ok {
 					//glb.Error.Println(rt.Mac,":",rt.Rssi)
 					AtleastInOneCluster = true
@@ -418,7 +419,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				}
 			}
 		}
-		if (!AtleastInOneCluster) {
+		if !AtleastInOneCluster {
 			//glb.Error.Println("Not in cluster")
 			fingerprintsOrdering = mainFingerprintsOrdering
 		}
@@ -448,7 +449,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	// Idea from: Dynamic Subarea Method in "A Hybrid Indoor Positioning Algorithm based on WiFi Fingerprinting and Pedestrian Dead Reckoning""
 	if historyConsidered {
 		baseLoc := "" // according to last location or pdr location, filter far fingerprints
-		if (curFingerprint.Location != "" && glb.PDREnabledForDynamicSubareaMethod) { // Current PDRLocation is available
+		if curFingerprint.Location != "" && glb.PDREnabledForDynamicSubareaMethod { // Current PDRLocation is available
 			baseLoc = curFingerprint.Location
 			// todo : we can use lastUserPos.Location even when PDRLocation is available too.
 		} else {
@@ -471,9 +472,9 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 					}*/
 
 				/*				if strconv.FormatInt(curFingerprint.Timestamp, 10) == "1538071196747"{ //1538071209118
-									glb.Error.Println(len(userPosHistory))
-									glb.Error.Println(baseLoc)
-								}*/
+								glb.Error.Println(len(userPosHistory))
+								glb.Error.Println(baseLoc)
+							}*/
 				//glb.Debug.Println(lastUserPos.KnnGuess)
 				//glb.Debug.Println(lastUserPos.Location)
 			}
@@ -496,9 +497,9 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 
 						for i, levelSliceOfHops := range sliceOfHops {
 							var factor float64
-							if (i <= maxHopLevel && adjacencyFactors[i] != 0) {
+							if i <= maxHopLevel && adjacencyFactors[i] != 0 {
 								factor = adjacencyFactors[i]
-							} else if (minAdjacencyFactor != 0) { // last member of adjacencyFactors is minAdjacencyFactor
+							} else if minAdjacencyFactor != 0 { // last member of adjacencyFactors is minAdjacencyFactor
 								factor = minAdjacencyFactor
 							} else { // if minAdjacencyFactor is zero ignore remaining fingerprints(related to father graph nodes)
 								break
@@ -597,23 +598,23 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	runtime.GOMAXPROCS(glb.MaxParallelism())
 	chanJobs := make(chan jobW, 1+numJobs)
 	chanResults := make(chan resultW, 1+numJobs)
-	if (distAlgo == "Euclidean") {
+	if distAlgo == "Euclidean" {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			go calcWeight(id, chanJobs, chanResults)
 		}
-	} else if (distAlgo == "Cosine") {
+	} else if distAlgo == "Cosine" {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			go calcWeightCosine(id, chanJobs, chanResults)
 		}
-	} else if (distAlgo == "NewEuclidean") {
+	} else if distAlgo == "NewEuclidean" {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			go calcWeight1(id, chanJobs, chanResults)
 		}
-	} else if (distAlgo == "RedpinEuclidean") {
+	} else if distAlgo == "RedpinEuclidean" {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			go calcWeightRedpin(id, chanJobs, chanResults)
 		}
-	} else if (distAlgo == "CombinedCosEuclid") {
+	} else if distAlgo == "CombinedCosEuclid" {
 		for id := 1; id <= glb.MaxParallelism(); id++ {
 			go calcCombinedCosEuclidWeight(id, chanJobs, chanResults)
 		}
@@ -624,7 +625,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	for _, fpTime := range fingerprintsOrdering {
 		fp := fingerprintsInMemory[fpTime]
 
-		if (len(fp.WifiFingerprint) < glb.MinApNum) { // todo:
+		if len(fp.WifiFingerprint) < glb.MinApNum { // todo:
 			numJobs -= 1
 			continue
 		} else {
@@ -646,9 +647,9 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		for i := 1; i <= numJobs; i++ {
 			res := <-chanResults
 			/*			if (res.weight*FP2AFactor[res.fpTime]*float64(repeatFP[res.fpTime]) == 0) {
-							glb.Error.Println(FP2AFactor[res.fpTime])
-							glb.Error.Println(FP2AFactor)
-						}*/
+						glb.Error.Println(FP2AFactor[res.fpTime])
+						glb.Error.Println(FP2AFactor)
+					}*/
 			W[res.fpTime] = res.weight * FP2AFactor[res.fpTime] * float64(repeatFP[res.fpTime])
 		}
 	} else {
@@ -733,7 +734,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 		//var xHistequ []string
 		//var xHistMap []string
 		for K, fpTime := range fingerprintSorted {
-			if (K < stopNum) {
+			if K < stopNum {
 				KNNList[fpTime] = W[fpTime]
 				x_y := strings.Split(fingerprintsInMemory[fpTime].Location, ",")
 				if !(len(x_y) == 2) {
@@ -769,7 +770,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 				//Debug.Println(W[fpTime]*locX)
 				sumW = sumW + curW
 			} else {
-				break;
+				break
 			}
 		}
 		//if curFingerprint.Timestamp==int64(1516794991872647445) {
@@ -801,7 +802,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 	} else {
 		KNNList := make(map[string]float64)
 		for K, fpTime := range fingerprintSorted {
-			if (K < stopNum) {
+			if K < stopNum {
 				fpLoc := fingerprintsInMemory[fpTime].Location
 				if _, ok := KNNList[fpLoc]; ok {
 					KNNList[fpLoc] += W[fpTime]
@@ -809,7 +810,7 @@ func TrackKnn(gp *dbm.Group, curFingerprint parameters.Fingerprint, historyConsi
 					KNNList[fpLoc] = W[fpTime]
 				}
 			} else {
-				break;
+				break
 			}
 		}
 		sortedKNNList := glb.SortReverseDictByVal(KNNList)
@@ -895,14 +896,14 @@ func calcWeightRedpin(id int, jobs <-chan jobW, results chan<- resultW) {
 				euclidDist = euclidDist + math.Pow(float64(curRssi-fpRss), minkowskyQ)
 				length++
 			} else if glb.StringInSlice(curMac, uniqueMacs) {
-				xorExistanceSum++;
+				xorExistanceSum++
 			}
 			curMacList = append(curMacList, curMac)
 		}
 
 		for fpMac, _ := range job.mac2RssFP { // no need to check in uniqueMacs beacuse uniqueMacs created from these fps
 			if !glb.StringInSlice(fpMac, curMacList) {
-				xorExistanceSum++;
+				xorExistanceSum++
 			}
 		}
 
@@ -1073,7 +1074,6 @@ func calcCombinedCosEuclidWeight(id int, jobs <-chan jobW, results chan<- result
 	}
 
 }
-
 
 func getMac2Rss(routeList []parameters.Router) map[string]int {
 	mac2Rss := make(map[string]int)

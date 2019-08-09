@@ -1,4 +1,4 @@
-# ./usr/bin/python
+#!/usr/bin/python3
 
 import grpc
 from concurrent import futures

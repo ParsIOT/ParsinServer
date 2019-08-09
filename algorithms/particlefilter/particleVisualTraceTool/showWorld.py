@@ -31,8 +31,8 @@ class MainWindow(QWidget):
         self.particleColor = Qt.red
         self.meanColor = Qt.blue
         self.trueLocColor = Qt.black
-        self.masterEstColor = Qt.green
-        self.slaveEstColor = Qt.darkGreen
+        self.masterEstColor = Qt.darkMagenta
+        self.slaveEstColor = Qt.yellow
 
         self.updateIndicatortate = 0
         self.initUI()
@@ -155,11 +155,21 @@ class MainWindow(QWidget):
 
     def drawMean(self):
         if len(self.mean) != 0:
-            self.drawPie(self.mean, 40, self.meanColor)
+            # self.drawPie(self.mean, 40, self.meanColor)
+            print("Mean")
+            print(self.mean)
+            brush = QBrush(Qt.SolidPattern)
+            brush.setColor(self.meanColor)
+            self.qp.setPen(self.meanColor)
+            self.qp.setBrush(brush)
+            meanDot = QPoint(self.mean[0] * self.scaleXY, self.mean[1] * self.scaleXY)
+            self.qp.drawEllipse(meanDot, 8, 8)
 
     def drawTrueAndEst(self):
         # print(self.trueLocAndEst)
         if len(self.trueLocAndEst) != 0:
+            print("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEst")
+            print(self.trueLocAndEst[2])
             trueLocCenter = QPoint(self.trueLocAndEst[2][1] * self.scaleXY, self.trueLocAndEst[2][2] * self.scaleXY)
             brush = QBrush(Qt.SolidPattern)
             brush.setColor(self.trueLocColor)
@@ -174,7 +184,7 @@ class MainWindow(QWidget):
                 brush.setColor(self.masterEstColor)
                 self.qp.setPen(self.masterEstColor)
                 self.qp.setBrush(brush)
-                self.qp.drawEllipse(masterEstCenter, 5, 5)
+                self.qp.drawEllipse(masterEstCenter, 7, 7)
             if (self.trueLocAndEst[1][0]):
                 slaveEstCenter = QPoint(self.trueLocAndEst[1][1] * self.scaleXY,
                                         self.trueLocAndEst[1][2] * self.scaleXY)
@@ -182,7 +192,7 @@ class MainWindow(QWidget):
                 brush.setColor(self.slaveEstColor)
                 self.qp.setPen(self.slaveEstColor)
                 self.qp.setBrush(brush)
-                self.qp.drawEllipse(slaveEstCenter, 5, 5)
+                self.qp.drawEllipse(slaveEstCenter, 6, 6)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Right:
@@ -218,9 +228,9 @@ class MainWindow(QWidget):
         print("#################")
         print(mean)
         print(trueLocAndEst)
-        print(particles)
-        print(data[3])
-        print(numpy.sort(data[3]))
+        # print(particles)
+        # print(data[3])
+        # print(numpy.sort(data[3]))
 
         for i in range(len(self.particles)):
             self.particles[i] = particles[i]

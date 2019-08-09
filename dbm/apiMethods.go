@@ -1044,7 +1044,7 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 
 				physicalDistance := glb.CalcDist(mainLocX, mainLocY, otherLocX, otherLocY)
 				//glb.Debug.Println("### physical: ",physicalDistance,"knndistance:",distance)
-				CalculatedDistanceOverall [fpMain.Location] = append(CalculatedDistanceOverall [fpMain.Location], physicalDistance/distance)
+				CalculatedDistanceOverall[fpMain.Location] = append(CalculatedDistanceOverall[fpMain.Location], physicalDistance/distance)
 			}
 		}
 	}
@@ -1092,7 +1092,7 @@ func FingerprintLikeness(groupName string, loc string, maxFPDist float64) (map[s
 				if rt.Mac == mac {
 					line = append(line, strconv.Itoa(rt.Rssi))
 					macFound = true
-					break;
+					break
 				}
 			}
 			if !macFound {
@@ -1155,7 +1155,7 @@ func GetMostSeenMacs(groupName string) []string {
 
 	glb.Debug.Println(macSorted)
 
-	if (len(macSorted) < NumOfMustSeenMacs) {
+	if len(macSorted) < NumOfMustSeenMacs {
 		return macSorted
 	} else {
 		return macSorted[:NumOfMustSeenMacs]
@@ -1230,9 +1230,9 @@ func FindTrueFPloc(fp parameters.Fingerprint, allLocationLogs map[int64]string, 
 	for i, timeStamp := range allLocationLogsOrdering {
 
 		/*	if timeStamp < int64(1537973812090) && fp.Location=="-22.0,39.0" && stopit{
-				glb.Error.Println("Found it ",allLocationLogs[timeStamp])
-				stopit = false
-			}*/
+			glb.Error.Println("Found it ",allLocationLogs[timeStamp])
+			stopit = false
+		}*/
 		//glb.Debug.Println(timeStamp-fpTimeStamp)
 		if fpTimeStamp > timeStamp {
 			lessUntil = i
@@ -1319,7 +1319,7 @@ func GetRSSData(groupName string, mac string) [][]int {
 
 	for _, fp := range fpData {
 		for _, rt := range fp.WifiFingerprint {
-			if (rt.Mac == mac) {
+			if rt.Mac == mac {
 				xy := strings.Split(fp.Location, ",")
 				x, err1 := glb.StringToFloat(xy[0])
 				y, err2 := glb.StringToFloat(xy[1])
@@ -1400,7 +1400,6 @@ func CalculateTestErrorAndRelocateTestValid(groupName string, testValidTracks []
 		ErrDetails["knn"] = lstKnnErrDetails
 		//ErrDetails = append(ErrDetails, int(knnDist))
 
-
 		//fpBayesX, fpBayesY := glb.GetDotFromString(userPos.BayesGuess)
 		//AlgoError["bayes"] += glb.CalcDist(fpBayesX, fpBayesY, trueX, trueY)
 
@@ -1453,12 +1452,12 @@ func SetTrueLocationFromLog(groupName string, method string) error {
 			locLog[i] = strings.TrimSpace(item)
 		}
 
-		if (len(locLog) != 5) {
+		if len(locLog) != 5 {
 			glb.Error.Println(locLog)
 			continue
 		}
 		tagName := locLog[1]
-		if (tagName == "None") { // x,y,z are None too.
+		if tagName == "None" { // x,y,z are None too.
 			glb.Debug.Println("None location")
 			continue
 		}

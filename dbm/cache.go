@@ -8,18 +8,17 @@
 package dbm
 
 import (
+	"ParsinServer/dbm/parameters"
 	"strings"
 	"sync"
 	"time"
-	"ParsinServer/dbm/parameters"
 )
 
 //Todo: These time can be dynamic for each group and each variable
 //Todo: is it necessary to clear cache ?!!!!
 
 var CacheResetFastPeriod time.Duration = 30 //second
-var CacheResetPeriod time.Duration = 600 //second
-
+var CacheResetPeriod time.Duration = 600    //second
 
 //Containing a map: key=group Name, value= a FullParameters instance
 // if there is psCache in memory, ps isn't got from db
@@ -27,7 +26,6 @@ var CacheResetPeriod time.Duration = 600 //second
 //	sync.RWMutex
 //	m map[string]parameters.FullParameters
 //}{m: make(map[string]parameters.FullParameters)}
-
 
 //var knnFPCache = struct {
 //	sync.RWMutex
@@ -91,18 +89,18 @@ func ResetCache(cache string) {
 		userPositionCache.Lock()
 		userPositionCache.m = make(map[string]parameters.UserPositionJSON)
 		userPositionCache.Unlock()
-	//} else if cache == "psCache" {
-	//	psCache.Lock()
-	//	psCache.m = make(map[string]parameters.FullParameters)
-	//	psCache.Unlock()
+		//} else if cache == "psCache" {
+		//	psCache.Lock()
+		//	psCache.m = make(map[string]parameters.FullParameters)
+		//	psCache.Unlock()
 	} else if cache == "isLearning" {
 		isLearning.Lock()
 		isLearning.m = make(map[string]bool)
 		isLearning.Unlock()
-	//} else if cache == "knnFPCache" {
-	//	knnFPCache.Lock()
-	//	knnFPCache.m = make(map[string]parameters.KnnFingerprints)
-	//	knnFPCache.Unlock()
+		//} else if cache == "knnFPCache" {
+		//	knnFPCache.Lock()
+		//	knnFPCache.m = make(map[string]parameters.KnnFingerprints)
+		//	knnFPCache.Unlock()
 	}
 }
 
@@ -166,7 +164,6 @@ func AppendUserCache(group string, user string) {
 //	psCache.Unlock()
 //	return
 //}
-
 
 //psCache variable getter function
 //func GetKnnFPCache(group string) (parameters.KnnFingerprints, bool) {

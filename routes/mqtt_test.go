@@ -1,8 +1,6 @@
 package routes
 
-import (
-
-)
+import ()
 
 //func TestProcessMQTTFingerprintTrack(t *testing.T) {
 //	fingerprint, _, _ := MqttBuildFingerprint("group/track/user", []byte("002369d4479f7380377387563666001a1e46cd1178001a1e46cd1075a063912b9e6556803773baf7d842"))

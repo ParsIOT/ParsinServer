@@ -1,6 +1,9 @@
 package algorithms
 
 import (
+	"ParsinServer/dbm"
+	"ParsinServer/dbm/parameters"
+	"ParsinServer/glb"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -12,9 +15,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"ParsinServer/glb"
-	"ParsinServer/dbm/parameters"
-	"ParsinServer/dbm"
 )
 
 // # sudo apt-get install g++
@@ -38,7 +38,7 @@ type Svm struct {
 }
 
 //gets the fingerprints data from db and make them in the format of LIBSVM.
-func DumpFingerprintsSVM(group string){
+func DumpFingerprintsSVM(group string) {
 	//macs: every mac as key and the value is a unique id.
 	macs := make(map[string]int)
 	//locations: every location as key and the value is a unique id.
@@ -50,12 +50,11 @@ func DumpFingerprintsSVM(group string){
 	macI := 1
 	locationI := 1
 
-
-	_,fingerprintsInMemory,err := dbm.GetLearnFingerPrints(group,true)
+	_, fingerprintsInMemory, err := dbm.GetLearnFingerPrints(group, true)
 	if err != nil {
 		glb.Error.Println(err)
 	}
-	for _,fp := range fingerprintsInMemory{
+	for _, fp := range fingerprintsInMemory {
 		for _, fingerprint := range fp.WifiFingerprint {
 			if _, ok := macs[fingerprint.Mac]; !ok {
 
@@ -76,25 +75,24 @@ func DumpFingerprintsSVM(group string){
 
 	//loop through fingerprints bucket and make the svmData string
 	svmData := ""
-	for _,fp := range fingerprintsInMemory{
+	for _, fp := range fingerprintsInMemory {
 		svmData = svmData + makeSVMLine(fp, macs, locations)
 		/*
-		svmData: 	loc mac1:rss1 mac2:rss2 ...
-			1 	1	:-52 	2 :-76 	3:-78 4:-88 5:-80
-			2 	1	:-53 	2 :-69 	3:-76 4:-88 5:-80
+			svmData: 	loc mac1:rss1 mac2:rss2 ...
+				1 	1	:-52 	2 :-76 	3:-78 4:-88 5:-80
+				2 	1	:-53 	2 :-69 	3:-76 4:-88 5:-80
 		*/
 	}
 
-
 	var errs []error
-	errs = append(errs,dbm.SetResourceInBucket("svmData",svmData,"svmresources",group))
-	errs = append(errs,dbm.SetResourceInBucket("macsFromID",macsFromID,"svmresources",group))
-	errs = append(errs,dbm.SetResourceInBucket("locationsFromID",locationsFromID,"svmresources",group))
-	errs = append(errs,dbm.SetResourceInBucket("macs",macs,"svmresources",group))
-	errs = append(errs,dbm.SetResourceInBucket("locations",locations,"svmresources",group))
+	errs = append(errs, dbm.SetResourceInBucket("svmData", svmData, "svmresources", group))
+	errs = append(errs, dbm.SetResourceInBucket("macsFromID", macsFromID, "svmresources", group))
+	errs = append(errs, dbm.SetResourceInBucket("locationsFromID", locationsFromID, "svmresources", group))
+	errs = append(errs, dbm.SetResourceInBucket("macs", macs, "svmresources", group))
+	errs = append(errs, dbm.SetResourceInBucket("locations", locations, "svmresources", group))
 
-	for _,err := range errs{
-		if err != nil{
+	for _, err := range errs {
+		if err != nil {
 			glb.Error.Println(err)
 		}
 	}
@@ -130,7 +128,7 @@ func CalculateSVM(group string) error {
 
 	svmData := ""
 
-	err = dbm.GetResourceInBucket("svmData",&svmData,"svmresources",group)
+	err = dbm.GetResourceInBucket("svmData", &svmData, "svmresources", group)
 	if err != nil {
 		panic(err)
 	}
@@ -256,7 +254,6 @@ func CalculateSVM(group string) error {
 	return nil
 }
 
-
 //uses the LIBSVM to predict and classify the incoming fingerprint
 func SvmClassify(jsonFingerprint parameters.Fingerprint) (string, map[string]float64) {
 	var err error
@@ -288,22 +285,21 @@ func SvmClassify(jsonFingerprint parameters.Fingerprint) (string, map[string]flo
 	//	return err
 	//})
 
-	err = dbm.GetResourceInBucket("locations",&locations,"svmresources",jsonFingerprint.Group)
+	err = dbm.GetResourceInBucket("locations", &locations, "svmresources", jsonFingerprint.Group)
 	if err != nil {
 		glb.Error.Println(err)
-		return "",nil
+		return "", nil
 	}
-	err = dbm.GetResourceInBucket("locationsFromID",&locationsFromID,"svmresources",jsonFingerprint.Group)
+	err = dbm.GetResourceInBucket("locationsFromID", &locationsFromID, "svmresources", jsonFingerprint.Group)
 	if err != nil {
 		glb.Error.Println(err)
-		return "",nil
+		return "", nil
 	}
-	err = dbm.GetResourceInBucket("macs",&macs,"svmresources",jsonFingerprint.Group)
+	err = dbm.GetResourceInBucket("macs", &macs, "svmresources", jsonFingerprint.Group)
 	if err != nil {
 		glb.Error.Println(err)
-		return "",nil
+		return "", nil
 	}
-
 
 	svmData := makeSVMLine(jsonFingerprint, macs, locations)
 	if len(svmData) < 5 {

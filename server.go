@@ -45,15 +45,6 @@ func main() {
 		LoginSuccessfulRedirectURL: "/change-db",
 	})
 
-	/*	go func() {
-			for {
-				time.Sleep(20 * time.Second)
-				fmt.Println("Free up memory...")
-				debug.FreeOSMemory()
-			}
-
-		}()*/
-
 	dbm.Wg.Add(1)
 	defer dbm.Wg.Wait()
 	go dbm.GM.Flusher()
@@ -78,13 +69,9 @@ func main() {
 	flag.StringVar(&glb.RuntimeArgs.SourcePath, "data", "", "path to data folder")
 	flag.StringVar(&glb.RuntimeArgs.ScikitPort, "scikit", "", "port for scikit-learn calculations")
 	flag.StringVar(&glb.RuntimeArgs.ParticleFilterServer, "particlefilterServer", glb.RuntimeArgs.ParticleFilterServer, "ip:port of particleFilter grpc server ")
-
-
-	//flag.StringVar(&gvar.RuntimeArgs.FilterMacFile, "filter", "", "JSON file for macs to filter")
 	flag.StringVar(&glb.RuntimeArgs.AdminAdd, "adminadd", "", "Add an admin user or change his password, foramt:<username>:<password>, e.g.:admin:admin")
 	flag.BoolVar(&glb.RuntimeArgs.GaussianDist, "gaussian", false, "Use gaussian distribution instead of historgram")
 	flag.BoolVar(&glb.RuntimeArgs.Debug, "debug", false, "run in debug mode")
-
 	flag.IntVar(&glb.RuntimeArgs.MinRssOpt, "minrss", -100, "Select minimum rss; Any Rss lower than minRss will be ignored.")
 
 	flag.CommandLine.Usage = func() {
@@ -97,6 +84,8 @@ func main() {
 	}
 	flag.Parse()
 	glb.RuntimeArgs.ExternalIP = flag.Arg(0)
+
+	// Handle RuntimeArgs
 	if glb.RuntimeArgs.ExternalIP == "" {
 		glb.RuntimeArgs.ExternalIP = glb.GetLocalIP() + glb.RuntimeArgs.Port
 	}
@@ -132,26 +121,9 @@ func main() {
 	if glb.RuntimeArgs.Debug {
 		fmt.Println("Running in debug mode")
 	}
-	//// Check whether macs should be filtered
-
-	//glb.RuntimeArgs.FilterMacsMap = make(map[string][]string)
-	//glb.RuntimeArgs.NeedToFilter = make(map[string]bool)
-	//glb.RuntimeArgs.NotNullFilterList = make(map[string]bool)
-
-	//if len(gvar.RuntimeArgs.FilterMacFile) > 0 {
-	//	b, err := ioutil.ReadFile(gvar.RuntimeArgs.FilterMacFile)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	gvar.RuntimeArgs.FilterMacs = make(map[string]bool)
-	//	json.Unmarshal(b, &gvar.RuntimeArgs.FilterMacs)
-	//	fmt.Printf("Filtering %+v", gvar.RuntimeArgs.FilterMacs)
-	//	//gvar.RuntimeArgs.Filtering = true
-	//}
 
 	// Check whether we are just dumping the database
 	if len(glb.RuntimeArgs.Dump) > 0 {
-		//err := dbm.DumpFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
 		err := dbm.DumpFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
 		if err == nil {
 			fmt.Println("Successfully dumped.")
@@ -178,14 +150,6 @@ func main() {
 		}
 		os.Exit(1)
 	}
-	//err := dbm.DumpFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
-	//err := dbm.DumpRawFingerprints(strings.ToLower(glb.RuntimeArgs.Dump))
-	//if err == nil {
-	//	fmt.Println("Successfully dumped.")
-	//} else {
-	//	log.Fatal(err)
-	//}
-	//os.Exit(1)
 
 	// Useradded command
 	// Check whether we are just dumping the database
@@ -234,12 +198,9 @@ func main() {
 
 	// Setup Gin-Gonic
 	gin.SetMode(gin.ReleaseMode)
-	//r := gin.Default()
-
 	engine := gin.New()
 
 	noNeedLogRoutes := []string{"data", "calcLevel"}
-
 	logger := glb.Logger(noNeedLogRoutes...)
 	engine.Use(logger, gin.Recovery())
 	r := engine
@@ -261,33 +222,18 @@ func main() {
 		})
 	})
 
-	// r.PUT("/message", putMessage)
 	privateRoutes := r.Group("/", glb.SessionManager.AuthenticatedOnly())
-	//privateRoutes := r
 	{
 		privateRoutes.GET("/logout", glb.SessionManager.Logout)
-		//routes.PreLoadSettings(
 		// Routes for logging in and viewing dashboards (pages.go)
 		privateRoutes.GET("/", routes.Slash)
 		privateRoutes.GET("/change-db", routes.SlashChangeDb)
 		privateRoutes.POST("/change-db", routes.SlashChangeDbPOST)
-		/*
-			r.GET("/livemap/:group", func(context *gin.Context) {
-				r.LoadHTMLGlob(path.Join(gvar.RuntimeArgs.Cwd, "templates/*"))
-				LiveLocationMap(context)
-			})
-		*/
 		//privateRoutes.PUT("/mqtt", routes.PutMQTT) // Routes for MQTT (mqtt.go)
-
-		// Routes for API access (api.go)
-		//privateRoutes.GET("/location", routes.GetUserLocations)
-
-		//r.Static("data/", path.Join(gvar.RuntimeArgs.Cwd, "data/"))
 		privateRoutes.Static("data/", path.Join(glb.RuntimeArgs.Cwd, "data/")) // Load db files
 		privateRoutes.GET("/status", routes.GetStatus)
 
 		needToLoadSettings := privateRoutes.Group("/", routes.PreLoadSettings)
-		//needToLoadSettings := r
 		{
 			//Todo: Url must be same format to mention group name (now, group can be url param or be GET param)
 			// Pages :
@@ -296,8 +242,8 @@ func main() {
 				routes.SlashDashboard(context)
 			})
 			needToLoadSettings.GET("/explore/:group/:network/:location", routes.GetLocationMacs)
-			//needToLoadSettings.GET("/explore/:group/:network/:location", routes.SlashExplore2)
-			//needToLoadSettings.GET("/pie/:group/:network/:location", routes.SlashPie)
+
+			needToLoadSettings.GET("/locationsmap/:group", routes.LocationsOnMap)
 			needToLoadSettings.GET("/livemap/:group", routes.LiveLocationMap)
 			//needToLoadSettings.GET("/userhistory/:group", routes.UserHistoryMap)
 			needToLoadSettings.GET("/userhistory/:group", routes.UserHistoryMap)
@@ -305,52 +251,46 @@ func main() {
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*")) // TODO: remove this for performance
 				routes.TestValidTracksMap(context)
 			})
-
 			needToLoadSettings.GET("/fingerprintAmbiguity/:group", routes.FingerprintAmbiguity)
 			needToLoadSettings.GET("/heatmap/:group", routes.Heatmap)
-			needToLoadSettings.GET("/errorheatmap/:group", routes.ErrorHeatMap)
-
+			needToLoadSettings.GET("/errorHeatmap/:group", routes.ErrorHeatMap)
 			needToLoadSettings.GET("/uwbUserMap/:group", func(context *gin.Context) {
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*")) // TODO: remove this for performance
 				routes.UWBUserMap(context)
 			})
-
-			//needToLoadSettings.GET("/Graphform/:group", routes.Graphform)
-			needToLoadSettings.GET("/Graphform/:group", func(context *gin.Context) {
+			//needToLoadSettings.GET("/graphForm/:group", routes.Graphform)
+			needToLoadSettings.GET("/graphForm/:group", func(context *gin.Context) {
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
 				routes.Graphform(context)
 			})
-
-			needToLoadSettings.GET("/AlgorithmsCDF/:group", routes.AlgorithmsCDF)
-			//needToLoadSettings.GET("/AlgorithmsCDF/:group", func(context *gin.Context) {
+			needToLoadSettings.GET("/algorithmsCDF/:group", routes.AlgorithmsCDF)
+			//needToLoadSettings.GET("/algorithmsCDF/:group", func(context *gin.Context) {
 			//	r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
 			//	routes.AlgorithmsCDF(context)
 			//})
-
 			needToLoadSettings.GET("/testValidTracksDetails/:group", func(context *gin.Context) { //komeil: graph map
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
 				routes.TestValidTracksDetails(context)
 			})
-
 			needToLoadSettings.GET("/arbitraryLocations/:group", routes.ArbitraryLocations)
 			//needToLoadSettings.GET("/InfrastructureDetails/:group", routes.InfrastructureDetails)
 			needToLoadSettings.GET("/infrastructureDetails/:group", func(context *gin.Context) { //komeil: graph map
 				r.LoadHTMLGlob(path.Join(glb.RuntimeArgs.Cwd, "res/templates/*"))
 				routes.InfrastructureDetails(context)
 			})
+
 			// APIs:
 
-			//needToLoadSettings.GET("/getfingerprint/", routes.GetFingerprint)
-			needToLoadSettings.GET("/locationsmap/:group", routes.LocationsOnMap)
+			//needToLoadSettings.GET("/getFingerprint/", routes.GetFingerprint)
 			needToLoadSettings.GET("/locations", routes.GetLocationList)
 			needToLoadSettings.GET("/editloc", routes.EditLoc)
 			needToLoadSettings.GET("/editlocBaseDB", routes.EditLocBaseDB)
 			needToLoadSettings.GET("/editusername", routes.EditUserName)
-
 			needToLoadSettings.DELETE("/location", routes.DeleteLocation)
 			needToLoadSettings.DELETE("/locationBaseDB", routes.DeleteLocationBaseDB)
 			needToLoadSettings.DELETE("/locations", routes.DeleteLocations)
 			needToLoadSettings.DELETE("/locationsBaseDB", routes.DeleteLocationsBaseDB)
+
 			needToLoadSettings.DELETE("/user", routes.DeleteUser)
 			needToLoadSettings.DELETE("/database", routes.DeleteDatabase)
 			needToLoadSettings.GET("/fingerprintLikeness", routes.FingerprintLikeness)
@@ -359,43 +299,34 @@ func main() {
 			needToLoadSettings.GET("/cvresults", routes.CVResults)
 			needToLoadSettings.GET("/calcLevel", routes.CalcCompletionLevel)
 
-			needToLoadSettings.GET("/buildgroup", routes.BuildGroup)
-			//needToLoadSettings.PUT("/mixin", routes.PutMixinOverride)
-			//needToLoadSettings.PUT("/cutoff", routes.PutCutoffOverride)
-			//needToLoadSettings.PUT("/k_knn", routes.PutKnnK)
+			needToLoadSettings.GET("/buildGroup", routes.BuildGroup)
 			needToLoadSettings.PUT("/database", routes.MigrateDatabase)
-			needToLoadSettings.PUT("/SetKnnKRange", routes.PutKnnKRange)
-			needToLoadSettings.PUT("/SetKnnMinClusterRSSRange", routes.PutKnnMinClusterRSSRange)
-			//needToLoadSettings.PUT("/SetMaxMovement", routes.PutMaxMovement)
-			needToLoadSettings.PUT("/minrss", routes.PutMinRss)
-			//needToLoadSettings.PUT("/SetMaxEuclideanRssDist", routes.PutMaxEuclideanRssDist)
 
-			needToLoadSettings.GET("/lastfingerprint", routes.GetLastFingerprint)
-			needToLoadSettings.GET("/reformdb", routes.ReformDB)
-			needToLoadSettings.GET("/macfilterform/:group", routes.Macfilterform)
-			//needToLoadSettings.GET("/Graphform/:group", routes.Graphform) //komeil: page to enter graph
+			needToLoadSettings.GET("/lastFingerprint", routes.GetLastFingerprint)
+			needToLoadSettings.GET("/reformDB", routes.ReformDB)
+			needToLoadSettings.GET("/macfilterForm/:group", routes.Macfilterform)
 
 			needToLoadSettings.GET("/getMostSeenMacs", routes.GetMostSeenMacsAPI)
-			needToLoadSettings.POST("/setfiltermacs", routes.Setfiltermacs)
-			needToLoadSettings.GET("/getfiltermacs", routes.Getfiltermacs)
-			needToLoadSettings.GET("/getuniquemacs", routes.GetUniqueMacs)
+			needToLoadSettings.POST("/setFilterMacs", routes.SetFilterMacs)
+			needToLoadSettings.GET("/getFilterMacs", routes.GetFilterMacs)
+			needToLoadSettings.GET("/getUniqueMacs", routes.GetUniqueMacs)
 
 			needToLoadSettings.POST("/addNodeToGraph", routes.AddNodeToGraph) // komeil: set and get for graph
-			needToLoadSettings.GET("/getgraph", routes.Getgraph)
+			needToLoadSettings.GET("/getGraph", routes.GetGraph)
 			needToLoadSettings.POST("/addEdgeToGraph", routes.AddEdgeToGraph)
-			needToLoadSettings.GET("/saveedgestodb", routes.SaveEdgesToDB)
-			needToLoadSettings.POST("/RemoveEdgesOrVertices", routes.RemoveEdgesOrVertices)
-			needToLoadSettings.GET("/deletewholegraph", routes.DeleteWholeGraph)
+			needToLoadSettings.GET("/saveEdgesToDB", routes.SaveEdgesToDB)
+			needToLoadSettings.POST("/removeEdgesOrVertices", routes.RemoveEdgesOrVertices)
+			needToLoadSettings.GET("/deleteWholeGraph", routes.DeleteWholeGraph)
 			needToLoadSettings.GET("/getGraphNodeAdjacentFPs", routes.GetGraphNodeAdjacentFPs)
 
-			needToLoadSettings.PUT("/choosemap", routes.ChooseMap) // komeil: choose a map for group
+			needToLoadSettings.PUT("/chooseMap", routes.ChooseMap) // komeil: choose a map for group
 			//Arbitrary locations
 			needToLoadSettings.POST("/addArbitLocations", routes.AddArbitLocations)
 			needToLoadSettings.POST("/delArbitLocations", routes.DelArbitLocations)
 
 			//Infrastructure :
 			needToLoadSettings.POST("/addChangeTransmitter", routes.AddChangeTransmitter)
-			needToLoadSettings.POST("/delTrasmitter", routes.DelTransmitter)
+			needToLoadSettings.POST("/delTransmitter", routes.DelTransmitter)
 
 			//needToLoadSettings.GET("/getArbitLocations", routes.GetArbitLocations)
 			needToLoadSettings.DELETE("/clearConfigData", routes.ClearConfigData)
@@ -403,48 +334,33 @@ func main() {
 			needToLoadSettings.POST("/setGroupOtherConfig", routes.SetGroupOtherConfig)
 		}
 	}
-	r.GET("/getfingerprint/", routes.GetFingerprint)
+	r.GET("/location", routes.GetUserLocations)
+	r.GET("/getFingerprint/", routes.GetFingerprint)
 	r.GET("/getRPFDetails/", routes.GetRPFDetails)
 	r.GET("/getRPFDetailsMapDots/", routes.GetRPFDetailsMapDots)
 
 	r.GET("/editMac", routes.EditMac)
 	r.GET("/reloadDB", routes.ReloadDB)
-	//r.GET("/getGraphNodeAdjacentFPs", routes.GetGraphNodeAdjacentFPs)
-	//r.POST("/addNodeToGraph", routes.AddNodeToGraph)
-	r.POST("/uploadTrueLocationLog", routes.UploadTrueLocationLog)
 	r.GET("/setRelocateFPLocState", routes.SetRelocateFPLocStateAPI)
 	r.GET("/getRelocateFPLocState", routes.GetRelocateFPLocStateAPI)
-	r.DELETE("/clearTestValidTrueLocation", routes.ClearTestValidTrueLocation)
 	r.GET("/getRSSData", routes.GetRSSDataAPI)
 	r.GET("/getMapDetails", routes.GetMapDetails)
-
-	//r.POST("/addArbitLocations", routes.AddArbitLocations)
-	//r.POST("/delArbitLocations", routes.DelArbitLocations)
 	r.GET("/getArbitLocations", routes.GetArbitLocations)
 	r.GET("/getInfrastructureDetails", routes.GetInfrastructureDetails)
-	//r.POST("/addChangeTrasmitter", routes.AddChangeTransmitter)
-	//r.POST("/delTrasmitter", routes.DelTransmitter)
 
-
-	r.DELETE("/delresults", routes.DelResults)
-	r.GET("/location", routes.GetUserLocations)
 	r.GET("/getTestValidTracks", routes.GetTestValidTracks) // deprecated
 	r.DELETE("/delTestValidTracks", routes.DelTestValidTracks)
-
 	r.GET("/getTestValidTracksDetails", routes.GetTestValidTracksDetails)
-	//r.GET("/getTestValidTracksDetails", routes.GetTestValidTracksDetails)
-	//r.GET("/CalculateErrorByTrueLocation", routes.CalculateErrorByTrueLocation)
-
 	r.GET("/getTestErrorAlgoAccuracy", routes.GetTestErrorAlgoAccuracy)
-	// Routes for performing fingerprinting (fingerprint.go)
+	r.DELETE("/clearTestValidTrueLocation", routes.ClearTestValidTrueLocation)
+
+	r.POST("/uploadTrueLocationLog", routes.UploadTrueLocationLog)
 	r.POST("/learn", algorithms.LearnFingerprintPOST)
 	r.POST("/bulklearn", algorithms.BulkLearnFingerprintPOST)
 	r.POST("/track", algorithms.TrackFingerprintPOST)
 
-	//needToLoadSettings := r.Group("/",routes.PreLoadSettings)
-	//{
-	//	needToLoadSettings.POST("/track", algorithms.TrackFingerprintPfOST)
-	//}
+	r.DELETE("/delResults", routes.DelResults)
+
 	// Authentication
 	auth := r.Group("/")
 	{
@@ -470,15 +386,3 @@ func main() {
 	}
 
 }
-
-// // putMessage usage: curl -G -X PUT "http://localhost:8003/message" --data-urlencode "text=hello world"
-// func putMessage(c *gin.Context) {
-// 	newText := c.DefaultQuery("text", "none")
-// 	if newText != "none" {
-// 		gvar.RuntimeArgs.Message = newText
-// 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Message set as '" + newText + "'"})
-// 	} else {
-// 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
-// 	}
-// }
-

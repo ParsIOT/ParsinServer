@@ -1,16 +1,17 @@
 package particlefilter
 
 import (
+	pb "ParsinServer/algorithms/particlefilter/particlefilterclasses"
 	"ParsinServer/glb"
 	"context"
 	"google.golang.org/grpc"
 	"log"
-	pb "ParsinServer/algorithms/particlefilter/particlefilterclasses"
 	"time"
 )
 
 var particlefilterClient pb.ParticleFilterClient
 var conn grpc.ClientConn
+
 func Do_Initialize(initRequest pb.InitRequest) pb.InitReply {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -30,7 +31,7 @@ func Do_Predict(predictRequest pb.PredictRequest) pb.PredictReply {
 		//log.Fatalf("could not greet: %v", err)
 		glb.Error.Println("Can't Do_Predict: ", err.Error())
 	}
-	if (len(predictReply.ResXY) != 2){
+	if len(predictReply.ResXY) != 2 {
 		glb.Error.Println("Invalid Do_Predict result.ResXY")
 	}
 	return *predictReply
@@ -44,7 +45,7 @@ func Do_Update(updateRequest pb.UpdateRequest) pb.UpdateReply {
 		//log.Fatalf("could not greet: %v", err)
 		glb.Error.Println("Can't Do_Update: ", err.Error())
 	}
-	if (len(updateReply.ResXY) != 2){
+	if len(updateReply.ResXY) != 2 {
 		glb.Error.Println("Invalid Do_Update result.ResXY")
 	}
 	return *updateReply
@@ -72,7 +73,6 @@ func Update(timestamp int64, masterEstimation, slaveEstimation, trueLocation []f
 	updateReply := Do_Update(updateRequest)
 	return updateReply.ResXY
 }
-
 
 func TestConnection() {
 	// Send simple Initialize command to check connection

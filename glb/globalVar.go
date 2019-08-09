@@ -4,8 +4,8 @@ import (
 	"github.com/MA-Heshmatkhah/SimpleAuth"
 	"os"
 	"path"
-	"strings"
 	"reflect"
+	"strings"
 )
 
 var SessionManager SimpleAuth.Manager
@@ -19,28 +19,28 @@ var SessionManager SimpleAuth.Manager
 // arguments available
 // Todo: Just add runtime variable here. Add shared variable in cache.go. Add constant in another fields and in algoVar.go
 var RuntimeArgs struct {
-	ScikitPort           string
+	ScikitPort        string
 	ParticleFilterServer string
 	ExternalIP           string
 	Port                 string
-	ServerCRT            string
-	ServerKey            string
-	SourcePath           string
-	MapPath              string
-	MapDirectory         string
-	Socket               string
-	Cwd                  string
-	MqttServer           string
-	MqttAdmin            string
-	MosquittoPID         string
-	MqttAdminPassword    string
-	Dump                 string
-	DumpRaw              string
-	DumpCalc             string
-	Debug                bool
-	Message              string
-	Mqtt                 bool
-	MqttExisting         bool
+	ServerCRT         string
+	ServerKey         string
+	SourcePath        string
+	MapPath           string
+	MapDirectory      string
+	Socket            string
+	Cwd               string
+	MqttServer        string
+	MqttAdmin         string
+	MosquittoPID      string
+	MqttAdminPassword string
+	Dump              string
+	DumpRaw           string
+	DumpCalc          string
+	Debug             bool
+	Message           string
+	Mqtt              bool
+	MqttExisting      bool
 	Svm               bool
 	Scikit            bool
 	AdminAdd          string
@@ -49,20 +49,19 @@ var RuntimeArgs struct {
 	KNN               bool
 }
 
-
 type Empty struct{}
 
-func init(){
+func init() {
 	cwd, _ := os.Getwd()
 	pkgName := reflect.TypeOf(Empty{}).PkgPath()
-	
-	projName := strings.Split(pkgName,"/")[0]
-	for _,p := range strings.Split(cwd,"/") {
+
+	projName := strings.Split(pkgName, "/")[0]
+	for _, p := range strings.Split(cwd, "/") {
 		if p == projName {
-			RuntimeArgs.Cwd += p +"/"
+			RuntimeArgs.Cwd += p + "/"
 			break
 		}
-		RuntimeArgs.Cwd += p +"/"
+		RuntimeArgs.Cwd += p + "/"
 	}
 	RuntimeArgs.SourcePath = path.Join(RuntimeArgs.Cwd, "data")
 	//MapPath := filepath.FromSlash("res/static/map")
@@ -81,5 +80,3 @@ func init(){
 
 	RuntimeArgs.ParticleFilterServer = "localhost:50051"
 }
-
-

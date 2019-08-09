@@ -15,7 +15,6 @@ import (
 	"testing"
 )
 
-
 type Empty struct{}
 
 var DataPath string
@@ -33,21 +32,21 @@ func getTestCount() int {
 	return testCount
 }
 
-func gettestdbName() string{
+func gettestdbName() string {
 	testCount := getTestCount()
 	initRaw(testCount)
-	testdbName := "testdb"+strconv.Itoa(testCount)
+	testdbName := "testdb" + strconv.Itoa(testCount)
 	return testdbName
 }
 
-func freedb(testdb string){
-	os.Remove(path.Join(DataPath,testdb+".db"))
+func freedb(testdb string) {
+	os.Remove(path.Join(DataPath, testdb+".db"))
 }
 
-func initRaw(testCount int){
+func initRaw(testCount int) {
 	lock.Lock()
-	newName := "testdb"+strconv.Itoa(testCount)+".db"
-	_, err := exec.Command("cp", []string{path.Join(DataPath, "testdb.db.backup"),path.Join(DataPath, newName)}...).Output()
+	newName := "testdb" + strconv.Itoa(testCount) + ".db"
+	_, err := exec.Command("cp", []string{path.Join(DataPath, "testdb.db.backup"), path.Join(DataPath, newName)}...).Output()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,13 +58,13 @@ func init() {
 	gin.SetMode(gin.ReleaseMode)
 	cwd, _ := os.Getwd()
 	pkgName := reflect.TypeOf(Empty{}).PkgPath()
-	projName := strings.Split(pkgName,"/")[0]
-	for _,p := range strings.Split(cwd,"/") {
+	projName := strings.Split(pkgName, "/")[0]
+	for _, p := range strings.Split(cwd, "/") {
 		if p == projName {
-			DataPath += p+"/"
+			DataPath += p + "/"
 			break
 		}
-		DataPath += p +"/"
+		DataPath += p + "/"
 	}
 	DataPath = path.Join(DataPath, "data")
 	glb.Debug.Println(DataPath)

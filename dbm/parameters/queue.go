@@ -52,7 +52,6 @@ func (s *Queue) Size() int {
 	return len(s.items)
 }*/
 
-
 // NodeQueue the queue of Nodes
 type NodeQueue struct {
 	items []Node

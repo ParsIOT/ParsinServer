@@ -112,20 +112,20 @@ class PredictionAndObservationModel(interfaces.ParticleFiltering):
             orgn = oldParticles[:, :2][i]
             dst = particles[:, :2][i]
             # while (numpy.linalg.norm(particles[:, :2][i] - lastMeanXY) > maxDist):
-            while (self.cross_wall(orgn, dst)):
-                # print(orgn)
-                if count > 10:
-                    particles[:, :2][i] = oldParticles[:, :2][i]
-                    break
-                count += 1
-                # altSpeed /= 2.0
-                # print(numpy.random.normal(0, self.Q[0], 1)[0])
-                h[i] += numpy.random.normal(0, 3 * self.Q[0], 1)[0]
-                h_rad[i] = numpy.radians(h[i])
-                dx = numpy.cos(h_rad[i]) * altSpeed * timespan
-                dy = numpy.sin(h_rad[i]) * altSpeed * timespan
-                particles[:, 2][i] = h[i]
-                particles[:, :2][i] = oldParticles[:, :2][i] + numpy.array([dx, dy])
+            # while (self.cross_wall(orgn, dst)):
+            #     # print(orgn)
+            #     if count > 10:
+            #         particles[:, :2][i] = oldParticles[:, :2][i]
+            #         break
+            #     count += 1
+            #     # altSpeed /= 2.0
+            #     # print(numpy.random.normal(0, self.Q[0], 1)[0])
+            #     h[i] += numpy.random.normal(0, 3 * self.Q[0], 1)[0]
+            #     h_rad[i] = numpy.radians(h[i])
+            #     dx = numpy.cos(h_rad[i]) * altSpeed * timespan
+            #     dy = numpy.sin(h_rad[i]) * altSpeed * timespan
+            #     particles[:, 2][i] = h[i]
+            #     particles[:, :2][i] = oldParticles[:, :2][i] + numpy.array([dx, dy])
         ################################################################
 
         ################################################################

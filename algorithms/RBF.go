@@ -38,7 +38,7 @@ func CalculateDotRPF(dot string, graphMapPointer parameters.Graph, RPFRadius flo
 		//glb.Debug.Println("###################")
 		//glb.Debug.Println(minDist," : ",connectedComponentDotDists)
 		//glb.Debug.Println(gaussianProbability(minDist, routeVariance),",",minDist,",",routeVariance)
-		rpfVal += gaussianProbability(minDist, routeVariance)
+		rpfVal += gaussianProbability(minDist, routeVariance) * float64(len(connectedComponent))
 		//glb.Debug.Println(rpfVal)
 
 	}

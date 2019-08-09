@@ -12,7 +12,7 @@ var MinRssi int
 // RssiRange is the calculated partitions in array form
 var RssiRange []float32
 
-var DefaultCutoff,DefaultMixin float64
+var DefaultCutoff, DefaultMixin float64
 var MinApNum int
 
 var ParticleFilterEnabled bool
@@ -22,7 +22,7 @@ var NormalRssDev int                 // Normal deviation rss from median
 var RssRegulation bool               // permit to rss outlines deleting
 var AvgRSSAdjacentDots bool          // permit to set average of rss of adjacent dots instead of raw rss; according to heatmap it's not good to do this!
 
-var ProgressBarLength,ProgressBarCurLevel int
+var ProgressBarLength, ProgressBarCurLevel int
 var MinRssClustringEnabled bool
 
 var MaxUserHistoryLen int
@@ -31,10 +31,12 @@ var UserHistoryEffectFactors []float64
 
 var UserHistoryGaussVariance float64
 var UserHistoryTimeDelayFactor float64
+
 // Default K in KNN algorithm
 var DefaultKnnMinClusterRssRange, DefaultKnnKRange, DefaultMaxEuclideanRssDistRange, DefaultMaxMovementRange []int
 var DefaultBLEFactorRange, DefaultRPFRadiusRange []float64
 var DefaultGraphFactorsRange [][]float64
+
 //var DefaultRPFRadius float64
 
 var DefaultMapName string
@@ -98,7 +100,7 @@ func init() {
 	AvgRSSAdjacentDots = true
 
 	DefaultMapName = "ArmanExactMap.png"
-	DefaultMapDimensions = []int{3400,3600}
+	DefaultMapDimensions = []int{3400, 3600}
 	DefaultMapHeight = 3400
 	DefaultMapWidth = 3600
 	DefaultGraphEnabled = false

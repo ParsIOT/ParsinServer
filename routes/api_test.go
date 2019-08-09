@@ -1,23 +1,23 @@
 package routes
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
-	"strings"
-	"path"
-	"os"
-	"fmt"
-	"os/exec"
-	"log"
 	"ParsinServer/glb"
-	"reflect"
-	"sync"
-	"strconv"
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path"
+	"reflect"
+	"strconv"
+	"strings"
+	"sync"
+	"testing"
 )
 
 type Empty struct{}
@@ -37,21 +37,21 @@ func getTestCount() int {
 	return testCount
 }
 
-func gettestdbName() string{
+func gettestdbName() string {
 	testCount := getTestCount()
 	initRaw(testCount)
-	testdbName := "testdb"+strconv.Itoa(testCount)
+	testdbName := "testdb" + strconv.Itoa(testCount)
 	return testdbName
 }
 
-func freedb(testdb string){
-	os.Remove(path.Join(DataPath,testdb+".db"))
+func freedb(testdb string) {
+	os.Remove(path.Join(DataPath, testdb+".db"))
 }
 
-func initRaw(testCount int){
+func initRaw(testCount int) {
 	lock.Lock()
-	newName := "testdb"+strconv.Itoa(testCount)+".db"
-	_, err := exec.Command("cp", []string{path.Join(DataPath, "testdb.db.backup"),path.Join(DataPath, newName)}...).Output()
+	newName := "testdb" + strconv.Itoa(testCount) + ".db"
+	_, err := exec.Command("cp", []string{path.Join(DataPath, "testdb.db.backup"), path.Join(DataPath, newName)}...).Output()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,19 +63,17 @@ func init() {
 	gin.SetMode(gin.ReleaseMode)
 	cwd, _ := os.Getwd()
 	pkgName := reflect.TypeOf(Empty{}).PkgPath()
-	projName := strings.Split(pkgName,"/")[0]
-	for _,p := range strings.Split(cwd,"/") {
+	projName := strings.Split(pkgName, "/")[0]
+	for _, p := range strings.Split(cwd, "/") {
 		if p == projName {
-			DataPath += p+"/"
+			DataPath += p + "/"
 			break
 		}
-		DataPath += p +"/"
+		DataPath += p + "/"
 	}
 	DataPath = path.Join(DataPath, "data")
 	glb.Debug.Println(DataPath)
 }
-
-
 
 func TestGetStatus(t *testing.T) {
 	router := gin.New()
@@ -99,7 +97,7 @@ func TestMigrateDatabase(t *testing.T) {
 
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), "{\"message\":\"Successfully migrated "+testdb+" to newdb\",\"success\":true}")
 	fmt.Println(DataPath)
-	os.Remove(path.Join(DataPath,"newdb.db"))
+	os.Remove(path.Join(DataPath, "newdb.db"))
 
 }
 
@@ -107,7 +105,7 @@ func TestDeleteDatabase(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
-	glb.CopyFile(path.Join(DataPath,testdb+".db"), path.Join(DataPath,"deleteme.db"))
+	glb.CopyFile(path.Join(DataPath, testdb+".db"), path.Join(DataPath, "deleteme.db"))
 
 	router := gin.New()
 	router.DELETE("/foo", DeleteDatabase)
@@ -131,7 +129,7 @@ func TestCalculate(t *testing.T) {
 	router.ServeHTTP(resp, req)
 
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), "{\"message\":\"Parameters optimized.\",\"success\":true}")
-	os.Remove(path.Join(DataPath,testdb+".db"))
+	os.Remove(path.Join(DataPath, testdb+".db"))
 }
 
 func TestGetLocationList(t *testing.T) {
@@ -143,7 +141,7 @@ func TestGetLocationList(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/foo?group="+testdb, nil)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
-	respond := "{\"locations\":{\"p1\":{\"accuracy\":54,\"count\":11},\"p3\":{\"accuracy\":88,\"count\":9}},\"message\":\"Found 2 unique locations in group "+testdb+"\",\"success\":true}"
+	respond := "{\"locations\":{\"p1\":{\"accuracy\":54,\"count\":11},\"p3\":{\"accuracy\":88,\"count\":9}},\"message\":\"Found 2 unique locations in group " + testdb + "\",\"success\":true}"
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), respond)
 }
 
@@ -160,22 +158,20 @@ func TestGetLastFingerprint(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), respond)
 }
 
-
 func TestGetHistoricalUserPositions(t *testing.T) {
 	// todo : Problem!!!
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
-	output := GetHistoricalUserPositions(testdb,"hadi",4)
+	output := GetHistoricalUserPositions(testdb, "hadi", 4)
 	out, err := json.Marshal(&output)
 	if err != nil {
-		panic (err)
+		panic(err)
 	}
 	outStr := string(out)
 	respond := "[{\"time\":\"2018-02-10 20:08:54.108990031 +0330 +0330\",\"bayesguess\":\"100,100\",\"bayesdata\":{\"100,100\":0.35355339059327373,\"300,300\":-0.35355339059327373},\"svmguess\":null,\"svmdata\":null,\"rfdata\":null,\"knnguess\":null},{\"time\":\"2018-02-10 20:08:53.545325469 +0330 +0330\",\"bayesguess\":\"100,100\",\"bayesdata\":{\"100,100\":0.35355339059327373,\"300,300\":-0.35355339059327373},\"svmguess\":null,\"svmdata\":null,\"rfdata\":null,\"knnguess\":null},{\"time\":\"2018-02-10 20:08:53.092894361 +0330 +0330\",\"bayesguess\":\"100,100\",\"bayesdata\":{\"100,100\":0.35355339059327373,\"300,300\":-0.35355339059327373},\"svmguess\":null,\"svmdata\":null,\"rfdata\":null,\"knnguess\":null},{\"time\":\"2018-02-10 20:08:52.589899518 +0330 +0330\",\"bayesguess\":\"100,100\",\"bayesdata\":{\"100,100\":0.35355339059327373,\"300,300\":-0.35355339059327373},\"svmguess\":null,\"svmdata\":null,\"rfdata\":null,\"knnguess\":null}]373},\"svmguess\":null,\"svmdata\":null,\"rfdata\":null,\"knnguess\":null}]"
 	assert.Equal(t, outStr, respond)
 }
-
 
 func TestGetUserLocations(t *testing.T) {
 	router := gin.New()
@@ -224,10 +220,9 @@ func TestPutMixinOverrideGood(t *testing.T) {
 	req, _ := http.NewRequest("PUT", "/foo?group="+testdb+"&mixin=0", nil)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
-	response := "{\"message\":\"Overriding mixin for "+testdb+", now set to 0\",\"success\":true}"
+	response := "{\"message\":\"Overriding mixin for " + testdb + ", now set to 0\",\"success\":true}"
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
 }
-
 
 func TestPutCutoffOverrideBad(t *testing.T) {
 	testdb := gettestdbName()
@@ -252,11 +247,9 @@ func TestPutCutoffOverrideGood(t *testing.T) {
 	req, _ := http.NewRequest("PUT", "/foo?group="+testdb+"&cutoff=0", nil)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
-	response := "{\"message\":\"Overriding cutoff for "+testdb+", now set to 0\",\"success\":true}"
+	response := "{\"message\":\"Overriding cutoff for " + testdb + ", now set to 0\",\"success\":true}"
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
 }
-
-
 
 func TestPutKnnK(t *testing.T) {
 	testdb := gettestdbName()
@@ -267,14 +260,11 @@ func TestPutKnnK(t *testing.T) {
 	req, _ := http.NewRequest("PUT", "/foo?group="+testdb+"&knnK=10", nil)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
-	response := "{\"message\":\"Overriding KNN K for "+testdb+", now set to 10\",\"success\":true}"
-
+	response := "{\"message\":\"Overriding KNN K for " + testdb + ", now set to 10\",\"success\":true}"
 
 	freedb(testdb)
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
 }
-
-
 
 func TestPutMinRss(t *testing.T) {
 	testdb := gettestdbName()
@@ -285,11 +275,10 @@ func TestPutMinRss(t *testing.T) {
 	req, _ := http.NewRequest("PUT", "/foo?group="+testdb+"&minRss=-100", nil)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
-	response := "{\"message\":\"Overriding Minimum RSS for "+testdb+", now set to -100\",\"success\":true}"
+	response := "{\"message\":\"Overriding Minimum RSS for " + testdb + ", now set to -100\",\"success\":true}"
 
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
 }
-
 
 func TestEditNetworkName(t *testing.T) {
 	testdb := gettestdbName()
@@ -389,14 +378,13 @@ func TestDeleteLocations(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
 }
 
-
-func TestSetfiltermacs(t *testing.T) {
+func TestSetFilterMacs(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
 	router := gin.New()
-	router.POST("/foo", Setfiltermacs)
-	jsonStr := []byte("{\"group\":\""+testdb+"\",\"macs\":[\"6c:19:8f:50:c6:a5\",\"b4:52:7d:26:e3:f3\"]}")
+	router.POST("/foo", SetFilterMacs)
+	jsonStr := []byte("{\"group\":\"" + testdb + "\",\"macs\":[\"6c:19:8f:50:c6:a5\",\"b4:52:7d:26:e3:f3\"]}")
 	req, _ := http.NewRequest("POST", "/foo", bytes.NewBuffer(jsonStr))
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
@@ -405,12 +393,12 @@ func TestSetfiltermacs(t *testing.T) {
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
 }
 
-func TestGetfiltermacs(t *testing.T) {
+func TestGetFilterMacs(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
 	router := gin.New()
-	router.GET("/foo", Getfiltermacs)
+	router.GET("/foo", GetFilterMacs)
 	req, _ := http.NewRequest("GET", "/foo?group="+testdb, nil)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
@@ -432,7 +420,6 @@ func TestReformDB(t *testing.T) {
 
 	assert.Equal(t, strings.TrimSpace(resp.Body.String()), response)
 }
-
 
 func BenchmarkGetUserLocations(b *testing.B) {
 	//jsonTest := `{"username": "zack", "group": "testdb", "wifi-fingerprint": [{"rssi": -45, "mac": "80:37:73:ba:f7:d8"}, {"rssi": -58, "mac": "80:37:73:ba:f7:dc"}, {"rssi": -61, "mac": "a0:63:91:2b:9e:65"}, {"rssi": -68, "mac": "a0:63:91:2b:9e:64"}, {"rssi": -70, "mac": "70:73:cb:bd:9f:b5"}, {"rssi": -75, "mac": "d4:05:98:57:b3:10"}, {"rssi": -75, "mac": "00:23:69:d4:47:9f"}, {"rssi": -76, "mac": "30:46:9a:a0:28:c4"}, {"rssi": -81, "mac": "2c:b0:5d:36:e3:b8"}, {"rssi": -82, "mac": "00:1a:1e:46:cd:10"}, {"rssi": -82, "mac": "20:aa:4b:b8:31:c8"}, {"rssi": -83, "mac": "e8:ed:05:55:21:10"}, {"rssi": -83, "mac": "ec:1a:59:4a:9c:ed"}, {"rssi": -88, "mac": "b8:3e:59:78:35:99"}, {"rssi": -84, "mac": "e0:46:9a:6d:02:ea"}, {"rssi": -84, "mac": "00:1a:1e:46:cd:11"}, {"rssi": -84, "mac": "f8:35:dd:0a:da:be"}, {"rssi": -84, "mac": "b4:75:0e:03:cd:69"}], "location": "zakhome floor 2 office", "time": 1439596533831, "password": "frusciante_0128"}`

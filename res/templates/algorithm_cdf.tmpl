@@ -940,7 +940,7 @@
             $.ajaxSetup({ //avoid async problems
                 async: false
             });
-            $.getJSON("/buildgroup", {
+            $.getJSON("/buildGroup", {
                     "group": gpName,
                 },
                 function (data) {
@@ -1015,7 +1015,7 @@
                 $.ajaxSetup({ //avoid async problems
                     async: false
                 });
-                $.getJSON("/getfiltermacs?group=" + gpName, function (data) {
+                $.getJSON("/getFilterMacs?group=" + gpName, function (data) {
                     if (data.success) {
                         macfilterList = data.message;
                     } else {

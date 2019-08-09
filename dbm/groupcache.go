@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-//Todo: After each update in groupcache.go, rebuild the group (use /buildgroup)
+//Todo: After each update in groupcache.go, rebuild the group (use /buildGroup)
 //Todo: After any change in structs rerun "easyjson -all groupcache.go" in dbm directory
 var GM GroupManger
 
@@ -297,7 +297,7 @@ func (gm *GroupManger) NewGroup(groupName string) *Group {
 	groups := GM.groups
 	GM.RUnlock()
 	for gpName, gp := range groups {
-		if (groupName == gpName) {
+		if groupName == gpName {
 			glb.Error.Println("There is a group exists with same Name:" + groupName)
 			return gp
 		}
@@ -506,7 +506,7 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group) {
 		gm.Unlock()
 	}
 
-	if (dirtyBit) {
+	if dirtyBit {
 		//glb.Debug.Println("Dirtybit is true")
 		if !loaded {
 			glb.Error.Println("DB isn't loaded!")
@@ -631,7 +631,7 @@ func (gm *GroupManger) FlushDB(groupName string, gp *Group) {
 				defer dblock.Unlock()
 
 				for key, val := range dbData {
-					if (key == "Results") {
+					if key == "Results" {
 						for timeStamp, fp := range resultDataList { // must put the list to db instantly
 							err1 := SetByteResourceInBucket(parameters.DumpFingerprint(fp), timeStamp, "Results", groupName)
 							if err1 != nil {
@@ -803,7 +803,7 @@ func (gm *GroupManger) InstantFlushDB(groupName string) {
 				defer dblock.Unlock()
 
 				for key, val := range dbData {
-					if (key == "Results") {
+					if key == "Results" {
 						err1 := SetByteResourceInBucket(val, key, "Results", groupName)
 						if err1 != nil {
 							fmt.Errorf(err1.Error())
@@ -1094,7 +1094,7 @@ func (gp *Group) Get_RawData_Filtered_Val() RawDataStruct {
 	return item
 }
 */
-//Note: Use it just in buildgroup
+//Note: Use it just in buildGroup
 func (gp *Group) Set_RawData(newItem *RawDataStruct) {
 	gp.RLock()
 	item := gp.RawData
@@ -1111,7 +1111,7 @@ func (gp *Group) Set_RawData(newItem *RawDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1128,7 +1128,7 @@ func (gp *Group) Set_RawData(newItem *RawDataStruct) {
 	GM.SetDirtyBit(gp.Get_Name())
 }
 
-//Note: Use it just in buildgroup
+//Note: Use it just in buildGroup
 func (gp *Group) Set_RawData_Val(newItem RawDataStruct) {
 	gp.RLock()
 	item := gp.RawData
@@ -1145,7 +1145,7 @@ func (gp *Group) Set_RawData_Val(newItem RawDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1220,7 +1220,7 @@ func (gp *Group) Set_ConfigData(newItem *ConfigDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1253,7 +1253,7 @@ func (gp *Group) Set_ConfigData_Val(newItem ConfigDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1310,7 +1310,7 @@ func (gp *Group) Set_MiddleData(newItem *MiddleDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1343,7 +1343,7 @@ func (gp *Group) Set_MiddleData_Val(newItem MiddleDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1414,7 +1414,7 @@ func (gp *Group) Set_AlgoData(newItem *AlgoDataStruct) {
 		field := elm.Field(i)
 		//item.Unlock()
 		//glb.Debug.Println(itemType.Field(i).Name)
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
 			//newItem.RUnlock()
@@ -1449,7 +1449,7 @@ func (gp *Group) Set_AlgoData_Val(newItemRaw AlgoDataStruct) {
 		field := elm.Field(i)
 		//fmt.Println(itemType.Field(i).Name)
 		//fmt.Println(fieldNew.Type())
-		if (itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group") {
+		if itemType.Field(i).Name != "mutex" && itemType.Field(i).Name != "group" {
 			//glb.Debug.Println(itemType.Field(i).Name)
 			//newItem.RLock()
 			val := reflect.Value(fieldNew)
@@ -1528,7 +1528,7 @@ func (rd *RawDataStruct) Get_FingerprintsBackup() map[string]parameters.Fingerpr
 	return item
 }
 
-//Note: Use it just in buildgroup
+//Note: Use it just in buildGroup
 func (rd *RawDataStruct) Set_FingerprintsBackup(new_item map[string]parameters.Fingerprint) {
 	defer rd.SetDirtyBit()
 
@@ -1544,7 +1544,7 @@ func (rd *RawDataStruct) Get_FingerprintsOrderingBackup() []string {
 	return item
 }
 
-//Note: Use it just in buildgroup
+//Note: Use it just in buildGroup
 func (rd *RawDataStruct) Set_FingerprintsOrderingBackup(new_item []string) {
 	defer rd.SetDirtyBit()
 
@@ -1561,7 +1561,7 @@ func (rd *RawDataStruct) Set_FingerprintsOrderingBackup(new_item []string) {
 	return item1, item2
 }
 
-//Note: Use it just in buildgroup
+//Note: Use it just in buildGroup
 func (rd *RawDataStruct) Set_FPs(new_item1 []string, new_item2 map[string]parameters.Fingerprint) {
 	defer rd.SetDirtyBit()
 
@@ -1853,7 +1853,6 @@ func (confdata *ConfigDataStruct) Set_OtherGroupConfig(new_item parameters.Other
 	confdata.Unlock()
 }
 
-
 //func (rs *ResultDataStruct) AppendResult(fp parameters.Fingerprint){
 //	defer rs.SetDirtyBit()
 //	rs.Lock()
@@ -1937,7 +1936,7 @@ func (rs *ResultDataStruct) Append_UserHistory(user string, userPos parameters.U
 			rs.UserHistory[user] = tempUserHistory
 		}
 	} else {
-		//Todo: must provide standard way when new item added to groupcache structs 
+		//Todo: must provide standard way when new item added to groupcache structs
 		if rs.UserHistory == nil { // in old db there is now userHistory
 			rs.UserHistory = make(map[string][]parameters.UserPositionJSON)
 		}
@@ -2032,7 +2031,7 @@ func (rs *ResultDataStruct) Clear_UserResults(user string) error {
 	defer rs.SetDirtyBit()
 
 	rs.Lock()
-	if val, ok := rs.UserResults[user]; (ok && len(val) != 0) {
+	if val, ok := rs.UserResults[user]; ok && len(val) != 0 {
 		rs.UserResults[user] = []parameters.UserPositionJSON{}
 		rs.Unlock()
 		return nil

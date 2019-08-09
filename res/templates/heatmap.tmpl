@@ -189,7 +189,7 @@
 		// });
 
 		$("#data-panel").addClass('bs-callout-danger').removeClass('bs-callout-info');
-		$.getJSON("/getuniquemacs?group={{ .Group }}", function (data, textStatus, jqXHR) {
+        $.getJSON("/getUniqueMacs?group={{ .Group }}", function (data, textStatus, jqXHR) {
 			if (data.success == true) {
 				data.message.forEach(function (element) {
 					$('#mac-list').append(new Option(element, element));

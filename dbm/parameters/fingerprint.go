@@ -7,9 +7,9 @@
 package parameters
 
 import (
-	"strings"
 	"ParsinServer/glb"
 	"strconv"
+	"strings"
 )
 
 //Fingerprint is the prototypical glb.Information from the fingerprinting device
@@ -55,10 +55,6 @@ var jsonExample = `{
 	}]
 }`
 
-
-
-
-
 // compression 9 us -> 900 us
 // Marsahal and compress a fingerprint
 func DumpFingerprint(res Fingerprint) []byte {
@@ -76,7 +72,6 @@ func LoadRawFingerprint(jsonByte []byte) Fingerprint {
 	return res
 }
 
-
 // delete the records that their mac are "00:00:00:00:00"
 func CleanFingerprint(res *Fingerprint) {
 	res.Group = strings.TrimSpace(strings.ToLower(res.Group))
@@ -88,13 +83,12 @@ func CleanFingerprint(res *Fingerprint) {
 		//	res.WifiFingerprint[r].Rssi = int(res.WifiFingerprint[r].Rssi/2) - 100
 		//}
 		if res.WifiFingerprint[r].Mac == "00:00:00:00:00:00" {
-			deleteIndexwes = append(deleteIndexwes,r)
+			deleteIndexwes = append(deleteIndexwes, r)
 		}
 	}
 	// delete res.WifiFingerprint[deleteIndex]
-	for _,deleteIndex := range deleteIndexwes{
+	for _, deleteIndex := range deleteIndexwes {
 		res.WifiFingerprint[deleteIndex] = res.WifiFingerprint[len(res.WifiFingerprint)-1]
 		res.WifiFingerprint = res.WifiFingerprint[:len(res.WifiFingerprint)-1]
 	}
 }
-

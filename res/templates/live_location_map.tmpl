@@ -297,7 +297,7 @@
         }).then(function (is_checked) {
             var req = $.ajax({
                 method: "DELETE",
-                url: "/delresults?group={{ .Group }}&user=" + user,
+                url: "/delResults?group={{ .Group }}&user=" + user,
             });
             req.done(function (data) {
                 console.log(data)
@@ -314,7 +314,7 @@
 
     /*  function deleteResults() {
 
-          $.getJSON("/delresults?group={{ .Group }}&user="+user, function (data) {
+          $.getJSON("/delResults?group={{ .Group }}&user="+user, function (data) {
 
             $.each(data.locations, function (key, val) {
                 let match = pattern.exec(key);

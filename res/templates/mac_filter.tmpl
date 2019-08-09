@@ -116,7 +116,7 @@
 
 <script type="application/javascript">
 
-    $.getJSON("/getfiltermacs?group={{ .Group }}", function (data) {
+    $.getJSON("/getFilterMacs?group={{ .Group }}", function (data) {
         var items = [];
 
         if (data.success) {
@@ -144,7 +144,7 @@
             function () {
                 $.ajax({
                     type: 'POST',
-                    url: "/setfiltermacs?group={{ .Group }}",
+                    url: "/setFilterMacs?group={{ .Group }}",
                     data: JSON.stringify({
                         "group": "{{.Group}}",
                         "macs": JSON.parse($("#macList").val())
@@ -188,7 +188,7 @@
             function () {
                 $.ajax({
                     type: 'POST',
-                    url: "/setfiltermacs?group={{ .Group }}",
+                    url: "/setFilterMacs?group={{ .Group }}",
                     data: JSON.stringify({
                         "group": "{{.Group}}",
                         "macs": JSON.parse("[]")

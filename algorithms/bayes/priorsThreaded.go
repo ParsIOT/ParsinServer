@@ -5,6 +5,7 @@
 //// priorsThreaded.go contains the main Prior-calculation function which is multi-threaded
 //
 package bayes
+
 //
 //import (
 //	"math"

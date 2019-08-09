@@ -1,21 +1,20 @@
 package dbm
 
 import (
-	"testing"
-	"encoding/json"
-	"github.com/stretchr/testify/assert"
-	"os"
-	"path"
 	"ParsinServer/glb"
-	"sync"
-	"strconv"
-	"os/exec"
-	"log"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"log"
+	"os"
+	"os/exec"
+	"path"
 	"reflect"
+	"strconv"
 	"strings"
+	"sync"
+	"testing"
 )
-
 
 type Empty struct{}
 
@@ -34,22 +33,22 @@ func getTestCount() int {
 	return testCount
 }
 
-func gettestdbName() string{
+func gettestdbName() string {
 	testCount := getTestCount()
 	initRaw(testCount)
-	testdbName := "testdb"+strconv.Itoa(testCount)
+	testdbName := "testdb" + strconv.Itoa(testCount)
 	//initializeSharedPreferences(testdbName)
 	return testdbName
 }
 
-func freedb(testdb string){
-	os.Remove(path.Join(DataPath,testdb+".db"))
+func freedb(testdb string) {
+	os.Remove(path.Join(DataPath, testdb+".db"))
 }
 
-func initRaw(testCount int){
+func initRaw(testCount int) {
 	lock.Lock()
-	newName := "testdb"+strconv.Itoa(testCount)+".db"
-	_, err := exec.Command("cp", []string{path.Join(DataPath, "testdb.db.backup"),path.Join(DataPath, newName)}...).Output()
+	newName := "testdb" + strconv.Itoa(testCount) + ".db"
+	_, err := exec.Command("cp", []string{path.Join(DataPath, "testdb.db.backup"), path.Join(DataPath, newName)}...).Output()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,13 +61,13 @@ func init() {
 	gin.SetMode(gin.ReleaseMode)
 	cwd, _ := os.Getwd()
 	pkgName := reflect.TypeOf(Empty{}).PkgPath()
-	projName := strings.Split(pkgName,"/")[0]
-	for _,p := range strings.Split(cwd,"/") {
+	projName := strings.Split(pkgName, "/")[0]
+	for _, p := range strings.Split(cwd, "/") {
 		if p == projName {
-			DataPath += p+"/"
+			DataPath += p + "/"
 			break
 		}
-		DataPath += p +"/"
+		DataPath += p + "/"
 	}
 	DataPath = path.Join(DataPath, "data")
 	glb.Debug.Println(DataPath)
@@ -155,15 +154,15 @@ func TestGroupExists(t *testing.T) {
 
 }
 
-func TestGetUsers(t *testing.T){
+func TestGetUsers(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
 	users := GetUsers(testdb)
-	assert.Equal(t, users, []string{"user","test","hadi"})
+	assert.Equal(t, users, []string{"user", "test", "hadi"})
 }
 
-func TestGetUniqueMacs(t *testing.T){
+func TestGetUniqueMacs(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
@@ -176,25 +175,25 @@ func TestGetUniqueMacs(t *testing.T){
 
 	uniqueMacs := GetUniqueMacs(testdb)
 	//responseList := []string{"6c:19:8f:50:c6:a5", "b4:52:7d:26:e3:f3", "6c:3b:6b:09:da:6f", "9c:d6:43:72:0e:83", "02:1a:11:f5:6c:03", "34:97:f6:63:bd:94", "00:23:f8:91:be:43", "58:6d:8f:2b:26:42", "c4:6e:1f:d7:2e:de", "98:42:46:00:99:eb", "c4:12:f5:01:89:70", "4c:5e:0c:ec:85:85", "4c:5e:0c:40:1c:77", "b4:75:0e:e1:39:1a", "50:67:f0:7b:02:c7", "00:23:f8:91:c5:27", "6c:fd:b9:8c:fa:9b", "e4:8d:8c:15:e1:6f", "c4:e9:84:98:cb:ed", "40:4a:03:ad:17:ae"}
-	responseList := []string{"b4:52:7d:26:e3:f3","50:67:f0:7b:02:c7","6c:19:8f:50:c6:a5","9c:d6:43:72:0e:83","6c:3b:6b:09:da:6f","4c:5e:0c:ec:85:85","02:1a:11:f5:6c:03","34:97:f6:63:bd:94","58:6d:8f:2b:26:42","b4:75:0e:e1:39:1a","98:42:46:00:99:eb"}
+	responseList := []string{"b4:52:7d:26:e3:f3", "50:67:f0:7b:02:c7", "6c:19:8f:50:c6:a5", "9c:d6:43:72:0e:83", "6c:3b:6b:09:da:6f", "4c:5e:0c:ec:85:85", "02:1a:11:f5:6c:03", "34:97:f6:63:bd:94", "58:6d:8f:2b:26:42", "b4:75:0e:e1:39:1a", "98:42:46:00:99:eb"}
 
 	listEqual := true
 	itemFound := false
-	for _,item1 := range responseList{
-		for _,item2 := range uniqueMacs{
-			if (item1 == item2){
+	for _, item1 := range responseList {
+		for _, item2 := range uniqueMacs {
+			if item1 == item2 {
 				itemFound = true
 				break
 			}
 		}
-		if (!itemFound){
+		if !itemFound {
 			listEqual = false
 			break
 		}
 		itemFound = false
 	}
 
-	if (!listEqual){
+	if !listEqual {
 		glb.Debug.Println("UniqueMacs: ")
 		glb.Debug.Println(uniqueMacs)
 		glb.Debug.Println("responseList: ")
@@ -203,7 +202,7 @@ func TestGetUniqueMacs(t *testing.T){
 	assert.Equal(t, listEqual, true)
 }
 
-func TestGetUniqueLocations(t *testing.T){
+func TestGetUniqueLocations(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
@@ -212,21 +211,21 @@ func TestGetUniqueLocations(t *testing.T){
 
 	listEqual := true
 	itemFound := false
-	for _,item1 := range responseList{
-		for _,item2 := range uniqueLocs{
-			if (item1 == item2){
+	for _, item1 := range responseList {
+		for _, item2 := range uniqueLocs {
+			if item1 == item2 {
 				itemFound = true
 				break
 			}
 		}
-		if (!itemFound){
+		if !itemFound {
 			listEqual = false
 			break
 		}
 		itemFound = false
 	}
 
-	if (!listEqual){
+	if !listEqual {
 		glb.Debug.Println("UniqueLocs: ")
 		glb.Debug.Println(uniqueLocs)
 		glb.Debug.Println("responseList: ")
@@ -235,47 +234,46 @@ func TestGetUniqueLocations(t *testing.T){
 	assert.Equal(t, listEqual, true)
 }
 
-func TestGetMacCount(t *testing.T){
+func TestGetMacCount(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
 	macs := GetMacCount(testdb)
 	//jsonTest := "{\"4c:5e:0c:40:1c:77\":3,\"e4:8d:8c:15:e1:6f\":2,\"c4:e9:84:98:cb:ed\":3,\"b4:75:0e:e1:39:1a\":16,\"00:23:f8:91:be:43\":14,\"6c:19:8f:50:c6:a5\":100,\"b4:52:7d:26:e3:f3\":99,\"34:97:f6:63:bd:94\":90,\"02:1a:11:f5:6c:03\":100,\"c4:12:f5:01:89:70\":50,\"6c:fd:b9:8c:fa:9b\":2,\"50:67:f0:7b:02:c7\":8,\"40:4a:03:ad:17:ae\":1,\"00:23:f8:91:c5:27\":1,\"6c:3b:6b:09:da:6f\":100,\"98:42:46:00:99:eb\":97,\"4c:5e:0c:ec:85:85\":78,\"c4:6e:1f:d7:2e:de\":13,\"58:6d:8f:2b:26:42\":100,\"9c:d6:43:72:0e:83\":65}"
-	jsonTest :="{\"b4:75:0e:e1:39:1a\":1,\"6c:19:8f:50:c6:a5\":1,\"9c:d6:43:72:0e:83\":1,\"58:6d:8f:2b:26:42\":1,\"4c:5e:0c:ec:85:85\":1,\"02:1a:11:f5:6c:03\":1,\"34:97:f6:63:bd:94\":1,\"98:42:46:00:99:eb\":1,\"b4:52:7d:26:e3:f3\":99,\"50:67:f0:7b:02:c7\":8,\"6c:3b:6b:09:da:6f\":1}"
+	jsonTest := "{\"b4:75:0e:e1:39:1a\":1,\"6c:19:8f:50:c6:a5\":1,\"9c:d6:43:72:0e:83\":1,\"58:6d:8f:2b:26:42\":1,\"4c:5e:0c:ec:85:85\":1,\"02:1a:11:f5:6c:03\":1,\"34:97:f6:63:bd:94\":1,\"98:42:46:00:99:eb\":1,\"b4:52:7d:26:e3:f3\":99,\"50:67:f0:7b:02:c7\":8,\"6c:3b:6b:09:da:6f\":1}"
 	tempMac := make(map[string]int)
 	json.Unmarshal([]byte(jsonTest), &tempMac)
 	//glb.Debug.Println(tempMac)
 	//glb.Debug.Println(macs)
-	isEqual := glb.MapLike(macs,tempMac)
+	isEqual := glb.MapLike(macs, tempMac)
 	assert.Equal(t, isEqual, true)
 }
 
-func TestRenameNetwork(t *testing.T){
+func TestRenameNetwork(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
-	err := RenameNetwork(testdb,"0","1")
+	err := RenameNetwork(testdb, "0", "1")
 	assert.Equal(t, err, nil)
 }
 
-func TestSetFilterMacDB(t *testing.T){
+func TestSetFilterMacDB(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
-	filterMacs := []string{"6c:19:8f:50:c6:a5","4c:5e:0c:40:1c:77"}
-	err := SetSharedPrf(testdb,"FilterMacsMap", filterMacs)
+	filterMacs := []string{"6c:19:8f:50:c6:a5", "4c:5e:0c:40:1c:77"}
+	err := SetSharedPrf(testdb, "FilterMacsMap", filterMacs)
 	assert.Equal(t, err, nil)
 }
 
-func TestGetFilterMacDB(t *testing.T){
+func TestGetFilterMacDB(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
-
-	filterMacs := []string{"6c:19:8f:50:c6:a5","4c:5e:0c:40:1c:77"}
+	filterMacs := []string{"6c:19:8f:50:c6:a5", "4c:5e:0c:40:1c:77"}
 	//err := SetFilterMacDB(testdb,  filterMacs)
 
-	err := SetSharedPrf(testdb,"FilterMacsMap", filterMacs)
+	err := SetSharedPrf(testdb, "FilterMacsMap", filterMacs)
 	assert.Equal(t, err, nil)
 
 	//err, filterMacs := GetFilterMacDB(testdb)
@@ -284,9 +282,10 @@ func TestGetFilterMacDB(t *testing.T){
 	//if err != nil {
 	//	t.Errorf("Can't get macs list")
 	//}
-	filterMacsRes := []string{"6c:19:8f:50:c6:a5","4c:5e:0c:40:1c:77"}
+	filterMacsRes := []string{"6c:19:8f:50:c6:a5", "4c:5e:0c:40:1c:77"}
 	assert.Equal(t, filterMacs, filterMacsRes)
 }
+
 //
 //func TestGetMixinOverride(t *testing.T) {
 //	testdb := gettestdbName()
@@ -404,12 +403,12 @@ func TestGetFilterMacDB(t *testing.T){
 //	}
 //}
 
-func TestGetLearnFingerPrints(t *testing.T){
+func TestGetLearnFingerPrints(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
-	fingerprintsOrdering1,fingerprintsInMemory1,err1 := GetLearnFingerPrints(testdb,false)
-	fingerprintsOrdering2,fingerprintsInMemory2,err2 := GetLearnFingerPrints(testdb,true)
+	fingerprintsOrdering1, fingerprintsInMemory1, err1 := GetLearnFingerPrints(testdb, false)
+	fingerprintsOrdering2, fingerprintsInMemory2, err2 := GetLearnFingerPrints(testdb, true)
 
 	//glb.Debug.Println(fingerprintsInMemory1)
 	//
@@ -417,51 +416,50 @@ func TestGetLearnFingerPrints(t *testing.T){
 
 	glb.Debug.Println(len(fingerprintsInMemory1[fingerprintsOrdering1[10]].WifiFingerprint))
 	glb.Debug.Println(len(fingerprintsInMemory2[fingerprintsOrdering2[10]].WifiFingerprint))
-	if err1!=nil || err2!=nil{
+	if err1 != nil || err2 != nil {
 		t.Errorf(err1.Error())
 		t.Errorf(err2.Error())
-	}else{
-		result := []int{len(fingerprintsOrdering1),len(fingerprintsInMemory1),len(fingerprintsOrdering2),len(fingerprintsInMemory2)}
-		assert.Equal(t, result, []int{100,100,100,100})
+	} else {
+		result := []int{len(fingerprintsOrdering1), len(fingerprintsInMemory1), len(fingerprintsOrdering2), len(fingerprintsInMemory2)}
+		assert.Equal(t, result, []int{100, 100, 100, 100})
 	}
 
 }
 
-func TestLoadSharedPreferences(t *testing.T){
+func TestLoadSharedPreferences(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
-	shrPrf,err := loadSharedPreferences(testdb)
+	shrPrf, err := loadSharedPreferences(testdb)
 	assert.Equal(t, err, nil)
 
-
 	shrPrfRes := RawSharedPreferences{
-		Mixin:     			float64(0.1),
-		Cutoff:    			float64(0.01),
-		MinRss:    			int(-110),
-		MinRssOpt: 			int(-100),
-		FilterMacsMap: 		[]string{"b4:52:7d:26:e3:f3","50:67:f0:7b:02:c7"},
+		Mixin:         float64(0.1),
+		Cutoff:        float64(0.01),
+		MinRss:        int(-110),
+		MinRssOpt:     int(-100),
+		FilterMacsMap: []string{"b4:52:7d:26:e3:f3", "50:67:f0:7b:02:c7"},
 	}
 	//glb.Debug.Println(shrPrf)
 	//glb.Debug.Println(shrPrfRes)
 	assert.Equal(t, shrPrf, shrPrfRes)
 }
 
-func TestPutSharedPreferences(t *testing.T){
+func TestPutSharedPreferences(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
 	shrPrf := RawSharedPreferences{
-		Mixin:     			float64(0.01),
-		Cutoff:    			float64(0.001),
-		MinRss:    			int(-130),
-		MinRssOpt: 			int(-110),
-		FilterMacsMap: 		[]string{"b4:52:7d:26:e2:c3","50:67:f0:7c:01:a1"},
+		Mixin:         float64(0.01),
+		Cutoff:        float64(0.001),
+		MinRss:        int(-130),
+		MinRssOpt:     int(-110),
+		FilterMacsMap: []string{"b4:52:7d:26:e2:c3", "50:67:f0:7c:01:a1"},
 	}
 	err := putSharedPreferences(testdb, shrPrf)
 	assert.Equal(t, err, nil)
 
-	shrPrfRes,err := loadSharedPreferences(testdb)
+	shrPrfRes, err := loadSharedPreferences(testdb)
 	assert.Equal(t, err, nil)
 
 	//glb.Debug.Println(shrPrf)
@@ -469,13 +467,13 @@ func TestPutSharedPreferences(t *testing.T){
 	assert.Equal(t, shrPrfRes, shrPrf)
 }
 
-func TestInitializeSharedPreferences(t *testing.T){
+func TestInitializeSharedPreferences(t *testing.T) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
 	initializeSharedPreferences(testdb)
 
-	shrPrf,err := loadSharedPreferences(testdb)
+	shrPrf, err := loadSharedPreferences(testdb)
 	assert.Equal(t, err, nil)
 
 	shrPrfRes := NewRawSharedPreferences()
@@ -484,7 +482,7 @@ func TestInitializeSharedPreferences(t *testing.T){
 	assert.Equal(t, shrPrf, shrPrfRes)
 }
 
-func BenchmarkGetUniqueLocations(b *testing.B){
+func BenchmarkGetUniqueLocations(b *testing.B) {
 	testdb := gettestdbName()
 	defer freedb(testdb)
 
@@ -551,4 +549,3 @@ func BenchmarkGetUniqueLocations(b *testing.B){
 //	}
 //}
 //
-

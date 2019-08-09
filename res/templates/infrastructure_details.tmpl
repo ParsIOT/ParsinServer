@@ -401,7 +401,7 @@
         //send removed layers to server
         $.ajax({
             method: "POST",
-            url: "/delTrasmitter?group={{ .Group }}",
+            url: "/delTransmitter?group={{ .Group }}",
             dataType: "json",
             data: JSON.stringify({
                 "Transmitters": transmitters
@@ -444,7 +444,7 @@
         //send removed layers to server
         $.ajax({
             method: "POST",
-            url: "/delTrasmitter?group={{ .Group }}",
+            url: "/delTransmitter?group={{ .Group }}",
             dataType: "json",
             data: JSON.stringify({
                 "Transmitters": transmitters

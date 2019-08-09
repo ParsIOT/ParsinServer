@@ -3,6 +3,7 @@ package dbm
 import (
 	"ParsinServer/dbm/parameters"
 	"ParsinServer/glb"
+	"encoding/json"
 	"fmt"
 	"github.com/boltdb/bolt"
 	"github.com/jinzhu/copier"
@@ -154,7 +155,7 @@ func LoadFingerprint(jsonByte []byte, doFilter bool) parameters.Fingerprint {
 		return fp
 	}
 	//t1 := len(fp.WifiFingerprint)
-	if (doFilter) {
+	if doFilter {
 		fp = FilterFingerprint(fp)
 	}
 	//t2 := len(fp.WifiFingerprint)
@@ -185,7 +186,7 @@ func DumpFingerprints(group string) error {
 
 	// glb.Debug.Println("Opening file for learning fingerprints")
 	// glb.Debug.Println(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "learning"))
-	f, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "learning.csv"), os.O_WRONLY|os.O_CREATE, 0664)
+	f, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+group, "learning.json"), os.O_WRONLY|os.O_CREATE, 0664)
 	if err != nil {
 		return err
 	}
@@ -432,10 +433,18 @@ func DumpCalculatedFingerprints(groupName string) error {
 
 	// glb.Debug.Println("Opening file for learning fingerprints")
 	// glb.Debug.Println(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+groupName, "learning"))
-	f, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dumpcalc-"+groupName, "learning.csv"), os.O_WRONLY|os.O_CREATE, 0664)
+	fcsv, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dumpcalc-"+groupName, "learning.csv"), os.O_WRONLY|os.O_CREATE, 0664)
+	defer fcsv.Close()
 	if err != nil {
 		return err
 	}
+
+	fjson, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dumpcalc-"+groupName, "learning.json"), os.O_WRONLY|os.O_CREATE, 0664)
+	defer fjson.Close()
+	if err != nil {
+		return err
+	}
+
 
 	var fingerprints []parameters.Fingerprint
 	rd := GM.GetGroup(groupName).Get_RawData()
@@ -462,7 +471,7 @@ func DumpCalculatedFingerprints(groupName string) error {
 		firstLine += mac + ","
 	}
 
-	if _, err = f.WriteString(firstLine); err != nil {
+	if _, err = fcsv.WriteString(firstLine); err != nil {
 		panic(err)
 	}
 
@@ -483,12 +492,23 @@ func DumpCalculatedFingerprints(groupName string) error {
 			}
 		}
 
-		if _, err = f.WriteString("\n" + line); err != nil {
+		if _, err = fcsv.WriteString("\n" + line); err != nil {
 			panic(err)
 		}
 	}
 
-	f.Close()
+	for _, fp := range fingerprintsInMemory {
+		fpJson, err := json.Marshal(fp)
+
+		if err != nil {
+			panic(err)
+		}
+		if _, err = fjson.WriteString(string(fpJson) + "\n"); err != nil {
+			panic(err)
+		}
+	}
+
+
 
 	//// glb.Debug.Println("Opening file for tracking fingerprints")
 	//f, err = os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dump-"+groupName, "tracking"), os.O_WRONLY|os.O_CREATE, 0664)

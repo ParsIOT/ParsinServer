@@ -1,11 +1,11 @@
 package bayes
 
 import (
+	"ParsinServer/dbm"
+	"ParsinServer/dbm/parameters"
+	"ParsinServer/glb"
 	"encoding/json"
 	"testing"
-	"ParsinServer/glb"
-	"ParsinServer/dbm/parameters"
-	"ParsinServer/dbm"
 )
 
 // BenchmarkCalculatePosteriors1 needs to have precomputed parameters for testdb (run Optimize after loading testdb.sh)
@@ -32,12 +32,11 @@ func BenchmarkCalculatePosteriors1(b *testing.B) {
 	//db.Close()
 
 	var ps parameters.FullParameters
-	err = dbm.GetCompressedResourceInBucket("fullParameters",&ps,"resources","testdb")
+	err = dbm.GetCompressedResourceInBucket("fullParameters", &ps, "resources", "testdb")
 
 	if err != nil {
 		glb.Error.Println(err)
 	}
-
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -45,4 +44,3 @@ func BenchmarkCalculatePosteriors1(b *testing.B) {
 	}
 
 }
-

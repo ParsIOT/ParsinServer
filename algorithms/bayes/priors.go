@@ -5,6 +5,7 @@
 //// priors.go contains variables for calculating priors.
 //
 package bayes
+
 //
 //import (
 //	"ParsinServer/glb"

@@ -253,7 +253,7 @@
                     if (isConfirm) {
                         var req = $.ajax({
                             method: "DELETE",
-                            url: "/delresults" + '?' + $.param({"group": "{{ .Group }}", "user": user})
+                            url: "/delResults" + '?' + $.param({"group": "{{ .Group }}", "user": user})
                         });
                         req.done(function (data) {
                             console.log(data)

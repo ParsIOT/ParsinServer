@@ -134,7 +134,6 @@ func Int64InSlice(item int64, itemList []int64) bool {
 	return false
 }
 
-
 // timeTrack can be defered to provide function timing.
 func TimeTrack(start time.Time, name string) {
 	elapsed := time.Since(start)
@@ -272,7 +271,6 @@ func Exists(path string) bool {
 	}
 	return true
 }
-
 
 // CopyFile copies a file from src to dst. If src and dst files exist, and are
 // the same, then return success. Otherise, attempt to create a hard link
@@ -424,11 +422,11 @@ func SortFPByRSS(W map[string]float64) []string {
 	return keySorted
 }
 
-func StringMap2String(stringMap map[string]string) string{
+func StringMap2String(stringMap map[string]string) string {
 	res := ""
 
-	for k,v := range stringMap{
-		res += k+": "+v+" "
+	for k, v := range stringMap {
+		res += k + ": " + v + " "
 	}
 	return res
 }
@@ -458,19 +456,19 @@ func BindWith(obj interface{}, b binding.Binding, c *gin.Context) error {
 	return nil
 }
 
-func SliceLike(obj1 []interface{},obj2 []interface{}) bool {
+func SliceLike(obj1 []interface{}, obj2 []interface{}) bool {
 	listEqual1 := true
 	listEqual2 := true
 
 	itemFound1 := false
-	for _,item1 := range obj1{
-		for _,item2 := range obj2{
-			if (item1 == item2){
+	for _, item1 := range obj1 {
+		for _, item2 := range obj2 {
+			if item1 == item2 {
 				itemFound1 = true
 				break
 			}
 		}
-		if (!itemFound1){
+		if !itemFound1 {
 			listEqual1 = false
 			break
 		}
@@ -478,28 +476,28 @@ func SliceLike(obj1 []interface{},obj2 []interface{}) bool {
 	}
 
 	itemFound2 := false
-	for _,item1 := range obj1{
-		for _,item2 := range obj2{
-			if (item1 == item2){
+	for _, item1 := range obj1 {
+		for _, item2 := range obj2 {
+			if item1 == item2 {
 				itemFound2 = true
 				break
 			}
 		}
-		if (!itemFound2){
+		if !itemFound2 {
 			listEqual2 = false
 			break
 		}
 		itemFound2 = false
 	}
 
-	if (listEqual1 && listEqual2){
+	if listEqual1 && listEqual2 {
 		return true
-	}else{
+	} else {
 		return false
 	}
 }
 
-func MapLike(obj1in interface{},obj2in  interface{}) bool {
+func MapLike(obj1in interface{}, obj2in interface{}) bool {
 	listEqual1 := true
 	listEqual2 := true
 
@@ -509,42 +507,42 @@ func MapLike(obj1in interface{},obj2in  interface{}) bool {
 		obj2 := obj2in.(map[string]int)
 
 		itemFound1 := false
-		for key1,val1 := range obj1{
-			for key2,val2 := range obj2{
-				if (key1 == key2 ){
-					if (val1 == val2){
+		for key1, val1 := range obj1 {
+			for key2, val2 := range obj2 {
+				if key1 == key2 {
+					if val1 == val2 {
 						itemFound1 = true
 						break
 					}
 				}
 			}
-			if (!itemFound1){
-				listEqual1= false
+			if !itemFound1 {
+				listEqual1 = false
 				break
 			}
 			itemFound1 = false
 		}
 
 		itemFound2 := false
-		for key1,val1 := range obj1{
-			for key2,val2 := range obj2{
-				if (key1 == key2 ){
-					if (val1 == val2){
+		for key1, val1 := range obj1 {
+			for key2, val2 := range obj2 {
+				if key1 == key2 {
+					if val1 == val2 {
 						itemFound2 = true
 						break
 					}
 				}
 			}
-			if (!itemFound2){
+			if !itemFound2 {
 				listEqual2 = false
 				break
 			}
 			itemFound2 = false
 		}
 
-		if (listEqual1 && listEqual2){
+		if listEqual1 && listEqual2 {
 			return true
-		}else{
+		} else {
 			return false
 		}
 	case map[string]float64:
@@ -552,42 +550,42 @@ func MapLike(obj1in interface{},obj2in  interface{}) bool {
 		obj2 := obj2in.(map[string]float64)
 
 		itemFound1 := false
-		for key1,val1 := range obj1{
-			for key2,val2 := range obj2{
-				if (key1 == key2 ){
-					if (val1 == val2){
+		for key1, val1 := range obj1 {
+			for key2, val2 := range obj2 {
+				if key1 == key2 {
+					if val1 == val2 {
 						itemFound1 = true
 						break
 					}
 				}
 			}
-			if (!itemFound1){
-				listEqual1= false
+			if !itemFound1 {
+				listEqual1 = false
 				break
 			}
 			itemFound1 = false
 		}
 
 		itemFound2 := false
-		for key1,val1 := range obj1{
-			for key2,val2 := range obj2{
-				if (key1 == key2 ){
-					if (val1 == val2){
+		for key1, val1 := range obj1 {
+			for key2, val2 := range obj2 {
+				if key1 == key2 {
+					if val1 == val2 {
 						itemFound2 = true
 						break
 					}
 				}
 			}
-			if (!itemFound2){
+			if !itemFound2 {
 				listEqual2 = false
 				break
 			}
 			itemFound2 = false
 		}
 
-		if (listEqual1 && listEqual2){
+		if listEqual1 && listEqual2 {
 			return true
-		}else{
+		} else {
 			return false
 		}
 	default:
@@ -595,10 +593,9 @@ func MapLike(obj1in interface{},obj2in  interface{}) bool {
 
 	return false
 
-
 }
 
-func RoundLocationDim(loc string) string{
+func RoundLocationDim(loc string) string {
 	x_y := strings.Split(loc, ",")
 	if !(len(x_y) == 2) {
 		err := errors.New("Location names aren't in the format of x,y")
@@ -608,9 +605,9 @@ func RoundLocationDim(loc string) string{
 	locYstr := x_y[1]
 	locX, _ := strconv.ParseFloat(locXstr, 64)
 	locY, _ := strconv.ParseFloat(locYstr, 64)
-	locXint :=  int(math.Floor(locX))
-	locYint :=  int(math.Floor(locY))
-	return IntToString(locXint) + ".0," + IntToString(locYint)+".0"
+	locXint := int(math.Floor(locX))
+	locYint := int(math.Floor(locY))
+	return IntToString(locXint) + ".0," + IntToString(locYint) + ".0"
 }
 func FloatToString(input_num float64) string {
 	// to convert a float number to a string
@@ -624,7 +621,6 @@ func StringToFloat(input_str string) (float64, error) {
 func StringToInt(input_str string) (int, error) {
 	return strconv.Atoi(input_str)
 }
-
 
 func IntToString(input_num int) string {
 	// to convert a float number to a string
@@ -641,7 +637,7 @@ func Round(num float64, precision int) float64 {
 }
 func GetFloatPrecision(x float64) int { //It doesn't work correctly(exactly), but i don't need exact precision
 	i := 0
-	for (true) {
+	for true {
 		temp := math.Pow(10, float64(i)) * x
 		if temp-float64(int(temp)) == float64(0) {
 			return i
@@ -650,7 +646,6 @@ func GetFloatPrecision(x float64) int { //It doesn't work correctly(exactly), bu
 	}
 	return 0
 }
-
 
 func MakeRange(min, max int, options ...interface{}) []int {
 	optionsLength := len(options)
@@ -670,7 +665,7 @@ func MakeRange(min, max int, options ...interface{}) []int {
 			return a
 		}
 
-	}else{
+	} else {
 		if min < max {
 			a := make([]int, max-min+1)
 			for i := range a {
@@ -764,7 +759,7 @@ func UniqueListFloat64(list []float64) []float64 {
 	for _, l := range list {
 		Additem := true
 		for _, temp := range resList {
-			if (temp == l) {
+			if temp == l {
 				Additem = false
 				break
 			}
@@ -842,10 +837,10 @@ func CheckDotFormatString(dotStr string) bool {
 	_, err1 := strconv.ParseFloat(locXstr, 64)
 	_, err2 := strconv.ParseFloat(locYstr, 64)
 
-	if (err1 != nil) {
+	if err1 != nil {
 		Error.Println("Invalid x,y format,can't parse:", err1)
 		return false
-	} else if (err2 != nil) {
+	} else if err2 != nil {
 		Error.Println("Invalid x,y format,can't parse:", err2)
 		return false
 	}
@@ -886,7 +881,7 @@ func ListMaps() map[string][]int {
 			files = append(files, info.Name())
 			//Debug.Println("path: "+path)
 			width, height := getImageDimension(path)
-			filesAndDimensions [info.Name()] = []int{width, height}
+			filesAndDimensions[info.Name()] = []int{width, height}
 		}
 		return nil
 	})
@@ -934,7 +929,7 @@ func getImageDimension(imagePath string) (int, int) {
 
 }
 
-func GetLocationOfFingerprint (location string) (float64,float64){ // komeil: gets location return from a fingerprint and returns two float64 numbers
+func GetLocationOfFingerprint(location string) (float64, float64) { // komeil: gets location return from a fingerprint and returns two float64 numbers
 	x_y := strings.Split(location, ",")
 	if !(len(x_y) == 2) {
 		err := errors.New("Location names aren't in the format of x,y")
@@ -942,11 +937,11 @@ func GetLocationOfFingerprint (location string) (float64,float64){ // komeil: ge
 	}
 	locXstr := x_y[0]
 	locYstr := x_y[1]
-	locX, _ := strconv.ParseFloat(locXstr,64)
-	locY, _ := strconv.ParseFloat(locYstr,64)
+	locX, _ := strconv.ParseFloat(locXstr, 64)
+	locY, _ := strconv.ParseFloat(locYstr, 64)
 	locX = Round(locX, 5)
 	locY = Round(locY, 5)
-	return locX,locY
+	return locX, locY
 }
 
 func SortedInsertInt64(s []int64, f int64) []int64 {
@@ -957,7 +952,7 @@ func SortedInsertInt64(s []int64, f int64) []int64 {
 
 	newS := []int64{}
 	for i, vali := range s {
-		if (vali > f) {
+		if vali > f {
 			newS = append(newS, f)
 			newS = append(newS, s[i:]...)
 			return newS
@@ -978,7 +973,7 @@ func SortedInsertInt(s []int, f int) []int {
 
 	newS := []int{}
 	for i, vali := range s {
-		if (vali > f) {
+		if vali > f {
 			newS = append(newS, f)
 			newS = append(newS, s[i:]...)
 			return newS
@@ -991,31 +986,32 @@ func SortedInsertInt(s []int, f int) []int {
 	return newS
 }
 
-func GetGraphSlicesRangeRecursive(first []float64, last []float64, step float64) ([][]float64) {
+func GetGraphSlicesRangeRecursive(first []float64, last []float64, step float64) [][]float64 {
 	return getGraphSlicesRangeRecursive(first, last, 0, step)
 }
+
 // gets first slice, last slice and level which it must be entered 0 at normal calls. (its goal is for recursive calls inside the function)
-func getGraphSlicesRangeRecursive(first []float64, last []float64, level int, step float64) ([][]float64) {
-	if len(first) != len(last){
+func getGraphSlicesRangeRecursive(first []float64, last []float64, level int, step float64) [][]float64 {
+	if len(first) != len(last) {
 		errors.New("length of first and last are not equal")
 	}
 	result := [][]float64{}
 
-	if level == len(first){
+	if level == len(first) {
 		//fmt.Println("level at end" ,level)
 		return result
-	}else {
+	} else {
 		a := []float64{}
-		for u:=0;u<len(first);u++{
-			a=append(a,0)
+		for u := 0; u < len(first); u++ {
+			a = append(a, 0)
 		}
 		copy(a, first)
 
 		for j := float64(0); j < (last[level] - first[level]); j += step {
 
 			b := []float64{}
-			for u:=0;u<len(first);u++{
-				b=append(b,0)
+			for u := 0; u < len(first); u++ {
+				b = append(b, 0)
 			}
 			copy(b, a)
 			result = append(result, b)
@@ -1023,11 +1019,11 @@ func getGraphSlicesRangeRecursive(first []float64, last []float64, level int, st
 			a[level] += step
 			tempResults := getGraphSlicesRangeRecursive(a, last, level+1, step)
 
-			result = append(result,tempResults...)
+			result = append(result, tempResults...)
 		}
 		b := []float64{}
-		for u:=0;u<len(first);u++{
-			b=append(b,0)
+		for u := 0; u < len(first); u++ {
+			b = append(b, 0)
 		}
 		copy(b, a)
 		result = append(result, b)
@@ -1036,18 +1032,18 @@ func getGraphSlicesRangeRecursive(first []float64, last []float64, level int, st
 	finalResult := [][]float64{}
 	new := true
 	for i := 0; i < len(result); i++ {
-		for j:=0;j<len(finalResult);j++{
-			if testEq(result[i],finalResult[j])==true {
+		for j := 0; j < len(finalResult); j++ {
+			if testEq(result[i], finalResult[j]) == true {
 				//fmt.Println(result[i]," ", finalResult[j])
 				new = false
 			}
 		}
 		for k := 0; k < len(result[i])-1; k++ {
-			if (result[i][k] < result[i][k+1]) {
+			if result[i][k] < result[i][k+1] {
 				new = false
 			}
 		}
-		if new==true {
+		if new == true {
 			finalResult = append(finalResult, result[i])
 		}
 		new = true
@@ -1058,7 +1054,7 @@ func getGraphSlicesRangeRecursive(first []float64, last []float64, level int, st
 func testEq(a, b []float64) bool { //tests whether two slices are the same
 	// If one is nil, the other must also be nil.
 	if (a == nil) != (b == nil) {
-		return false;
+		return false
 	}
 	if len(a) != len(b) {
 		return false

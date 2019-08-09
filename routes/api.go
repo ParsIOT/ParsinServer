@@ -511,7 +511,7 @@ func RecalculateTestvalidTrackFingerprint(mainGroupName string, repredict bool) 
 
 					testValidTrack := testValidTracks[gpC]
 					coGpTestValidTrack := coGpTestValidTracks[coGpC]
-					if (testValidTrack.UserPosition.Time < coGpTestValidTrack.UserPosition.Time) {
+					if testValidTrack.UserPosition.Time < coGpTestValidTrack.UserPosition.Time {
 						allTestValidTracks = append(allTestValidTracks, testValidTrack)
 						gpC++
 					} else {
@@ -649,7 +649,7 @@ func GetTestValidTracksDetails(c *gin.Context) {
 
 		if len(tempTestValidTracks) != 0 {
 
-			if (calculateErrStr != "none" && calculateErrStr == "true") { //Recalculate Error by true locations
+			if calculateErrStr != "none" && calculateErrStr == "true" { //Recalculate Error by true locations
 				// testValidTracksRes is a temporary variable, don't save it in db
 				err, errDetails, testValidTracksRes := dbm.CalculateTestErrorAndRelocateTestValid(groupName, tempTestValidTracks)
 				if len(testValidTracksRes) != len(tempTestValidTracks) {
@@ -736,275 +736,6 @@ func DeleteDatabase(c *gin.Context) {
 	}
 }
 
-// Calls setMixinOverride() and then calls optimizePriorsThreaded()
-//// GET parameters: group, mixin
-//func PutMixinOverride(c *gin.Context) {
-//	c.Writer.Header().Set("Content-Type", "application/json")
-//	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-//	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-//	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
-//	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
-//	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-//
-//	group := strings.ToLower(c.DefaultQuery("group", "none"))
-//	newMixin := c.DefaultQuery("mixin", "none")
-//	if group != "none" {
-//		newMixinFloat, err := strconv.ParseFloat(newMixin, 64)
-//		if err == nil {
-//			//err2 := dbm.SetMixinOverride(group, newMixinFloat)
-//			err2 := dbm.SetSharedPrf(group,"Mixin", newMixinFloat)
-//			if err2 == nil {
-//				bayes.OptimizePriorsThreaded(strings.ToLower(group))
-//				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding mixin for " + group + ", now set to " + newMixin})
-//			} else {
-//				c.JSON(http.StatusOK, gin.H{"success": false, "message": err2.Error()})
-//			}
-//		} else {
-//			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-//		}
-//	} else {
-//		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
-//	}
-//}
-//
-//// Calls setCutoffOverride() and then calls optimizePriorsThreaded()
-//// GET parameters: group, cutoff
-//func PutCutoffOverride(c *gin.Context) {
-//	c.Writer.Header().Set("Content-Type", "application/json")
-//	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-//	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-//	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
-//	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
-//	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-//
-//	group := strings.ToLower(c.DefaultQuery("group", "none"))
-//	newCutoff := c.DefaultQuery("cutoff", "none")
-//	glb.Debug.Println(group)
-//	glb.Debug.Println(newCutoff)
-//	if group != "none" {
-//		newCutoffFloat, err := strconv.ParseFloat(newCutoff, 64)
-//		if err == nil {
-//			err2 := dbm.SetSharedPrf(group, "Cutoff", newCutoffFloat)
-//			if err2 == nil {
-//				bayes.OptimizePriorsThreaded(strings.ToLower(group))
-//				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding cutoff for " + group + ", now set to " + newCutoff})
-//			} else {
-//				c.JSON(http.StatusOK, gin.H{"success": false, "message": err2.Error()})
-//			}
-//		} else {
-//			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-//		}
-//	} else {
-//		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
-//	}
-//}
-//
-//// Calls setCutoffOverride() and then calls optimizePriorsThreaded()
-//// GET parameters: group, cutoff
-//func PutKnnK(c *gin.Context) {
-//	c.Writer.Header().Set("Content-Type", "application/json")
-//	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-//	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-//	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
-//	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
-//	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-//
-//	group := strings.ToLower(c.DefaultQuery("group", "none"))
-//	newK := c.DefaultQuery("knnK", "none")
-//	glb.Debug.Println(group)
-//	glb.Debug.Println(newK)
-//	if group != "none" {
-//		newKnnK, err := strconv.Atoi(newK)
-//		if err == nil {
-//			err2 := dbm.SetSharedPrf(group,"KnnK", newKnnK)
-//			if err2 == nil {
-//				//optimizePriorsThreaded(strings.ToLower(group))
-//				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K for " + group + ", now set to " + newK})
-//			} else {
-//				c.JSON(http.StatusOK, gin.H{"success": false, "message": err2.Error()})
-//			}
-//		} else {
-//			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-//		}
-//	} else {
-//		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
-//	}
-//}
-
-func PutKnnKRange(c *gin.Context) {
-	c.Writer.Header().Set("Content-Type", "application/json")
-	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
-	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-
-	group := strings.ToLower(c.DefaultQuery("group", "none"))
-	kRangeRawStr := c.DefaultQuery("range", "none")
-	glb.Debug.Println(group)
-	glb.Debug.Println(kRangeRawStr)
-
-	if group != "none" && kRangeRawStr != "none" {
-		// convert string to int slice
-		kRangeRawStr = strings.TrimSpace(kRangeRawStr)
-		kRangeRawStr = kRangeRawStr[1:][:len(kRangeRawStr)-2]
-		kRangeListStr := strings.Split(kRangeRawStr, ",")
-		kRange := []int{}
-
-		for _, numStr := range kRangeListStr {
-			num, _ := strconv.Atoi(numStr)
-			kRange = append(kRange, num)
-		}
-
-		// check kRange length
-		if len(kRange) == 1 || len(kRange) == 2 {
-			//validKs := glb.MakeRange(kRange[0],kRange[0])
-			cd := dbm.GM.GetGroup(group).Get_ConfigData()
-			knnConfig := cd.Get_KnnConfig()
-			//err := dbm.SetSharedPrf(group, "KRange", kRange)
-			knnConfig.KRange = kRange
-			cd.Set_KnnConfig(knnConfig)
-			//if err == nil {
-			//	//optimizePriorsThreaded(strings.ToLower(group))
-			c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K range for " + group + ", now set to " + kRangeRawStr})
-			//} else {
-			//	c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-			//}
-			//}else if( len(kRange) == 2){
-			//	algorithms.ValidKs = glb.MakeRange(kRange[0],kRange[1])
-		} else {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Knn K range length must be 2 at the maximum value "})
-		}
-	} else {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
-	}
-}
-
-func PutKnnMinClusterRSSRange(c *gin.Context) {
-	c.Writer.Header().Set("Content-Type", "application/json")
-	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
-	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-
-	group := strings.ToLower(c.DefaultQuery("group", "none"))
-	rssRangeRawStr := c.DefaultQuery("range", "none")
-	glb.Debug.Println(group)
-	glb.Debug.Println(rssRangeRawStr)
-
-	if group != "none" && rssRangeRawStr != "none" {
-		// convert string to int slice
-		rssRangeRawStr = strings.TrimSpace(rssRangeRawStr)
-		rssRangeRawStr = rssRangeRawStr[1:][:len(rssRangeRawStr)-2]
-		rssRangeListStr := strings.Split(rssRangeRawStr, ",")
-		minCRssRange := []int{}
-
-		for _, numStr := range rssRangeListStr {
-			num, err := strconv.Atoi(numStr)
-			if err != nil {
-				glb.Error.Println(err)
-				c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
-			}
-			minCRssRange = append(minCRssRange, num)
-		}
-
-		// check kRange length
-		if len(minCRssRange) == 1 || len(minCRssRange) == 2 {
-			//validKs := glb.MakeRange(kRange[0],kRange[0])
-			cd := dbm.GM.GetGroup(group).Get_ConfigData()
-			knnConfig := cd.Get_KnnConfig()
-			//err := dbm.SetSharedPrf(group, "KnnMinCRssRange", minCRssRange)
-			knnConfig.MinClusterRssRange = minCRssRange
-			cd.Set_KnnConfig(knnConfig)
-
-			//if err == nil {
-			//optimizePriorsThreaded(strings.ToLower(group))
-			c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding KNN K range for " + group + ", now set to " + rssRangeRawStr})
-			//} else {
-			//	c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-			//}
-			//}else if( len(kRange) == 2){
-			//	algorithms.ValidKs = glb.MakeRange(kRange[0],kRange[1])
-		} else {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "Knn K range length must be 2 at the maximum value "})
-		}
-	} else {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
-	}
-}
-
-/*func PutMaxMovement(c *gin.Context) {
-	c.Writer.Header().Set("Content-Type", "application/json")
-	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
-	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-
-	group := strings.ToLower(c.DefaultQuery("group", "none"))
-	MaxMovementStr := c.DefaultQuery("maxMovement", "none")
-	glb.Debug.Println(group)
-	glb.Debug.Println(MaxMovementStr)
-
-	if group != "none" && MaxMovementStr != "none" {
-		MaxMovement, err := strconv.ParseFloat(MaxMovementStr, 64)
-		if err == nil {
-			if MaxMovement == float64(-1) {
-				MaxMovement = glb.DefaultMaxMovement
-			}
-			err2 := dbm.SetSharedPrf(group, "MaxMovement", MaxMovement)
-			if err2 == nil {
-				//optimizePriorsThreaded(strings.ToLower(group))
-				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding MaxMovement for " + group + ", now set to " + MaxMovementStr})
-			} else {
-				c.JSON(http.StatusOK, gin.H{"success": false, "message": err2.Error()})
-			}
-		} else {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-		}
-	} else {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
-	}
-}*/
-
-/*func PutMaxEuclideanRssDist(c *gin.Context) {
-	c.Writer.Header().Set("Content-Type", "application/json")
-	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
-	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-
-	groupName := strings.ToLower(c.DefaultQuery("group", "none"))
-	MaxEuclideanRssDistStr := c.DefaultQuery("maxEuclideanRssDist", "none")
-
-	glb.Debug.Println(groupName)
-	glb.Debug.Println(MaxEuclideanRssDistStr)
-
-	if groupName != "none" && MaxEuclideanRssDistStr != "none" {
-		MaxEuclideanRssDist, err := strconv.Atoi(MaxEuclideanRssDistStr)
-		if err == nil {
-			if MaxEuclideanRssDist == -1 {
-				MaxEuclideanRssDist = glb.DefaultMaxEuclideanRssDistRange[0]
-			}
-
-			cd := dbm.GM.GetGroup(groupName).Get_ConfigData()
-			knnParams := cd.Get_KnnConfig()
-			knnParams.MaxEuclideanRssDist = MaxEuclideanRssDist
-			cd.Set_KnnConfig(knnParams)
-
-			c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding MaxEuclideanRssDist for " + groupName + ", now set to " + MaxEuclideanRssDistStr})
-
-		} else {
-			glb.Error.Println(err.Error())
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-		}
-	} else {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "group or maxEuclideanRssDist isn't given"})
-	}
-}
-*/
 func ChooseMap(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -1040,38 +771,6 @@ func ChooseMap(c *gin.Context) {
 		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err2.Error()})
 		}
-	}
-}
-
-// Calls setCutoffOverride() and then calls optimizePriorsThreaded()
-// GET parameters: group, cutoff
-func PutMinRss(c *gin.Context) {
-	c.Writer.Header().Set("Content-Type", "application/json")
-	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-	c.Writer.Header().Set("Access-Control-Allow-Methods", "PUT")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
-	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-
-	group := strings.ToLower(c.DefaultQuery("group", "none"))
-	minRss := c.DefaultQuery("minRss", "none")
-	glb.Debug.Println(group)
-	glb.Debug.Println(minRss)
-	if group != "none" && minRss != "none" {
-		newMinRss, err := strconv.Atoi(minRss)
-		if err == nil {
-			err2 := dbm.SetSharedPrf(group, "MinRss", newMinRss)
-			if err2 == nil {
-				//optimizePriorsThreaded(strings.ToLower(group))
-				c.JSON(http.StatusOK, gin.H{"success": true, "message": "Overriding Minimum RSS for " + group + ", now set to " + minRss})
-			} else {
-				c.JSON(http.StatusOK, gin.H{"success": false, "message": err2.Error()})
-			}
-		} else {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-		}
-	} else {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
 }
 
@@ -1259,7 +958,7 @@ func DeleteLocationBaseDB(c *gin.Context) {
 	if groupName != "none" && location != "none" {
 		numChangesBaseDB := dbm.DeleteLocationBaseDB(location, groupName)
 		numChangesGpCache := dbm.DeleteLocationDB(location, groupName)
-		if (numChangesBaseDB != numChangesGpCache) {
+		if numChangesBaseDB != numChangesGpCache {
 			glb.Error.Printf("number of deletation from (baseDB,groupCache) are not equal: (%d,%d)\n", numChangesBaseDB, numChangesGpCache)
 		}
 		// todo: can't calculateLearn( there is problem with goroutine)
@@ -1286,7 +985,7 @@ func DeleteLocations(c *gin.Context) {
 		locations := strings.Split(strings.ToLower(locationsQuery), ",")
 		numChangesBaseDB := dbm.DeleteLocationsBaseDB(locations, groupName)
 		numChangesGpCache := dbm.DeleteLocationsDB(locations, groupName)
-		if (numChangesBaseDB != numChangesGpCache) {
+		if numChangesBaseDB != numChangesGpCache {
 			glb.Error.Printf("number of deletation from (baseDB,groupCache) are not equal: (%d,%d)\n", numChangesBaseDB, numChangesGpCache)
 		}
 		// todo: can't calculateLearn( there is problem with goroutine)
@@ -1348,7 +1047,7 @@ func DeleteUser(c *gin.Context) {
 
 // Set filterMacs
 // POST parameters: filterMacs
-func Setfiltermacs(c *gin.Context) {
+func SetFilterMacs(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -1398,7 +1097,7 @@ func Setfiltermacs(c *gin.Context) {
 
 // Get filterMacs
 // Get parameters: group
-func Getfiltermacs(c *gin.Context) {
+func GetFilterMacs(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -1625,7 +1324,7 @@ func RemoveEdgesOrVertices(c *gin.Context) {
 
 // Get Graph of Group in the format of a map that its key is like "10#10" and values are a slice of strings
 // Get parameters: group
-func Getgraph(c *gin.Context) {
+func GetGraph(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Max-Age", "86400")
@@ -1649,13 +1348,12 @@ func Getgraph(c *gin.Context) {
 		gp := dbm.GM.GetGroup(group)
 		graphMapPointer := gp.Get_ConfigData().Get_GroupGraph()
 		graphMap = graphMapPointer.GetGraphMap()
-		glb.Debug.Println("graphmap", graphMap)
-		glb.Debug.Println(graphMapPointer.GetUndirectionalGraphMap())
-		allLines := graphMapPointer.AllLines()
-		glb.Debug.Println(allLines)
-		glb.Debug.Println(len(allLines))
-		glb.Debug.Println(graphMapPointer.GetConnectedTreeComponents())
-		glb.Debug.Println(algorithms.CalculateDotRPF("365,0", graphMapPointer, float64(100.0)))
+		//glb.Debug.Println("graphmap", graphMap)
+		//glb.Debug.Println(graphMapPointer.GetUndirectionalGraphMap())
+		//allLines := graphMapPointer.AllLines()
+		//glb.Debug.Println(allLines)
+		//glb.Debug.Println(len(allLines))
+		//glb.Debug.Println(graphMapPointer.GetConnectedTreeComponents())
 		//glb.Debug.Println(graphMap)
 		//root,_ := graphMapPointer.GetNodeByLabel("-1152,1334")
 		//glb.Debug.Println("returned value from BFSTraverse",graphMapPointer.BFSTraverse(root))
@@ -1785,7 +1483,7 @@ func CVResults(c *gin.Context) {
 		algoAccuracy := dbm.GetCVResults(groupName)
 
 		glb.Debug.Println("Got algorithms accuracy")
-		c.JSON(http.StatusOK, gin.H{"Algorithms Accuracy": algoAccuracy,})
+		c.JSON(http.StatusOK, gin.H{"Algorithms Accuracy": algoAccuracy})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Error parsing request"})
 	}
@@ -1803,10 +1501,10 @@ func CalcCompletionLevel(c *gin.Context) {
 
 	if groupName != "none" {
 		cmpLevel := dbm.GetCalcCompletionLevel()
-		if (cmpLevel > 0 && cmpLevel <= 1) {
+		if cmpLevel > 0 && cmpLevel <= 1 {
 			//cmpLevel = float64(int(cmpLevel*10000000))/100000
 			//glb.Debug.Printf("Calculation level: %f % \n", cmpLevel)
-			c.JSON(http.StatusOK, gin.H{"success": true, "message": cmpLevel,})
+			c.JSON(http.StatusOK, gin.H{"success": true, "message": cmpLevel})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "No calculation is running"})
 		}
@@ -2003,7 +1701,6 @@ func DelTransmitter(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Group isn't mentioned"})
 	}
 }
-
 
 func GetArbitLocations(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
@@ -2236,7 +1933,6 @@ func GetRPFDetails(c *gin.Context) {
 	}
 }
 
-
 func GetMostSeenMacsAPI(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -2385,7 +2081,7 @@ func SetRelocateFPLocStateAPI(c *gin.Context) {
 
 	if groupName != "none" && relocateFP != "none" {
 		//err := dbm.RelocateFPLoc(groupName)
-		if (relocateFP == "true") {
+		if relocateFP == "true" {
 			err := dbm.SetSharedPrf(groupName, "NeedToRelocateFP", true)
 			if err != nil {
 				glb.Error.Println(err)
@@ -2393,7 +2089,7 @@ func SetRelocateFPLocStateAPI(c *gin.Context) {
 			} else {
 				c.JSON(http.StatusOK, gin.H{"success": true})
 			}
-		} else if (relocateFP == "false") {
+		} else if relocateFP == "false" {
 			err := dbm.SetSharedPrf(groupName, "NeedToRelocateFP", false)
 			if err != nil {
 				glb.Error.Println(err)
@@ -2690,7 +2386,6 @@ func SetKnnConfig(c *gin.Context) {
 			}
 		}
 
-
 		cd.Set_KnnConfig(knnConfig)
 
 	}
@@ -2720,7 +2415,7 @@ func SetGroupOtherConfig(c *gin.Context) {
 		// Parsing coGroupStr
 		if coGroupStr != "" {
 			glb.Debug.Println("CoGroup: ", coGroupStr)
-			if (coGroupStr == "No CoGroup") {
+			if coGroupStr == "No CoGroup" {
 				if otherGpConfig.CoGroup != "" {
 					coGpCd := dbm.GM.GetGroup(otherGpConfig.CoGroup).Get_ConfigData()
 					coGpOtherGpConfig := coGpCd.Get_OtherGroupConfig()

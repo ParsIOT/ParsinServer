@@ -1,10 +1,10 @@
 package bayes
 
 import (
-	"testing"
-	"ParsinServer/glb"
-	"ParsinServer/dbm/parameters"
 	"ParsinServer/dbm"
+	"ParsinServer/dbm/parameters"
+	"ParsinServer/glb"
+	"testing"
 )
 
 func TestPriorsThreaded(t *testing.T) {
@@ -43,8 +43,8 @@ func BenchmarkCrossValidation(b *testing.B) {
 	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
 	var fingerprintsOrdering []string
 	var err error
-	fingerprintsOrdering,fingerprintsInMemory,err = dbm.GetLearnFingerPrints(group,true)
-	if err != nil{
+	fingerprintsOrdering, fingerprintsInMemory, err = dbm.GetLearnFingerPrints(group, true)
+	if err != nil {
 		return
 	}
 
@@ -78,8 +78,8 @@ func BenchmarkCalculatePriors(b *testing.B) {
 	var fingerprintsOrdering []string
 	var err error
 
-	fingerprintsOrdering,fingerprintsInMemory,err = dbm.GetLearnFingerPrints(group,true)
-	if err != nil{
+	fingerprintsOrdering, fingerprintsInMemory, err = dbm.GetLearnFingerPrints(group, true)
+	if err != nil {
 		return
 	}
 	var ps = *parameters.NewFullParameters()
@@ -101,8 +101,8 @@ func BenchmarkGetParameters(b *testing.B) {
 	fingerprintsInMemory := make(map[string]parameters.Fingerprint)
 	var fingerprintsOrdering []string
 	var err error
-	fingerprintsOrdering,fingerprintsInMemory,err = dbm.GetLearnFingerPrints(group,true)
-	if err != nil{
+	fingerprintsOrdering, fingerprintsInMemory, err = dbm.GetLearnFingerPrints(group, true)
+	if err != nil {
 		return
 	}
 
