@@ -445,6 +445,13 @@ func DumpCalculatedFingerprints(groupName string) error {
 		return err
 	}
 
+	fTestValidJson, err := os.OpenFile(path.Join(glb.RuntimeArgs.SourcePath, "dumpcalc-"+groupName, "tracking.json"), os.O_WRONLY|os.O_CREATE, 0664)
+	defer fTestValidJson.Close()
+	if err != nil {
+		return err
+	}
+
+
 
 	var fingerprints []parameters.Fingerprint
 	rd := GM.GetGroup(groupName).Get_RawData()
@@ -508,6 +515,17 @@ func DumpCalculatedFingerprints(groupName string) error {
 		}
 	}
 
+	rsd := GM.GetGroup(groupName).Get_ResultData()
+	for _, testValid := range rsd.Get_TestValidTracks() {
+		fpJson, err := json.Marshal(testValid.UserPosition.Fingerprint)
+
+		if err != nil {
+			panic(err)
+		}
+		if _, err = fTestValidJson.WriteString(string(fpJson) + "\n"); err != nil {
+			panic(err)
+		}
+	}
 
 
 	//// glb.Debug.Println("Opening file for tracking fingerprints")
