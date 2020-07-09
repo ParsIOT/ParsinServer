@@ -30,14 +30,16 @@
 
     <script type="text/javascript">
 
-        function loadPlot(dataPoints,
+        function loadPlot(algorithmName,
+                          dataPoints,
                           xaxisRange = [0, 25],
                           colorscale = [
                               ['0.0', 'rgb(220,220,220)'],
                               ['0.5', 'rgb(0,0,255)'],
                               ['1.0', 'rgb(255,0,0)']]) {
             var z_data = dataPoints;
-
+            console.log(algorithmName);
+            console.log(dataPoints);
             var data = [{
                 z: z_data,
                 type: 'surface',

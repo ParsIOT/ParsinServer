@@ -5,7 +5,7 @@
         }
 
         .modal-body {
-            height: 500px;
+            height: 800px;
             overflow-y: auto;
         }
 
@@ -21,7 +21,7 @@
     <script type="text/javascript" src="/static/js/canvasjs.min.js"></script>
 
     <div class="modal fade" id="plotModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-dialog modal-lg" style="width:90%" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -44,6 +44,8 @@
             chart = undefined;
         }
 
+
+
         function loadPlot(algo, dataPoints) {
             var yData = [];
             var xData = [];
@@ -61,17 +63,18 @@
             minXData = Math.min(...xData
             )
             ;
+            //maxXData = 1000;
             maxXData = Math.max(...xData
             )
             ;
 
             if (chart === undefined) {
-
-
+                
                 chart = new CanvasJS.Chart("chartContainer",
                     {
                         animationEnabled: true,
-                        width: 700,
+                        height: 700,
+                        width: 1600,
                         autosize: true,
                         zoomEnabled: true,
                         toolTip: {
@@ -79,8 +82,8 @@
                             enabled: true
                         },
                         axisY: {
-                            title: "CDF(%)",
-                            titleFontSize: 15,
+                            title: "Cumulative distribution function(%)",
+                            titleFontSize: 22,
                             labelFontSize: 15,
                             gridColor: "Silver",
                             tickColor: "silver",
@@ -89,7 +92,7 @@
                         },
                         axisX: {
                             title: "Error(cm)",
-                            titleFontSize: 15,
+                            titleFontSize: 22,
                             labelFontSize: 15,
                             gridColor: "Silver",
                             tickColor: "silver",
@@ -102,19 +105,21 @@
                         // },
                         data: [
                             {
+                                legendMarkerType: "triangle",
                                 mouseover: onMouseover,
                                 mouseout: onMouseout,
                                 type: "line",
                                 name: algo,
                                 showInLegend: true,
                                 {{/*toolTipContent: "<a href ='/explore/{{ $.Group }}/{{ $.Network }}/{{ .Name }}'> {name}</a>",*/}}
-                                lineThickness: 2,
+                                lineThickness: 4,
                                 dataPoints: dataPoints // [{x:1, y:10}, {x:2, y=20}]
                             },
 
                         ],
                         legend: {
                             cursor: "pointer",
+		                    fontSize: 25,
                             verticalAlign: "top",
                             horizontalAlign: "center",
                             // dockInsidePlotArea: true,
@@ -131,12 +136,13 @@
             } else {
                 algoExists = false;
                 newData = {
+                    legendMarkerType: "triangle",
                     mouseover: onMouseover,
                     mouseout: onMouseout,
                     type: "line",
                     showInLegend: true,
                     name: algo,
-                    lineThickness: 2,
+                    lineThickness: 4,
                     dataPoints: dataPoints // [{x:1, y:10}, {x:2, y=20}]
                 };
                 for (i in chart.options.data) {
@@ -148,6 +154,18 @@
                 }
                 if (!algoExists) {
                     chart.options.data.push(newData);
+                    if (chart.options.axisX.minimum > minXData ){
+                        chart.options.axisX.minimum = minXData;
+                    }
+                    if (chart.options.axisX.maximum < maxXData ){
+                        chart.options.axisX.maximum = maxXData;
+                    }
+                    if (chart.options.axisY.minimum > minYData ){
+                        chart.options.axisY.minimum = minYData;
+                    }
+                    if (chart.options.axisY.maximum < maxYData ){
+                        chart.options.axisY.maximum = maxYData;
+                    }
                 }
             }
 
