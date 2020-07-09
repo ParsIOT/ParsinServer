@@ -1,4 +1,4 @@
-{{ define "plot_modal" }}
+.{{ define "plot_modal" }}
     <style>
         .modal-dialog {
             overflow-y: initial !important
@@ -44,9 +44,7 @@
             chart = undefined;
         }
 
-
-
-        function loadPlot(algo, dataPoints) {
+        function loadPlot(algo, dataPoints, xAxisMaxLength=-1) {
             var yData = [];
             var xData = [];
             for (i = 0; i < dataPoints.length; i++) {
@@ -63,13 +61,16 @@
             minXData = Math.min(...xData
             )
             ;
-            //maxXData = 1000;
-            maxXData = Math.max(...xData
-            )
-            ;
+            if (xAxisMaxLength == -1){
+                maxXData = Math.max(...xData
+                );
+            }else{
+                maxXData = xAxisMaxLength;
+            }
 
             if (chart === undefined) {
-                
+
+
                 chart = new CanvasJS.Chart("chartContainer",
                     {
                         animationEnabled: true,
@@ -119,7 +120,7 @@
                         ],
                         legend: {
                             cursor: "pointer",
-		                    fontSize: 25,
+                            fontSize: 25,
                             verticalAlign: "top",
                             horizontalAlign: "center",
                             // dockInsidePlotArea: true,

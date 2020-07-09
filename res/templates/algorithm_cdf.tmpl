@@ -395,7 +395,21 @@
                                 <br/>
                             </div>
                         </div>
+                        <div class="col-md-12">
+                            <a href="#manual-length-div" data-toggle="collapse" class="" aria-expanded="true"><h4 style="text-decoration: underline;">Select x-Axis max length manually</h4></a>
+                            <hr>
+                            <div id="manual-length-div" class="collapse" aria-expanded="true" style="">
+                                <div class="form-group">
+                                    <label><input id="manual-length" type="checkbox"> Enable manuals length</label>
+                                </div>
+                                <div class="form-group">
+                                    <label for="manual-length-value">Max x-Axis length</label>
+                                    <input id="manual-length-value" type="number" min="0" step="10" value="1000" class="form-control" disabled="">
+                                </div>
+                            </div>
+                        </div>
                         <div class="col-xs-6 col-xs-offset-3">
+                            
                             <button id="showErrorDetailsPlotBtn" onclick="showErrorDetailsPlot()"
                                     class="btn btn-warning btn-sm btn-block " data-toggle="modal"
                                     data-target="#plotModal">
@@ -839,7 +853,14 @@
         for (i = 0; i < data.length; i++) {
             dataPoints.push({x: data[i], y: eachValPercent * (i + 1)});
         }
-        loadPlot(algorithmName, dataPoints);
+
+        if ($('#manual-length').is(':checked')){
+            maxXAxisLen = parseInt($('#manual-length-value').val())
+            loadPlot(algorithmName, dataPoints, maxXAxisLen);
+        }else{
+            loadPlot(algorithmName, dataPoints);
+        }
+        
     }
 
     function showErrorDetailsPlot() {
@@ -1091,6 +1112,14 @@
         }
     }
 
+    // Enable manual-length textedit
+    $('#manual-length').change(function () {
+        if (this.checked) {
+            $('#manual-length-value').prop('disabled', false);
+        } else {
+            $('#manual-length-value').prop('disabled', true);
+        }
+    });
 </script>
 
 </body>
