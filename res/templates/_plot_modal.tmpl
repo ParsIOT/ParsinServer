@@ -40,9 +40,16 @@
     <script type="text/javascript">
         var chart;
 
+       
+        var valid_markerType = ["none", "triangle", "circle", "square", "cross"]
+        var markerIndex = 0;
+        var markerNum = 10;
+
         function clearPlot() {
             chart = undefined;
+            markerIndex = 0
         }
+
 
         function loadPlot(algo, dataPoints, xAxisMaxLength=-1) {
             var yData = [];
@@ -50,6 +57,11 @@
             for (i = 0; i < dataPoints.length; i++) {
                 xData.push(dataPoints[i].x);
                 yData.push(dataPoints[i].y);
+            }
+
+            var setMarkerfactor = parseInt(dataPoints.length/markerNum);
+            for (i = setMarkerfactor; i < dataPoints.length; i=i+setMarkerfactor) {
+                dataPoints[i].markerType = valid_markerType[markerIndex];
             }
 
             minYData = Math.min(...yData
@@ -106,20 +118,21 @@
                         // },
                         data: [
                             {
-                                legendMarkerType: "triangle",
                                 mouseover: onMouseover,
                                 mouseout: onMouseout,
+                                click: onMouseclick,
+                                markerType: valid_markerType[markerIndex],
                                 type: "line",
                                 name: algo,
                                 showInLegend: true,
-                                {{/*toolTipContent: "<a href ='/explore/{{ $.Group }}/{{ $.Network }}/{{ .Name }}'> {name}</a>",*/}}
+                                //toolTipContent: "<a href ='/explore/{{ $.Group }}/{{ $.Network }}/{{ .Name }}'> {name}</a>",
+                                markerSize: 20,
                                 lineThickness: 4,
                                 dataPoints: dataPoints // [{x:1, y:10}, {x:2, y=20}]
                             },
 
                         ],
                         legend: {
-                            cursor: "pointer",
                             fontSize: 25,
                             verticalAlign: "top",
                             horizontalAlign: "center",
@@ -137,12 +150,15 @@
             } else {
                 algoExists = false;
                 newData = {
-                    legendMarkerType: "triangle",
                     mouseover: onMouseover,
                     mouseout: onMouseout,
+                    click: onMouseclick,
+                    markerType: valid_markerType[markerIndex],
                     type: "line",
-                    showInLegend: true,
                     name: algo,
+                    showInLegend: true,
+                    //toolTipContent: "<a href ='/explore/{{ $.Group }}/{{ $.Network }}/{{ .Name }}'> {name}</a>",
+                    markerSize: 20,
                     lineThickness: 4,
                     dataPoints: dataPoints // [{x:1, y:10}, {x:2, y=20}]
                 };
@@ -170,6 +186,11 @@
                 }
             }
 
+            markerIndex++;
+            if (markerIndex == valid_markerType.length){
+                markerIndex = 0;
+            }
+            
             chart.render();
 
             function onMouseout(e) {
@@ -182,6 +203,13 @@
                 chart.options.toolTip.enabled = true;
                 chart.render();
             }
+
+            function onMouseclick(e){
+                //alert(  e.dataSeries.type + ", dataPoint { x:" + e.dataPoint.x + ", y: "+ e.dataPoint.y + " }" );
+	
+                //chart.render();
+            }
+            
         }
     </script>
 

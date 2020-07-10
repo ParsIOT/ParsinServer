@@ -404,7 +404,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="manual-length-value">Max x-Axis length</label>
-                                    <input id="manual-length-value" type="number" min="0" step="10" value="1000" class="form-control" disabled="">
+                                    <input id="manual-length-value" type="number" min="0" step="50" value="1000" class="form-control" disabled="">
                                 </div>
                             </div>
                         </div>
@@ -851,7 +851,7 @@
         dataPoints = [];
         eachValPercent = 100.0 / data.length;
         for (i = 0; i < data.length; i++) {
-            dataPoints.push({x: data[i], y: eachValPercent * (i + 1)});
+            dataPoints.push({x: data[i], y: eachValPercent * (i + 1), markerType:'none'});
         }
 
         if ($('#manual-length').is(':checked')){
