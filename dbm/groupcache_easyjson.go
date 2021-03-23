@@ -1480,7 +1480,7 @@ func easyjson3b8810b5DecodeParsinServerDbm4(in *jlexer.Lexer, out *Group) {
 				if out.GMutex == nil {
 					out.GMutex = new(sync.RWMutex)
 				}
-				easyjson3b8810b5DecodeSync(in, &*out.GMutex)
+				easyjson3b8810b5DecodeSync(in, out.GMutex)
 			}
 		case "Name":
 			out.Name = string(in.String())
