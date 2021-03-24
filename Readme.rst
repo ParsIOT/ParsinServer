@@ -29,7 +29,7 @@ Capabilities
         
 Dashboard consists of :
     * Algorithm configs 
-    * Algorithm hyperparameter tunning
+    * Algorithm hyperparameter tuning
     * Display Algorithm details
     * Upload different map image
     * Total algorithm evaluation 
@@ -43,13 +43,13 @@ Dashboard consists of :
 
 3. Live user positioning: 
     * User Management 
-    * Collabration with PDR solutions(on the android app) 
-    * Live UWB localizition
+    * Collaboration with PDR solutions(on the android app)
+    * Live UWB localization
 
     .. image:: docs/images/d3.png 
         :alt: Live map
 
-4. Arbitrary fingeprint location:
+4. Arbitrary fingerprint location:
            
     .. image:: docs/images/d4.png 
         :alt: Arbitrary Location
@@ -65,7 +65,7 @@ Dashboard consists of :
         :alt: fingerprint ambiguity map   
 
 7. Graph & Map: This tool provides:
-    * Set map constraints and borders(It can be used in Partic Filter models)
+    * Set map constraints and borders(It can be used in Particle Filter models)
     * Set valid connections between nodes
     
     .. image:: docs/images/d7.png 
@@ -94,7 +94,7 @@ Dashboard consists of :
     .. image:: docs/images/d12.png 
         :alt: Algorithm error calculation
     
-11. Error comparision and CDF graph:
+11. Error comparison and CDF graph:
 
     .. image:: docs/images/d13.png 
         :alt: CDF1
@@ -102,8 +102,12 @@ Dashboard consists of :
     .. image:: docs/images/d14.png 
         :alt: CDF2
 
-12. Tag tracking: You can use BLE and Wi-Fi tags and some signal receivers to track tags. ## `Android and ios app <https://github.com/schollz/find>`_
-13. Particle filter
-14. ## `Android and ios app <https://github.com/schollz/find>`_
-15. UWB compatible data collection: You can collect fingerprints with the accurate localization systems like UWB. ## `Android and ios app <https://github.com/schollz/find>`_
-16. Proximity advertisement framework, `Parsin Admin Panel <https://github.com/schollz/find>`_. It works alongside Parsinserver. Besides we provided a proximity advertisement `android app <https://github.com/schollz/find>`_
+12. Particle Filter algorithm
+13. UWB compatible data collection: You can collect fingerprints with the accurate localization systems like UWB. ## `Android and ios app <https://github.com/schollz/find>`_
+
+Side Projects
+===========================
+
+14. `Tag tracking <https://github.com/ParsIOT/Parsin-rtls>`_ : You can use BLE and Wi-Fi tags and some signal receivers to track tags.
+15. `Android app <https://github.com/ParsIOT/Find_BLE/>`_ and `react-native app (ios) <https://github.com/ParsIOT/RNative>`_
+16. Proximity advertisement framework, `Parsin Admin Panel <https://github.com/ParsIOT/Parsin-Admin-Panel>`_. It works alongside Parsinserver. Besides we provided a proximity advertisement `android app <https://github.com/schollz/find>`_
