@@ -110,4 +110,4 @@ Side Projects
 
 14. `Tag tracking <https://github.com/ParsIOT/Parsin-rtls>`_ : You can use BLE and Wi-Fi tags and some signal receivers to track tags.
 15. `Android app <https://github.com/ParsIOT/Find_BLE/>`_ and `react-native app (ios) <https://github.com/ParsIOT/RNative>`_
-16. Proximity advertisement framework, `Parsin Admin Panel <https://github.com/ParsIOT/Parsin-Admin-Panel>`_. It works alongside Parsinserver. Besides we provided a proximity advertisement `android app <https://github.com/schollz/find>`_
+16. Proximity advertisement framework, `Parsin Admin Panel <https://github.com/ParsIOT/Parsin-Admin-Panel>`_. It works alongside Parsinserver. Besides we provided a proximity advertisement.
